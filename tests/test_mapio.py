@@ -195,3 +195,25 @@ def test_fx_events_collection_round_trips(tmp_path):
 
     text = json.loads((tmp_path / "o" / "Expert.dat").read_text(encoding="utf-8"))
     assert text["_fxEventsCollection"] == fx
+
+
+def test_v3_bpm_events_read(tmp_path):
+    m = _copy_fixture("v3_boxes", tmp_path / "a")
+    _edit(m, "Expert.dat", lambda d: d.update(bpmEvents=[{"b": 8, "m": 60}, {"b": 0, "m": 90}]))
+    events = load_map(m).difficulties["Expert"].bpm_events
+    assert [(e.beat, e.bpm) for e in events] == [(0.0, 90.0), (8.0, 60.0)]
+
+
+def test_difficulty_files_with_case_variants_load(tmp_path):
+    m = _copy_fixture("v2_basic", tmp_path / "a")
+    assert {p.name for p in m.iterdir()} >= {"Hard.dat", "ExpertPlusStandard.dat", "info.dat"}
+    assert find_info(m).name == "info.dat"  # discovered under its on-disk case
+    assert load_map(m).difficulties["Hard"].filename == "Hard.dat"  # entry says "hard.dat"
+    (m / "ExpertPlusStandard.dat").rename(m / "expertplusstandard.DAT")
+    (m / "Hard.dat").rename(m / "Hard.beatmap.dat")
+    info = m / "info.dat"
+    text = info.read_text(encoding="utf-8").replace("hard.dat", "HARD.beatmap.DAT")
+    info.write_text(text, encoding="utf-8")
+    loaded = load_map(m).difficulties
+    assert loaded["Hard"].filename == "Hard.beatmap.dat"
+    assert loaded["ExpertPlus"].filename == "expertplusstandard.DAT"

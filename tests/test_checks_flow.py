@@ -1,5 +1,5 @@
 from saber_tooth.checks import check_difficulty
-from saber_tooth.model import Bomb, Color, Cut, Difficulty, Note
+from saber_tooth.model import Bomb, BpmEvent, Color, Cut, Difficulty, Note
 from saber_tooth.profiles import PROFILES
 from saber_tooth.timing import Timing
 
@@ -80,3 +80,23 @@ def test_swing_warn_band():
 def test_swing_spaced_is_fine():
     ns = [Note(4.0, 1, 0, Color.RED, Cut.DOWN), Note(5.0, 1, 0, Color.RED, Cut.UP)]
     assert "swing-speed" not in {r for r, _ in rules(ns)}
+
+
+def _swing_speed(timing):
+    ns = [Note(8.0, 1, 0, Color.RED, Cut.DOWN), Note(8.5, 1, 0, Color.RED, Cut.UP)]
+    d = Difficulty("Expert", 16, 0, notes=ns)
+    return {
+        f.severity
+        for f in check_difficulty(d, timing, PROFILES["Expert"])
+        if f.rule == "swing-speed"
+    }
+
+
+def test_legal_pattern_becomes_swing_speed_error_after_tempo_increase():
+    assert _swing_speed(Timing(120.0, [])) == set()
+    assert _swing_speed(Timing(120.0, [BpmEvent(4.0, 480.0)])) == {"error"}
+
+
+def test_fast_pattern_becomes_legal_after_tempo_decrease():
+    assert _swing_speed(Timing(240.0, [])) == {"warn"}
+    assert _swing_speed(Timing(240.0, [BpmEvent(4.0, 120.0)])) == set()
