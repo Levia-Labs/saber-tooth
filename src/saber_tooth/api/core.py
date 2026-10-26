@@ -110,6 +110,8 @@ class Api:
 
     def _view(self, proposal: dict) -> dict:
         view = {k: proposal[k] for k in PROPOSAL_FIELDS}
+        if view["status"] == "applying":
+            view["status"] = "approved"
         if proposal["rule"] == CREATE_MAP:  # the UI shows the Expert notes, not a path
             view.update(difficulty="Expert", before=[], after=self._staged_notes(proposal))
         return view

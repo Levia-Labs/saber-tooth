@@ -212,10 +212,14 @@ class Service:
                 approved = self.store.approved(map_id)
                 if not approved:
                     raise ApplyConflict("no approved proposals to apply", [])
+                ids = [p["id"] for p in approved]
                 try:
                     target = self._write(map_id, approved)
                 except _Stale:  # a proposal was rejected mid-apply: redo without it
                     continue
+                except BaseException:
+                    self.store.release(ids)  # the claim taken by unchanged() is given back
+                    raise
                 break
             else:
                 raise ApplyConflict("proposals kept changing during apply; retry", [])
@@ -228,7 +232,10 @@ class Service:
 
     def _write(self, map_id: str, approved: list[dict]) -> Path:
         def unchanged() -> None:
-            if {p["id"] for p in self.store.approved(map_id)} != {p["id"] for p in approved}:
+            ids = [p["id"] for p in approved]
+            if {p["id"] for p in self.store.approved(map_id)} != set(ids):
+                raise _Stale
+            if not self.store.claim(ids):  # from here a reject gets 409 until written
                 raise _Stale
 
         if map_id.startswith(STAGING_PREFIX):

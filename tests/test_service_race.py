@@ -7,6 +7,8 @@ from saber_tooth.analyser_client import AnalyserError
 from saber_tooth.fixer import Flip, Move
 from saber_tooth.model import Color, Cut, Note
 from saber_tooth.service import ApplyConflict, map_id_for
+from saber_tooth.service import core as core_module
+from saber_tooth.store import ProposalApplied
 from tests.test_service import NAME, NOTE, _hashes, _make, _propose, levels, svc  # noqa: F401
 
 
@@ -94,3 +96,33 @@ def test_approved_proposals_that_together_create_a_finding_abort_apply(tmp_path)
     assert sorted(p.name for p in svc.levels.iterdir()) == folders
     assert _hashes(svc.levels / NAME) == hashes
     assert {p["status"] for p in svc.store.proposals(mid)} == {"approved"}
+
+
+def test_reject_after_final_check_is_refused_not_written_and_rejected(tmp_path, monkeypatch):
+    svc, mid = _make(tmp_path), map_id_for(NAME)
+    pid = _propose(svc, mid, [Flip("Hard", NOTE, Cut(0))])
+    real, seen = core_module.write_fixed, []
+
+    def racing(*args, **kwargs):
+        with pytest.raises(ProposalApplied):  # the reviewer rejects between check and write
+            svc.store.set_status(pid, "rejected")
+        seen.append(svc.store.proposal(pid)["status"])
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(core_module, "write_fixed", racing)
+    svc.apply(mid)
+    assert seen == ["applying"]
+    assert svc.store.proposal(pid)["status"] == "applied"
+
+
+def test_failed_write_releases_the_claim(tmp_path, monkeypatch):
+    svc, mid = _make(tmp_path), map_id_for(NAME)
+    pid = _propose(svc, mid, [Flip("Hard", NOTE, Cut(0))])
+
+    def boom(*args, **kwargs):
+        raise OSError("disk full")
+
+    monkeypatch.setattr(core_module, "write_fixed", boom)
+    with pytest.raises(OSError):
+        svc.apply(mid)
+    assert svc.store.proposal(pid)["status"] == "approved"

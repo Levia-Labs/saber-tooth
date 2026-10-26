@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 PROPOSAL_STATUSES = {"pending", "approved", "rejected", "applied"}
+CLAIMED = "applying"  # internal: approved rows an apply has claimed; the API shows "approved"
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS maps(
@@ -151,7 +152,7 @@ class Store:
         if status not in PROPOSAL_STATUSES:
             raise ValueError(f"invalid status: {status}")
         cur = self._exec(
-            "UPDATE proposals SET status=? WHERE id=? AND status != 'applied'",
+            "UPDATE proposals SET status=? WHERE id=? AND status NOT IN ('applied', 'applying')",
             (status, proposal_id),
         )
         if cur.rowcount == 0:
@@ -159,14 +160,43 @@ class Store:
                 raise ProposalApplied(proposal_id)
             raise KeyError(proposal_id)
 
+    def claim(self, proposal_ids: list[int]) -> bool:
+        """Atomically move all of these approved proposals to applying, or none."""
+        with self._lock:
+            try:
+                for pid in proposal_ids:
+                    cur = self._db.execute(
+                        "UPDATE proposals SET status=? WHERE id=? AND status='approved'",
+                        (CLAIMED, pid),
+                    )
+                    if cur.rowcount == 0:
+                        self._db.rollback()
+                        return False
+                self._db.commit()
+                return True
+            except BaseException:
+                self._db.rollback()
+                raise
+
+    def release(self, proposal_ids: list[int]) -> None:
+        """Return claimed proposals to approved after a failed apply."""
+        with self._lock:
+            for pid in proposal_ids:
+                self._db.execute(
+                    "UPDATE proposals SET status='approved' WHERE id=? AND status=?",
+                    (pid, CLAIMED),
+                )
+            self._db.commit()
+
     def mark_applied(self, proposal_ids: list[int]) -> None:
-        """Set every still-approved proposal applied in one transaction."""
+        """Set every approved or claimed proposal applied in one transaction."""
         with self._lock:
             try:
                 for pid in proposal_ids:
                     self._db.execute(
-                        "UPDATE proposals SET status='applied' WHERE id=? AND status='approved'",
-                        (pid,),
+                        "UPDATE proposals SET status='applied'"
+                        " WHERE id=? AND status IN ('approved', ?)",
+                        (pid, CLAIMED),
                     )
                 self._db.commit()
             except BaseException:
