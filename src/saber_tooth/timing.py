@@ -5,7 +5,12 @@ class Timing:
     """Beat <-> seconds conversion with piecewise-constant tempo."""
 
     def __init__(self, bpm: float, changes: list[BpmEvent]):
-        segs = [BpmEvent(0.0, bpm), *sorted(c for c in changes if c.beat > 0)]
+        # A change at beat 0 overrides the initial bpm; later duplicates win; beat < 0 is ignored.
+        by_beat = {0.0: bpm}
+        for change in sorted(changes):
+            if change.beat >= 0:
+                by_beat[change.beat] = change.bpm
+        segs = [BpmEvent(beat, b) for beat, b in sorted(by_beat.items())]
         self._segs: list[tuple[float, float, float]] = []  # (start_beat, start_s, bpm)
         start_s = 0.0
         for i, seg in enumerate(segs):
