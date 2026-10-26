@@ -42,6 +42,64 @@ def test_missing_or_empty_host_is_refused():
     assert not host_allowed(None, allowed) and not host_allowed("", allowed)
 
 
+FWD = {"x-forwarded-host": "saber.lan", "x-forwarded-proto": "https"}
+PROXY = ("10.0.0.5", 5000)
+
+
+def _client(svc, base, peer=PROXY):
+    return TestClient(create_app(svc), base_url=base, client=peer)
+
+
+def test_forwarded_headers_are_ignored_when_no_proxy_is_configured(svc, monkeypatch):
+    monkeypatch.setenv("SABER_ALLOWED_HOSTS", "saber.lan")
+    with _client(svc, "http://evil.example") as c:
+        assert c.get("/api/maps", headers=FWD).status_code == 403
+    with _client(svc, "http://localhost") as c:
+        spoof = {"origin": "https://saber.lan", **FWD}
+        assert c.post("/api/lightshow/learn", headers=spoof).status_code == 403
+
+
+def test_trusted_peer_takes_host_and_scheme_from_forwarded_headers(svc, monkeypatch):
+    monkeypatch.setenv("SABER_ALLOWED_HOSTS", "saber.lan")
+    monkeypatch.setenv("SABER_TRUSTED_PROXY_IPS", "192.168.0.0/16, 10.0.0.0/24")
+    with _client(svc, "http://backend:8100") as c:
+        assert c.get("/api/maps", headers=FWD).status_code == 200
+        same = {"origin": "https://saber.lan", **FWD}
+        assert c.post("/api/lightshow/learn", headers=same).status_code != 403
+        other = {"origin": "http://saber.lan", **FWD}
+        assert c.post("/api/lightshow/learn", headers=other).status_code == 403
+
+
+def test_untrusted_peer_cannot_spoof_forwarded_headers(svc, monkeypatch):
+    monkeypatch.setenv("SABER_TRUSTED_PROXY_IPS", "10.0.0.0/24")
+    spoof = {"x-forwarded-host": "localhost"}
+    for peer in (("203.0.113.9", 1), ("::1", 1), ("testclient", 1)):
+        with _client(svc, "http://evil.example", peer) as c:
+            assert c.get("/api/maps", headers=spoof).status_code == 403
+
+
+def test_trusted_proxy_uses_the_rightmost_forwarded_value(svc, monkeypatch):
+    monkeypatch.setenv("SABER_ALLOWED_HOSTS", "saber.lan")
+    monkeypatch.setenv("SABER_TRUSTED_PROXY_IPS", "10.0.0.5")
+    with _client(svc, "http://backend") as c:
+        forged = {"x-forwarded-host": "localhost, evil.example"}
+        assert c.get("/api/maps", headers=forged).status_code == 403
+        real = {"x-forwarded-host": "evil.example, saber.lan"}
+        assert c.get("/api/maps", headers=real).status_code == 200
+
+
+def test_trusted_peer_without_forwarded_headers_uses_the_request(svc, monkeypatch):
+    monkeypatch.setenv("SABER_TRUSTED_PROXY_IPS", "10.0.0.5")
+    with _client(svc, "http://localhost") as c:
+        assert c.get("/api/maps").status_code == 200
+
+
+def test_invalid_proxy_list_fails_loudly(svc, monkeypatch):
+    monkeypatch.setenv("SABER_TRUSTED_PROXY_IPS", "not-an-ip")
+    with pytest.raises(ValueError):
+        create_app(svc)
+
+
 def test_status_change_loses_the_race_against_apply(svc, monkeypatch):
     pid = _propose(svc, map_id_for(NAME), [Flip("Hard", NOTE, Cut(0))])
     stale = svc.store.proposal(pid)  # what set_status read before the apply committed

@@ -8,7 +8,13 @@ from fastapi.staticfiles import StaticFiles
 
 from saber_tooth.analyser_client import AnalyserClient
 from saber_tooth.api.core import Api, ApiError, _error
-from saber_tooth.api.hosts import allowed_hosts, host_allowed
+from saber_tooth.api.hosts import (
+    allowed_hosts,
+    effective_origin,
+    host_allowed,
+    peer_trusted,
+    trusted_proxies,
+)
 from saber_tooth.api.upload import _save_upload
 from saber_tooth.audio import encode_egg
 from saber_tooth.service import ApplyConflict, MapNotFound, MapUnreadable, Service
@@ -22,13 +28,19 @@ def create_app(service: Service) -> FastAPI:
     api = Api(service)
     app.state.api = api
     hosts = allowed_hosts()
+    proxies = trusted_proxies()
 
     @app.middleware("http")
     async def same_origin(request: Request, call_next):
-        if not host_allowed(request.headers.get("host"), hosts):
+        scheme, host = effective_origin(
+            request.headers,
+            request.url.scheme,
+            peer_trusted(request.client.host if request.client else None, proxies),
+        )
+        if not host_allowed(host, hosts):
             return _error(403, "host not allowed")
         origin = request.headers.get("origin")
-        here = f"{request.url.scheme}://{request.headers.get('host', '')}".lower()
+        here = f"{scheme}://{host}".lower()
         unsafe = request.method not in ("GET", "HEAD", "OPTIONS")
         if unsafe and origin is not None and origin.lower().rstrip("/") != here:
             return _error(403, "cross-origin request refused")
