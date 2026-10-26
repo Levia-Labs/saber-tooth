@@ -30,11 +30,11 @@ class Jobs:
             result = fn(*args)
             self._store.update_job(job_id, "done", result=result)
         except Exception as exc:
-            self._mark_failed(job_id, str(exc))
+            self._mark_failed(job_id, str(exc), getattr(exc, "result", None))
 
-    def _mark_failed(self, job_id: str, error: str) -> None:
+    def _mark_failed(self, job_id: str, error: str, result: Any = None) -> None:
         try:
-            self._store.update_job(job_id, "failed", error=error)
+            self._store.update_job(job_id, "failed", error=error, result=result)
         except BaseException:
             log.exception("could not mark job %s failed", job_id)
 

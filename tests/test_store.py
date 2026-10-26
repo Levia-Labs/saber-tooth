@@ -77,3 +77,42 @@ def test_add_proposals_is_atomic(store: Store) -> None:
         store.add_proposals("m1", [_prop(), {"rule": "r"}])
     store.upsert_map("m1", "f", "T", "M", "Env", None)
     assert store.proposals("m1") == []
+
+
+def _open_prop(rule="r"):
+    return {
+        "rule": rule,
+        "difficulty": "Hard",
+        "severity": "warn",
+        "summary": "s",
+        "ops": [],
+        "before": [],
+        "after": [],
+    }
+
+
+def test_replace_open_proposals_keeps_history_and_saves_scan(tmp_path):
+    from saber_tooth.store import Store
+
+    store = Store(tmp_path / "db.sqlite")
+    a, b, c, d = store.add_proposals("m", [_open_prop(), _open_prop(), _open_prop(), _open_prop()])
+    store.set_status(b, "approved")
+    store.set_status(c, "rejected")
+    store.mark_applied([d])
+    new = store.replace_open_proposals(
+        "m", [_open_prop("n")], {"findings": [{"k": 1}], "analysis": "p"}
+    )
+    statuses = {p["id"]: p["status"] for p in store.proposals("m")}
+    assert a not in statuses and b not in statuses
+    assert statuses[c] == "rejected" and statuses[d] == "applied" and statuses[new[0]] == "pending"
+    assert store.scan_info("m") == {"findings": [{"k": 1}], "analysis": "p"}
+
+
+def test_prune_maps_drops_missing_rows(tmp_path):
+    from saber_tooth.store import Store
+
+    store = Store(tmp_path / "db.sqlite")
+    store.upsert_map("a", "A", "A", "", "", None)
+    store.upsert_map("b", "B", "B", "", "", None)
+    store.prune_maps({"a"})
+    assert [m["id"] for m in store.list_maps()] == ["a"]

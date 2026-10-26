@@ -23,7 +23,7 @@ def _fake_encode(wav: Path, egg: Path) -> None:
     shutil.copyfile(wav, egg)
 
 
-def _build_levels(levels: Path, extra: list[Note] | None = None) -> None:
+def _build_levels(levels: Path, extra=None, env: str | None = None) -> None:
     folder = levels / NAME
     shutil.copytree(FIXTURE, folder)
     bm = load_map(folder)
@@ -31,6 +31,8 @@ def _build_levels(levels: Path, extra: list[Note] | None = None) -> None:
         d = copy.deepcopy(bm.difficulties["Hard"])
         d.name, d.filename = n, f"{n}.dat"
         bm.difficulties[n] = d
+    if env:
+        bm.info.environment = env
     if extra:
         bm.difficulties["Hard"].notes.extend(extra)
     build = levels.parent / "build"
@@ -48,10 +50,10 @@ def _client(tmp_path: Path, handler=None) -> AnalyserClient:
     return AnalyserClient("http://analyser", tmp_path / "up", httpx.MockTransport(handler or down))
 
 
-def _make(tmp_path: Path, extra=None, handler=None) -> Service:
+def _make(tmp_path: Path, extra=None, handler=None, env=None) -> Service:
     levels = tmp_path / "levels"
     levels.mkdir()
-    _build_levels(levels, extra)
+    _build_levels(levels, extra, env)
     data = tmp_path / "data"
     data.mkdir()
     svc = Service(levels, data, Store(data / "s.db"), _client(tmp_path, handler), _fake_encode)

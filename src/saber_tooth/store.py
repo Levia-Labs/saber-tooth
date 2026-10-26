@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS proposals(
     id INTEGER PRIMARY KEY AUTOINCREMENT, map_id TEXT, rule TEXT,
     difficulty TEXT, severity TEXT, summary TEXT, ops_json TEXT,
     before_json TEXT, after_json TEXT, status TEXT, created_at TEXT);
+CREATE TABLE IF NOT EXISTS scans(
+    map_id TEXT PRIMARY KEY, keys_json TEXT, analysis TEXT, scanned_at TEXT);
 """
 
 
@@ -69,6 +71,20 @@ class Store:
         return [dict(r) for r in self._query("SELECT * FROM maps ORDER BY id")]
 
     def add_proposals(self, map_id: str, proposals: list[dict]) -> list[int]:
+        return self._insert(map_id, proposals, delete_open=False, scan=None)
+
+    def replace_open_proposals(
+        self, map_id: str, proposals: list[dict], scan: dict | None = None
+    ) -> list[int]:
+        """Atomically drop pending and approved proposals, insert new ones, save the scan.
+
+        scan is {"findings": list[dict], "analysis": str | None}; history (rejected, applied) stays.
+        """
+        return self._insert(map_id, proposals, delete_open=True, scan=scan)
+
+    def _insert(
+        self, map_id: str, proposals: list[dict], delete_open: bool, scan: dict | None
+    ) -> list[int]:
         now = _now()
         rows = [
             (
@@ -87,6 +103,17 @@ class Store:
         ids: list[int] = []
         with self._lock:
             try:
+                if delete_open:
+                    self._db.execute(
+                        "DELETE FROM proposals WHERE map_id=? AND status IN ('pending','approved')",
+                        (map_id,),
+                    )
+                if scan is not None:
+                    self._db.execute(
+                        "INSERT OR REPLACE INTO scans(map_id, keys_json, analysis, scanned_at)"
+                        " VALUES(?,?,?,?)",
+                        (map_id, json.dumps(scan["findings"]), scan.get("analysis"), now),
+                    )
                 for row in rows:
                     cur = self._db.execute(
                         "INSERT INTO proposals(map_id, rule, difficulty, severity, summary,"
@@ -118,6 +145,33 @@ class Store:
         cur = self._exec("UPDATE proposals SET status=? WHERE id=?", (status, proposal_id))
         if cur.rowcount == 0:
             raise KeyError(proposal_id)
+
+    def mark_applied(self, proposal_ids: list[int]) -> None:
+        """Set every proposal applied in one transaction."""
+        with self._lock:
+            try:
+                for pid in proposal_ids:
+                    self._db.execute("UPDATE proposals SET status='applied' WHERE id=?", (pid,))
+                self._db.commit()
+            except BaseException:
+                self._db.rollback()
+                raise
+
+    def scan_info(self, map_id: str) -> dict | None:
+        rows = self._query("SELECT * FROM scans WHERE map_id=?", (map_id,))
+        if not rows:
+            return None
+        return {"findings": json.loads(rows[0]["keys_json"]), "analysis": rows[0]["analysis"]}
+
+    def prune_maps(self, keep: set[str]) -> None:
+        """Drop map rows (and their scans) whose id is not in keep."""
+        with self._lock:
+            ids = [r["id"] for r in self._db.execute("SELECT id FROM maps").fetchall()]
+            for mid in ids:
+                if mid not in keep:
+                    self._db.execute("DELETE FROM maps WHERE id=?", (mid,))
+                    self._db.execute("DELETE FROM scans WHERE map_id=?", (mid,))
+            self._db.commit()
 
     def approved(self, map_id: str) -> list[dict]:
         return [p for p in self.proposals(map_id) if p["status"] == "approved"]

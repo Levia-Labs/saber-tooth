@@ -1,5 +1,6 @@
 from concurrent.futures import Future
 from pathlib import Path
+from typing import ClassVar
 
 import pytest
 
@@ -47,3 +48,19 @@ def test_unserialisable_result_fails(env) -> None:
     jid = jobs.submit("scan", lambda: {1, 2})
     _wait(jobs, jid)
     assert store.job(jid)["status"] == "failed"
+
+
+def test_failed_job_keeps_result_payload(env) -> None:
+    store, jobs = env
+
+    class Boom(Exception):
+        result: ClassVar = {"conflict": [1, 2]}
+
+    def fail():
+        raise Boom("nope")
+
+    jid = jobs.submit("apply", fail)
+    _wait(jobs, jid)
+    job = store.job(jid)
+    assert job["status"] == "failed" and job["error"] == "nope"
+    assert job["result"] == {"conflict": [1, 2]}
