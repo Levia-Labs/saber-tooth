@@ -50,7 +50,8 @@ def run_checks(
 ) -> list[Finding]:
     out: list[Finding] = []
     for rule_id, rule in MAP_RULES.items():
-        if rules is None or rule_id in rules:
+        wanted = rule_id in rules if rules is not None else difficulty is None
+        if wanted:
             out.extend(rule(beatmap))
     for name, d in beatmap.difficulties.items():
         profile = PROFILES.get(name)

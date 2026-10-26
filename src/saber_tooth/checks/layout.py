@@ -26,13 +26,21 @@ def _dist(a: Note, b: Note) -> float:
     return math.dist((a.x, a.y), (b.x, b.y))
 
 
+def _spread_problem(s: Swing) -> str | None:
+    if any(_dist(a, b) > MAX_SPREAD for a, b in combinations(s.notes, 2)):
+        return "same-colour notes are on separate parts of the screen"
+    return None
+
+
 def _stack_problem(s: Swing) -> str | None:
     vecs = [CUT_VECTORS[n.cut] for n in s.notes if n.cut != Cut.ANY]
+    if not vecs:  # all dots: no direction of their own, only spread counts
+        return _spread_problem(s)
     if any(_angle(u, v) > MAX_CUT_ANGLE for u, v in combinations(vecs, 2)):
         return "notes of one swing have conflicting cut directions"
+    if problem := _spread_problem(s):
+        return problem
     pairs = list(combinations(s.notes, 2))
-    if any(_dist(a, b) > MAX_SPREAD for a, b in pairs):
-        return "same-colour notes are on separate parts of the screen"
     a, b = max(pairs, key=lambda p: _dist(*p))
     line = (b.x - a.x, b.y - a.y)
     if s.vector and any(line) and _line_angle(line, s.vector) > MAX_CUT_ANGLE:
@@ -52,11 +60,12 @@ def stack_conflict(d: Difficulty, swings, timing: Timing, profile: Profile, anal
 
 
 def crossover(d: Difficulty, swings, timing: Timing, profile: Profile, analysis=None):
-    reds = [n for n in d.notes if n.color == Color.RED]
-    blues = [n for n in d.notes if n.color == Color.BLUE]
+    notes = sorted(d.notes)
+    reds = [n for n in notes if n.color == Color.RED]
+    blues = [n for n in notes if n.color == Color.BLUE]
     secs = [timing.to_seconds(n.beat) for n in blues]
     window = profile.warn.cross_window_s
-    out = []
+    best: dict[Note, tuple[float, Finding]] = {}  # completing note -> closest pair
     for r in reds:
         rs = timing.to_seconds(r.beat)
         lo, hi = bisect_left(secs, rs - window), bisect_right(secs, rs + window)
@@ -65,15 +74,19 @@ def crossover(d: Difficulty, swings, timing: Timing, profile: Profile, analysis=
             far = r.x - b.x >= 2 and r.x >= 2 and b.x <= 1
             if not (far or (same and r.x > b.x and r.y == b.y)):
                 continue
-            sev = "error" if abs(rs - bs) <= profile.error.cross_window_s else "warn"
+            dt = abs(rs - bs)
+            sev = "error" if dt < profile.error.cross_window_s else "warn"
             start, end = min(r.beat, b.beat), max(r.beat, b.beat)
-            out.append(Finding("crossover", d.name, start, end, sev, "hands cross over", (r, b)))
-    return out
+            later = r if (r.beat, 0) > (b.beat, 1) else b
+            f = Finding("crossover", d.name, start, end, sev, "hands cross over", (r, b))
+            if later not in best or dt < best[later][0]:
+                best[later] = (dt, f)
+    return [f for _, f in best.values()]
 
 
 def vision_block(d: Difficulty, swings, timing: Timing, profile: Profile, analysis=None):
     out = []
-    notes = d.notes
+    notes = sorted(d.notes)
     secs = [timing.to_seconds(n.beat) for n in notes]
     for i, n in enumerate(notes):
         if n.x not in (1, 2) or n.y != 1:

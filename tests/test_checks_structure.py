@@ -85,3 +85,10 @@ def test_registry_is_extensible_and_receives_analysis():
         assert seen == ["A"]
     finally:
         del RULES["probe"]
+
+
+def test_difficulty_filter_skips_map_rules_unless_named():
+    bm = make_map(names=("Expert",))
+    assert run_checks(bm, difficulty="Expert") == []
+    named = run_checks(bm, difficulty="Expert", rules={"missing-difficulty"})
+    assert len(named) == 4
