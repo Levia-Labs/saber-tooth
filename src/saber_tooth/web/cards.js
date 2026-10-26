@@ -8,7 +8,7 @@ let resizeTimer;
 function redrawAll() {
   for (const item of drawn) {
     if (!item.canvas.isConnected) drawn.delete(item);
-    else drawTimeline(item.canvas, item.before, item.after);
+    else drawTimeline(item.canvas, item.before, item.after, item.opts);
   }
 }
 
@@ -33,7 +33,8 @@ export function proposalCard(p, onChange, notesFilter) {
     role: "img",
     "aria-label": `Before and after note grids for ${p.summary}`,
   });
-  const textOnly = isNotesless(before, after);
+  const opts = { wallsBefore: p.walls_before || [], wallsAfter: p.walls_after || [] };
+  const textOnly = isNotesless(before, after, [...opts.wallsBefore, ...opts.wallsAfter]);
   const body = textOnly ? el("p", { class: "muted" }, p.summary) : canvas;
   const approve = el(
     "button",
@@ -86,8 +87,8 @@ export function proposalCard(p, onChange, notesFilter) {
   requestAnimationFrame(() => {
     if (!canvas.isConnected) return;
     for (const item of drawn) if (!item.canvas.isConnected) drawn.delete(item);
-    drawn.add({ canvas, before, after });
-    drawTimeline(canvas, before, after);
+    drawn.add({ canvas, before, after, opts });
+    drawTimeline(canvas, before, after, opts);
   });
   return card;
 }

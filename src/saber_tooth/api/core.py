@@ -108,8 +108,14 @@ class Api:
             return []
         return [note_to_dict(n) for n in notes]
 
+    @staticmethod
+    def _deleted_walls(proposal: dict) -> list[dict]:
+        ops = proposal.get("ops") or []
+        return [dict(op["wall"]) for op in ops if op.get("op") == "delete-wall"]
+
     def _view(self, proposal: dict) -> dict:
         view = {k: proposal[k] for k in PROPOSAL_FIELDS}
+        view.update(walls_before=self._deleted_walls(proposal), walls_after=[])
         if view["status"] == "applying":
             view["status"] = "approved"
         if proposal["rule"] == CREATE_MAP:  # the UI shows the Expert notes, not a path

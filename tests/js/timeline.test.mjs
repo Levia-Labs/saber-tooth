@@ -4,7 +4,9 @@ import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
 
 const url = pathToFileURL(resolve("src/saber_tooth/web/timeline.js")).href;
-const { isNotesless, beatWindow, sliceBeats, layout, timelineHeight } = await import(url);
+const { isNotesless, beatWindow, sliceBeats, layout, timelineHeight, wallRects } = await import(
+  url
+);
 
 test("beatWindow pads to whole beats", () => {
   assert.deepEqual(beatWindow([{ beat: 2.5 }], [{ beat: 4.2 }]), { start: 2, end: 5 });
@@ -44,4 +46,19 @@ test("timelineHeight uses the taller panel", () => {
 test("isNotesless is true only when both sides are empty", () => {
   assert.equal(isNotesless([], []), true);
   assert.equal(isNotesless([{ beat: 1 }], []), false);
+});
+
+test("wallRects maps walls to clipped grid rectangles", () => {
+  const g = { x0: 10, y0: 20, cell: 10 };
+  const wall = { beat: 4, x: 0, y: 0, duration: 2, width: 1, height: 5 };
+  assert.deepEqual(wallRects([wall], { start: 5, end: 5 }, g), [{ x: 10, y: 20, w: 10, h: 30 }]);
+  const crouch = { beat: 4, x: 1, y: 2, duration: 1, width: 2, height: 3 };
+  assert.deepEqual(wallRects([crouch], { start: 4, end: 4 }, g), [{ x: 20, y: 20, w: 20, h: 10 }]);
+});
+
+test("wallRects skips walls outside the window", () => {
+  const g = { x0: 0, y0: 0, cell: 10 };
+  const wall = { beat: 4, x: 0, y: 0, duration: 2, width: 1, height: 5 };
+  assert.deepEqual(wallRects([wall], { start: 7, end: 8 }, g), []);
+  assert.deepEqual(wallRects([], { start: 0, end: 1 }, g), []);
 });
