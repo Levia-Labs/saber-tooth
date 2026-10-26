@@ -1,3 +1,4 @@
+import dataclasses
 import shutil
 import wave
 from pathlib import Path
@@ -96,3 +97,45 @@ def test_assemble_raises_on_findings(tmp_path, monkeypatch):
     monkeypatch.setattr(assemble, "run_checks", lambda *a, **k: bad)
     with pytest.raises(ValueError, match="crossover"):
         assemble_new(_analysis(_wav(tmp_path / "a.wav")), None, tmp_path / "out", 1, _copy)
+
+
+def test_folder_name_non_ascii_keeps_letters():
+    got = folder_name("Bodø Café 東京")
+    assert "(Bodø Café 東京 - saber-tooth)" in got
+    assert got.startswith("st-bod-cafe (")
+
+
+def test_folder_name_degenerate_and_capped():
+    assert folder_name("--") == "st-untitled (-- - saber-tooth)"
+    assert folder_name("???") == "st-untitled (Untitled - saber-tooth)"
+    got = folder_name("ab " * 60)
+    title = got.split("(", 1)[1].rsplit(" - ", 1)[0]
+    assert len(title) <= 80
+    assert len(got.split(" (", 1)[0]) <= 3 + 40
+    assert folder_name("a\nb\tc.") == "st-a-b-c (a b c - saber-tooth)"
+
+
+def test_cover_survives_control_and_non_latin(tmp_path):
+    a = _analysis(_wav(tmp_path / "a.wav"))
+    a = dataclasses.replace(a, name="Bad\nTitle\t東京\x00")
+    assemble_new(a, None, tmp_path / "out", 1, _copy)
+    assert (tmp_path / "out" / "cover.png").is_file()
+
+
+def test_failed_encode_leaves_nothing(tmp_path):
+    def boom(wav, egg):
+        raise RuntimeError("x")
+
+    out = tmp_path / "out"
+    with pytest.raises(RuntimeError):
+        assemble_new(_analysis(_wav(tmp_path / "a.wav")), None, out, 1, boom)
+    assert not out.exists()
+    assert not (tmp_path / ".out.partial").exists()
+
+
+def test_existing_out_refused(tmp_path):
+    out = tmp_path / "out"
+    out.mkdir()
+    with pytest.raises(FileExistsError):
+        assemble_new(_analysis(_wav(tmp_path / "a.wav")), None, out, 1, _copy)
+    assert not (tmp_path / ".out.partial").exists()

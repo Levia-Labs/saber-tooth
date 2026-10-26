@@ -1,5 +1,7 @@
 import logging
 import re
+import shutil
+import unicodedata
 import wave
 from collections.abc import Callable
 from pathlib import Path
@@ -24,16 +26,27 @@ COVER_FILE = "cover.png"
 COVER_SIZE = 512
 PREVIEW_FRACTION = 0.25
 PREVIEW_DURATION = 10
+TITLE_MAX = 80
+SLUG_MAX = 40
+_FORBIDDEN = re.compile(r'[<>:"/\\|?*]')
+_CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f]")
+
+
+def _text(title: str) -> str:
+    """Whitespace-collapsed text with control characters removed."""
+    return " ".join(_CONTROL.sub("", title).split())
 
 
 def _clean(title: str) -> str:
-    return " ".join(re.sub(r"[^A-Za-z0-9 -]", "", title).split())
+    text = _text(_FORBIDDEN.sub("", title))
+    return text[:TITLE_MAX].rstrip(". ")
 
 
 def folder_name(title: str) -> str:
     clean = _clean(title) or "Untitled"
-    slug = re.sub(r"[^a-z0-9]+", "-", clean.lower()).strip("-") or "untitled"
-    return f"st-{slug} ({clean} - {MAPPER})"
+    ascii_ = unicodedata.normalize("NFKD", clean).encode("ascii", "ignore").decode()
+    slug = re.sub(r"[^a-z0-9]+", "-", ascii_.lower()).strip("-")[:SLUG_MAX].strip("-")
+    return f"st-{slug or 'untitled'} ({clean} - {MAPPER})"
 
 
 def _cover(path: Path, title: str) -> None:
@@ -42,6 +55,7 @@ def _cover(path: Path, title: str) -> None:
     for y in range(COVER_SIZE):
         shade = 12 + 36 * y // COVER_SIZE
         draw.line([(0, y), (COVER_SIZE, y)], fill=(shade // 2, shade // 3, shade + 8))
+    title = _text(title).encode("latin-1", "replace").decode("latin-1")
     lines = [title[i : i + 28] for i in range(0, len(title), 28)][:6] or [""]
     top = COVER_SIZE // 2 - 6 * len(lines)
     for k, line in enumerate(lines):
@@ -73,17 +87,8 @@ def _apply_lightshow(bm: Beatmap, timing, templates: Templates | None, a: Analys
             d.raw[key] = groups.get(key, [])
 
 
-def assemble_new(
-    a: Analysis,
-    templates: Templates | None,
-    out: Path,
-    seed: int,
-    encode: Callable[[Path, Path], None],
-) -> Beatmap:
-    if a.audio is None or not a.audio.is_file():
-        raise ValueError("analysis has no audio file")
+def _build(a: Analysis, audio: Path, templates: Templates | None, seed: int) -> Beatmap:
     timing, diffs = generate_all(a, seed)
-    start = round(_length(a, a.audio) * PREVIEW_FRACTION, 3)
     info = MapInfo(
         song_name=a.name,
         sub_name="",
@@ -92,7 +97,7 @@ def assemble_new(
         bpm=tempo_map(a)[0],
         song_file=SONG_FILE,
         cover_file=COVER_FILE,
-        preview_start=start,
+        preview_start=round(_length(a, audio) * PREVIEW_FRACTION, 3),
         preview_duration=PREVIEW_DURATION,
         environment=VANILLA_ENVIRONMENT,
     )
@@ -105,8 +110,30 @@ def assemble_new(
             f"generated map has {len(findings)} findings; first: "
             f"{first.rule} {first.difficulty} @ {first.beat_start}: {first.message}"
         )
-    out.mkdir(parents=True, exist_ok=True)
-    encode(a.audio, out / SONG_FILE)
-    _cover(out / COVER_FILE, a.name)
-    write_map(bm, out, None)
+    return bm
+
+
+def assemble_new(
+    a: Analysis,
+    templates: Templates | None,
+    out: Path,
+    seed: int,
+    encode: Callable[[Path, Path], None],
+) -> Beatmap:
+    if a.audio is None or not a.audio.is_file():
+        raise ValueError("analysis has no audio file")
+    if out.exists():
+        raise FileExistsError(str(out))
+    bm = _build(a, a.audio, templates, seed)
+    tmp = out.parent / f".{out.name}.partial"
+    shutil.rmtree(tmp, ignore_errors=True)
+    tmp.mkdir(parents=True)
+    try:
+        encode(a.audio, tmp / SONG_FILE)
+        _cover(tmp / COVER_FILE, a.name)
+        write_map(bm, tmp, None)
+        tmp.rename(out)
+    except BaseException:
+        shutil.rmtree(tmp, ignore_errors=True)
+        raise
     return bm
