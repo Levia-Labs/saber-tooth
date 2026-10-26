@@ -90,6 +90,26 @@ def test_gen_url_posts_and_returns_id():
     assert seen == {"url": "http://api:1/api/generate", "body": {"url": "http://y/t"}}
 
 
+def _gen(body, status=200):
+    transport = httpx.MockTransport(lambda r: httpx.Response(status, json=body))
+    return cli.gen_url("http://y/t", "http://api:1", transport)
+
+
+def test_gen_url_reads_job_key_with_fallbacks():
+    assert _gen({"job": "j1"}) == "j1"
+    assert _gen({"job_id": "j2"}) == "j2"
+
+
+def test_gen_url_non_dict_body_is_error(capsys, monkeypatch):
+    with pytest.raises(ValueError, match="unexpected response"):
+        _gen(["x"])
+    real = cli.gen_url
+    bad = httpx.MockTransport(lambda r: httpx.Response(200, json="oops"))
+    monkeypatch.setattr(cli, "gen_url", lambda url, api, transport=None: real(url, api, bad))
+    assert main(["gen-url", "http://y"]) == 1
+    assert capsys.readouterr().err.startswith("error: ")
+
+
 def test_gen_url_http_error(capsys, monkeypatch):
     def fail(url, api, transport=None):
         raise httpx.ConnectError("no")
@@ -102,3 +122,19 @@ def test_gen_url_http_error(capsys, monkeypatch):
 def test_no_command_exits():
     with pytest.raises(SystemExit):
         main([])
+
+
+def test_scan_api_posts_and_prints_job(capsys, monkeypatch):
+    seen = []
+
+    def handler(request):
+        seen.append((request.method, request.url.raw_path.decode()))
+        return httpx.Response(200, json={"job": "j9"})
+
+    assert cli.scan_api("abc/def", "http://api:1", httpx.MockTransport(handler)) == "j9"
+    assert seen == [("POST", "/api/maps/abc%2Fdef/scan")]
+    real = cli.scan_api
+    bad = httpx.MockTransport(lambda r: httpx.Response(200, json=[1]))
+    monkeypatch.setattr(cli, "scan_api", lambda m, a: real(m, a, bad))
+    assert main(["scan-api", "abc"]) == 1
+    assert capsys.readouterr().err.startswith("error: ")

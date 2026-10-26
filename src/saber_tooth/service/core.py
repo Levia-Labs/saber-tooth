@@ -45,7 +45,7 @@ class Service:
         self.store = store
         self.client = client
         self.encode = encode
-        self.uploads = Path(uploads) if uploads else getattr(client, "_uploads", None)
+        self.uploads = Path(uploads) if uploads else getattr(client, "uploads", None)
         self._lock = threading.Lock()
 
     # library -----------------------------------------------------------------

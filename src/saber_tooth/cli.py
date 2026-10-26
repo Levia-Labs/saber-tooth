@@ -5,6 +5,7 @@ import json
 import sys
 from collections import defaultdict
 from pathlib import Path
+from urllib.parse import quote
 
 import httpx
 
@@ -114,7 +115,32 @@ def gen_url(url: str, api: str, transport: httpx.BaseTransport | None = None) ->
         resp = client.post(f"{api.rstrip('/')}/api/generate", json={"url": url})
         resp.raise_for_status()
         data = resp.json()
-    return str(data.get("id") or data["job_id"])
+    if not isinstance(data, dict):
+        raise ValueError(f"unexpected response: {str(data)[:80]}")
+    job = data.get("job") or data.get("id") or data.get("job_id")
+    if job is None:
+        raise ValueError(f"unexpected response: {str(data)[:80]}")
+    return str(job)
+
+
+def scan_api(map_id: str, api: str, transport: httpx.BaseTransport | None = None) -> str:
+    """Ask the running API to scan one map and return the job id."""
+    with httpx.Client(transport=transport, timeout=30) as client:
+        resp = client.post(f"{api.rstrip('/')}/api/maps/{quote(map_id, safe='')}/scan")
+        resp.raise_for_status()
+        data = resp.json()
+    if not isinstance(data, dict) or data.get("job") is None:
+        raise ValueError(f"unexpected response: {str(data)[:80]}")
+    return str(data["job"])
+
+
+def _cmd_scan_api(args: argparse.Namespace) -> int:
+    try:
+        print(scan_api(args.map_id, args.api))
+    except (httpx.HTTPError, ValueError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    return 0
 
 
 def _cmd_gen_url(args: argparse.Namespace) -> int:
@@ -147,6 +173,10 @@ def _parser() -> argparse.ArgumentParser:
     g.add_argument("url")
     g.add_argument("--api", default=DEFAULT_API)
     g.set_defaults(func=_cmd_gen_url)
+    sa = sub.add_parser("scan-api", help="ask the running API to scan one map")
+    sa.add_argument("map_id")
+    sa.add_argument("--api", default=DEFAULT_API)
+    sa.set_defaults(func=_cmd_scan_api)
     return p
 
 

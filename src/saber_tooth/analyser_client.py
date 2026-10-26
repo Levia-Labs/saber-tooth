@@ -24,7 +24,7 @@ class AnalyserClient:
         transport: httpx.BaseTransport | None = None,
         timeout: float = 1800.0,
     ) -> None:
-        self._uploads = uploads
+        self.uploads = uploads
         self._client = httpx.Client(
             base_url=base_url,
             transport=transport,
@@ -50,7 +50,7 @@ class AnalyserClient:
 
     def _finish(self, response: httpx.Response) -> Analysis:
         name = _project_name(response.headers.get("content-disposition", ""))
-        root = self._uploads.resolve()
+        root = self.uploads.resolve()
         folder = (root / name).resolve()
         if folder.parent != root:
             raise AnalyserError(f"project name escapes uploads: {name!r}")
