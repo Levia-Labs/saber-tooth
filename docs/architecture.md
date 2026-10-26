@@ -23,7 +23,7 @@ Where these goals compete with implementation simplicity, the quality bar wins.
 
 ## Modules
 
-The package is `src/saber_tooth/`. Each file stays under 300 lines.
+The package is `src/saber_tooth/`. Each file stays under 300 lines. Larger parts are packages: `mapio`, `checks`, `generator`, `fixer`, `lightshow`, `service`, `api` and `web`.
 
 1. `mapio`: parses Info v2 and v4 and difficulty v2, v3 and v4 into one internal model (`Map`, `Difficulty`, `Note`, `Bomb`, `Wall`, `BasicEvent`, `EventBoxGroup`, `ColorScheme`). Writes difficulty v3.3.0 and Info v2.1.0. Unknown keys are preserved when the source is v3.
 2. `analyser`: HTTP client for beat-analyser (`upload`, `download_yt`), reader for a project folder (CSV parsing and metadata), and wav-to-ogg conversion through ffmpeg into `song.egg`.
@@ -31,9 +31,11 @@ The package is `src/saber_tooth/`. Each file stays under 300 lines.
 4. `checks`: one pure function per rule. Each returns findings with rule id, difficulty, beat range, severity and note references.
 5. `fixer`: turns each finding into a proposal with a minimal list of operations: `move`, `recolor`, `flip`, `delete`, `fill`, `add-difficulty`, `apply-lightshow`. A proposal stores a before and after excerpt.
 6. `lightshow`: the learner indexes installed maps per environment and stores templates in `/data/lightshow.json`. The applier picks an environment and template, retimes it onto the beat grid, and emits basic events, v3 event box groups and a colour scheme.
-7. `store`: SQLite tables `maps`, `jobs` and `proposals`. Proposal status is `pending`, `approved`, `rejected` or `applied`.
-8. `api`: FastAPI routes, described in [api.md](api.md).
-9. `web`: static HTML and vanilla JS with a library view, a map detail view with findings and proposals, a before and after note timeline on a canvas, and a new-map form.
+7. `store`: SQLite tables `maps`, `jobs`, `proposals` and `scans`. Proposal status is `pending`, `approved`, `rejected` or `applied`. The `scans` table holds, per map, the findings of the last scan (the baseline) and the name of the analyser project used.
+8. `service`: library refresh, scan, generate, apply and learn, over the store. The library is indexed at start and again whenever the set of folders under `/levels` changes, which `GET /api/maps` checks before it answers. Applying a map also refreshes it.
+9. `jobs`: in-process worker with one thread. A job ends `done` or `failed`; a failed apply stores the conflicting proposal ids in its result.
+10. `api`: FastAPI routes, described in [api.md](api.md). Unsafe methods carrying an `Origin` header that differs from the host get 403. Ids are matched against fixed patterns before any lookup.
+11. `web`: static HTML and vanilla JS with a library view, a map detail view with findings and proposals, a before and after note timeline on a canvas, and a new-map form.
 
 ## Check rules
 
@@ -47,6 +49,10 @@ The package is `src/saber_tooth/`. Each file stays under 300 lines.
 8. `empty-gap`: at least N beats (default 8) without notes while onset density from the analysis exceeds a threshold.
 9. `missing-difficulty`: one of the five Standard difficulties is absent.
 10. `default-environment`: `DefaultEnvironment`, or no lighting events at all.
+
+## Finding identity
+
+The fixer and apply decide whether a change added a problem by comparing findings before and after. Two findings are the same when their difficulty and rule match, the set of hand colours involved matches, and their beat ranges overlap or touch. The notes themselves are not part of the identity, because a valid fix moves, recolours or flips notes and would otherwise look like a new finding. See [ADR 0007](adr/0007-finding-identity-by-rule-colours-and-overlap.md).
 
 ## Data flow
 
@@ -62,16 +68,17 @@ The package is `src/saber_tooth/`. Each file stays under 300 lines.
    2. Each finding becomes a pending proposal.
    3. The user approves or rejects each one, or approves all for the map.
    4. Apply copies the original folder to staging, merges the approved operations and re-runs the checks.
-   5. If any applied operation produces a new finding, apply aborts and reports it.
+   5. The result is compared with the findings stored by the last scan. Any remaining error, or any finding that is not the same as a stored one, aborts apply, writes nothing and names the conflicting proposals.
    6. Otherwise staging is renamed to `<original name> [saber-tooth]` in `/levels`, and the Info `_songName` gains a ` [saber-tooth]` suffix.
 
 ## Error handling
 
 1. beat-analyser unreachable or returning an error: the job state becomes `failed` with the upstream message.
-2. An unparsable map is listed with a parse error and skipped by scan.
+2. An unparsable map is listed with a parse error. Scanning it answers 409.
 3. All writes go to a temporary folder first, then an atomic rename into `/levels`.
 4. A target folder name that already exists is refused. Re-applying after a previous apply writes to `<name> [saber-tooth 2]`.
-5. Nothing writes inside an original map folder. A test asserts this through a write guard in the filesystem layer.
+5. Only YouTube URLs are accepted for generation, and uploads are limited by size and extension. See [ADR 0008](adr/0008-youtube-only-url-intake.md).
+6. Nothing writes inside an original map folder. A test asserts this through a write guard in the filesystem layer.
 
 ## Testing
 

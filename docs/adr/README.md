@@ -8,3 +8,5 @@ Each record has Context, Decision and Consequences.
 4. [0004 Rule-based generator](0004-rule-based-generator.md)
 5. [0005 beat-analyser integration through a shared volume](0005-beat-analyser-via-shared-volume.md)
 6. [0006 Single-process FastAPI with SQLite](0006-single-process-fastapi-sqlite.md)
+7. [0007 Finding identity by rule, colours and overlapping beats](0007-finding-identity-by-rule-colours-and-overlap.md)
+8. [0008 YouTube-only URL intake](0008-youtube-only-url-intake.md)

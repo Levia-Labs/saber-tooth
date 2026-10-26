@@ -52,7 +52,7 @@ Run `task --list` for every task. Settings (`LEVELS_DIR`, `SABER_PORT`, `YT_MAX_
 
 ## Status
 
-Version 1 is in progress on the `feat/v1` branch. Map reading, checks, the fixer, the generator, the lightshow learner and the web frontend exist in the source tree. The compose stack is not committed yet. Open work is tracked in [TODO.md](TODO.md).
+Version 1 is feature-complete on the `feat/v1` branch and pending final review. Map reading, checks, the fixer, the generator, the lightshow learner, the HTTP API, the web frontend and the compose stack are committed. Open work is tracked in [TODO.md](TODO.md).
 
 ## Part of Levia Labs
 
