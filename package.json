@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test:js": "node --test \"tests/js/**/*.test.mjs\"",
     "lint:js": "eslint --config .crepidoma/configs/eslint.config.js src/saber_tooth/web"
   },
   "devDependencies": {

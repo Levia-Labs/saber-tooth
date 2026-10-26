@@ -3,6 +3,9 @@ tasks:
   test:
     desc: "Run the pytest suite. Usage: task st:test [-- <pytest args>]"
     cmds: ["uv run pytest -q {{.CLI_ARGS}}"]
+  js-test:
+    desc: "Run the node:test suite for web JS. Usage: task st:js-test"
+    cmds: ["npm run test:js"]
   check:
     desc: "Run quality checks on one map folder. Usage: task st:check -- <folder>"
     cmds: ["uv run saber-tooth check {{.CLI_ARGS}}"]
