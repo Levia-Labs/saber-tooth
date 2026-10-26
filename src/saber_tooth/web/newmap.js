@@ -1,5 +1,5 @@
 /* global document, FormData */
-import { api, el, guard, jobOutcome, runJob, setNav, setStatus } from "./util.js";
+import { api, el, jobButton, jobGuard, jobOutcome, runJob, setNav, setStatus } from "./util.js";
 import { proposalCard } from "./cards.js";
 
 const main = document.getElementById("main");
@@ -19,12 +19,11 @@ export function showNew() {
     "aria-label": "Audio file",
   });
   const out = el("div");
-  const go = el(
-    "button",
+  const go = jobButton(
     {
       type: "button",
       class: "primary",
-      onclick: guard(async () => {
+      onclick: jobGuard(async () => {
         let body;
         if (file.files.length) {
           body = new FormData();
@@ -37,7 +36,7 @@ export function showNew() {
         out.replaceChildren();
         const job = await runJob("Generate", await api.generate(body));
         const mapId = job.result && job.result.map_id;
-        if (mapId === undefined) {
+        if (mapId === undefined || mapId === null) {
           out.replaceChildren(jobOutcome(job));
           return;
         }
@@ -71,25 +70,22 @@ async function showCreate(mapId, out) {
   );
   const head = el("h3", {}, "Proposed map (first 16 bars of Expert)");
   const firstBars = (notes) => notes.filter((n) => n.beat < FIRST_16_BARS);
-  const cards = proposals.map((p) =>
-    p.difficulty === "Expert"
-      ? proposalCard(p, reload, firstBars)
-      : proposalCard(p, reload, () => []),
-  );
-  const shown = cards.filter((_, i) => proposals[i].difficulty === "Expert");
+  const shown = proposals
+    .filter((p) => p.difficulty === "Expert")
+    .map((p) => proposalCard(p, reload, firstBars));
   const approvedAny = proposals.some((p) => p.status === "approved");
-  const write = el(
-    "button",
+  const res = el("div");
+  const write = jobButton(
     {
       type: "button",
       class: "primary",
       disabled: !approvedAny,
-      onclick: guard(async () => {
+      onclick: jobGuard(async () => {
         const job = await runJob("Write map", await api.apply(mapId));
-        out.append(jobOutcome(job));
+        res.replaceChildren(jobOutcome(job));
       }),
     },
     "Write map folder",
   );
-  out.replaceChildren(head, counts, ...shown, write);
+  out.replaceChildren(head, counts, ...shown, write, res);
 }

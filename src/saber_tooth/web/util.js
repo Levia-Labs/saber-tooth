@@ -54,13 +54,33 @@ export const api = {
   job: (id) => request("GET", `/api/jobs/${encodeURIComponent(id)}`),
 };
 
-/** Poll a job until done or failed; resolves with the final job object. */
+const MAX_JOB_MS = 30 * 60 * 1000;
+const MAX_FETCH_FAILS = 3;
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Poll a job until done or failed; backs off to 3 s, gives up after 30 min. */
 export async function runJob(label, started) {
   const jobId = started && started.job;
   if (jobId === undefined || jobId === null) return started;
   setStatus(`${label}: queued`);
-  for (;;) {
-    const job = await api.job(jobId);
+  const deadline = Date.now() + MAX_JOB_MS;
+  let delay = POLL_MS;
+  let fails = 0;
+  while (Date.now() < deadline) {
+    let job;
+    try {
+      job = await api.job(jobId);
+      fails = 0;
+    } catch (err) {
+      fails += 1;
+      if (fails >= MAX_FETCH_FAILS) {
+        setStatus(`${label}: lost contact with the server`);
+        throw err;
+      }
+      setStatus(`${label}: retrying (${fails}/${MAX_FETCH_FAILS})`);
+      await sleep(delay);
+      continue;
+    }
     if (job.status === "done") {
       setStatus(`${label}: done`);
       return job;
@@ -70,8 +90,11 @@ export async function runJob(label, started) {
       throw new Error(job.error || `${label} failed`);
     }
     setStatus(`${label}: ${job.status || "running"}`);
-    await new Promise((resolve) => setTimeout(resolve, POLL_MS));
+    await sleep(delay);
+    delay = Math.min(delay * 1.5, 3000);
   }
+  setStatus(`${label}: timed out after 30 minutes`);
+  throw new Error(`${label} timed out`);
 }
 
 export function guard(fn) {
@@ -82,6 +105,46 @@ export function guard(fn) {
       setStatus(`Error: ${err.message}`);
     }
   };
+}
+
+let running = 0;
+
+function lockJobs(on) {
+  for (const b of document.querySelectorAll("[data-job]")) {
+    if (on) {
+      b.dataset.prev = b.disabled ? "1" : "";
+      b.disabled = true;
+    } else {
+      b.disabled = b.dataset.prev === "1";
+    }
+  }
+}
+
+/** Like guard, but disables every job button while fn runs and refuses re-entry. */
+export function jobGuard(fn) {
+  return async (...args) => {
+    if (running) return;
+    running += 1;
+    lockJobs(true);
+    try {
+      await fn(...args);
+    } catch (err) {
+      setStatus(`Error: ${err.message}`);
+    } finally {
+      running -= 1;
+      lockJobs(false);
+    }
+  };
+}
+
+/** Button that starts a job; created disabled when another job is running. */
+export function jobButton(props, label) {
+  const btn = el("button", { ...props, "data-job": "1" }, label);
+  if (running) {
+    btn.dataset.prev = props.disabled ? "1" : "";
+    btn.disabled = true;
+  }
+  return btn;
 }
 
 export function jobOutcome(job) {

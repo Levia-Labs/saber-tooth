@@ -18,7 +18,6 @@ ROUTES = {
     ("POST", "/api/lightshow/learn"),
     ("GET", "/api/jobs/{id}"),
 }
-PATHS = {path for _, path in ROUTES}
 
 
 def test_files_exist():
@@ -31,23 +30,30 @@ def test_js_files_within_line_limit():
         assert len(path.read_text(encoding="utf-8").splitlines()) <= 300, path.name
 
 
+REQUEST = r"""request\(\s*["'](GET|POST)["']\s*,\s*[`'"](/api/[^`'"\s]*)[`'"]"""
+
+
+def _js_sources():
+    return "\n".join(p.read_text(encoding="utf-8") for p in sorted(WEB.glob("*.js")))
+
+
 def test_js_uses_only_contract_routes():
-    source = "\n".join(p.read_text(encoding="utf-8") for p in WEB.glob("*.js"))
+    source = _js_sources()
+    calls = re.findall(REQUEST, source)
+    used = {(m, re.sub(r"\$\{[^}]*\}", "{id}", p.split("?")[0])) for m, p in calls}
+    assert used == ROUTES
     literals = re.findall(r"""[`'"](/api/[^`'"\s]*)[`'"]""", source)
-    assert literals
-    used = set()
-    for literal in literals:
-        path = re.sub(r"\$\{[^}]*\}", "{id}", literal.split("?")[0])
-        assert path in PATHS, literal
-        used.add(path)
-    assert used == PATHS
+    assert len(literals) == len(calls)
 
 
 def test_no_external_resources_or_innerhtml():
-    for name in FILES:
-        text = (WEB / name).read_text(encoding="utf-8")
+    texts = {n: (WEB / n).read_text(encoding="utf-8") for n in FILES}
+    texts.update({p.name: p.read_text(encoding="utf-8") for p in WEB.glob("*.js")})
+    for name, text in texts.items():
         assert not re.search(r"(src|href)=[\"']https?://", text), name
-        assert "innerHTML" not in text, name
+        assert not re.search(r"""(import\s*\(?|from)\s*["']https?://""", text), name
+        assert "innerHTML" not in text and "outerHTML" not in text, name
+        assert "insertAdjacentHTML" not in text and "document.write" not in text, name
         assert "@import" not in text, name
 
 

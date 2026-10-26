@@ -1,6 +1,29 @@
-/* global requestAnimationFrame */
+/* global requestAnimationFrame, window, document, CSS, setTimeout, clearTimeout */
 import { drawTimeline } from "./timeline.js";
 import { api, el, guard } from "./util.js";
+
+const drawn = new Set();
+let resizeTimer;
+
+function redrawAll() {
+  for (const item of drawn) {
+    if (!item.canvas.isConnected) drawn.delete(item);
+    else drawTimeline(item.canvas, item.before, item.after);
+  }
+}
+
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(redrawAll, 150);
+});
+
+/** Move focus to the first enabled button of a proposal card, else the card. */
+function restoreFocus(id) {
+  const card = document.querySelector(`[data-proposal="${CSS.escape(String(id))}"]`);
+  if (!card) return;
+  const next = card.querySelector("button:not(:disabled)");
+  (next || card).focus();
+}
 
 export function proposalCard(p, onChange, notesFilter) {
   const keep = notesFilter || ((notes) => notes);
@@ -19,6 +42,7 @@ export function proposalCard(p, onChange, notesFilter) {
       onclick: guard(async () => {
         await api.approve(p.id);
         await onChange();
+        restoreFocus(p.id);
       }),
     },
     "Approve",
@@ -32,13 +56,14 @@ export function proposalCard(p, onChange, notesFilter) {
       onclick: guard(async () => {
         await api.reject(p.id);
         await onChange();
+        restoreFocus(p.id);
       }),
     },
     "Reject",
   );
   const card = el(
     "article",
-    { class: `card sev-${p.severity} st-${p.status}` },
+    { class: `card sev-${p.severity} st-${p.status}`, "data-proposal": p.id, tabindex: "-1" },
     el(
       "header",
       {},
@@ -55,7 +80,11 @@ export function proposalCard(p, onChange, notesFilter) {
     ),
     canvas,
   );
-  requestAnimationFrame(() => drawTimeline(canvas, before, after));
+  requestAnimationFrame(() => {
+    if (!canvas.isConnected) return;
+    drawn.add({ canvas, before, after });
+    drawTimeline(canvas, before, after);
+  });
   return card;
 }
 

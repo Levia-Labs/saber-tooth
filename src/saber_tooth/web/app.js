@@ -1,5 +1,5 @@
 /* global document, confirm */
-import { api, el, guard, jobOutcome, runJob, setNav } from "./util.js";
+import { api, el, guard, jobButton, jobGuard, jobOutcome, runJob, setNav } from "./util.js";
 import { groupBy, proposalCard } from "./cards.js";
 import { showNew } from "./newmap.js";
 
@@ -27,11 +27,10 @@ async function showLibrary() {
     );
   };
   filter.addEventListener("input", render);
-  const learn = el(
-    "button",
+  const learn = jobButton(
     {
       type: "button",
-      onclick: guard(async () => {
+      onclick: jobGuard(async () => {
         await runJob("Learn lightshows", await api.learn());
       }),
     },
@@ -54,12 +53,11 @@ async function showLibrary() {
 
 function mapRow(m) {
   const title = m.parse_error ? `${m.title || m.folder} (unparseable)` : m.title || m.folder;
-  const scan = el(
-    "button",
+  const scan = jobButton(
     {
       type: "button",
       "aria-label": `Scan ${m.title || m.folder}`,
-      onclick: guard(async () => {
+      onclick: jobGuard(async () => {
         await runJob("Scan", await api.scan(m.id));
         await showMap(m.id, m.title || m.folder);
       }),
@@ -89,36 +87,29 @@ function mapRow(m) {
 
 // ---- Proposals ----
 
-async function showMap(id, name) {
+async function showMap(id, name, outcome) {
   setNav("");
   const proposals = await api.proposals(id);
   const reload = () => showMap(id, name);
   const approvedCount = proposals.filter((p) => p.status === "approved").length;
-  const result = el("div");
-  const applyBtn = el(
-    "button",
+  const result = el("div", {}, outcome || "");
+  const applyBtn = jobButton(
     {
       type: "button",
       class: "primary",
       disabled: approvedCount === 0,
-      onclick: guard(async () => {
-        result.replaceChildren();
-        applyBtn.disabled = true;
+      onclick: jobGuard(async () => {
+        let box;
         try {
-          const job = await runJob("Apply", await api.apply(id));
-          result.replaceChildren(jobOutcome(job));
+          box = jobOutcome(await runJob("Apply", await api.apply(id)));
         } catch (err) {
-          result.replaceChildren(
-            el(
-              "div",
-              { class: "result" },
-              el("p", { class: "err" }, `Conflict or failure: ${err.message}`),
-            ),
+          box = el(
+            "div",
+            { class: "result" },
+            el("p", { class: "err" }, `Conflict or failure: ${err.message}`),
           );
-          throw err;
-        } finally {
-          applyBtn.disabled = false;
         }
+        await showMap(id, name, box);
       }),
     },
     "Apply approved",
