@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/assets/logo.svg" alt="saber-tooth" width="480"></p>
+
 # saber-tooth
 
 ![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
