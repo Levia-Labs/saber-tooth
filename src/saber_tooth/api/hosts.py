@@ -30,10 +30,15 @@ Network = ipaddress.IPv4Network | ipaddress.IPv6Network
 def trusted_proxies() -> tuple[Network, ...]:
     """Networks from the comma list in SABER_TRUSTED_PROXY_IPS; empty means forwarding is off.
 
-    Invalid entries raise ValueError so a typo cannot silently disable or widen trust.
+    Only single addresses (bare IPs, /32 or /128) are accepted, so a wide network that
+    contains clients can never be trusted. Anything else raises ValueError at start-up.
     """
     items = [i.strip() for i in os.environ.get(PROXY_VAR, "").split(",") if i.strip()]
-    return tuple(ipaddress.ip_network(i, strict=False) for i in items)
+    nets = tuple(ipaddress.ip_network(i, strict=False) for i in items)
+    for item, net in zip(items, nets, strict=True):
+        if net.num_addresses != 1:
+            raise ValueError(f"{PROXY_VAR}: {item!r} is a network; list single proxy addresses")
+    return nets
 
 
 def peer_trusted(peer: str | None, proxies: tuple[Network, ...]) -> bool:

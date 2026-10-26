@@ -32,12 +32,10 @@ def create_app(service: Service) -> FastAPI:
 
     @app.middleware("http")
     async def same_origin(request: Request, call_next):
-        scheme, host = effective_origin(
-            request.headers,
-            request.url.scheme,
-            peer_trusted(request.client.host if request.client else None, proxies),
-        )
-        if not host_allowed(host, hosts):
+        trusted = peer_trusted(request.client.host if request.client else None, proxies)
+        scheme, host = effective_origin(request.headers, request.url.scheme, trusted)
+        direct_ok = not trusted or host_allowed(request.headers.get("host"), hosts)
+        if not direct_ok or not host_allowed(host, hosts):
             return _error(403, "host not allowed")
         origin = request.headers.get("origin")
         here = f"{scheme}://{host}".lower()

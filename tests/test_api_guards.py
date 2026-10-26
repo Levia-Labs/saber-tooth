@@ -60,8 +60,8 @@ def test_forwarded_headers_are_ignored_when_no_proxy_is_configured(svc, monkeypa
 
 
 def test_trusted_peer_takes_host_and_scheme_from_forwarded_headers(svc, monkeypatch):
-    monkeypatch.setenv("SABER_ALLOWED_HOSTS", "saber.lan")
-    monkeypatch.setenv("SABER_TRUSTED_PROXY_IPS", "192.168.0.0/16, 10.0.0.0/24")
+    monkeypatch.setenv("SABER_ALLOWED_HOSTS", "saber.lan, backend")
+    monkeypatch.setenv("SABER_TRUSTED_PROXY_IPS", "192.168.0.1, 10.0.0.5/32")
     with _client(svc, "http://backend:8100") as c:
         assert c.get("/api/maps", headers=FWD).status_code == 200
         same = {"origin": "https://saber.lan", **FWD}
@@ -71,7 +71,7 @@ def test_trusted_peer_takes_host_and_scheme_from_forwarded_headers(svc, monkeypa
 
 
 def test_untrusted_peer_cannot_spoof_forwarded_headers(svc, monkeypatch):
-    monkeypatch.setenv("SABER_TRUSTED_PROXY_IPS", "10.0.0.0/24")
+    monkeypatch.setenv("SABER_TRUSTED_PROXY_IPS", "10.0.0.5")
     spoof = {"x-forwarded-host": "localhost"}
     for peer in (("203.0.113.9", 1), ("::1", 1), ("testclient", 1)):
         with _client(svc, "http://evil.example", peer) as c:
@@ -79,7 +79,7 @@ def test_untrusted_peer_cannot_spoof_forwarded_headers(svc, monkeypatch):
 
 
 def test_trusted_proxy_uses_the_rightmost_forwarded_value(svc, monkeypatch):
-    monkeypatch.setenv("SABER_ALLOWED_HOSTS", "saber.lan")
+    monkeypatch.setenv("SABER_ALLOWED_HOSTS", "saber.lan, backend")
     monkeypatch.setenv("SABER_TRUSTED_PROXY_IPS", "10.0.0.5")
     with _client(svc, "http://backend") as c:
         forged = {"x-forwarded-host": "localhost, evil.example"}
@@ -92,6 +92,29 @@ def test_trusted_peer_without_forwarded_headers_uses_the_request(svc, monkeypatc
     monkeypatch.setenv("SABER_TRUSTED_PROXY_IPS", "10.0.0.5")
     with _client(svc, "http://localhost") as c:
         assert c.get("/api/maps").status_code == 200
+
+
+def test_trusted_peer_needs_an_allowed_direct_host(svc, monkeypatch):
+    monkeypatch.setenv("SABER_ALLOWED_HOSTS", "saber.lan")
+    monkeypatch.setenv("SABER_TRUSTED_PROXY_IPS", "10.0.0.5")
+    with _client(svc, "http://backend") as c:
+        assert c.get("/api/maps", headers=FWD).status_code == 403
+    with _client(svc, "http://localhost") as c:
+        assert c.get("/api/maps", headers=FWD).status_code == 200
+        bad = {"x-forwarded-host": "evil.example"}
+        assert c.get("/api/maps", headers=bad).status_code == 403
+
+
+@pytest.mark.parametrize("entry", ["10.0.0.0/24", "10.0.0.0/8", "::/0", "fd00::/64"])
+def test_proxy_networks_are_refused_at_startup(svc, monkeypatch, entry):
+    monkeypatch.setenv("SABER_TRUSTED_PROXY_IPS", f"10.0.0.5, {entry}")
+    with pytest.raises(ValueError, match="single proxy addresses"):
+        create_app(svc)
+
+
+def test_proxy_single_addresses_are_accepted(svc, monkeypatch):
+    monkeypatch.setenv("SABER_TRUSTED_PROXY_IPS", "10.0.0.5/32, ::1, fd00::2/128")
+    create_app(svc)
 
 
 def test_invalid_proxy_list_fails_loudly(svc, monkeypatch):
