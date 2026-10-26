@@ -1,68 +1,70 @@
 # saber-tooth
 
-saber-tooth is a Docker service that creates and repairs Beat Saber custom maps. You drive it through an HTTP API or a plain HTML page. It writes map folders into the `CustomLevels` directory of the game, and the game does not need the service to run.
+![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
+![Docker](https://img.shields.io/badge/docker-compose-2496ED)
+![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
-## What it does
+Generate and repair Beat Saber maps from your own music, with every change reviewed by you first.
 
-1. Generates a new map from a YouTube URL or an uploaded audio file, with all five Standard difficulties: Easy, Normal, Hard, Expert and ExpertPlus.
-2. Finds impossible sections in existing maps, such as same-colour notes on opposite sides of the grid too close in time to swing between, and proposes fixes.
-3. Finds long empty stretches where the music has onsets, and proposes fills.
-4. Learns how installed maps reach modern visuals with vanilla features (environment, v3 event boxes, colour schemes) and applies the same technique to maps that have none.
-5. Changes nothing until you approve it. Fixes to existing maps go into a new sibling folder, and the original is never written.
+saber-tooth is a local Docker service with a browser interface. Give it a song or an existing map and it writes a map folder into your `CustomLevels` directory. It builds all five Standard difficulties, finds impossible and empty sections in existing maps, and adds atmospheric lighting learned from the maps you already have installed. It uses vanilla features only, so no Chroma, Noodle Extensions or Vivify is ever required. The game does not need the service to run.
 
-Only vanilla features are used. No Chroma, Noodle Extensions, Vivify or Heck requirement is ever added.
+## Features
 
-## Quality bar
+1. New maps from a YouTube URL or an uploaded audio file, in Easy, Normal, Hard, Expert and ExpertPlus.
+2. Checks for impossible swings, broken parity and long empty stretches where the music has onsets.
+3. Fix and fill proposals that are verified to reach zero findings before they are offered.
+4. Lighting that follows the energy and structure of the song, built from templates learned from installed maps.
+5. Review in the browser. Nothing is written until you approve it, and fixes go into a new sibling folder so the original map is never touched.
 
-Modded gameplay must be as flawless, flowing and atmospheric as possible. Every generated map, fill and fix is accepted or rejected on this.
+## How it works
 
-1. Flawless: zero findings from any check rule in every output difficulty. A proposal that cannot reach zero is not offered.
-2. Flowing: swings follow natural parity, positions move in smooth arcs, and patterns follow the phrasing of the music. Fills match the density and style around them.
-3. Atmospheric: lighting follows the energy and structure of the song. Strong shows on drops, calm on breaks, colour changes at section boundaries, and an environment that fits the song.
+1. A song or an existing map goes in.
+2. [beat-analyser](https://github.com/Levia-Labs/beat-analyser) downloads the audio and returns the beat grid and onsets.
+3. The generator places notes, the checks look for problems, and the fixer proposes repairs.
+4. You review each proposal on a timeline in the browser.
+5. Approved changes are written as a new map folder in `CustomLevels`.
 
-When these goals compete with simplicity of implementation, the quality bar wins.
+The design goals are flawless, flowing and atmospheric maps. See the [design spec](docs/superpowers/specs/2026-10-26-saber-tooth-design.md) for the quality bar.
 
 ## Quick start
 
 1. Copy `.env.example` to `.env` and set `LEVELS_DIR` to your `CustomLevels` folder.
 2. Run `task st:up`.
-3. Open `http://127.0.0.1:8100` (or the port in `SABER_PORT`).
-4. Stop the stack with `task st:down`.
+3. Open <http://127.0.0.1:8100>, or the port set in `SABER_PORT`.
+4. Run `task st:down` to stop.
 
-## Tasks
+## Common tasks
 
-1. `task st:up` and `task st:down`: build and start, or stop, the compose stack.
-2. `task st:logs`: show the last 100 log lines of the saber-tooth container.
-3. `task st:test`: run the pytest suite.
-4. `task st:check -- <folder>`: run the quality checks on one map folder.
-5. `task st:inspect -- <folder>`: summarise one map folder.
-6. `task st:survey -- <levels_dir>`: read-only finding counts across a levels directory.
-7. `task st:learn -- <levels_dir> <out.json>`: build lightshow templates.
-8. `task st:gen -- <url>`: start a map generation job from a URL.
-9. `task --list`: every task, including the `lint:`, `quality:` and `claude:` groups from Crepidoma.
+| Task                                       | Purpose                                             |
+| ------------------------------------------ | --------------------------------------------------- |
+| `task st:up` / `task st:down`              | Build and start, or stop, the compose stack         |
+| `task st:logs`                             | Show recent container logs                          |
+| `task st:test`                             | Run the pytest suite                                |
+| `task st:check -- <folder>`                | Run the quality checks on one map folder            |
+| `task st:inspect -- <folder>`              | Summarise one map folder                            |
+| `task st:survey -- <levels_dir>`           | Count findings across a levels directory, read-only |
+| `task st:learn -- <levels_dir> <out.json>` | Build lightshow templates                           |
+| `task st:gen -- <url>`                     | Start a generation job from a URL                   |
 
-## Configuration
+Run `task --list` for every task. Settings (`LEVELS_DIR`, `SABER_PORT`, `YT_MAX_MINUTES`, `MAX_UPLOAD_MB`) are documented in `.env.example`.
 
-1. `LEVELS_DIR`: host path of `CustomLevels`, mounted read-write at `/levels`.
-2. `SABER_PORT`: host port on `127.0.0.1`, default 8100.
-3. `YT_MAX_MINUTES`: longest accepted YouTube video, default 20.
-4. `MAX_UPLOAD_MB`: largest accepted audio upload, default 200.
+## Status
+
+Version 1 is in progress on the `feat/v1` branch. Map reading, checks, the fixer, the generator, the lightshow learner and the web frontend exist in the source tree. The compose stack is not committed yet. Open work is tracked in [TODO.md](TODO.md).
+
+## Part of Levia Labs
+
+1. [beat-analyser](https://github.com/Levia-Labs/beat-analyser): the audio download and beat and onset analysis service that saber-tooth runs next to.
+2. [Crepidoma](https://github.com/Levia-Labs/Crepidoma): the shared engineering foundation behind this repo, with Taskfiles, hooks, agents and quality gates.
 
 ## Documentation
 
 1. [Architecture](docs/architecture.md)
 2. [API](docs/api.md)
 3. [Map format](docs/map-format.md)
-4. [Decision records](docs/adr/README.md)
-5. [Design spec](docs/superpowers/specs/2026-10-26-saber-tooth-design.md)
+4. [Decision records](docs/adr/)
+5. [TODO](TODO.md)
 
-## Status
+## License
 
-The scaffold, tooling and documentation exist. The following parts of the design are not built yet.
-
-1. Map IO for v2, v3 and v4 (planned).
-2. Checks and fixer (planned).
-3. Generator (planned).
-4. Lightshow learner and applier (planned).
-5. API, store and web frontend (planned).
-6. Compose stack (planned).
+MIT. See [LICENSE](LICENSE).
