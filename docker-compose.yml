@@ -8,6 +8,7 @@ services:
       DATA_DIR: /data
       ANALYSER_URL: http://beat-analyser:8000
       ANALYSER_UPLOADS: /analyser
+      SABER_ALLOWED_HOSTS: ${SABER_ALLOWED_HOSTS:-}
     volumes:
       - "${LEVELS_DIR:?set LEVELS_DIR in .env}:/levels"
       - analyser-uploads:/analyser:ro

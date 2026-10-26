@@ -20,8 +20,11 @@ saber-tooth reads Info v2.0.0, v2.1.0 and v4, and difficulty v2, v3 and v4. It w
 
 ## Conversions
 
-1. A v2 crouch wall (`_type` 1) maps to `y=2`, height 3. A v2 full wall maps to `y=0`, height 5.
-2. v4 colour scheme colours are hex strings `"RRGGBBAA"`. They convert to `{r,g,b,a}` floats.
+1. Vanilla only. Mapping Extensions and Noodle positions are unsupported: a note or bomb with x outside 0-3, y outside 0-2 or a cut direction outside 0-8 (including 1000+ precision directions) makes the map unreadable. A bpm that is not positive and finite does too.
+
+2. A v2 crouch wall (`_type` 1) maps to `y=2`, height 3. A v2 full wall maps to `y=0`, height 5.
+3. v4 colour scheme colours are hex strings `"RRGGBBAA"`. They convert to `{r,g,b,a}` floats.
+4. Tempo changes are sorted by beat only. When two changes share a beat, the later one in source order wins.
 
 ## Info keys
 
@@ -33,6 +36,6 @@ saber-tooth reads Info v2.0.0, v2.1.0 and v4, and difficulty v2, v3 and v4. It w
 1. Info `_version` is `"2.1.0"`.
 2. `_environmentName` is the environment of the map and `_environmentNames` is `[environment]`.
 3. When a colour scheme is set, `_colorSchemes` is `[{"useOverride": true, "colorScheme": {"colorSchemeId": id, ...colors}}]`, and each difficulty gets `_environmentNameIdx: 0` and `_beatmapColorSchemeIdx: 0`.
-4. Each difficulty is written as `<Name>.dat` with this v3.3.0 shape: `version "3.3.0"`, `bpmEvents`, `rotationEvents: []`, `colorNotes`, `bombNotes`, `obstacles`, `sliders`, `burstSliders`, `waypoints: []`, `basicBeatmapEvents`, `colorBoostBeatmapEvents`, `lightColorEventBoxGroups`, `lightRotationEventBoxGroups`, `lightTranslationEventBoxGroups`, `vfxEventBoxGroups`, `_fxEventsCollection: {"_fl": [], "_il": []}`, `basicEventTypesWithKeywords: {"d": []}`, `useNormalEventsAsCompatibleEvents: true`.
+4. Each difficulty is written as `<Name>.dat` with this v3.3.0 shape: `version "3.3.0"`, `bpmEvents`, `rotationEvents: []`, `colorNotes`, `bombNotes`, `obstacles`, `sliders`, `burstSliders`, `waypoints: []`, `basicBeatmapEvents`, `colorBoostBeatmapEvents`, `lightColorEventBoxGroups`, `lightRotationEventBoxGroups`, `lightTranslationEventBoxGroups`, `vfxEventBoxGroups`, `_fxEventsCollection` (copied from the source when present, and then `vfxEventBoxGroups` are kept; otherwise `{"_fl": [], "_il": []}` and no vfx groups), `basicEventTypesWithKeywords: {"d": []}`, `useNormalEventsAsCompatibleEvents: true`.
 5. Box-group and slider lists come from the preserved raw difficulty data, and are empty lists when absent.
 6. No `customData` keys are written.
