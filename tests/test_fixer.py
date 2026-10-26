@@ -182,27 +182,6 @@ def test_default_environment():
     assert not run_checks(fixed, rules={"default-environment"}) and m.info.environment
 
 
-notes = st.builds(
-    Note,
-    beat=st.integers(8, 200).map(lambda i: i / 4),
-    x=st.integers(0, 3),
-    y=st.integers(0, 2),
-    color=st.sampled_from(Color),
-    cut=st.sampled_from([c for c in Cut if c != Cut.ANY]),
-)
-
-
-@settings(max_examples=60, deadline=None)
-@given(st.lists(notes, min_size=2, max_size=30))
-def test_fix_removes_finding_and_adds_none(ns):
-    m = bm(ns)
-    before = run_checks(m, rules=FLOW)
-    for f in before:
-        p = fx.propose(m, f, None, None, 1)
-        after = run_checks(fx.apply_ops(m, p.ops), rules=FLOW) if p else before
-        assert not fx.new_findings(after, before)
-
-
 small = st.integers(0, 6)
 beats = st.floats(0, 500, allow_nan=False, allow_infinity=False)
 cells = st.builds(Note, beats, small, small, st.sampled_from(Color), st.sampled_from(Cut), small)

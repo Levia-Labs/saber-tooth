@@ -5,7 +5,8 @@ from dataclasses import dataclass, replace
 from typing import ClassVar
 
 from saber_tooth.fixer import codec
-from saber_tooth.mapio.write import BOX_KEYS
+from saber_tooth.fixer.sliders import retarget
+from saber_tooth.mapio.write import BOX_KEYS, FX_KEY
 from saber_tooth.model import RANKS, Beatmap, Color, ColorScheme, Cut, Difficulty, Note
 
 EPS = 1e-6
@@ -180,11 +181,24 @@ def _apply_lightshow(beatmap: Beatmap, op: ApplyLightshow) -> None:
     for name, (events, boosts, groups) in copy.deepcopy(op.events).items():
         if name not in beatmap.difficulties:
             continue
-        d = beatmap.difficulties[name]
-        d.events, d.boosts = list(events), list(boosts)
-        for key in BOX_KEYS:
-            d.raw.pop(key, None)
-        d.raw.update(groups)
+        _set_show(beatmap.difficulties[name], events, boosts, groups)
+
+
+def _set_show(d: Difficulty, events: list, boosts: list, groups: dict) -> None:
+    d.events, d.boosts = list(events), list(boosts)
+    for key in (*BOX_KEYS, FX_KEY):
+        d.raw.pop(key, None)
+    d.raw.update(groups)
+
+
+def _light_absent(beatmap: Beatmap, op: ApplyLightshow) -> None:
+    """Difficulties the payload lacks (added in the same apply) get its first show."""
+    if not op.events:
+        return
+    events, boosts, groups = copy.deepcopy(next(iter(op.events.values())))
+    for name, d in beatmap.difficulties.items():
+        if name not in op.events:
+            _set_show(d, events, boosts, copy.deepcopy(groups))
 
 
 def _add_difficulty(beatmap: Beatmap, op: AddDifficulty) -> None:
@@ -211,17 +225,25 @@ def _apply_one(beatmap: Beatmap, op: Op) -> None:
         case Move():
             d = _diff(beatmap, op.difficulty)
             _take(d, op.note, "move")
-            _put(d, replace(op.note, x=op.x, y=op.y, cut=op.cut), "move")
+            moved = replace(op.note, x=op.x, y=op.y, cut=op.cut)
+            _put(d, moved, "move")
+            retarget(d, op.note, moved)
         case Flip():
             d = _diff(beatmap, op.difficulty)
             _take(d, op.note, "flip")
-            d.notes.append(replace(op.note, cut=op.cut))
+            flipped = replace(op.note, cut=op.cut)
+            d.notes.append(flipped)
+            retarget(d, op.note, flipped)
         case Recolor():
             d = _diff(beatmap, op.difficulty)
             _take(d, op.note, "recolor")
-            d.notes.append(replace(op.note, color=Color(1 - op.note.color)))
+            recoloured = replace(op.note, color=Color(1 - op.note.color))
+            d.notes.append(recoloured)
+            retarget(d, op.note, recoloured)
         case Delete():
-            _take(_diff(beatmap, op.difficulty), op.note, "delete")
+            d = _diff(beatmap, op.difficulty)
+            _take(d, op.note, "delete")
+            retarget(d, op.note, None)
     for d in beatmap.difficulties.values():
         d.notes.sort()
 
@@ -231,4 +253,7 @@ def apply_ops(beatmap: Beatmap, ops: list[Op]) -> Beatmap:
     out = copy.deepcopy(beatmap)
     for op in ops:
         _apply_one(out, op)
+    shows = [op for op in ops if isinstance(op, ApplyLightshow)]
+    if shows:
+        _light_absent(out, shows[-1])
     return out

@@ -5,8 +5,8 @@ import math
 
 from saber_tooth.checks import check_difficulty
 from saber_tooth.fixer.layout_fixes import in_wall
-from saber_tooth.mapio.write import BOX_KEYS
-from saber_tooth.model import CUT_VECTORS, OPPOSITE, Cut, Difficulty, Note
+from saber_tooth.mapio.write import BOX_KEYS, FX_KEY
+from saber_tooth.model import CUT_VECTORS, OPPOSITE, Bomb, Cut, Difficulty, Note
 from saber_tooth.profiles import Profile
 from saber_tooth.swings import build_swings
 from saber_tooth.timing import Timing
@@ -84,6 +84,12 @@ def _victims(findings) -> set[Note]:
     return gone
 
 
+def _free_bombs(bombs: list[Bomb], notes: list[Note]) -> list[Bomb]:
+    """Source bombs minus those that would sit in a kept note's cell at its beat."""
+    taken = {(round(n.beat / EPS), n.x, n.y) for n in notes}
+    return [copy.copy(b) for b in bombs if (round(b.beat / EPS), b.x, b.y) not in taken]
+
+
 def thin(source: Difficulty, profile: Profile, timing: Timing) -> Difficulty | None:
     grid = [n for n in source.notes if _on(n.beat, profile.grid)] or list(source.notes)
     notes = _budget_per_bar(_one_per_hand_and_beat(grid, profile), profile, timing)
@@ -93,13 +99,14 @@ def thin(source: Difficulty, profile: Profile, timing: Timing) -> Difficulty | N
         profile.offset,
         events=copy.deepcopy(source.events),
         boosts=copy.deepcopy(source.boosts),
-        bombs=copy.deepcopy(source.bombs),
+        bombs=[],
         walls=copy.deepcopy(source.walls),
         bpm_events=copy.deepcopy(source.bpm_events),
-        raw={k: copy.deepcopy(source.raw[k]) for k in BOX_KEYS if k in source.raw},
+        raw={k: copy.deepcopy(source.raw[k]) for k in (*BOX_KEYS, FX_KEY) if k in source.raw},
     )
     for _ in range(MAX_ROUNDS):
         out.notes = reflow(notes, timing)
+        out.bombs = _free_bombs(source.bombs, out.notes)
         findings = check_difficulty(out, timing, profile)
         if not findings:
             return out
