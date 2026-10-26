@@ -4,7 +4,7 @@
 2. Info v4 and difficulty v4 BPM changes (audio-data BPM) are ignored in v1. Read BPM from audio data and use it for timing.
 3. `.claude/settings.json` is the verbatim Crepidoma template. An automated security review flagged broad allow rules (`Bash(task *)`, `git diff/log/show *` where a deny can be bypassed by long-option abbreviation, `pre-commit run *`, `git commit *` without a `--no-verify` deny) and the unpinned marketplace ref `main`. Fix upstream in Crepidoma, then resync.
 4. The Crepidoma eslint hook template uses `npx --no eslint --config ...`, which npm 10+ breaks, and the shared `eslint.config.js` sets no browser globals, so the web code needs local overrides. Fix upstream in Crepidoma, then resync.
-5. The generator places notes only. Add walls (decided: walls only, no bombs) on calm passages and build-ups for Hard and above.
+5. Walls follow-ups: window regeneration (empty-gap fills) emits and preserves no walls; flat-energy songs get no walls; wall-only fixer proposals show empty note excerpts in the timeline.
 6. On a Linux host the container user `app` has a fixed uid, so the `/levels` bind mount can be unwritable. Let the host uid be configured.
 
 ## 4 Fixer: swing-speed deletes whole swing; flip collapses mixed-cut swings; wide-jump multi-move loses candidates
