@@ -1,3 +1,4 @@
+import shutil
 import time
 from pathlib import Path
 
@@ -136,7 +137,8 @@ def test_generate_url_job(client, svc, monkeypatch):
 BAD_URLS = [
     "/etc/passwd", "file:///x", "ftp://youtube.com/x", "http://127.0.0.1/x",
     "http://169.254.169.254/latest", "https://youtube.com.evil.com/watch?v=1",
-    "https://youtube.com" + "@evil.com/", "https://evil.com\\@youtube.com/", "https://evil.com/youtube.com",
+    "https://youtube.com" + "@evil.com/", "https://evil.com" + chr(92) + "@youtube.com/",
+    "https://evil.com/youtube.com",
     "https://youtube.com:99999/", "https://notyoutube.com/", "https://x.youtube.com/", "",
 ]  # fmt: skip
 
@@ -179,8 +181,8 @@ def test_generate_multipart_stores_under_data(client, svc, monkeypatch):
     assert job["status"] == "done"
     path, data = seen[0]
     assert data == b"abc" and path.suffix == ".mp3"
-    assert path.parent == svc.data / "uploads" and "evil" not in path.name
-    assert not path.exists()
+    assert path.parent.parent == svc.data / "uploads" and path.name == "evil-name.mp3"
+    assert not path.parent.exists()
 
 
 def test_generate_multipart_rejects_bad_type_and_missing_file(client):
@@ -195,7 +197,7 @@ def test_generate_multipart_too_large_is_413(client, svc, monkeypatch):
     big = b"0" * (2 * 1024 * 1024)
     resp = client.post("/api/generate", files={"file": ("a.wav", big)})
     assert resp.status_code == 413 and "error" in resp.json()
-    assert not list((svc.data / "uploads").glob("*")) if (svc.data / "uploads").exists() else True
+    assert not list(svc.data.glob("uploads/*"))
 
 
 def test_generate_multipart_stream_over_limit_without_length(client, monkeypatch):
@@ -226,12 +228,8 @@ def test_foreign_origin_post_is_403(client):
 def test_same_and_absent_origin_allowed(client, svc):
     ok = client.post("/api/lightshow/learn", headers={"origin": "http://testserver"})
     assert ok.status_code == 200
-    assert client.get("/api/maps", headers={"origin": "http://evil.example"}).status_code == 200
-
-
-def test_no_cors_headers(client):
     resp = client.get("/api/maps", headers={"origin": "http://evil.example"})
-    assert "access-control-allow-origin" not in resp.headers
+    assert resp.status_code == 200 and "access-control-allow-origin" not in resp.headers
 
 
 def test_learn_job(client):
@@ -243,11 +241,6 @@ def test_static_frontend(client):
     assert "saber-tooth" in client.get("/").text.lower()
     assert client.get("/favicon.svg").status_code == 200
     assert client.get("/app.js").status_code == 200
-
-
-def test_validation_error_is_json(client):
-    resp = client.post("/api/generate", content=b"[]", headers={"content-type": "text/plain"})
-    assert resp.status_code == 400 and "error" in resp.json()
 
 
 def test_staged_proposal_view_hides_path(client, svc, tmp_path):
@@ -262,3 +255,43 @@ def test_staged_proposal_view_hides_path(client, svc, tmp_path):
     rows = client.get(f"/api/maps/staging:{token}/proposals").json()
     assert rows[0]["difficulty"] == "Expert" and rows[0]["after"] == []
     assert str(staging) not in str(rows)
+
+
+def test_applied_proposal_cannot_be_reopened(client, svc):
+    pid = _propose(svc, MID, [], status="applied")
+    for verb in ("approve", "reject"):
+        resp = client.post(f"/api/proposals/{pid}/{verb}")
+        assert resp.status_code == 409 and resp.json() == {"error": "proposal already applied"}
+    assert svc.store.proposal(pid)["status"] == "applied"
+
+
+@pytest.mark.parametrize("origin", ["https://testserver", "http://testserver:8100"])
+def test_origin_scheme_or_port_mismatch_is_403(client, origin):
+    assert client.post("/api/lightshow/learn", headers={"origin": origin}).status_code == 403
+
+
+def test_maps_refresh_when_levels_listing_changes(client, svc):
+    assert len(client.get("/api/maps").json()) == 1
+    shutil.copytree(svc.levels / NAME, svc.levels / "Second")
+    assert {m["folder"] for m in client.get("/api/maps").json()} == {NAME, "Second"}
+    shutil.rmtree(svc.levels / "Second")
+    assert [m["folder"] for m in client.get("/api/maps").json()] == [NAME]
+
+
+def test_upload_title_is_sanitised_filename_stem(svc):
+    from saber_tooth.analyser_client import AnalyserError
+
+    seen = []
+
+    class Client:
+        uploads = None
+
+        def analyse_file(self, path, name):
+            seen.append(name)
+            raise AnalyserError("stop")
+
+    svc.client = Client()
+    with TestClient(create_app(svc)) as c:
+        files = {"file": ("dir/My Song (v2)!.flac", b"abc")}
+        job = _wait(c, c.post("/api/generate", files=files).json()["job"])
+    assert job["status"] == "failed" and seen == ["My-Song-v2.flac"]

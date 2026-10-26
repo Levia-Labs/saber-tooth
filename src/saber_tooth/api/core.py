@@ -2,6 +2,7 @@
 
 import logging
 import re
+import shutil
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -16,7 +17,6 @@ from saber_tooth.service.core import CREATE_MAP, STAGING_PREFIX
 log = logging.getLogger(__name__)
 
 
-AUDIO_EXTENSIONS = {".ogg", ".egg", ".mp3", ".wav", ".flac", ".m4a"}
 MAP_ID = re.compile(r"[0-9a-f]{12}")
 STAGING_ID = re.compile(re.escape(STAGING_PREFIX) + r"[0-9a-f]{32}")
 JOB_ID = re.compile(r"[0-9a-f]{32}")
@@ -81,6 +81,7 @@ class Api:
     # maps and proposals --------------------------------------------------------
 
     def maps(self) -> list[dict]:
+        self.service.refresh_if_changed()
         rows = []
         for m in self.store.list_maps():
             info = self.store.scan_info(m["id"])
@@ -117,6 +118,11 @@ class Api:
 
     def set_status(self, raw: str, status: str) -> dict:
         pid = self.proposal_id(raw)
+        current = self.store.proposal(pid)
+        if current is None:
+            raise ApiError(404, f"unknown proposal: {pid}")
+        if current["status"] == "applied":
+            raise ApiError(409, "proposal already applied")
         try:
             self.store.set_status(pid, status)
         except KeyError:
@@ -151,16 +157,19 @@ class Api:
         return {"job": self.jobs.submit("generate", self.service.run_generate, url)}
 
     def generate_file(self, path: Path) -> dict:
+        def clean() -> None:
+            shutil.rmtree(path.parent, ignore_errors=True)
+
         def run() -> dict:
             try:
                 return self.service.run_generate(str(path))
             finally:
-                path.unlink(missing_ok=True)
+                clean()
 
         try:
             return {"job": self.jobs.submit("generate", run)}
         except BaseException:
-            path.unlink(missing_ok=True)
+            clean()
             raise
 
     def job(self, raw: str) -> dict:

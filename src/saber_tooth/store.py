@@ -139,6 +139,10 @@ class Store:
         rows = self._query("SELECT * FROM proposals WHERE map_id=? ORDER BY id", (map_id,))
         return [self._proposal(r) for r in rows]
 
+    def proposal(self, proposal_id: int) -> dict | None:
+        rows = self._query("SELECT * FROM proposals WHERE id=?", (proposal_id,))
+        return self._proposal(rows[0]) if rows else None
+
     def set_status(self, proposal_id: int, status: str) -> None:
         if status not in PROPOSAL_STATUSES:
             raise ValueError(f"invalid status: {status}")

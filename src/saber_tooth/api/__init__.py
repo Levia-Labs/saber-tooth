@@ -2,10 +2,8 @@
 
 import os
 from pathlib import Path
-from urllib.parse import urlparse
 
 from fastapi import FastAPI, Request
-from fastapi.exceptions import RequestValidationError
 from fastapi.staticfiles import StaticFiles
 
 from saber_tooth.analyser_client import AnalyserClient
@@ -26,8 +24,9 @@ def create_app(service: Service) -> FastAPI:
     @app.middleware("http")
     async def same_origin(request: Request, call_next):
         origin = request.headers.get("origin")
+        here = f"{request.url.scheme}://{request.headers.get('host', '')}".lower()
         unsafe = request.method not in ("GET", "HEAD", "OPTIONS")
-        if unsafe and origin is not None and urlparse(origin).netloc != request.headers.get("host"):
+        if unsafe and origin is not None and origin.lower().rstrip("/") != here:
             return _error(403, "cross-origin request refused")
         return await call_next(request)
 
@@ -43,10 +42,6 @@ def create_app(service: Service) -> FastAPI:
     @app.exception_handler(ApiError)
     async def _api_error(_: Request, exc: ApiError):
         return _error(exc.status, str(exc))
-
-    @app.exception_handler(RequestValidationError)
-    async def _invalid(_: Request, exc: RequestValidationError):
-        return _error(422, "invalid request")
 
     @app.get("/api/maps")
     def maps():

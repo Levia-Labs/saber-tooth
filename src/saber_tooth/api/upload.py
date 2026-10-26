@@ -1,6 +1,7 @@
 """Multipart upload streaming with a size limit."""
 
 import os
+import re
 import shutil
 import uuid
 from pathlib import Path
@@ -11,6 +12,7 @@ from starlette.formparsers import MultiPartException, MultiPartParser
 
 from saber_tooth.api.core import ApiError
 
+TOO_LARGE = "upload too large"
 AUDIO_EXTENSIONS = {".ogg", ".egg", ".mp3", ".wav", ".flac", ".m4a"}
 
 
@@ -19,6 +21,12 @@ def _max_upload_bytes() -> int:
         return int(float(os.environ.get("MAX_UPLOAD_MB", "200")) * 1024 * 1024)
     except ValueError:
         return 200 * 1024 * 1024
+
+
+def _safe_stem(filename: str | None) -> str:
+    """A path-safe song name from the client filename; only used as a display title."""
+    stem = re.sub(r"[^A-Za-z0-9._-]+", "-", Path((filename or "").replace("\\", "/")).stem)
+    return stem.strip("-._")[:60] or "upload"
 
 
 async def _save_upload(request: Request, data: Path) -> Path:
@@ -33,12 +41,14 @@ async def _save_upload(request: Request, data: Path) -> Path:
         async for chunk in request.stream():
             total += len(chunk)
             if total > limit + 65536:
-                raise ApiError(413, "upload too large")
+                raise MultiPartException(TOO_LARGE)
             yield chunk
 
     try:
         form = await MultiPartParser(request.headers, body(), max_files=1, max_fields=4).parse()
     except MultiPartException as exc:
+        if exc.message == TOO_LARGE:
+            raise ApiError(413, TOO_LARGE) from None
         raise ApiError(400, f"bad multipart body: {exc.message}") from None
     upload = form.get("file")
     try:
@@ -51,9 +61,15 @@ async def _save_upload(request: Request, data: Path) -> Path:
             raise ApiError(413, "upload too large")
         folder = data / "uploads"
         folder.mkdir(parents=True, exist_ok=True)
-        target = folder / f"{uuid.uuid4().hex}{ext}"
-        with target.open("wb") as out:
-            shutil.copyfileobj(upload.file, out)
+        box = folder / uuid.uuid4().hex
+        box.mkdir()
+        target = box / f"{_safe_stem(upload.filename)}{ext}"
+        try:
+            with target.open("wb") as out:
+                shutil.copyfileobj(upload.file, out)
+        except BaseException:
+            shutil.rmtree(box, ignore_errors=True)
+            raise
         return target
     finally:
         await form.close()

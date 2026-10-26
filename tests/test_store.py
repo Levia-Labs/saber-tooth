@@ -108,6 +108,15 @@ def test_replace_open_proposals_keeps_history_and_saves_scan(tmp_path):
     assert store.scan_info("m") == {"findings": [{"k": 1}], "analysis": "p"}
 
 
+def test_proposal_by_id(tmp_path):
+    from saber_tooth.store import Store
+
+    store = Store(tmp_path / "db.sqlite")
+    p = {"rule": "r", "difficulty": "d", "severity": "warn", "summary": "s"}
+    pid = store.add_proposals("m", [{**p, "ops": [], "before": [], "after": []}])[0]
+    assert store.proposal(pid)["summary"] == "s" and store.proposal(pid + 1) is None
+
+
 def test_prune_maps_drops_missing_rows(tmp_path):
     from saber_tooth.store import Store
 

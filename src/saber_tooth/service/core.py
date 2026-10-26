@@ -47,10 +47,30 @@ class Service:
         self.encode = encode
         self.uploads = Path(uploads) if uploads else getattr(client, "uploads", None)
         self._lock = threading.Lock()
+        self._seen: frozenset[str] = frozenset()
 
     # library -----------------------------------------------------------------
 
+    def _listing(self) -> frozenset[str]:
+        return frozenset(
+            p.name
+            for p in self.levels.iterdir()
+            if not p.name.startswith(".") and not p.is_symlink() and p.is_dir()
+        )
+
+    def refresh_if_changed(self) -> bool:
+        """Re-index when the set of folders under levels differs from the last refresh."""
+        try:
+            if self._listing() == self._seen:
+                return False
+        except OSError:
+            return False
+        with self._lock:
+            self.refresh_library()
+        return True
+
     def refresh_library(self) -> int:
+        self._seen = self._listing()
         seen: set[str] = set()
         for folder in sorted(self.levels.iterdir()):
             if folder.name.startswith(".") or folder.is_symlink() or not folder.is_dir():
