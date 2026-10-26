@@ -14,7 +14,13 @@ from saber_tooth.model import Beatmap, Difficulty, Note
 from saber_tooth.profiles import PROFILES, Profile
 from saber_tooth.timing import Timing
 
-Ident = tuple[str, str, float, float]
+Ident = tuple
+
+
+def finding_key(f: Finding) -> tuple:
+    """Identity of a finding: location plus the notes involved."""
+    notes = sorted((n.beat, n.x, n.y, int(n.color), int(n.cut)) for n in f.notes)
+    return (f.difficulty, f.rule, f.beat_start, f.beat_end, tuple(notes))
 
 
 @dataclass(frozen=True)
@@ -86,9 +92,9 @@ def identities(beatmap: Beatmap, names: set[str], analysis: Analysis | None) -> 
         if d is None or profile is None:
             continue
         for f in check_difficulty(d, map_timing(beatmap, d), profile, analysis):
-            out.add((f.difficulty, f.rule, f.beat_start, f.beat_end))
+            out.add(finding_key(f))
     for f in run_checks(beatmap, analysis, rules=set(MAP_RULES)):
-        out.add((f.difficulty, f.rule, f.beat_start, f.beat_end))
+        out.add(finding_key(f))
     return out
 
 
@@ -100,7 +106,7 @@ def accepts(ctx: Context, ops: list[Op]) -> list[Op] | None:
     except OpConflict:
         return None
     names = _touched(ops) | {f.difficulty}
-    target = (f.difficulty, f.rule, f.beat_start, f.beat_end)
+    target = finding_key(f)
     before = identities(ctx.beatmap, names, ctx.analysis)
     after = identities(fixed, names, ctx.analysis)
     return fixed if target in before and target not in after and after <= before else None

@@ -4,6 +4,7 @@ import copy
 import math
 
 from saber_tooth.checks import check_difficulty
+from saber_tooth.fixer.layout_fixes import in_wall
 from saber_tooth.mapio.write import BOX_KEYS
 from saber_tooth.model import CUT_VECTORS, OPPOSITE, Cut, Difficulty, Note
 from saber_tooth.profiles import Profile
@@ -92,6 +93,8 @@ def thin(source: Difficulty, profile: Profile, timing: Timing) -> Difficulty | N
         profile.offset,
         events=copy.deepcopy(source.events),
         boosts=copy.deepcopy(source.boosts),
+        bombs=copy.deepcopy(source.bombs),
+        walls=copy.deepcopy(source.walls),
         bpm_events=copy.deepcopy(source.bpm_events),
         raw={k: copy.deepcopy(source.raw[k]) for k in BOX_KEYS if k in source.raw},
     )
@@ -100,6 +103,9 @@ def thin(source: Difficulty, profile: Profile, timing: Timing) -> Difficulty | N
         findings = check_difficulty(out, timing, profile)
         if not findings:
             return out
-        gone = _victims(findings)
+        for f in (f for f in findings if f.rule == "note-in-wall"):
+            n = f.notes[0]
+            out.walls = [w for w in out.walls if not in_wall(n.x, n.y, n.beat, w)]
+        gone = _victims([f for f in findings if f.rule != "note-in-wall"])
         notes = [n for n in out.notes if n not in gone]
     return None

@@ -107,6 +107,7 @@ def default_environment(ctx: Context) -> Iterator[list[Op]]:
         return
     try:
         payload = build_lightshow(ctx.beatmap, map_timing(ctx.beatmap), t, ctx.analysis, ctx.seed)
-    except ValueError:
+    except ValueError as e:
+        ctx.reason = str(e) or "no lightshow templates"
         return
     yield [ApplyLightshow.from_payload(payload)]

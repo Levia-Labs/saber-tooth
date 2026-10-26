@@ -1,11 +1,12 @@
 import json
 
+import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from saber_tooth.analysis import Analysis
 from saber_tooth.checks import check_difficulty, run_checks
-from saber_tooth.fixer import apply_ops, op_from_dict, propose, propose_with_reason
+from saber_tooth.fixer import apply_ops, finding_key, op_from_dict, propose, propose_with_reason
 from saber_tooth.fixer.ops import (
     AddDifficulty,
     ApplyLightshow,
@@ -42,9 +43,7 @@ def bm(notes, name="Expert", env="NiceEnvironment", **kw):
 
 
 def find(m, rule, name="Expert", analysis=None):
-    fs = [f for f in run_checks(m, analysis, difficulty=name) if f.rule == rule]
-    assert fs, f"no {rule} finding"
-    return fs[0]
+    return next(f for f in run_checks(m, analysis, difficulty=name) if f.rule == rule)
 
 
 def left_ids(m, name="Expert", analysis=None):
@@ -75,12 +74,8 @@ def test_conflict_when_note_missing():
     m = bm([Note(4.0, 0, 0, Color.RED, Cut.DOWN)])
     ghost = Note(9.0, 1, 1, Color.BLUE, Cut.UP)
     for op in (Delete("Expert", ghost), Flip("Expert", ghost, Cut.DOWN), Recolor("Expert", ghost)):
-        try:
+        with pytest.raises(OpConflict, match="not found"):
             apply_ops(m, [op])
-        except OpConflict as e:
-            assert "not found" in str(e)
-        else:
-            raise AssertionError("expected OpConflict")
 
 
 def test_parity_break_flips_second_swing():
@@ -155,10 +150,10 @@ def test_missing_difficulty_with_analysis_generates():
     assert "Easy" in fixed.difficulties and left_ids(fixed, "Easy", a) == set()
 
 
-def dense_map():
+def dense_map(**kw):
     cuts = [Cut.DOWN if (i // 2) % 2 == 0 else Cut.UP for i in range(160)]
     ns = [Note(8 + i / 4, 1 + i % 2, int(c == Cut.UP), Color(i % 2), c) for i, c in enumerate(cuts)]
-    return bm(ns, "ExpertPlus")
+    return bm(ns, "ExpertPlus", **kw)
 
 
 def test_missing_difficulty_thins_denser_without_analysis():
@@ -220,31 +215,19 @@ notes = st.builds(
 @given(st.lists(notes, min_size=2, max_size=30))
 def test_fix_removes_finding_and_adds_none(ns):
     m = bm(ns)
-    rules = FLOW
-    before = {(f.rule, f.beat_start, f.beat_end) for f in run_checks(m, rules=rules)}
-    for f in run_checks(m, rules=rules):
+    before = {finding_key(f) for f in run_checks(m, rules=FLOW)}
+    for f in run_checks(m, rules=FLOW):
         p = propose(m, f, None, None, 1)
         if p is None:
             continue
-        after = {
-            (g.rule, g.beat_start, g.beat_end)
-            for g in run_checks(apply_ops(m, p.ops), rules={r for r, *_ in before} | {f.rule})
-        }
-        assert (f.rule, f.beat_start, f.beat_end) not in after
+        after = {finding_key(g) for g in run_checks(apply_ops(m, p.ops), rules=FLOW)}
+        assert finding_key(f) not in after
         assert after <= before
 
 
 small = st.integers(0, 6)
 beats = st.floats(0, 500, allow_nan=False, allow_infinity=False)
-cells = st.builds(
-    Note,
-    beats,
-    st.integers(0, 3),
-    st.integers(0, 2),
-    st.sampled_from(Color),
-    st.sampled_from(Cut),
-    small,
-)
+cells = st.builds(Note, beats, small, small, st.sampled_from(Color), st.sampled_from(Cut), small)
 raw_groups = st.dictionaries(
     st.sampled_from(["lightColorEventBoxGroups", "vfxEventBoxGroups"]),
     st.lists(st.fixed_dictionaries({"b": beats, "g": small}), max_size=3),
@@ -290,10 +273,27 @@ def test_ops_round_trip_through_json(op):
     assert op_from_dict(json.loads(json.dumps(op.to_dict()))) == op
 
 
-def test_dense_scrambled_map_gets_proposals():
+def test_red_and_blue_parity_breaks_at_same_beats_both_fixed():
     ns = [
-        Note(8 + i / 4, i * 7 % 4, i * 5 % 3, Color(i * 3 % 2), Cut(i * 11 % 8)) for i in range(120)
+        Note(b, x, 0, c, Cut.DOWN) for c, x in ((Color.RED, 1), (Color.BLUE, 2)) for b in (8.0, 8.5)
     ]
     m = bm(ns)
-    fs = run_checks(m, rules=FLOW)
-    assert fs and sum(propose(m, f, None, None, 1) is not None for f in fs) >= len(fs) // 2
+    fs = [f for f in run_checks(m, rules={"parity-break"})]
+    assert len(fs) == 2 and len({finding_key(f) for f in fs}) == 2
+    assert all(propose(m, f, None, None, 1) is not None for f in fs)
+
+
+def test_three_note_stack_fixed_by_moves_only():
+    ns = [Note(4.0, 0, 0, Color.RED, Cut.DOWN), Note(4.0, 3, 0, Color.RED, Cut.DOWN)]
+    m = bm([*ns, Note(4.0, 3, 2, Color.RED, Cut.DOWN)])
+    p = propose(m, find(m, "stack-conflict"), None, None, 1)
+    assert p is not None and all(isinstance(o, Move) for o in p.ops) and len(p.ops) == 2
+    assert len(apply_ops(m, p.ops).difficulties["Expert"].notes) == 3
+
+
+def test_thinned_difficulty_keeps_bombs_and_walls():
+    bomb, wall = Bomb(900.0, 0, 0), Wall(900.0, 0, 0, 1.0, 1, 1)
+    m = dense_map(bombs=[bomb], walls=[wall])
+    f = next(f for f in run_checks(m) if f.rule == "missing-difficulty" and f.difficulty == "Hard")
+    hard = apply_ops(m, propose(m, f, None, None, 1).ops).difficulties["Hard"]
+    assert hard.bombs == [bomb] and hard.walls == [wall]

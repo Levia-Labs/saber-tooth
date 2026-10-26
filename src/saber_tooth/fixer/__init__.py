@@ -17,11 +17,11 @@ from saber_tooth.fixer.ops import (
     op_from_dict,
 )
 from saber_tooth.fixer.strategies import STRATEGIES
-from saber_tooth.fixer.verify import Context, Proposal, accepts, build_proposal
+from saber_tooth.fixer.verify import Context, Proposal, accepts, build_proposal, finding_key
 from saber_tooth.lightshow import Templates
 from saber_tooth.model import Beatmap
 
-MAX_CANDIDATES = 40
+MAX_CANDIDATES = 80
 
 
 class Outcome(NamedTuple):
@@ -76,6 +76,7 @@ __all__ = [
     "Proposal",
     "Recolor",
     "apply_ops",
+    "finding_key",
     "op_from_dict",
     "propose",
     "propose_with_reason",
