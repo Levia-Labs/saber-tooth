@@ -17,6 +17,16 @@ A Docker service with an HTTP API and a plain HTML frontend that creates and rep
 7. Every change is a proposal that the user approves before it is written.
 8. Fixes to existing maps go into a new sibling folder. The original folder is never written.
 
+## Quality bar
+
+Modded gameplay must be as flawless, flowing and atmospheric as possible. This is the primary acceptance criterion for every generated map, fill and fix:
+
+1. Flawless: zero findings from any check rule in every output difficulty. A proposal that cannot reach zero is not offered.
+2. Flowing: swings follow natural parity, positions move in smooth arcs, and patterns follow the music's phrasing rather than a fixed grid. Fills match the surrounding density and style.
+3. Atmospheric: lighting follows the song's energy and structure. Strong lightshows on drops, calm on breaks, colour changes on section boundaries, environment chosen to fit the song.
+
+Where these goals compete with simplicity of implementation, the quality bar wins.
+
 ## Non-goals
 
 1. Launching or controlling the game.
