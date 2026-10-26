@@ -1,2 +1,6 @@
 # Crepidoma submodule: shared files are linted in their own repo.
 .crepidoma/
+.venv/
+.superpowers/
+node_modules/
+data/
