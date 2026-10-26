@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>saber-tooth</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <h1><span class="red">saber</span>-<span class="blue">tooth</span></h1>
+      <nav aria-label="Views">
+        <button type="button" data-view="library" class="tab">Library</button>
+        <button type="button" data-view="new" class="tab">New map</button>
+      </nav>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+    </header>
+    <main id="main" tabindex="-1"></main>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
