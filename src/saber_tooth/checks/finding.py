@@ -1,7 +1,7 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Literal
 
-from saber_tooth.model import Note
+from saber_tooth.model import Note, Wall
 
 Severity = Literal["error", "warn"]
 
@@ -15,6 +15,7 @@ class Finding:
     severity: Severity
     message: str
     notes: tuple[Note, ...] = ()
+    walls: tuple[Wall, ...] = ()
 
     def to_dict(self) -> dict:
         return {
@@ -35,6 +36,7 @@ class Finding:
                 }
                 for n in self.notes
             ],
+            "walls": [asdict(w) for w in self.walls],
         }
 
     def sort_key(self) -> tuple:

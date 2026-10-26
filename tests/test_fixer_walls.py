@@ -46,3 +46,22 @@ def test_tight_opposite_dodge_drops_the_later_wall():
     m = bm([], walls=[first, second])
     p = fx.propose(m, find(m, "wall-trap"), None, None, 1)
     assert p.ops == [fo.DeleteWall("Expert", second)]
+
+
+def test_wall_findings_on_neighbouring_walls_have_distinct_keys():
+    from saber_tooth.fixer.verify import finding_key
+
+    a, b = Wall(8.0, 1, 0, 2.0, 2, 5), Wall(10.0, 0, 0, 2.0, 3, 5)  # touching ranges
+    fs = [f for f in run_checks(bm([], walls=[a, b]), difficulty="Expert") if f.rule == "wall-trap"]
+    assert len({finding_key(f) for f in fs}) == len(fs) == 2
+
+
+def test_new_error_on_a_neighbouring_wall_is_not_merged_with_the_fixed_one():
+    from saber_tooth.fixer.verify import new_findings
+
+    a, b = Wall(8.0, 1, 0, 2.0, 2, 5), Wall(10.0, 0, 0, 2.0, 3, 5)  # touching ranges
+    fa, fb = (
+        next(f for f in run_checks(bm([], walls=[a, b]), difficulty="Expert") if f.walls == (w,))
+        for w in (a, b)
+    )
+    assert new_findings([fb], [fa]) == [fb]

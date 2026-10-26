@@ -97,3 +97,21 @@ walls_st = st.builds(
 @given(st.lists(walls_st, max_size=12), st.sampled_from(sorted(PROFILES)))
 def test_wall_rules_never_crash_on_arbitrary_walls(walls, name):
     assert all(r.startswith(("wall-", "note-in-wall")) for r, _ in found(walls, name))
+
+
+def test_crouch_plus_side_wall_leaving_one_head_lane_is_error():
+    walls = [Wall(4.0, 1, 2, 4.0, 2, 3), Wall(5.0, 0, 0, 2.0, 1, 5)]
+    assert ("wall-trap", "error") in found(walls)
+
+
+def test_crouch_plus_far_side_wall_is_error_and_apart_in_time_is_safe():
+    assert ("wall-trap", "error") in found([Wall(4.0, 1, 2, 4.0, 2, 3), Wall(5.0, 3, 0, 2.0, 1, 5)])
+    assert found([Wall(4.0, 1, 2, 2.0, 2, 3), Wall(8.0, 0, 0, 2.0, 1, 5)]) == set()
+
+
+def test_finding_to_dict_carries_walls_json_safe():
+    import json
+
+    d = Difficulty("Expert", 16, 0, walls=[Wall(4.0, 0, 0, 2.0, 3, 5)])
+    f = check_difficulty(d, T, PROFILES["Expert"])[0]
+    assert json.loads(json.dumps(f.to_dict()))["walls"][0]["x"] == 0

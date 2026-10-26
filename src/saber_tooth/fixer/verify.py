@@ -19,8 +19,8 @@ _RANK = {"warn": 0, "error": 1}
 
 
 def finding_key(f: Finding) -> tuple:
-    """Identity of a finding: difficulty, rule and the hands involved."""
-    return (f.difficulty, f.rule, frozenset(int(n.color) for n in f.notes))
+    """Identity of a finding: difficulty, rule and the hands and walls involved."""
+    return (f.difficulty, f.rule, frozenset(int(n.color) for n in f.notes), f.walls)
 
 
 def _same(a: Finding, b: Finding) -> bool:

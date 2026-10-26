@@ -19,6 +19,11 @@ def blocks_standing(w: Wall) -> bool:
     return w.y <= 1 < w.y + w.height
 
 
+def blocks_head(w: Wall) -> bool:
+    """True for walls that cover the head row, crouch walls included."""
+    return w.y <= 2 < w.y + w.height
+
+
 def _lanes(w: Wall) -> set[int]:
     return set(range(w.x, w.x + w.width))
 
@@ -27,14 +32,19 @@ def _end(w: Wall) -> float:
     return w.beat + w.duration
 
 
+def _trapped(blocked: set[int], centre: bool) -> bool:
+    return len(blocked & {0, 1, 2, 3}) > 2 or (centre and {1, 2} <= blocked)
+
+
 def _lane_findings(d: Difficulty, walls: list[Wall]) -> list[Finding]:
     out = []
     for w in walls:
         active = [o for o in walls if o.beat <= w.beat + EPS and w.beat < _end(o) - EPS]
-        blocked = set().union(*(_lanes(o) for o in active))
-        if len(blocked & {0, 1, 2, 3}) > 2 or {1, 2} <= blocked:
+        chest = set().union(*(_lanes(o) for o in active if blocks_standing(o)))
+        head = set().union(*(_lanes(o) for o in active if blocks_head(o)))
+        if _trapped(chest, True) or _trapped(head, False):
             msg = "walls leave the player fewer than 2 free lanes or the centre blocked"
-            out.append(Finding("wall-trap", d.name, w.beat, _end(w), "error", msg))
+            out.append(Finding("wall-trap", d.name, w.beat, _end(w), "error", msg, walls=(w,)))
     return out
 
 
@@ -58,19 +68,21 @@ def _dodge_findings(d: Difficulty, walls: list[Wall], timing: Timing, minimum: f
                 continue
             sev: Severity = "error" if gap < minimum * WALL_DODGE_ERROR_SHARE else "warn"
             msg = f"only {gap:.2f}s to dodge to the other side (needs {minimum:.2f}s)"
-            out.append(Finding("wall-trap", d.name, b.beat, _end(b), sev, msg))
+            out.append(Finding("wall-trap", d.name, b.beat, _end(b), sev, msg, walls=(b,)))
     return out
 
 
 def wall_trap(d: Difficulty, swings, timing: Timing, profile: Profile, analysis=None):
-    walls = sorted(w for w in d.walls if blocks_standing(w))
     minimum = WALL_DODGE_S.get(profile.name, DEFAULT_DODGE_S)
-    return _lane_findings(d, walls) + _dodge_findings(d, walls, timing, minimum)
+    standing = sorted(w for w in d.walls if blocks_standing(w))
+    relevant = sorted(w for w in d.walls if blocks_standing(w) or blocks_head(w))
+    return _lane_findings(d, relevant) + _dodge_findings(d, standing, timing, minimum)
 
 
 def wall_short(d: Difficulty, swings, timing: Timing, profile: Profile, analysis=None):
+    msg = "wall is too short to read"
     return [
-        Finding("wall-short", d.name, w.beat, _end(w), "warn", "wall is too short to read")
+        Finding("wall-short", d.name, w.beat, _end(w), "warn", msg, walls=(w,))
         for w in d.walls
         if timing.to_seconds(_end(w)) - timing.to_seconds(w.beat) < WALL_MIN_S
     ]
