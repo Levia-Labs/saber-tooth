@@ -88,7 +88,12 @@ def _apply_lightshow(bm: Beatmap, timing, templates: Templates | None, a: Analys
 
 
 def _build(a: Analysis, audio: Path, templates: Templates | None, seed: int) -> Beatmap:
+    if not (a.kick or a.snare or a.hh):
+        raise ValueError("analysis has no onsets")
     timing, diffs = generate_all(a, seed)
+    empty = [name for name, d in diffs.items() if not d.notes]
+    if empty:
+        raise ValueError(f"generated difficulties have no notes: {', '.join(empty)}")
     info = MapInfo(
         song_name=a.name,
         sub_name="",

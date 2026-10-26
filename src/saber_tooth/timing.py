@@ -15,7 +15,8 @@ class Timing:
     def __init__(self, bpm: float, changes: list[BpmEvent]):
         # A change at beat 0 overrides the initial bpm; at one beat the later change in source
         # order wins (stable sort by beat only); beat < 0 is ignored.
-        by_beat = {0.0: _check_bpm(bpm)}
+        self.initial_bpm = _check_bpm(bpm)
+        by_beat = {0.0: self.initial_bpm}
         for change in sorted(changes, key=lambda c: c.beat):
             _check_bpm(change.bpm)
             if change.beat >= 0:

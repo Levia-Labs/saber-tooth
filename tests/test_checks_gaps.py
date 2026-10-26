@@ -46,3 +46,12 @@ def test_leading_and_trailing_gaps():
 
 def test_short_gap_is_fine():
     assert not _gaps(_diff(0.0, 4.0, 8.0, 12.0), busy(6))
+
+
+def test_zero_note_difficulty_is_one_gap_over_the_analysed_range():
+    f = _gaps(Difficulty("Expert", 16, 0), busy(30))
+    assert [(x.beat_start, x.beat_end) for x in f] == [(0.0, 59.0)]
+
+
+def test_zero_note_difficulty_without_music_is_fine():
+    assert not _gaps(Difficulty("Expert", 16, 0), Analysis("x", "C", 120.0, [], [], [], [], None))

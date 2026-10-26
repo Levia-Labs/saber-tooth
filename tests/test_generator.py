@@ -15,7 +15,7 @@ from saber_tooth.generator import (
     tempo_map,
 )
 from saber_tooth.generator.motifs import BLUE_MOTIFS, RED_MOTIFS
-from saber_tooth.model import CUT_VECTORS, DIFFICULTIES, Color, Cut, Difficulty
+from saber_tooth.model import CUT_VECTORS, DIFFICULTIES, BpmEvent, Color, Cut, Difficulty
 from saber_tooth.profiles import PROFILES
 from saber_tooth.swings import build_swings
 from saber_tooth.timing import Timing
@@ -224,3 +224,36 @@ def test_empty_analysis_and_speed():
     start = time.perf_counter()
     generate_all(a, 9)
     assert time.perf_counter() - start < 5.0
+
+
+def test_tempo_map_steady_tracker_with_jitter_stays_aligned():
+    import random
+
+    rng = random.Random(4)  # noqa: S311
+    t, beats = 0.31, []
+    for _ in range(400):
+        beats.append(t)
+        t += 0.5 * 1.003 + rng.uniform(-0.002, 0.002)
+    beats[1] = beats[0] + 0.4985
+    a = Analysis("s", "A", 120, beats, [], [], [], None)
+    bpm, events = tempo_map(a)
+    timing = Timing(bpm, events)
+    phase = beats[0] * bpm / 60.0
+    errors = [abs(timing.to_seconds(phase + k) - b) for k, b in enumerate(beats)]
+    assert max(errors) <= 0.010
+
+
+def test_tempo_map_base_ignores_first_interval_noise():
+    beats = [0.0, 0.47] + [0.47 + 0.5 * i for i in range(1, 60)]
+    bpm, _events = tempo_map(Analysis("s", "A", 120, beats, [], [], [], None))
+    assert abs(bpm - 120) < 1.0
+
+
+def test_timing_events_keep_the_beat_zero_override():
+    from saber_tooth.generator.build import timing_events
+
+    timing = Timing(100.0, [BpmEvent(0.0, 120.0), BpmEvent(16.0, 140.0)])
+    rebuilt = Timing(100.0, timing_events(timing))
+    assert timing.to_seconds(8) == pytest.approx(4.0)
+    assert rebuilt.to_seconds(8) == pytest.approx(4.0)
+    assert timing_events(Timing(100.0, [BpmEvent(16.0, 140.0)])) == [BpmEvent(16.0, 140.0)]

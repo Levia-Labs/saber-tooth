@@ -139,3 +139,10 @@ def test_existing_out_refused(tmp_path):
     with pytest.raises(FileExistsError):
         assemble_new(_analysis(_wav(tmp_path / "a.wav")), None, out, 1, _copy)
     assert not (tmp_path / ".out.partial").exists()
+
+
+def test_assemble_refuses_analysis_without_onsets(tmp_path):
+    a = dataclasses.replace(_analysis(_wav(tmp_path / "a.wav")), kick=[], snare=[], hh=[])
+    with pytest.raises(ValueError, match="no onsets"):
+        assemble_new(a, None, tmp_path / "out", 1, _copy)
+    assert not (tmp_path / "out").exists()

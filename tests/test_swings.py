@@ -51,3 +51,14 @@ def test_profiles_table():
     assert e.njs == 16 and e.grid == 0.25 and e.allow_dots and e.gap_beats == 8.0
     assert e.warn.min_hand_gap_s == 0.22 and e.error.vision_window_s == 0.18
     assert not PROFILES["Hard"].allow_dots and PROFILES["Hard"].allow_doubles
+
+
+def test_dot_after_conflict_swing_infers_down():
+    ns = [
+        Note(1.0, 1, 0, Color.RED, Cut.DOWN),
+        Note(2.0, 1, 0, Color.RED, Cut.DOWN),
+        Note(2.0, 2, 0, Color.RED, Cut.UP),
+        Note(3.0, 1, 0, Color.RED, Cut.ANY),
+    ]
+    s = build_swings(ns, T)[Color.RED]
+    assert s[1].vector is None and s[2].vector == (0, -1)

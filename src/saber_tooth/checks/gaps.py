@@ -7,9 +7,11 @@ from saber_tooth.checks.finding import Finding
 
 def _gap_edges(d, timing, analysis) -> list[tuple[float, float]]:
     beats = sorted({n.beat for n in d.notes})
-    if not beats:
-        return []
     onsets = analysis.beats + analysis.kick + analysis.snare + analysis.hh
+    if not beats:  # no notes at all: one gap over the whole analysed range
+        if not onsets:
+            return []
+        return [(timing.to_beats(min(onsets)), timing.to_beats(max(onsets)))]
     edges = []
     if analysis.beats:
         edges.append((timing.to_beats(analysis.beats[0]), beats[0]))

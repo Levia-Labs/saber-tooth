@@ -4,6 +4,7 @@ from saber_tooth.model import CUT_VECTORS, Color, Cut, Note
 from saber_tooth.timing import Timing
 
 Vec = tuple[float, float]
+DEFAULT_PREV: Vec = CUT_VECTORS[Cut.UP]  # opposite of this is DOWN, the first swing's default
 
 
 @dataclass(frozen=True)
@@ -45,11 +46,12 @@ def build_swings(
 ) -> dict[Color, list[Swing]]:
     out: dict[Color, list[Swing]] = {Color.RED: [], Color.BLUE: []}
     for hand in (Color.RED, Color.BLUE):
-        prev: Vec = CUT_VECTORS[Cut.UP]  # opposite of this is DOWN for the first swing
+        prev: Vec = DEFAULT_PREV
         for group in _group([n for n in notes if n.color == hand], timing, window_s):
             cut, conflict = _cut_vector(group)
             if conflict:
                 vector: Vec | None = None
+                prev = DEFAULT_PREV  # last direction unknown: the next ANY swing goes DOWN
             elif cut is None:
                 vector = (-prev[0], -prev[1])
             else:

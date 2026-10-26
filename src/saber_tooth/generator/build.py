@@ -103,7 +103,10 @@ def _fill_gaps(placer, cands, a, timing, profile, scope, seed) -> int:
 
 
 def timing_events(timing: Timing) -> list[BpmEvent]:
-    return [BpmEvent(beat, bpm) for beat, _, bpm in timing._segs[1:]]
+    """Events that rebuild `timing` from its initial bpm, keeping a beat-0 override."""
+    segs = timing._segs
+    first = segs[0] if segs[0][2] != timing.initial_bpm else None
+    return [BpmEvent(beat, bpm) for beat, _, bpm in ([first] if first else []) + segs[1:]]
 
 
 def generate_with_stats(

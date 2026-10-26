@@ -81,7 +81,7 @@ def test_registry_is_extensible_and_receives_analysis():
     RULES["probe"] = lambda d, sw, t, p, analysis=None: seen.append(analysis) or []
     try:
         d = Difficulty("Expert", 16, 0)
-        check_difficulty(d, Timing(120.0, []), PROFILES["Expert"], analysis="A")
+        check_difficulty(d, Timing(120.0, []), PROFILES["Expert"], "A", {"probe"})
         assert seen == ["A"]
     finally:
         del RULES["probe"]
