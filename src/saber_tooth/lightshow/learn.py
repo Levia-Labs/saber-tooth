@@ -17,8 +17,23 @@ def _p90(counts: list[int]) -> float:
     return float(s[min(len(s) - 1, math.ceil(0.9 * len(s)) - 1)])
 
 
+def _valid(groups: object) -> list[dict]:
+    """Box groups that are dicts with a finite numeric beat; others are dropped."""
+    if not isinstance(groups, list):
+        return []
+    ok = (int, float)
+    return [
+        g
+        for g in groups
+        if isinstance(g, dict)
+        and isinstance(g.get("b"), ok)
+        and not isinstance(g["b"], bool)
+        and math.isfinite(g["b"])
+    ]
+
+
 def _box_count(d: Difficulty) -> int:
-    return sum(len(d.raw.get(k, [])) for k in BOX_KEYS)
+    return sum(len(_valid(d.raw.get(k, []))) for k in BOX_KEYS)
 
 
 def _rebase_group(g: dict, start: float) -> dict:
@@ -34,7 +49,7 @@ def _units(env: str, source: str, d: Difficulty) -> list[Unit]:
     n_bars = max(
         [int(x.beat // BAR) for x in (*d.notes, *d.events)]
         + [int(b // BAR) for b, _ in d.boosts]
-        + [int(g["b"] // BAR) for k in BOX_KEYS for g in d.raw.get(k, [])]
+        + [int(g["b"] // BAR) for k in BOX_KEYS for g in _valid(d.raw.get(k, []))]
         + [0]
     )
     p90 = _p90([bars.get(i, 0) for i in range(n_bars + 1)])
@@ -48,10 +63,10 @@ def _units(env: str, source: str, d: Difficulty) -> list[Unit]:
         ]
         boosts = [(b - lo, o) for b, o in d.boosts if lo <= b < hi]
         groups = {
-            k: [_rebase_group(g, lo) for g in d.raw.get(k, []) if lo <= g["b"] < hi]
+            k: [_rebase_group(g, lo) for g in _valid(d.raw.get(k, [])) if lo <= g["b"] < hi]
             for k in BOX_KEYS
         }
-        if not (events or boosts or groups):
+        if not (events or boosts or any(groups.values())):
             continue
         energy = min(1.0, max(0.0, bars.get(i, 0) / p90)) if p90 else 0.0
         out.append(Unit(env, source, energy, events, boosts, groups))
@@ -64,6 +79,8 @@ def _densest(m: Beatmap) -> Difficulty | None:
 
 def learn(levels: Path) -> Templates:
     """Learn one-bar vanilla lighting units from map folders (read-only)."""
+    if not Path(levels).is_dir():
+        raise FileNotFoundError(f"levels directory not found: {levels}")
     t = Templates()
     for folder in sorted(p for p in Path(levels).iterdir() if p.is_dir()):
         try:
@@ -76,7 +93,11 @@ def learn(levels: Path) -> Templates:
             continue
         if len(d.events) < MIN_EVENTS and not _box_count(d):
             continue
-        t.units.setdefault(env, []).extend(_units(env, folder.name, d))
+        try:
+            units = _units(env, folder.name, d)
+        except Exception:  # noqa: S112 - one odd community map must not abort learn
+            continue
+        t.units.setdefault(env, []).extend(units)
         if m.info.color_scheme and m.info.color_scheme not in t.schemes.get(env, []):
             t.schemes.setdefault(env, []).append(m.info.color_scheme)
     return t
