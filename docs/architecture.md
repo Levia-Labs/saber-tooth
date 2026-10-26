@@ -81,6 +81,14 @@ The package is `src/saber_tooth/`. Each file stays under 300 lines.
 4. API tests use the FastAPI `TestClient` with temporary `/levels` and `/data`.
 5. One opt-in task scans a copy of real maps and prints counts. It is not part of the gate.
 
+## beat-analyser project naming
+
+1. `POST /upload` derives the project name from the uploaded filename: directory part dropped, extension dropped, then `secure_filename`. The result must match `[A-Za-z0-9][A-Za-z0-9._-]{0,99}`.
+2. `POST /download_yt` uses the YouTube video id as the project name, validated against the same pattern.
+3. Both routes answer with the zip as an attachment named `<name>_tracks.zip`, so the name is recoverable from `Content-Disposition`.
+4. The client strips `_tracks.zip`, re-validates the name as one path component, resolves `uploads / name` and refuses any path outside `uploads`. The `GET /folders` fallback is not needed.
+5. The client sends no `Origin` header; beat-analyser refuses cross-site POSTs only when `Origin` or `Sec-Fetch-Site` indicates one.
+
 ## Decisions
 
 See [adr/README.md](adr/README.md).
