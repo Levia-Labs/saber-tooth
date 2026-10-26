@@ -14,13 +14,23 @@ from saber_tooth.model import Beatmap, Difficulty, Note
 from saber_tooth.profiles import PROFILES, Profile
 from saber_tooth.timing import Timing
 
-Ident = tuple
+EPS = 1e-6
 
 
 def finding_key(f: Finding) -> tuple:
-    """Identity of a finding: location plus the notes involved."""
-    notes = sorted((n.beat, n.x, n.y, int(n.color), int(n.cut)) for n in f.notes)
-    return (f.difficulty, f.rule, f.beat_start, f.beat_end, tuple(notes))
+    """Identity of a finding: difficulty, rule and the hands involved."""
+    return (f.difficulty, f.rule, frozenset(int(n.color) for n in f.notes))
+
+
+def _same(a: Finding, b: Finding) -> bool:
+    """Same identity and overlapping (or touching) beat ranges."""
+    ranges = a.beat_start <= b.beat_end + EPS and b.beat_start <= a.beat_end + EPS
+    return finding_key(a) == finding_key(b) and ranges
+
+
+def new_findings(after: list[Finding], before: list[Finding]) -> list[Finding]:
+    """Findings in `after` that match no `before` finding."""
+    return [a for a in after if not any(_same(a, b) for b in before)]
 
 
 @dataclass(frozen=True)
@@ -85,31 +95,33 @@ def _touched(ops: list[Op]) -> set[str]:
     return names
 
 
-def identities(beatmap: Beatmap, names: set[str], analysis: Analysis | None) -> set[Ident]:
-    out: set[Ident] = set()
-    for name in names:
+def findings_for(beatmap: Beatmap, names: set[str], analysis: Analysis | None) -> list[Finding]:
+    out: list[Finding] = []
+    for name in sorted(names):
         d, profile = beatmap.difficulties.get(name), PROFILES.get(name)
-        if d is None or profile is None:
-            continue
-        for f in check_difficulty(d, map_timing(beatmap, d), profile, analysis):
-            out.add(finding_key(f))
-    for f in run_checks(beatmap, analysis, rules=set(MAP_RULES)):
-        out.add(finding_key(f))
-    return out
+        if d is not None and profile is not None:
+            out.extend(check_difficulty(d, map_timing(beatmap, d), profile, analysis))
+    return out + run_checks(beatmap, analysis, rules=set(MAP_RULES))
+
+
+def _target_remains(target: Finding, before: list[Finding], after: list[Finding]) -> bool:
+    others = [b for b in before if b is not target]
+    return any(_same(a, target) and not any(_same(a, o) for o in others) for a in after)
 
 
 def accepts(ctx: Context, ops: list[Op]) -> list[Op] | None:
-    """The fixed map's findings must lose the target and gain nothing."""
-    f = ctx.finding
+    """The fixed map must lose the target finding and gain no new one."""
     try:
         fixed = apply_ops(ctx.beatmap, ops)
     except OpConflict:
         return None
-    names = _touched(ops) | {f.difficulty}
-    target = finding_key(f)
-    before = identities(ctx.beatmap, names, ctx.analysis)
-    after = identities(fixed, names, ctx.analysis)
-    return fixed if target in before and target not in after and after <= before else None
+    names = _touched(ops) | {ctx.finding.difficulty}
+    before = findings_for(ctx.beatmap, names, ctx.analysis)
+    after = findings_for(fixed, names, ctx.analysis)
+    target = next((b for b in before if _same(b, ctx.finding)), None)
+    if target is None or _target_remains(target, before, after):
+        return None
+    return None if new_findings(after, before) else fixed
 
 
 def _changed(beatmap: Beatmap, fixed: Beatmap, names: set[str]) -> tuple[list[Note], list[Note]]:

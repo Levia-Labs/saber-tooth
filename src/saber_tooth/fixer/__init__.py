@@ -17,11 +17,19 @@ from saber_tooth.fixer.ops import (
     op_from_dict,
 )
 from saber_tooth.fixer.strategies import STRATEGIES
-from saber_tooth.fixer.verify import Context, Proposal, accepts, build_proposal, finding_key
+from saber_tooth.fixer.verify import (
+    Context,
+    Proposal,
+    accepts,
+    build_proposal,
+    finding_key,
+    new_findings,
+)
 from saber_tooth.lightshow import Templates
 from saber_tooth.model import Beatmap
 
 MAX_CANDIDATES = 80
+MAX_GENERATED = 600
 
 
 class Outcome(NamedTuple):
@@ -44,8 +52,16 @@ def propose_with_reason(
         ctx.d is None or ctx.profile is None
     ):
         return Outcome(None, f"difficulty {finding.difficulty} not found")
-    for ops in islice(strategy(ctx), MAX_CANDIDATES):
-        fixed = accepts(ctx, ops) if ops else None
+    tried = 0
+    for ops in islice(strategy(ctx), MAX_GENERATED):
+        if not ops:
+            continue
+        # the budget caps edit plans; Delete-only fallbacks are always verified
+        if not all(isinstance(op, Delete) for op in ops):
+            if tried >= MAX_CANDIDATES:
+                continue
+            tried += 1
+        fixed = accepts(ctx, ops)
         if fixed is not None:
             return Outcome(build_proposal(ctx, ops, fixed), "")
     return Outcome(None, ctx.reason or "no verified fix")
@@ -77,6 +93,7 @@ __all__ = [
     "Recolor",
     "apply_ops",
     "finding_key",
+    "new_findings",
     "op_from_dict",
     "propose",
     "propose_with_reason",
