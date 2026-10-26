@@ -8,7 +8,7 @@
 **Interfaces:**
 
 - Consumes: Tasks 3, 5, 6, 9, 10, 12, 13, 14.
-- Produces: `Service(levels: Path, data: Path, store: Store, client: AnalyserClient, encode)` with `refresh_library() -> int`, `scan(map_id) -> int` (analyses the map's audio through `client.analyse_file` for `empty-gap` and `missing-difficulty`; stores proposals; returns count), `generate(url_or_path) -> int` (stages into `data/staging/<job>`, creates one `create-map` proposal), `apply(map_id) -> Path`, `learn() -> int`. Map id: first 12 hex chars of `sha1(folder_name)`.
+- Produces: `Service(levels: Path, data: Path, store: Store, client: AnalyserClient, encode)` with `refresh_library() -> int`, `scan(map_id) -> int` (analyses the map's audio through `client.analyse_file` for `empty-gap` and `missing-difficulty`; stores proposals; returns count), `generate(url_or_path) -> int` (stages into `data/staging/<job>`, creates one `create-map` proposal), `apply(map_id) -> Path`, `learn() -> int`. Map id: first 12 hex chars of `sha256(folder_name)`.
 
 Apply algorithm:
 

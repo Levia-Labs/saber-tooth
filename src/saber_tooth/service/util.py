@@ -11,7 +11,7 @@ Span = tuple[str, float, float]
 
 
 def map_id_for(folder: str) -> str:
-    return hashlib.sha1(folder.encode("utf-8")).hexdigest()[:12]  # noqa: S324 - id only
+    return hashlib.sha256(folder.encode("utf-8")).hexdigest()[:12]
 
 
 def finding_from_dict(d: dict) -> Finding:

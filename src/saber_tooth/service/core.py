@@ -171,7 +171,7 @@ class Service:
         token = uuid.uuid4().hex
         staging = self.data / "staging" / token
         staging.parent.mkdir(parents=True, exist_ok=True)
-        seed = int(hashlib.sha1(a.name.encode("utf-8")).hexdigest()[:8], 16)  # noqa: S324
+        seed = int(hashlib.sha256(a.name.encode("utf-8")).hexdigest()[:8], 16)
         assemble_new(a, self._templates(), staging, seed, self.encode)
         proposal = {
             "rule": CREATE_MAP,
