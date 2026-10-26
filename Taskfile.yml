@@ -1,0 +1,23 @@
+version: "3"
+
+silent: true
+
+vars:
+  PY: '{{if eq OS "windows"}}.venv/Scripts/python.exe{{else}}.venv/bin/python{{end}}'
+
+includes:
+  claude: .crepidoma/taskfiles/claude
+  lint: .crepidoma/taskfiles/lint
+  repo: .crepidoma/taskfiles/repo
+  todo: .crepidoma/taskfiles/todo
+  git: .crepidoma/taskfiles/git
+  graph: .crepidoma/taskfiles/graph
+  test: .crepidoma/taskfiles/test
+  quality: .crepidoma/taskfiles/quality
+  security: .crepidoma/taskfiles/security
+  ci: .crepidoma/taskfiles/ci
+  rtk: .crepidoma/taskfiles/rtk
+  setup: .crepidoma/taskfiles/setup
+  st:
+    taskfile: ./tasks/Taskfile.yml
+    vars: { PY: "{{.PY}}" }

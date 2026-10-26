@@ -1,0 +1,29 @@
+version: "3"
+tasks:
+  test:
+    desc: "Run the pytest suite. Usage: task st:test [-- <pytest args>]"
+    cmds: ["uv run pytest -q {{.CLI_ARGS}}"]
+  check:
+    desc: "Run quality checks on one map folder. Usage: task st:check -- <folder>"
+    cmds: ["uv run saber-tooth check {{.CLI_ARGS}}"]
+  inspect:
+    desc: "Summarise one map folder. Usage: task st:inspect -- <folder>"
+    cmds: ["uv run saber-tooth inspect {{.CLI_ARGS}}"]
+  survey:
+    desc: "Read-only finding counts across a levels dir. Usage: task st:survey -- <levels_dir>"
+    cmds: ["uv run saber-tooth survey {{.CLI_ARGS}}"]
+  learn:
+    desc: "Build lightshow templates. Usage: task st:learn -- <levels_dir> <out.json>"
+    cmds: ["uv run saber-tooth learn {{.CLI_ARGS}}"]
+  up:
+    desc: "Build and start the compose stack. Usage: task st:up"
+    cmds: ["docker compose up -d --build"]
+  down:
+    desc: "Stop the compose stack. Usage: task st:down"
+    cmds: ["docker compose down"]
+  logs:
+    desc: "Tail saber-tooth logs. Usage: task st:logs"
+    cmds: ["docker compose logs --tail 100 saber-tooth"]
+  gen:
+    desc: "Start a map generation job from a URL. Usage: task st:gen -- <url>"
+    cmds: ["uv run saber-tooth gen-url {{.CLI_ARGS}}"]
