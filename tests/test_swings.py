@@ -1,3 +1,5 @@
+import math
+
 from saber_tooth.model import Color, Cut, Note
 from saber_tooth.profiles import PROFILES
 from saber_tooth.swings import build_swings
@@ -62,3 +64,16 @@ def test_dot_after_conflict_swing_infers_down():
     ]
     s = build_swings(ns, T)[Color.RED]
     assert s[1].vector is None and s[2].vector == (0, -1)
+
+
+def test_compatible_mixed_cuts_give_mean_vector():
+    ns = [Note(1.0, 1, 0, Color.RED, Cut.DOWN), Note(1.0, 1, 1, Color.RED, Cut.DOWN_LEFT)]
+    v = build_swings(ns, T)[Color.RED][0].vector
+    assert v is not None
+    assert abs(math.hypot(*v) - 1.0) < 1e-9
+    assert v[0] < 0 < -v[1] and abs(v[0]) < abs(v[1])
+
+
+def test_conflict_boundary_just_over_45_is_none():
+    ns = [Note(1.0, 1, 0, Color.RED, Cut.DOWN), Note(1.0, 2, 0, Color.RED, Cut.LEFT)]
+    assert build_swings(ns, T)[Color.RED][0].vector is None

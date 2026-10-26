@@ -6,20 +6,14 @@ from saber_tooth.checks.constants import VISION_MIN_DT
 from saber_tooth.checks.finding import Finding
 from saber_tooth.model import CUT_VECTORS, Color, Cut, Difficulty, Note
 from saber_tooth.profiles import Profile
-from saber_tooth.swings import Swing
+from saber_tooth.swings import MAX_CUT_ANGLE, Swing, angle_between
 from saber_tooth.timing import Timing
 
-MAX_CUT_ANGLE = 45.5  # 45 degrees plus tolerance for the rounded diagonal vectors
 MAX_SPREAD = 1.5
 
 
-def _angle(u, v) -> float:
-    cos = (u[0] * v[0] + u[1] * v[1]) / (math.hypot(*u) * math.hypot(*v))
-    return math.degrees(math.acos(max(-1.0, min(1.0, cos))))
-
-
 def _line_angle(u, v) -> float:
-    a = _angle(u, v)
+    a = angle_between(u, v)
     return min(a, 180.0 - a)
 
 
@@ -37,7 +31,7 @@ def _stack_problem(s: Swing) -> str | None:
     vecs = [CUT_VECTORS[n.cut] for n in s.notes if n.cut != Cut.ANY]
     if not vecs:  # all dots: no direction of their own, only spread counts
         return _spread_problem(s)
-    if any(_angle(u, v) > MAX_CUT_ANGLE for u, v in combinations(vecs, 2)):
+    if any(angle_between(u, v) > MAX_CUT_ANGLE for u, v in combinations(vecs, 2)):
         return "notes of one swing have conflicting cut directions"
     if problem := _spread_problem(s):
         return problem

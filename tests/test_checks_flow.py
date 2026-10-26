@@ -100,3 +100,12 @@ def test_legal_pattern_becomes_swing_speed_error_after_tempo_increase():
 def test_fast_pattern_becomes_legal_after_tempo_decrease():
     assert _swing_speed(Timing(240.0, [])) == {"warn"}
     assert _swing_speed(Timing(240.0, [BpmEvent(4.0, 120.0)])) == set()
+
+
+def test_compatible_mixed_cuts_trigger_parity_break():
+    ns = [
+        Note(4.0, 1, 0, Color.RED, Cut.DOWN),
+        Note(4.0, 1, 1, Color.RED, Cut.DOWN_LEFT),
+        Note(4.5, 1, 0, Color.RED, Cut.DOWN),
+    ]
+    assert ("parity-break", "error") in rules(ns)

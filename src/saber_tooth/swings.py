@@ -1,9 +1,12 @@
+import math
 from dataclasses import dataclass
+from itertools import combinations
 
 from saber_tooth.model import CUT_VECTORS, Color, Cut, Note
 from saber_tooth.timing import Timing
 
 Vec = tuple[float, float]
+MAX_CUT_ANGLE = 45.5  # 45 degrees plus tolerance for the rounded diagonal vectors
 DEFAULT_PREV: Vec = CUT_VECTORS[Cut.UP]  # opposite of this is DOWN, the first swing's default
 
 
@@ -18,12 +21,24 @@ class Swing:
     end: tuple[float, float]
 
 
-def _cut_vector(notes: list[Note]) -> tuple[Cut | None, bool]:
-    """Return (shared cut, conflict). Cut is None when every note is ANY."""
-    cuts = {n.cut for n in notes if n.cut != Cut.ANY}
-    if len(cuts) > 1:
+def angle_between(u: Vec, v: Vec) -> float:
+    cos = (u[0] * v[0] + u[1] * v[1]) / (math.hypot(*u) * math.hypot(*v))
+    return math.degrees(math.acos(max(-1.0, min(1.0, cos))))
+
+
+def _cut_vector(notes: list[Note]) -> tuple[Vec | None, bool]:
+    """Return (mean cut vector, conflict). Vector is None when every note is ANY."""
+    vecs = [CUT_VECTORS[n.cut] for n in notes if n.cut != Cut.ANY]
+    if any(angle_between(u, v) > MAX_CUT_ANGLE for u, v in combinations(vecs, 2)):
         return None, True
-    return (next(iter(cuts)) if cuts else None), False
+    if not vecs:
+        return None, False
+    mx = sum(v[0] for v in vecs) / len(vecs)
+    my = sum(v[1] for v in vecs) / len(vecs)
+    if len(set(vecs)) == 1:
+        return vecs[0], False
+    norm = math.hypot(mx, my)
+    return (mx / norm, my / norm), False
 
 
 def _group(notes: list[Note], timing: Timing, window_s: float) -> list[list[Note]]:
@@ -55,7 +70,7 @@ def build_swings(
             elif cut is None:
                 vector = (-prev[0], -prev[1])
             else:
-                vector = CUT_VECTORS[cut]
+                vector = cut
             if vector is not None:
                 prev = vector
                 ordered = sorted(group, key=lambda n: n.x * vector[0] + n.y * vector[1])
