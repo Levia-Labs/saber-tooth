@@ -6,6 +6,7 @@ from saber_tooth.fixer.ops import (
     AddDifficulty,
     ApplyLightshow,
     Delete,
+    DeleteWall,
     Fill,
     Flip,
     Move,
@@ -30,6 +31,8 @@ def describe(op: Op) -> str:
             return f"Recolor {_who(op.note)} to {other}"
         case Delete():
             return f"Delete {_who(op.note)}"
+        case DeleteWall():
+            return f"Delete wall at beat {op.wall.beat:g} lasting {op.wall.duration:g} beats"
         case Fill():
             span = f"{op.beat_start:g}-{op.beat_end:g}"
             return f"Fill beats {span} with {len(op.notes)} notes"

@@ -8,6 +8,7 @@ from saber_tooth.fixer.layout_fixes import crossover, note_in_wall, stack_confli
 from saber_tooth.fixer.map_fixes import default_environment, empty_gap, missing_difficulty
 from saber_tooth.fixer.ops import Delete, Flip, Move, Op
 from saber_tooth.fixer.verify import Context, Strategy
+from saber_tooth.fixer.wall_fixes import wall_short, wall_trap
 from saber_tooth.generator.candidates import build_candidates, phase_of
 from saber_tooth.swings import Swing
 
@@ -87,6 +88,8 @@ STRATEGIES: dict[str, Strategy] = {
     "vision-block": vision_block,
     "note-in-wall": note_in_wall,
     "empty-gap": empty_gap,
+    "wall-trap": wall_trap,
+    "wall-short": wall_short,
     "missing-difficulty": missing_difficulty,
     "default-environment": default_environment,
 }

@@ -7,6 +7,7 @@ from saber_tooth.fixer.ops import (
     AddDifficulty,
     ApplyLightshow,
     Delete,
+    DeleteWall,
     Fill,
     Flip,
     Move,
@@ -57,7 +58,7 @@ def propose_with_reason(
         if not ops:
             continue
         # the budget caps edit plans; Delete-only fallbacks are always verified
-        if not all(isinstance(op, Delete) for op in ops):
+        if not all(isinstance(op, Delete | DeleteWall) for op in ops):
             if tried >= MAX_CANDIDATES:
                 continue
             tried += 1
@@ -83,6 +84,7 @@ __all__ = [
     "ApplyLightshow",
     "Context",
     "Delete",
+    "DeleteWall",
     "Fill",
     "Flip",
     "Move",

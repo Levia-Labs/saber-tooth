@@ -72,7 +72,7 @@ def events_from_dict(d: dict) -> Events:
     )
 
 
-def _wall_to_dict(w: Wall) -> dict:
+def wall_to_dict(w: Wall) -> dict:
     return {
         "beat": w.beat,
         "x": w.x,
@@ -83,7 +83,7 @@ def _wall_to_dict(w: Wall) -> dict:
     }
 
 
-def _wall_from_dict(w: dict) -> Wall:
+def wall_from_dict(w: dict) -> Wall:
     return Wall(
         float(w["beat"]),
         int(w["x"]),
@@ -101,7 +101,7 @@ def difficulty_to_dict(d: Difficulty) -> dict:
         "offset": d.offset,
         "notes": [note_to_dict(n) for n in d.notes],
         "bombs": [{"beat": b.beat, "x": b.x, "y": b.y} for b in d.bombs],
-        "walls": [_wall_to_dict(w) for w in d.walls],
+        "walls": [wall_to_dict(w) for w in d.walls],
         "events": [_event_to_dict(e) for e in d.events],
         "boosts": [[b, on] for b, on in d.boosts],
         "bpm_events": [{"beat": e.beat, "bpm": e.bpm} for e in d.bpm_events],
@@ -117,7 +117,7 @@ def difficulty_from_dict(d: dict) -> Difficulty:
         float(d["offset"]),
         notes=[note_from_dict(n) for n in d["notes"]],
         bombs=[Bomb(float(b["beat"]), int(b["x"]), int(b["y"])) for b in d["bombs"]],
-        walls=[_wall_from_dict(w) for w in d["walls"]],
+        walls=[wall_from_dict(w) for w in d["walls"]],
         events=[_event_from_dict(e) for e in d["events"]],
         boosts=[(float(b), bool(on)) for b, on in d["boosts"]],
         bpm_events=[BpmEvent(float(e["beat"]), float(e["bpm"])) for e in d["bpm_events"]],

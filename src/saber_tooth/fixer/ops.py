@@ -7,7 +7,7 @@ from typing import ClassVar
 from saber_tooth.fixer import codec
 from saber_tooth.fixer.sliders import retarget
 from saber_tooth.mapio.write import BOX_KEYS, FX_KEY
-from saber_tooth.model import RANKS, Beatmap, Color, ColorScheme, Cut, Difficulty, Note
+from saber_tooth.model import RANKS, Beatmap, Color, ColorScheme, Cut, Difficulty, Note, Wall
 
 EPS = 1e-6
 
@@ -84,6 +84,24 @@ class Delete:
 
 
 @dataclass(frozen=True)
+class DeleteWall:
+    KIND: ClassVar[str] = "delete-wall"
+    difficulty: str
+    wall: Wall
+
+    def to_dict(self) -> dict:
+        return {
+            "op": self.KIND,
+            "difficulty": self.difficulty,
+            "wall": codec.wall_to_dict(self.wall),
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "DeleteWall":
+        return cls(d["difficulty"], codec.wall_from_dict(d["wall"]))
+
+
+@dataclass(frozen=True)
 class Fill:
     KIND: ClassVar[str] = "fill"
     difficulty: str
@@ -145,8 +163,11 @@ class ApplyLightshow:
         return cls(d["environment"], codec.scheme_from_dict(d["color_scheme"]), events)
 
 
-Op = Move | Recolor | Flip | Delete | Fill | AddDifficulty | ApplyLightshow
-_KINDS = {c.KIND: c for c in (Move, Recolor, Flip, Delete, Fill, AddDifficulty, ApplyLightshow)}
+Op = Move | Recolor | Flip | Delete | DeleteWall | Fill | AddDifficulty | ApplyLightshow
+_KINDS = {
+    c.KIND: c
+    for c in (Move, Recolor, Flip, Delete, DeleteWall, Fill, AddDifficulty, ApplyLightshow)
+}
 
 
 def op_from_dict(d: dict) -> Op:
@@ -244,6 +265,13 @@ def _apply_one(beatmap: Beatmap, op: Op) -> None:
             d = _diff(beatmap, op.difficulty)
             _take(d, op.note, "delete")
             retarget(d, op.note, None)
+        case DeleteWall():
+            d = _diff(beatmap, op.difficulty)
+            if op.wall not in d.walls:
+                raise OpConflict(
+                    f"delete-wall: wall at beat {op.wall.beat:g} not found in {d.name}"
+                )
+            d.walls.remove(op.wall)
     for d in beatmap.difficulties.values():
         d.notes.sort()
 
