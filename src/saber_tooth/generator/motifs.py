@@ -27,15 +27,26 @@ _V = {
 }
 # Every motif alternates swing direction (dot < 0), wrap-around included; red uses columns 0-1.
 RED_MOTIFS: tuple[tuple[Step, ...], ...] = (
-    ((C.DOWN, 1, 0), (C.UP, 1, 0), (C.DOWN_LEFT, 0, 0), (C.UP_RIGHT, 1, 1)),
+    ((C.DOWN, 1, 0), (C.UP, 1, 0), (C.DOWN_LEFT, 0, 0), (C.UP_RIGHT, 0, 1)),
     ((C.DOWN, 1, 0), (C.UP_LEFT, 0, 1), (C.DOWN_RIGHT, 1, 0), (C.UP, 1, 0)),
-    ((C.DOWN_LEFT, 1, 0), (C.UP_RIGHT, 1, 1), (C.DOWN, 1, 0), (C.UP, 0, 0)),
+    ((C.DOWN_LEFT, 1, 0), (C.UP_RIGHT, 0, 1), (C.DOWN, 1, 0), (C.UP, 0, 0)),
     ((C.DOWN, 1, 0), (C.UP, 0, 0), (C.DOWN, 1, 0), (C.UP_LEFT, 0, 1)),
     ((C.DOWN_RIGHT, 1, 0), (C.UP_LEFT, 0, 1), (C.DOWN_RIGHT, 1, 0), (C.UP_LEFT, 0, 1)),
-    ((C.DOWN, 0, 0), (C.UP, 0, 0), (C.DOWN, 1, 0), (C.UP_RIGHT, 1, 1)),
-    ((C.DOWN, 1, 0), (C.UP_RIGHT, 1, 1), (C.DOWN_LEFT, 0, 0), (C.UP, 0, 0)),
+    ((C.DOWN, 0, 0), (C.UP, 0, 0), (C.DOWN, 1, 0), (C.UP_RIGHT, 0, 1)),
+    ((C.DOWN, 1, 0), (C.UP_RIGHT, 0, 1), (C.DOWN_LEFT, 0, 0), (C.UP, 0, 0)),
     ((C.DOWN, 1, 0), (C.UP, 1, 0), (C.DOWN, 1, 0), (C.UP, 1, 0)),
     ((C.DOWN_RIGHT, 0, 0), (C.UP_LEFT, 0, 1), (C.DOWN, 1, 0), (C.UP, 1, 0)),
+    # top row, sweeps and sideways swings at the outer column
+    ((C.DOWN, 1, 2), (C.UP, 1, 0), (C.DOWN, 0, 2), (C.UP, 0, 0)),
+    ((C.DOWN_RIGHT, 0, 2), (C.UP_LEFT, 0, 1), (C.DOWN_RIGHT, 1, 0), (C.UP, 1, 0)),
+    ((C.RIGHT, 0, 1), (C.LEFT, 0, 0), (C.RIGHT, 0, 2), (C.LEFT, 0, 1)),
+    ((C.DOWN, 1, 0), (C.UP_LEFT, 0, 2), (C.DOWN_RIGHT, 1, 0), (C.UP, 1, 2)),
+    ((C.DOWN, 1, 0), (C.UP_LEFT, 0, 2), (C.DOWN, 0, 0), (C.UP_RIGHT, 1, 2)),
+    ((C.DOWN, 0, 2), (C.UP_RIGHT, 0, 1), (C.DOWN_LEFT, 0, 0), (C.UP, 1, 0)),
+    ((C.DOWN, 1, 0), (C.UP, 1, 0), (C.DOWN, 1, 0), (C.UP_RIGHT, 1, 2)),
+    ((C.DOWN_LEFT, 0, 1), (C.UP_RIGHT, 1, 2), (C.DOWN_LEFT, 0, 1), (C.UP_RIGHT, 1, 2)),
+    ((C.DOWN, 0, 2), (C.UP, 0, 1), (C.DOWN, 1, 2), (C.UP, 1, 0)),
+    ((C.LEFT, 1, 2), (C.RIGHT, 0, 2), (C.LEFT, 1, 0), (C.RIGHT, 0, 0)),
 )
 LATTICE_CUTS = (C.UP, C.DOWN, C.UP_LEFT, C.UP_RIGHT, C.DOWN_LEFT, C.DOWN_RIGHT)
 

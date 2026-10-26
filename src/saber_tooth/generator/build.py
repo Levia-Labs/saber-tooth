@@ -3,32 +3,30 @@ from dataclasses import dataclass
 
 from saber_tooth.analysis import Analysis
 from saber_tooth.checks import check_difficulty
-from saber_tooth.generator.candidates import (
-    BAR_BEATS,
-    Candidate,
-    bar_index,
-    build_candidates,
-    phase_of,
-    select,
-)
+from saber_tooth.generator.candidates import Candidate, build_candidates, phase_of
 from saber_tooth.generator.motifs import Step, motif_steps, phrase_picks
-from saber_tooth.generator.placer import GAP_MARGIN_S, GenerationError, Placer
-from saber_tooth.model import Color, Difficulty
+from saber_tooth.generator.placer import GenerationError, Placer
+from saber_tooth.generator.plan import BAR_BEATS, Event, plan_events
+from saber_tooth.model import BpmEvent, Color, Difficulty
 from saber_tooth.profiles import Profile
 from saber_tooth.swings import Swing
 from saber_tooth.timing import Timing
 
 PHRASE_BEATS = 4 * BAR_BEATS
-DOUBLE_ENERGY = 0.7
 MAX_REPAIRS = 40
 
 
-@dataclass(frozen=True)
-class Event:
-    beat: float
-    rel: float
-    secs: float
-    hands: tuple[Color, ...]
+@dataclass
+class GenerationStats:
+    selected: int = 0  # notes the planner asked for
+    placed: int = 0  # notes the placer could verify and keep
+    filled: int = 0  # notes added to close empty gaps
+    repaired: int = 0  # notes dropped after the final check
+    final: int = 0
+
+    @property
+    def dropped(self) -> int:
+        return self.selected - self.placed + self.repaired
 
 
 class MotifState:
@@ -58,114 +56,113 @@ class MotifState:
             self.k[hand] = (self.k[hand] + ordered.index(chosen) + 1) % len(ordered)
 
 
-def make_events(
-    chosen: list[Candidate],
-    energy: dict[int, float],
-    timing: Timing,
-    profile: Profile,
-    last: dict[Color, float],
-) -> list[Event]:
-    """Alternate hands (older hand first); doubles on loud kick bar starts."""
-    gap = profile.warn.min_hand_gap_s + GAP_MARGIN_S
-    last = dict(last)
-    events: list[Event] = []
-    for c in chosen:
-        s = timing.to_seconds(c.beat)
-        ready = {h: s - last[h] >= gap for h in Color}
-        bar_start = abs(c.rel / BAR_BEATS - round(c.rel / BAR_BEATS)) < 1e-6
-        loud = energy.get(bar_index(c.rel), 0.0) > DOUBLE_ENERGY
-        if profile.allow_doubles and c.kick and bar_start and loud and all(ready.values()):
-            hands: tuple[Color, ...] = (Color.RED, Color.BLUE)
-        else:
-            hand = min(Color, key=lambda h: (last[h], h))
-            if not ready[hand]:
-                continue
-            hands = (hand,)
-        for h in hands:
-            last[h] = s
-        events.append(Event(c.beat, c.rel, s, hands))
-    return events
-
-
-def place_events(events: list[Event], placer: Placer, seed: int) -> None:
+def place_events(events: list[Event], placer: Placer, seed: int) -> int:
     state = MotifState(seed)
+    placed = 0
     for i, ev in enumerate(events):
         next_s = events[i + 1].secs if i + 1 < len(events) else None
         for hand in ev.hands:
-            order = [hand] if len(ev.hands) > 1 else sorted(Color, key=placer.last_secs)
+            # a single that does not fit its hand may still fit the other one
+            order = [hand] if len(ev.hands) > 1 else [hand, Color(1 - hand)]
             for h in order:
                 ordered = state.ordered(h, ev.rel)
                 step = placer.try_add(h, ev.beat, ordered, next_s)
                 if step is not None:
                     state.advance(h, ordered, step)
+                    placed += 1
                     break
+    return placed
 
 
-def _in_window(f, lo_beat: float, hi_beat: float) -> bool:
-    return f.beat_start >= lo_beat - 1e-9 and f.beat_end <= hi_beat + 1e-9
-
-
-def _fill_gaps(placer, make, cands, a, timing, profile, scope) -> None:
-    for _ in range(MAX_REPAIRS):
-        gaps = [f for f in check_difficulty(make(), timing, profile, a, {"empty-gap"}) if scope(f)]
-        progress = False
-        for f in gaps:
-            mid = (f.beat_start + f.beat_end) / 2
-            inside = [c for c in cands if f.beat_start <= c.beat <= f.beat_end]
-            for c in sorted(inside, key=lambda c: (abs(c.beat - mid), -c.score)):
-                if _insert(placer, c):
-                    progress = True
-                    break
-        if not progress:
-            return
-
-
-def _insert(placer: Placer, c: Candidate) -> bool:
-    state = MotifState(0)
-    for h in sorted(Color, key=placer.last_secs):
+def _insert(placer: Placer, c: Candidate, seed: int) -> bool:
+    state = MotifState(seed)
+    at = placer.timing.to_seconds(c.beat)
+    for h in sorted(Color, key=lambda h: placer.last_secs(h, at)):
         if placer.try_add(h, c.beat, state.ordered(h, c.rel)) is not None:
             return True
     return False
 
 
-def generate_difficulty(
+def _fill_gaps(placer, cands, a, timing, profile, scope, seed) -> int:
+    filled = 0
+    for _ in range(MAX_REPAIRS):
+        notes = placer.all_notes(with_context=True)
+        diff = Difficulty(profile.name, profile.njs, profile.offset, notes=notes)
+        gaps = [f for f in check_difficulty(diff, timing, profile, a, {"empty-gap"}) if scope(f)]
+        progress = False
+        for f in gaps:
+            mid = (f.beat_start + f.beat_end) / 2
+            inside = [c for c in cands if f.beat_start <= c.beat <= f.beat_end]
+            for c in sorted(inside, key=lambda c: (abs(c.beat - mid), -c.score)):
+                if _insert(placer, c, seed):
+                    progress, filled = True, filled + 1
+                    break
+        if not progress:
+            break
+    return filled
+
+
+def timing_events(timing: Timing) -> list[BpmEvent]:
+    return [BpmEvent(beat, bpm) for beat, _, bpm in timing._segs[1:]]
+
+
+def generate_with_stats(
     a: Analysis,
     timing: Timing,
     profile: Profile,
     seed: int,
     window: tuple[float, float] | None = None,
     entry: dict[Color, Swing] | None = None,
-) -> Difficulty:
-    """Generate one difficulty. `window` is (start_s, end_s) in seconds; `entry` seeds the hands."""
+    exit: dict[Color, Swing] | None = None,
+) -> tuple[Difficulty, GenerationStats]:
     phase = phase_of(a, timing)
-    cands = build_candidates(a, timing, profile, phase)
-    chosen, energy = select(cands, a, timing, profile, phase)
+    cands, bars = build_candidates(a, timing, profile, phase)
     if window is not None:
-        inwin = [c for c in cands if window[0] <= timing.to_seconds(c.beat) < window[1]]
-        chosen = [c for c in chosen if c in inwin]
-        cands = inwin
+        cands = [c for c in cands if window[0] <= timing.to_seconds(c.beat) < window[1]]
         lo, hi = timing.to_beats(window[0]), timing.to_beats(window[1])
     else:
         lo, hi = -math.inf, math.inf
+    context = [n for sw in [*(entry or {}).values(), *(exit or {}).values()] for n in sw.notes]
+    last = {h: entry[h].seconds if entry and h in entry else -math.inf for h in Color}
+    plan = plan_events(cands, bars, timing, profile, last)
+    placer = Placer(timing, profile, context)
+    stats = GenerationStats(selected=plan.selected)
+    stats.placed = place_events(plan.events, placer, seed)
 
     def scope(f) -> bool:
-        return _in_window(f, lo, hi)
+        return f.beat_end > lo and f.beat_start < hi
 
-    placer = Placer(timing, profile, entry)
-    last = {h: placer.last_secs(h) for h in Color}
-    place_events(make_events(chosen, energy, timing, profile, last), placer, seed)
-
-    def make() -> Difficulty:
-        return Difficulty(profile.name, profile.njs, profile.offset, notes=placer.all_notes())
-
-    _fill_gaps(placer, make, cands, a, timing, profile, scope)
+    stats.filled = _fill_gaps(placer, cands, a, timing, profile, scope, seed)
+    findings: list = []
     for _ in range(MAX_REPAIRS):
-        findings = [f for f in check_difficulty(make(), timing, profile, a) if scope(f)]
-        if not findings:
-            return make()
-        drops = {max(f.notes) for f in findings if f.rule != "empty-gap" and f.notes}
-        if drops:
-            kept = [n for n in placer.all_notes() if n not in drops]
-            placer = Placer.from_notes(timing, profile, kept, entry)
-        _fill_gaps(placer, make, cands, a, timing, profile, scope)
-    raise GenerationError(f"{profile.name}: findings remain after repair: {findings[:3]}")
+        diff = Difficulty(
+            profile.name, profile.njs, profile.offset, notes=placer.all_notes(with_context=True)
+        )
+        findings = [f for f in check_difficulty(diff, timing, profile, a) if scope(f)]
+        own = [f for f in findings if f.rule != "empty-gap" and set(f.notes) - placer.context]
+        if not own:
+            break
+        drops = {max(set(f.notes) - placer.context) for f in own}
+        stats.repaired += len(drops)
+        kept = [n for n in placer.all_notes() if n not in drops]
+        placer = Placer.from_notes(timing, profile, kept, context)
+        stats.filled += _fill_gaps(placer, cands, a, timing, profile, scope, seed)
+    else:
+        raise GenerationError(f"{profile.name}: findings remain after repair: {findings[:3]}")
+    if window is None and findings:
+        raise GenerationError(f"{profile.name}: findings remain: {findings[:3]}")
+    d = Difficulty(
+        profile.name,
+        profile.njs,
+        profile.offset,
+        notes=placer.all_notes(),
+        bpm_events=timing_events(timing),
+    )
+    stats.final = len(d.notes)
+    return d, stats
+
+
+def generate_difficulty(*args, **kwargs) -> Difficulty:
+    """Generate one difficulty. `window` is (start_s, end_s); `entry` and `exit` are the swings
+    just before and after the window, modelled so the seams stay finding-free."""
+    return generate_with_stats(*args, **kwargs)[0]

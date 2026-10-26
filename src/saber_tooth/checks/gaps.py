@@ -1,9 +1,8 @@
 from itertools import pairwise
 
 from saber_tooth.analysis import onset_density
+from saber_tooth.checks.constants import MIN_GAP_DENSITY
 from saber_tooth.checks.finding import Finding
-
-MIN_DENSITY = 1.5
 
 
 def _gap_edges(d, timing, analysis) -> list[tuple[float, float]]:
@@ -28,7 +27,7 @@ def empty_gap(d, swings, timing, profile, analysis) -> list[Finding]:
         if end - start < profile.gap_beats:
             continue
         density = onset_density(analysis, timing.to_seconds(start), timing.to_seconds(end))
-        if density >= MIN_DENSITY:
+        if density >= MIN_GAP_DENSITY:
             msg = f"no notes for {end - start:.1f} beats while the music is busy"
             out.append(Finding("empty-gap", d.name, start, end, "warn", msg))
     return out

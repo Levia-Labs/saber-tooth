@@ -1,14 +1,20 @@
 import itertools
 import time
+from collections import Counter
 
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from saber_tooth.analysis import Analysis
 from saber_tooth.checks import check_difficulty
-from saber_tooth.generator import generate_all, generate_difficulty, tempo_map
+from saber_tooth.generator import (
+    generate_all,
+    generate_all_with_stats,
+    generate_difficulty,
+    tempo_map,
+)
 from saber_tooth.generator.motifs import BLUE_MOTIFS, RED_MOTIFS
-from saber_tooth.model import CUT_VECTORS, DIFFICULTIES, Color, Cut
+from saber_tooth.model import CUT_VECTORS, DIFFICULTIES, Color, Cut, Difficulty
 from saber_tooth.profiles import PROFILES
 from saber_tooth.swings import build_swings
 from saber_tooth.timing import Timing
@@ -112,12 +118,81 @@ def test_doubles_only_where_allowed():
     assert doubles(diffs["Expert"]) > 0
 
 
-def test_window_limits_notes_and_uses_entry():
-    a = synth(120, 60, 0.0)
-    timing, _ = generate_all(a, 5)
-    d = generate_difficulty(a, timing, PROFILES["Hard"], 5, window=(20.0, 30.0))
-    assert d.notes
-    assert all(20.0 <= timing.to_seconds(n.beat) < 30.0 for n in d.notes)
+def realistic(bpm=140, seconds=120):
+    """Kick/snare on alternating quarters with 16th hi-hats."""
+    spb = 60.0 / bpm
+    beats = [i * spb for i in range(int(seconds / spb))]
+    hh = [b + k * spb / 4 for b in beats for k in range(4)]
+    return Analysis("r", "A minor", bpm, beats, beats[::2], beats[1::2], hh, None)
+
+
+def test_flow_variety_on_realistic_song():
+    a = realistic()
+    timing, diffs, stats = generate_all_with_stats(a, 3)
+    for name in ("Expert", "ExpertPlus"):
+        notes = diffs[name].notes
+        cells = Counter((n.color, n.x, n.y) for n in notes)
+        cuts = Counter(n.cut for n in notes)
+        assert max(cells.values()) / len(notes) <= 0.30
+        assert (cuts[Cut.UP] + cuts[Cut.DOWN]) / len(notes) < 0.55
+        assert sum(1 for n in notes if n.y == 2) / len(notes) >= 0.10
+        for hand in Color:
+            assert len({(n.x, n.y) for n in notes if n.color == hand}) >= 5
+        assert check_difficulty(diffs[name], timing, PROFILES[name], a) == []
+    for name, stat in stats.items():
+        assert stat.dropped < 0.05 * stat.selected, name
+        assert stat.final == len(diffs[name].notes)
+
+
+def active_seconds(a, timing):
+    from saber_tooth.generator.candidates import bar_stats, phase_of
+
+    phase = phase_of(a, timing)
+    return bar_stats(a, timing, phase, range(0, int(len(a.beats) / 4))).active_seconds()
+
+
+def test_tier_counts_follow_targets_and_separate():
+    for a in (realistic(), synth(128, 120, 0.0)):
+        timing, diffs = generate_all(a, 5)
+        active = active_seconds(a, timing)
+        counts = [len(diffs[n].notes) for n in DIFFICULTIES]
+        for name, count in zip(DIFFICULTIES, counts, strict=True):
+            target = PROFILES[name].target_nps * active
+            assert 0.8 * target <= count <= 1.2 * target, (name, count, target)
+        assert counts == sorted(set(counts))
+        assert counts[4] >= 1.15 * counts[3] and counts[3] >= 1.15 * counts[2]
+
+
+def test_silent_bars_get_no_filler_notes():
+    a = realistic(140, 60)
+    a.kick[:] = [t for t in a.kick if not 20 < t < 40]
+    a.snare[:] = [t for t in a.snare if not 20 < t < 40]
+    a.hh[:] = [t for t in a.hh if not 20 < t < 40]
+    timing, diffs = generate_all(a, 2)
+    for name, d in diffs.items():
+        inside = [n for n in d.notes if 22 < timing.to_seconds(n.beat) < 38]
+        assert inside == [], name
+
+
+def test_window_fill_with_entry_and_exit_is_seamless():
+    a = realistic(140, 60)
+    lo, hi = 20.0, 30.0
+    for seed in range(20):
+        timing, diffs = generate_all(a, seed)
+        for name in ("Hard", "ExpertPlus") if seed % 2 else ("Normal", "Expert"):
+            d, profile = diffs[name], PROFILES[name]
+            secs = [timing.to_seconds(n.beat) for n in d.notes]
+            before = [n for n, s in zip(d.notes, secs, strict=True) if s < lo]
+            after = [n for n, s in zip(d.notes, secs, strict=True) if s >= hi]
+            entry = {h: sw[-1] for h, sw in build_swings(before, timing).items() if sw}
+            exit_ = {h: sw[0] for h, sw in build_swings(after, timing).items() if sw}
+            fill = generate_difficulty(
+                a, timing, profile, seed, window=(lo, hi), entry=entry, exit=exit_
+            )
+            assert fill.notes and fill.bpm_events == d.bpm_events
+            assert all(lo <= timing.to_seconds(n.beat) < hi for n in fill.notes)
+            merged = Difficulty(name, d.njs, d.offset, notes=sorted(before + fill.notes + after))
+            assert check_difficulty(merged, timing, profile, a) == [], (seed, name)
 
 
 def test_empty_analysis_and_speed():

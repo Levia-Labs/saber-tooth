@@ -1,6 +1,6 @@
-import math
 from itertools import pairwise
 
+from saber_tooth.checks.constants import PARITY_DOT, cells_per_second
 from saber_tooth.checks.finding import Finding, grade_above, grade_below
 from saber_tooth.model import Bomb, Color, Difficulty
 from saber_tooth.profiles import Profile
@@ -28,7 +28,7 @@ def parity_break(d: Difficulty, swings, timing: Timing, profile: Profile, analys
     for a, b in _pairs(swings):
         if a.vector is None or b.vector is None:
             continue
-        if a.vector[0] * b.vector[0] + a.vector[1] * b.vector[1] <= 0.1:
+        if a.vector[0] * b.vector[0] + a.vector[1] * b.vector[1] <= PARITY_DOT:
             continue
         if _bomb_between(d.bombs, a, b):
             continue
@@ -44,7 +44,7 @@ def wide_jump(d: Difficulty, swings, timing: Timing, profile: Profile, analysis=
     out = []
     for a, b in _pairs(swings):
         dt = max(b.seconds - a.seconds, 1e-6)
-        speed = math.dist(a.end, b.start) / dt
+        speed = cells_per_second(a.end, b.start, dt)
         sev = grade_above(speed, profile.error.max_hand_speed, profile.warn.max_hand_speed)
         if sev:
             out.append(_make("wide-jump", d, a, b, sev, f"hand travels {speed:.1f} cells/s"))

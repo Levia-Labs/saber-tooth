@@ -2,6 +2,7 @@ import math
 from bisect import bisect_left, bisect_right
 from itertools import combinations
 
+from saber_tooth.checks.constants import VISION_MIN_DT
 from saber_tooth.checks.finding import Finding
 from saber_tooth.model import CUT_VECTORS, Color, Cut, Difficulty, Note
 from saber_tooth.profiles import Profile
@@ -95,7 +96,7 @@ def vision_block(d: Difficulty, swings, timing: Timing, profile: Profile, analys
             m, dt = notes[j], secs[j] - secs[i]
             if dt > profile.warn.vision_window_s:
                 break
-            if dt <= 0.05 or (m.x, m.y) == (n.x, n.y):
+            if dt <= VISION_MIN_DT or (m.x, m.y) == (n.x, n.y):
                 continue
             sev = "error" if dt <= profile.error.vision_window_s else "warn"
             msg = "centre note blocks view of the next note"

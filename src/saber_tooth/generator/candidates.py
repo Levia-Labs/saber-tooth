@@ -1,13 +1,16 @@
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from saber_tooth.analysis import Analysis, onset_density
+from saber_tooth.checks.constants import MIN_GAP_DENSITY
 from saber_tooth.profiles import Profile
 from saber_tooth.timing import Timing
 
 BASE_SCORE = {"kick": 1.0, "snare": 0.9, "hh": 0.4}
 BEAT_BONUS = 0.3
 BAR_BONUS = 0.2
+EIGHTH_BONUS = 0.1
+FILLER_SCORE = 0.05
 BAR_BEATS = 4.0
 MAX_ENERGY = 1.5
 EPS = 1e-6
@@ -19,6 +22,17 @@ class Candidate:
     rel: float  # beats since the first analysed beat
     score: float
     kick: bool
+    filler: bool = False
+
+
+@dataclass
+class BarStats:
+    energy: dict[int, float] = field(default_factory=dict)
+    active: set[int] = field(default_factory=set)  # bars busy enough to need notes
+    seconds: dict[int, float] = field(default_factory=dict)
+
+    def active_seconds(self) -> float:
+        return sum(self.seconds[b] for b in self.active)
 
 
 def phase_of(a: Analysis, timing: Timing) -> float:
@@ -29,61 +43,59 @@ def bar_index(rel: float) -> int:
     return math.floor(rel / BAR_BEATS + EPS)
 
 
+def _on(value: float, step: float) -> bool:
+    return abs(value / step - round(value / step)) < EPS
+
+
+def _bonus(rel: float) -> float:
+    bonus = BEAT_BONUS if _on(rel, 1.0) else (EIGHTH_BONUS if _on(rel, 0.5) else 0.0)
+    if _on(rel, BAR_BEATS):
+        bonus += BAR_BONUS
+    # deterministic tie-break so equal-scored 16ths spread over the bar instead of bunching
+    return bonus + (round(rel * 4) * 2654435761 % 997) / 997 * 0.02
+
+
+def bar_stats(a: Analysis, timing: Timing, phase: float, bars: range) -> BarStats:
+    stats = BarStats()
+    dens = {}
+    for b in bars:
+        start = timing.to_seconds(phase + BAR_BEATS * b)
+        end = timing.to_seconds(phase + BAR_BEATS * (b + 1))
+        dens[b] = onset_density(a, start, end)
+        stats.seconds[b] = end - start
+        if dens[b] >= MIN_GAP_DENSITY:
+            stats.active.add(b)
+    ordered = sorted(dens.values())
+    p90 = ordered[int(0.9 * (len(ordered) - 1))] if ordered else 0.0
+    stats.energy = {b: min(MAX_ENERGY, d / p90) if p90 > 0 else 0.0 for b, d in dens.items()}
+    return stats
+
+
 def build_candidates(
     a: Analysis, timing: Timing, profile: Profile, phase: float
-) -> list[Candidate]:
+) -> tuple[list[Candidate], BarStats]:
     merged: dict[int, Candidate] = {}
     for kind, base in BASE_SCORE.items():
         for t in getattr(a, kind):
             rel = round((timing.to_beats(t) - phase) / profile.grid) * profile.grid
             if phase + rel < 0:
                 continue
-            score = base
-            if abs(rel - round(rel)) < EPS:
-                score += BEAT_BONUS
-            if abs(rel / BAR_BEATS - round(rel / BAR_BEATS)) < EPS:
-                score += BAR_BONUS
             key = round(rel * 1000)
             old = merged.get(key)
+            score = base + _bonus(rel)
             kick = kind == "kick" or (old is not None and old.kick)
-            best = max(score, old.score) if old else score
-            merged[key] = Candidate(phase + rel, rel, best, kick)
-    return sorted(merged.values(), key=lambda c: c.beat)
-
-
-def bar_energies(a: Analysis, timing: Timing, phase: float, bars: range) -> dict[int, float]:
-    dens = {
-        b: onset_density(
-            a,
-            timing.to_seconds(phase + BAR_BEATS * b),
-            timing.to_seconds(phase + BAR_BEATS * (b + 1)),
-        )
-        for b in bars
-    }
-    ordered = sorted(dens.values())
-    p90 = ordered[int(0.9 * (len(ordered) - 1))] if ordered else 0.0
-    if p90 <= 0:
-        return dict.fromkeys(bars, 0.0)
-    return {b: min(MAX_ENERGY, d / p90) for b, d in dens.items()}
-
-
-def select(
-    cands: list[Candidate], a: Analysis, timing: Timing, profile: Profile, phase: float
-) -> tuple[list[Candidate], dict[int, float]]:
-    """Per bar keep the best-scoring candidates up to the energy-scaled target."""
-    if not cands:
-        return [], {}
-    by_bar: dict[int, list[Candidate]] = {}
-    for c in cands:
-        by_bar.setdefault(bar_index(c.rel), []).append(c)
-    lo, hi = min(by_bar), max(by_bar)
-    energy = bar_energies(a, timing, phase, range(lo, hi + 1))
-    slots = int(BAR_BEATS / profile.grid)
-    chosen: list[Candidate] = []
-    for bar, items in by_bar.items():
-        seconds = timing.to_seconds(phase + BAR_BEATS * (bar + 1))
-        seconds -= timing.to_seconds(phase + BAR_BEATS * bar)
-        target = profile.target_nps * seconds * (0.5 + energy[bar])
-        n = min(int(target + 0.5), slots, len(items))
-        chosen.extend(sorted(items, key=lambda c: (-c.score, c.beat))[:n])
-    return sorted(chosen, key=lambda c: c.beat), energy
+            merged[key] = Candidate(phase + rel, rel, max(score, old.score) if old else score, kick)
+    if not merged:
+        return [], BarStats()
+    bars = [bar_index(c.rel) for c in merged.values()]
+    stats = bar_stats(a, timing, phase, range(min(bars), max(bars) + 1))
+    # Upper tiers: add low-score grid slots in busy bars so the target density is reachable.
+    slots = round(BAR_BEATS / profile.grid)
+    for b in stats.active:
+        for i in range(slots):
+            rel = BAR_BEATS * b + i * profile.grid
+            key = round(rel * 1000)
+            if key not in merged and phase + rel >= 0:
+                score = FILLER_SCORE + _bonus(rel)
+                merged[key] = Candidate(phase + rel, rel, score, False, True)
+    return sorted(merged.values(), key=lambda c: c.beat), stats
