@@ -6,6 +6,7 @@ from saber_tooth.mapio.read_v2 import read_v2
 from saber_tooth.mapio.read_v3 import read_v3
 from saber_tooth.mapio.read_v4 import read_v4
 from saber_tooth.model import DIFFICULTIES, Beatmap, ColorScheme, Difficulty, MapInfo
+from saber_tooth.timing import Timing
 
 COLOR_KEYS = (
     "saberAColor",
@@ -175,8 +176,10 @@ def load_map(folder: Path) -> Beatmap:
                 diffs[e["name"]] = _load_diff_file(path, e, folder)
         idx = next((e["scheme"] for e in entries if e["scheme"] is not None), None)
         meta = _mapinfo_v4(info, idx) if v4 else _mapinfo_v2(info, idx)
+        for d in diffs.values():
+            Timing(meta.bpm, d.bpm_events)
     except MapParseError:
         raise
-    except (KeyError, TypeError, ValueError, IndexError) as exc:
-        raise MapParseError(f"bad Info in {folder}: {exc!r}") from exc
+    except Exception as exc:  # any malformed input must surface as a parse error
+        raise MapParseError(f"bad map in {folder}: {exc!r}") from exc
     return Beatmap(meta, diffs, folder.name)

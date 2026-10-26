@@ -139,3 +139,59 @@ def test_v2_bpm_event_without_float_skipped_and_deduped(tmp_path):
     exp.write_text(json.dumps(data), encoding="utf-8")
     bpms = load_map(m).difficulties["Expert"].bpm_events
     assert [(b.beat, b.bpm) for b in bpms] == [(0.0, 60.0)]
+
+
+def _edit(folder: Path, name: str, fn) -> None:
+    import json
+
+    p = folder / name
+    data = json.loads(p.read_text(encoding="utf-8"))
+    fn(data)
+    p.write_text(json.dumps(data), encoding="utf-8")
+
+
+def test_null_colour_scheme_entry_is_a_parse_error(tmp_path):
+    m = _copy_fixture("v2_basic", tmp_path / "a")
+    _edit(m, "info.dat", lambda d: d.update(_colorSchemes=[None]))
+    _edit(
+        m,
+        "info.dat",
+        lambda d: d["_difficultyBeatmapSets"][0]["_difficultyBeatmaps"][0].update(
+            _beatmapColorSchemeIdx=0
+        ),
+    )
+    with pytest.raises(MapParseError):
+        load_map(m)
+
+
+@pytest.mark.parametrize("bad", [0, -60, 1e999])
+def test_bad_bpm_event_is_a_parse_error(tmp_path, bad):
+    m = _copy_fixture("v3_boxes", tmp_path / "a")
+    _edit(m, "Expert.dat", lambda d: d.update(bpmEvents=[{"b": 4, "m": bad}]))
+    with pytest.raises(MapParseError):
+        load_map(m)
+
+
+@pytest.mark.parametrize("field", [("x", 4), ("x", -1), ("y", 3), ("d", 9), ("d", 1000)])
+def test_mapping_extensions_notes_rejected(tmp_path, field):
+    m = _copy_fixture("v3_boxes", tmp_path / "a")
+    _edit(m, "Expert.dat", lambda d: d["colorNotes"][0].update({field[0]: field[1]}))
+    with pytest.raises(MapParseError, match="Mapping Extensions"):
+        load_map(m)
+
+
+def test_fx_events_collection_round_trips(tmp_path):
+    m = _copy_fixture("v3_boxes", tmp_path / "a")
+    fx = {"_fl": [0.5], "_il": [3]}
+    _edit(
+        m,
+        "Expert.dat",
+        lambda d: d.update(_fxEventsCollection=fx, vfxEventBoxGroups=[{"b": 1, "g": 0, "e": []}]),
+    )
+    write_map(load_map(m), tmp_path / "o", copy_from=m)
+    out = load_map(tmp_path / "o").difficulties["Expert"]
+    assert out.raw["_fxEventsCollection"] == fx and out.raw["vfxEventBoxGroups"]
+    import json
+
+    text = json.loads((tmp_path / "o" / "Expert.dat").read_text(encoding="utf-8"))
+    assert text["_fxEventsCollection"] == fx

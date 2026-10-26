@@ -1,13 +1,23 @@
+import math
+
 from saber_tooth.model import BpmEvent
+
+
+def _check_bpm(bpm: float) -> float:
+    if not (isinstance(bpm, int | float) and math.isfinite(bpm) and bpm > 0):
+        raise ValueError(f"bpm must be positive and finite, got {bpm!r}")
+    return bpm
 
 
 class Timing:
     """Beat <-> seconds conversion with piecewise-constant tempo."""
 
     def __init__(self, bpm: float, changes: list[BpmEvent]):
-        # A change at beat 0 overrides the initial bpm; later duplicates win; beat < 0 is ignored.
-        by_beat = {0.0: bpm}
-        for change in sorted(changes):
+        # A change at beat 0 overrides the initial bpm; at one beat the later change in source
+        # order wins (stable sort by beat only); beat < 0 is ignored.
+        by_beat = {0.0: _check_bpm(bpm)}
+        for change in sorted(changes, key=lambda c: c.beat):
+            _check_bpm(change.bpm)
             if change.beat >= 0:
                 by_beat[change.beat] = change.bpm
         segs = [BpmEvent(beat, b) for beat, b in sorted(by_beat.items())]

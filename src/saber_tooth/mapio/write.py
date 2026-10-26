@@ -5,6 +5,7 @@ from pathlib import Path
 from saber_tooth.mapio.errors import safe_name
 from saber_tooth.model import DIFFICULTIES, RANKS, Beatmap, Difficulty, MapInfo, Wall
 
+FX_KEY = "_fxEventsCollection"
 BOX_KEYS = (
     "lightColorEventBoxGroups",
     "lightRotationEventBoxGroups",
@@ -27,6 +28,17 @@ def _wall_json(w: Wall) -> dict:
     return {"b": w.beat, "x": w.x, "y": w.y, "d": w.duration, "w": w.width, "h": w.height}
 
 
+def _fx_json(d: Difficulty) -> dict:
+    """The fx float/int lists; vfx box groups index into them, so both travel together."""
+    fx = d.raw.get(FX_KEY)
+    if fx is None:
+        return {"vfxEventBoxGroups": [], FX_KEY: {"_fl": [], "_il": []}}
+    return {
+        "vfxEventBoxGroups": strip_custom(d.raw.get("vfxEventBoxGroups", [])),
+        FX_KEY: strip_custom(fx),
+    }
+
+
 def difficulty_json(d: Difficulty) -> dict:
     return {
         "version": "3.3.0",
@@ -46,7 +58,7 @@ def difficulty_json(d: Difficulty) -> dict:
         ],
         "colorBoostBeatmapEvents": [{"b": b, "o": bool(o)} for b, o in d.boosts],
         **{k: strip_custom(d.raw.get(k, [])) for k in BOX_KEYS},
-        "_fxEventsCollection": {"_fl": [], "_il": []},
+        **_fx_json(d),
         "basicEventTypesWithKeywords": {"d": []},
         "useNormalEventsAsCompatibleEvents": True,
     }

@@ -1,5 +1,6 @@
 from saber_tooth.mapio.errors import MapParseError
-from saber_tooth.model import BasicEvent, Bomb, BpmEvent, Color, Cut, Difficulty, Note, Wall
+from saber_tooth.mapio.vanilla import vanilla_cell, vanilla_cut
+from saber_tooth.model import BasicEvent, Bomb, BpmEvent, Color, Difficulty, Note, Wall
 
 BOOST_TYPE = 5
 BPM_TYPE = 100
@@ -25,9 +26,10 @@ def read_v2(data: dict, name: str, njs: float, offset: float, filename: str) -> 
             beat, x, y = float(n["_time"]), int(n["_lineIndex"]), int(n["_lineLayer"])
             kind = int(n["_type"])
             if kind == 3:
-                d.bombs.append(Bomb(beat, x, y))
+                d.bombs.append(Bomb(beat, *vanilla_cell(x, y)))
             elif kind in (0, 1):
-                d.notes.append(Note(beat, x, y, Color(kind), Cut(int(n["_cutDirection"]) % 9)))
+                cell = vanilla_cell(x, y)
+                d.notes.append(Note(beat, *cell, Color(kind), vanilla_cut(int(n["_cutDirection"]))))
         d.walls = [_wall(w) for w in data.get("_obstacles", [])]
         for e in data.get("_events", []):
             beat, kind, value = float(e["_time"]), int(e["_type"]), int(e["_value"])
@@ -43,6 +45,8 @@ def read_v2(data: dict, name: str, njs: float, offset: float, filename: str) -> 
         for c in custom.get("_BPMChanges", []):
             if all(b.beat != float(c["_time"]) for b in d.bpm_events):
                 d.bpm_events.append(BpmEvent(float(c["_time"]), float(c["_BPM"])))
+    except MapParseError:
+        raise
     except (KeyError, TypeError, ValueError) as exc:
         raise MapParseError(f"bad v2 difficulty {filename}: {exc!r}") from exc
     _sort(d)
@@ -55,4 +59,4 @@ def _sort(d: Difficulty) -> None:
     d.walls.sort()
     d.events.sort()
     d.boosts.sort()
-    d.bpm_events.sort()
+    d.bpm_events.sort(key=lambda e: e.beat)

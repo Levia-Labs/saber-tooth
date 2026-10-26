@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from enum import IntEnum
+from typing import Any
 
 DIFFICULTIES = ("Easy", "Normal", "Hard", "Expert", "ExpertPlus")
 RANKS = {"Easy": 1, "Normal": 3, "Hard": 5, "Expert": 7, "ExpertPlus": 9}
@@ -99,7 +100,7 @@ class Difficulty:
     boosts: list[tuple[float, bool]] = field(default_factory=list)
     bpm_events: list[BpmEvent] = field(default_factory=list)
     # Raw v3 lists kept verbatim: event box groups, sliders, burst sliders.
-    raw: dict[str, list] = field(default_factory=dict)
+    raw: dict[str, Any] = field(default_factory=dict)
     filename: str = ""
 
 

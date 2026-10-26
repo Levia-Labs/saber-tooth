@@ -15,6 +15,7 @@ from saber_tooth.profiles import PROFILES, Profile
 from saber_tooth.timing import Timing
 
 EPS = 1e-6
+_RANK = {"warn": 0, "error": 1}
 
 
 def finding_key(f: Finding) -> tuple:
@@ -28,9 +29,22 @@ def _same(a: Finding, b: Finding) -> bool:
     return finding_key(a) == finding_key(b) and ranges
 
 
+def _overlaps(a: Finding, b: Finding) -> bool:
+    """Same identity and overlapping beat ranges of positive length, or exactly equal."""
+    if finding_key(a) != finding_key(b):
+        return False
+    equal = abs(a.beat_start - b.beat_start) <= EPS and abs(a.beat_end - b.beat_end) <= EPS
+    return equal or (a.beat_start < b.beat_end - EPS and b.beat_start < a.beat_end - EPS)
+
+
 def new_findings(after: list[Finding], before: list[Finding]) -> list[Finding]:
-    """Findings in `after` that match no `before` finding."""
-    return [a for a in after if not any(_same(a, b) for b in before)]
+    """Findings in `after` that match no `before` finding or are more severe than all matches."""
+    out = []
+    for a in after:
+        rank = [_RANK[b.severity] for b in before if _same(a, b)]
+        if not rank or _RANK[a.severity] > max(rank):
+            out.append(a)
+    return out
 
 
 @dataclass(frozen=True)
@@ -106,7 +120,7 @@ def findings_for(beatmap: Beatmap, names: set[str], analysis: Analysis | None) -
 
 def _target_remains(target: Finding, before: list[Finding], after: list[Finding]) -> bool:
     others = [b for b in before if b is not target]
-    return any(_same(a, target) and not any(_same(a, o) for o in others) for a in after)
+    return any(_overlaps(a, target) and not any(_overlaps(a, o) for o in others) for a in after)
 
 
 def accepts(ctx: Context, ops: list[Op]) -> list[Op] | None:
