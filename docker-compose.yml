@@ -9,6 +9,9 @@ services:
       ANALYSER_URL: http://beat-analyser:8000
       ANALYSER_UPLOADS: /analyser
       SABER_ALLOWED_HOSTS: ${SABER_ALLOWED_HOSTS:-}
+      SABER_TRUSTED_PROXY_IPS: ${SABER_TRUSTED_PROXY_IPS:-}
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
     volumes:
       - "${LEVELS_DIR:?set LEVELS_DIR in .env}:/levels"
       - analyser-uploads:/analyser:ro

@@ -24,10 +24,14 @@ RUN useradd --create-home --uid 1000 app \
     && mkdir /data \
     && chown app:app /data
 
-USER app
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+
+# No USER here: the entrypoint starts as root only to apply PUID/PGID, then drops to app.
+ENV PUID=1000 PGID=1000
 EXPOSE 8100
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8100/api/maps', timeout=4)"]
 
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["uv", "run", "--no-sync", "uvicorn", "saber_tooth.api:app", "--host", "0.0.0.0", "--port", "8100"]
