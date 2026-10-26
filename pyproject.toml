@@ -23,5 +23,5 @@ pythonpath = ["src"]
 
 [tool.ruff]
 extend = ".crepidoma/configs/ruff.toml"
-line-length = 110
+line-length = 100
 target-version = "py312"
