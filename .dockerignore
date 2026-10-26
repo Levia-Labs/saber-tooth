@@ -1,0 +1,17 @@
+.git
+.github
+.venv
+.env
+.claude
+.crepidoma
+.hypothesis
+.ratchet
+.ruff_cache
+.pytest_cache
+.superpowers
+__pycache__
+*.pyc
+node_modules
+tests
+docs
+data

@@ -1,0 +1,38 @@
+services:
+  saber-tooth:
+    build: .
+    image: saber-tooth:latest
+    ports: ["127.0.0.1:${SABER_PORT:-8100}:8100"]
+    environment:
+      LEVELS_DIR: /levels
+      DATA_DIR: /data
+      ANALYSER_URL: http://beat-analyser:8000
+      ANALYSER_UPLOADS: /analyser
+    volumes:
+      - "${LEVELS_DIR:?set LEVELS_DIR in .env}:/levels"
+      - analyser-uploads:/analyser:ro
+      - saber-data:/data
+    depends_on:
+      beat-analyser:
+        condition: service_healthy
+  beat-analyser:
+    image: levialabs/beat-analyser:latest
+    environment:
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-200}
+      YT_MAX_MINUTES: ${YT_MAX_MINUTES:-20}
+    volumes: ["analyser-uploads:/app/uploads"]
+    read_only: true
+    tmpfs: ["/tmp"]
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/folders', timeout=4)
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+volumes:
+  analyser-uploads:
+  saber-data:
