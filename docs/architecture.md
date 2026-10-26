@@ -55,7 +55,7 @@ The package is `src/saber_tooth/`. Each file stays under 300 lines. Larger parts
 
 ## Walls
 
-The generator adds walls only to Hard, Expert and ExpertPlus, never bombs. After the notes are final, `generator/walls.py` scans the per-bar energy: calm bars (energy below 0.45) and build-ups (energy rising over 4 bars) may get a wall at a bar start. A wall is a full-height side wall at lane 0 or 3, lasting 1 to 4 beats, with the side alternating per 4-bar phrase and flipped when notes occupy that lane. ExpertPlus may replace a build-up side wall with a crouch wall (`y` 2, width 2 at lane 1, height 3) when no note falls inside it. Spacing caps density: Hard one wall per 2 bars, Expert 1.5 bars, ExpertPlus 1 bar. Placement is deterministic per seed, and the `wall-trap`, `wall-short` and `note-in-wall` rules hold by construction. The fixer deletes a wall that a scan flags with `wall-trap` or `wall-short`.
+The generator adds walls only to Hard, Expert and ExpertPlus, never bombs. After the notes are final, `src/saber_tooth/generator/walls.py` scans the per-bar energy: calm bars (energy below 0.45) and build-ups (energy rising over 4 bars) may get a wall at a bar start. A wall is a full-height side wall at lane 0 or 3, lasting 1 to 4 beats, with the side alternating per 4-bar phrase and flipped when notes occupy that lane. ExpertPlus may replace a build-up side wall with a crouch wall (`y` 2, width 2 at lane 1, height 3) when no note falls inside it. Spacing caps density: Hard one wall per 2 bars, Expert 1.5 bars, ExpertPlus 1 bar. Placement is deterministic per seed, and the `wall-trap`, `wall-short` and `note-in-wall` rules hold by construction. The fixer deletes a wall that a scan flags with `wall-trap` or `wall-short`.
 
 ## Finding identity
 
