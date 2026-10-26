@@ -130,7 +130,7 @@ Package `src/saber_tooth/`. Each file stays under 300 lines.
 
 ## Repository tooling
 
-1. Crepidoma adopted per `X:\Projects\Crepidoma\docs\migration.md`: `.crepidoma` submodule, Taskfile includes, plugin settings, pre-commit, CLAUDE.md.
+1. Crepidoma adopted per the Crepidoma migration guide (`docs/migration.md` in https://github.com/Levia-Labs/Crepidoma): `.crepidoma` submodule, Taskfile includes, plugin settings, pre-commit, CLAUDE.md.
 2. `tasks/` Taskfile namespace `st` with: `up`, `down`, `logs`, `scan -- <map>`, `check -- <folder>`, `gen -- <url>`, `learn`, `test`.
 3. `.claude/`: agents `map-auditor` (runs checks on one folder, returns counts) and `lightshow-learner`, a project README listing agents, skills and plugins.
 4. Docs: `README.md`, `TODO.md`, `docs/architecture.md`, `docs/map-format.md`, `docs/api.md`, `docs/adr/`.
