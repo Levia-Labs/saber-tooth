@@ -1,5 +1,5 @@
 /* global requestAnimationFrame, window, document, CSS, setTimeout, clearTimeout */
-import { drawTimeline } from "./timeline.js";
+import { drawTimeline, isNotesless } from "./timeline.js";
 import { api, el, guard } from "./util.js";
 
 const drawn = new Set();
@@ -33,6 +33,8 @@ export function proposalCard(p, onChange, notesFilter) {
     role: "img",
     "aria-label": `Before and after note grids for ${p.summary}`,
   });
+  const textOnly = isNotesless(before, after);
+  const body = textOnly ? el("p", { class: "muted" }, p.summary) : canvas;
   const approve = el(
     "button",
     {
@@ -78,10 +80,12 @@ export function proposalCard(p, onChange, notesFilter) {
       ),
       el("div", { class: "row" }, approve, reject),
     ),
-    canvas,
+    body,
   );
+  if (textOnly) return card;
   requestAnimationFrame(() => {
     if (!canvas.isConnected) return;
+    for (const item of drawn) if (!item.canvas.isConnected) drawn.delete(item);
     drawn.add({ canvas, before, after });
     drawTimeline(canvas, before, after);
   });

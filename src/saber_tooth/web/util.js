@@ -1,4 +1,5 @@
 /* global document, Node, FormData, fetch, setTimeout */
+import { isRetryable } from "./retry.js";
 export const statusEl = document.getElementById("status");
 export const POLL_MS = 1000;
 
@@ -36,7 +37,9 @@ export async function request(method, path, body) {
   }
   if (!res.ok) {
     const detail = data && (data.detail || data.error);
-    throw new Error(typeof detail === "string" ? detail : `HTTP ${res.status}`);
+    const err = new Error(typeof detail === "string" ? detail : `HTTP ${res.status}`);
+    err.status = res.status;
+    throw err;
   }
   return data;
 }
@@ -73,7 +76,7 @@ export async function runJob(label, started) {
       fails = 0;
     } catch (err) {
       fails += 1;
-      if (fails >= MAX_FETCH_FAILS) {
+      if (!isRetryable(err) || fails >= MAX_FETCH_FAILS) {
         setStatus(`${label}: lost contact with the server`);
         throw err;
       }

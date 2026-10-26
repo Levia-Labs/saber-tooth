@@ -12,6 +12,11 @@ export function beatWindow(...noteLists) {
   return { start: Math.floor(Math.min(...beats)), end: Math.floor(Math.max(...beats)) + 1 };
 }
 
+/** True when neither side has notes (e.g. wall-only proposals): nothing to draw. */
+export function isNotesless(before, after) {
+  return !before.length && !after.length;
+}
+
 /** Distinct sorted beats present in the notes (the slices that get a grid). */
 export function sliceBeats(notes) {
   return [...new Set(notes.map((n) => n.beat))].sort((a, b) => a - b);

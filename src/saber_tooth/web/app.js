@@ -4,9 +4,13 @@ import { groupBy, proposalCard } from "./cards.js";
 import { showNew } from "./newmap.js";
 
 const main = document.getElementById("main");
+let navToken = 0; // bumped on every view change
+let activeMap = null; // id of the map view on screen, else null
 
 // ---- Library ----
 async function showLibrary() {
+  navToken += 1;
+  activeMap = null;
   setNav("library");
   main.replaceChildren(el("p", { class: "muted" }, "Loading maps..."));
   const maps = await api.maps();
@@ -51,15 +55,29 @@ async function showLibrary() {
   render();
 }
 
+/** Update a library row's counts without changing the view; no-op once the row is gone. */
+async function refreshCounts(id, errCell, warnCell) {
+  const fresh = (await api.maps()).find((m) => m.id === id);
+  if (!fresh || !errCell.isConnected) return;
+  errCell.textContent = fresh.errors;
+  errCell.className = `num ${fresh.errors ? "err" : ""}`;
+  warnCell.textContent = fresh.warnings;
+  warnCell.className = `num ${fresh.warnings ? "warn" : ""}`;
+}
+
 function mapRow(m) {
   const title = m.parse_error ? `${m.title || m.folder} (unparseable)` : m.title || m.folder;
+  const errCell = el("td", { class: `num ${m.errors ? "err" : ""}` }, m.errors);
+  const warnCell = el("td", { class: `num ${m.warnings ? "warn" : ""}` }, m.warnings);
   const scan = jobButton(
     {
       type: "button",
       "aria-label": `Scan ${m.title || m.folder}`,
       onclick: jobGuard(async () => {
+        const token = navToken;
         await runJob("Scan", await api.scan(m.id));
-        await showMap(m.id, m.title || m.folder);
+        if (token === navToken || activeMap === m.id) await showMap(m.id, m.title || m.folder);
+        else await refreshCounts(m.id, errCell, warnCell);
       }),
     },
     "Scan",
@@ -79,8 +97,8 @@ function mapRow(m) {
     el("td", {}, title),
     el("td", {}, m.mapper),
     el("td", {}, m.environment),
-    el("td", { class: `num ${m.errors ? "err" : ""}` }, m.errors),
-    el("td", { class: `num ${m.warnings ? "warn" : ""}` }, m.warnings),
+    errCell,
+    warnCell,
     el("td", {}, el("div", { class: "row" }, scan, open)),
   );
 }
@@ -88,6 +106,8 @@ function mapRow(m) {
 // ---- Proposals ----
 
 async function showMap(id, name, outcome) {
+  navToken += 1;
+  activeMap = id;
   setNav("");
   const proposals = await api.proposals(id);
   const reload = () => showMap(id, name);
@@ -150,7 +170,14 @@ async function showMap(id, name, outcome) {
 for (const tab of document.querySelectorAll(".tab")) {
   tab.addEventListener(
     "click",
-    guard(() => (tab.dataset.view === "new" ? showNew() : showLibrary())),
+    guard(() => {
+      if (tab.dataset.view === "new") {
+        navToken += 1;
+        activeMap = null;
+        return showNew();
+      }
+      return showLibrary();
+    }),
   );
 }
 guard(showLibrary)();

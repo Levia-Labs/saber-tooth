@@ -4,7 +4,7 @@ import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
 
 const url = pathToFileURL(resolve("src/saber_tooth/web/timeline.js")).href;
-const { beatWindow, sliceBeats, layout, timelineHeight } = await import(url);
+const { isNotesless, beatWindow, sliceBeats, layout, timelineHeight } = await import(url);
 
 test("beatWindow pads to whole beats", () => {
   assert.deepEqual(beatWindow([{ beat: 2.5 }], [{ beat: 4.2 }]), { start: 2, end: 5 });
@@ -39,4 +39,9 @@ test("timelineHeight uses the taller panel", () => {
   const after = [{ beat: 1 }, { beat: 2 }, { beat: 3 }];
   assert.equal(timelineHeight(before, after, 400), 24 + 2 * 90);
   assert.equal(timelineHeight([], [], 400), 24 + 90);
+});
+
+test("isNotesless is true only when both sides are empty", () => {
+  assert.equal(isNotesless([], []), true);
+  assert.equal(isNotesless([{ beat: 1 }], []), false);
 });
