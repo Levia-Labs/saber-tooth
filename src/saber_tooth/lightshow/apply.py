@@ -40,11 +40,12 @@ def choose_environment(t: Templates, seed: int) -> str:
 
 
 def _sections(energy: list[float]) -> list[tuple[int, int]]:
-    """Half-open bar ranges; a 4-bar mean jump of >= 0.25 starts a new section."""
-    means = [
-        sum(energy[i : i + SECTION_BLOCK]) / len(energy[i : i + SECTION_BLOCK])
-        for i in range(0, len(energy), SECTION_BLOCK)
-    ]
+    """Half-open bar ranges; a full 4-bar mean jump of >= 0.25 starts a new section.
+
+    A trailing block shorter than 4 bars never starts a section; it joins the previous one.
+    """
+    blocks = [energy[i : i + SECTION_BLOCK] for i in range(0, len(energy), SECTION_BLOCK)]
+    means = [sum(b) / len(b) for b in blocks if len(b) == SECTION_BLOCK]
     starts = [0]
     for k in range(1, len(means)):
         if abs(means[k] - means[k - 1]) >= SECTION_JUMP - 1e-9:
@@ -56,19 +57,22 @@ def _closest(units: list[Unit], target: float) -> Unit:
     return min(units, key=lambda u: abs(u.energy - target))
 
 
-def _pick_donor(by_source: dict[str, list[Unit]], target: float, rng: random.Random) -> str:
-    ranked = sorted(by_source, key=lambda s: abs(_closest(by_source[s], target).energy - target))
+def _pick_donor(
+    by_source: dict[str, list[Unit]], target: float, rng: random.Random, cap: float | None
+) -> str:
+    """Donors nearest the target; with a cap, only those holding a unit below it."""
+    names = [s for s, us in by_source.items() if cap is None or any(u.energy < cap for u in us)]
+    names = names or list(by_source)
+    ranked = sorted(names, key=lambda s: abs(_closest(by_source[s], target).energy - target))
     return rng.choice(ranked[:DONOR_CHOICES])
 
 
 def _limited(units: list[Unit], cap: float | None, fallback: list[Unit]) -> list[Unit]:
+    """Units below the cap, else fallback units below it, else the lowest-energy unit."""
     if cap is None:
         return units
-    ok = [u for u in units if u.energy < cap]
-    if ok:
-        return ok
-    ok = [u for u in fallback if u.energy < cap]
-    return ok or [min(fallback, key=lambda u: u.energy)]
+    ok = [u for u in units if u.energy < cap] or [u for u in fallback if u.energy < cap]
+    return ok or [min(units, key=lambda u: u.energy)]
 
 
 def _place(unit: Unit, start: float, out: Events, boosts: bool) -> None:
@@ -83,13 +87,11 @@ def _place(unit: Unit, start: float, out: Events, boosts: bool) -> None:
             groups.setdefault(key, []).append(c)
 
 
-def _section_units(
-    pool: list[Unit], env_units: list[Unit], energy: list[float], lo: int, hi: int
-) -> list[Unit]:
+def _section_units(pool: list[Unit], energy: list[float], lo: int, hi: int) -> list[Unit]:
     """Per bar of [lo, hi): motif slot k takes the closest unit to its mean target energy."""
     mean = sum(energy[lo:hi]) / (hi - lo)
     low = mean < LOW
-    allowed = _limited(pool, LOW_UNIT_MAX if low else None, env_units)
+    allowed = _limited(pool, LOW_UNIT_MAX if low else None, [])
     motif: list[Unit] = []
     for k in range(SECTION_BLOCK):
         targets = energy[lo + k : hi : SECTION_BLOCK]
@@ -105,7 +107,8 @@ def _finish(out: Events, off: float) -> Events:
     groups = {
         k: sorted((g for g in v if g["b"] <= off), key=lambda g: g["b"]) for k, v in groups.items()
     }
-    return sorted(events), sorted(boosts), groups
+    # Stable by beat: unit events first, lights-off last.
+    return sorted(events, key=lambda e: e.beat), sorted(boosts, key=lambda b: b[0]), groups
 
 
 def build_lightshow(
@@ -130,17 +133,22 @@ def build_lightshow(
         by_source.setdefault(u.source, []).append(u)
     fade_from = max(0, len(energy) - FADE_BARS)
     out: Events = ([], [], {})
+    boost_on = False
     for lo, hi in _sections(energy):
         mean = sum(energy[lo:hi]) / (hi - lo)
-        donor = by_source[_pick_donor(by_source, mean, rng)]
-        chosen = _section_units(donor, units, energy, lo, hi)
-        start_boost = mean > HIGH or mean < LOW
-        if start_boost:
-            out[1].append((lo * BAR, mean > HIGH))
+        low, high = mean < LOW, mean > HIGH
+        donor = by_source[_pick_donor(by_source, mean, rng, LOW_UNIT_MAX if low else None)]
+        chosen = _section_units(donor, energy, lo, hi)
+        if high or low or boost_on:
+            out[1].append((lo * BAR, high))
+            boost_on = high
         for i, unit in zip(range(lo, hi), chosen, strict=True):
+            if i == fade_from and boost_on:
+                out[1].append((i * BAR, False))
+                boost_on = False
             if i >= fade_from:
                 unit = _closest(_limited(donor, FADE_UNIT_MAX, units), energy[i])
-            _place(unit, i * BAR, out, boosts=not start_boost and i < fade_from)
+            _place(unit, i * BAR, out, boosts=not (high or low) and i < fade_from)
     last = last_note_beat(beatmap)
     final = _finish(out, last + OFF_AFTER)
     shows = {

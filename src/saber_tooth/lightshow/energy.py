@@ -20,6 +20,8 @@ def _p90_normalise(values: list[float]) -> list[float]:
     s = sorted(values)
     top = s[min(len(s) - 1, math.ceil(0.9 * len(s)) - 1)]
     if top <= 0:
+        top = max(s[-1], 0.0)
+    if top <= 0:
         return [0.0] * len(values)
     return [min(1.0, max(0.0, v / top)) for v in values]
 
