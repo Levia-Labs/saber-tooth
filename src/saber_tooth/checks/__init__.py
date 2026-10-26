@@ -2,6 +2,7 @@ from collections.abc import Callable
 
 from saber_tooth.checks.finding import Finding
 from saber_tooth.checks.flow import parity_break, swing_speed, wide_jump
+from saber_tooth.checks.gaps import empty_gap
 from saber_tooth.checks.layout import crossover, note_in_wall, stack_conflict, vision_block
 from saber_tooth.checks.structure import default_environment, missing_difficulty
 from saber_tooth.model import Beatmap, Difficulty
@@ -19,6 +20,7 @@ RULES: dict[str, Callable] = {
     "crossover": crossover,
     "vision-block": vision_block,
     "note-in-wall": note_in_wall,
+    "empty-gap": empty_gap,
 }
 # Map-level rules: rule(beatmap) -> list[Finding].
 MAP_RULES: dict[str, Callable] = {
