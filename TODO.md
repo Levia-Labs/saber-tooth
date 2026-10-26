@@ -8,11 +8,6 @@
 6. The timeline JavaScript has no unit tests. Add tests with `node --test`.
 7. On a Linux host the container user `app` has a fixed uid, so the `/levels` bind mount can be unwritable. Let the host uid be configured.
 
-## 3 Tempo map never steers beat 1; noisy first interval can leave >10 ms error (generator/tempo.py)
-
-status: open
-class: quality
-
 ## 4 Fixer: swing-speed deletes whole swing; flip collapses mixed-cut swings; wide-jump multi-move loses candidates
 
 status: open
