@@ -5,6 +5,7 @@ from saber_tooth.checks.flow import parity_break, swing_speed, wide_jump
 from saber_tooth.checks.gaps import empty_gap
 from saber_tooth.checks.layout import crossover, note_in_wall, stack_conflict, vision_block
 from saber_tooth.checks.structure import default_environment, missing_difficulty
+from saber_tooth.checks.walls import wall_short, wall_trap
 from saber_tooth.model import Beatmap, Difficulty
 from saber_tooth.profiles import PROFILES, Profile
 from saber_tooth.swings import build_swings
@@ -21,6 +22,8 @@ RULES: dict[str, Callable] = {
     "vision-block": vision_block,
     "note-in-wall": note_in_wall,
     "empty-gap": empty_gap,
+    "wall-trap": wall_trap,
+    "wall-short": wall_short,
 }
 # Map-level rules: rule(beatmap) -> list[Finding].
 MAP_RULES: dict[str, Callable] = {

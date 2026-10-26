@@ -49,6 +49,8 @@ The package is `src/saber_tooth/`. Each file stays under 300 lines. Larger parts
 8. `empty-gap`: at least N beats (default 8) without notes while onset density from the analysis exceeds a threshold.
 9. `missing-difficulty`: one of the five Standard difficulties is absent.
 10. `default-environment`: `DefaultEnvironment`, or no lighting events at all.
+11. `wall-trap`: walls that leave fewer than 2 free lanes or block both centre lanes (error), or two walls that force a dodge to opposite sides closer than the profile dodge time (`WALL_DODGE_S`: Hard 0.8 s, Expert 0.6 s, ExpertPlus 0.45 s; warn, error below 60% of it). Crouch walls (`y` 2, height 3) never block lanes.
+12. `wall-short`: a wall shorter than 0.12 s (warn).
 
 ## Finding identity
 

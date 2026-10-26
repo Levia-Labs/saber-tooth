@@ -9,5 +9,6 @@ Quality rules. Each rule is a pure function that takes a map or difficulty and r
 5. `layout.py`: crossover, note in wall, stack conflict, vision block.
 6. `gaps.py`: empty gap.
 7. `structure.py`: missing difficulty.
+8. `walls.py`: wall trap and short wall. Thresholds live in [profiles.py](../profiles.py).
 
-Tests: `task st:test -- tests/test_checks_flow.py tests/test_checks_layout.py tests/test_checks_gaps.py tests/test_checks_structure.py`. Consumers: [fixer](../fixer/README.md), [generator](../generator/README.md).
+Tests: `task st:test -- tests/test_checks_flow.py tests/test_checks_layout.py tests/test_checks_gaps.py tests/test_checks_structure.py tests/test_checks_walls.py`. Consumers: [fixer](../fixer/README.md), [generator](../generator/README.md).

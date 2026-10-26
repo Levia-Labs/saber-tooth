@@ -45,3 +45,16 @@ _ROWS = (
 
 PROFILES: dict[str, Profile] = {r[0]: _p(*r) for r in _ROWS}
 # fmt: on
+
+# Walls: minimum seconds to dodge from one side to the other (warn; error at ERROR_SHARE of it).
+# Walls are generated only on tiers listed in WALL_TIERS.
+WALL_DODGE_S: dict[str, float] = {
+    "Easy": 1.2,
+    "Normal": 1.0,
+    "Hard": 0.8,
+    "Expert": 0.6,
+    "ExpertPlus": 0.45,
+}
+WALL_DODGE_ERROR_SHARE = 0.6
+WALL_MIN_S = 0.12  # a wall shorter than this is unreadable
+WALL_TIERS = ("Hard", "Expert", "ExpertPlus")
