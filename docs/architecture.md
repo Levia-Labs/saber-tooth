@@ -52,6 +52,10 @@ The package is `src/saber_tooth/`. Each file stays under 300 lines. Larger parts
 11. `wall-trap`: walls that leave fewer than 2 free lanes or block both centre lanes (error), or two walls that force a dodge to opposite sides closer than the profile dodge time (`WALL_DODGE_S`: Hard 0.8 s, Expert 0.6 s, ExpertPlus 0.45 s; warn, error below 60% of it). Crouch walls (`y` 2, height 3) never block lanes.
 12. `wall-short`: a wall shorter than 0.12 s (warn).
 
+## Walls
+
+The generator adds walls only to Hard, Expert and ExpertPlus, never bombs. After the notes are final, `generator/walls.py` scans the per-bar energy: calm bars (energy below 0.45) and build-ups (energy rising over 4 bars) may get a wall at a bar start. A wall is a full-height side wall at lane 0 or 3, lasting 1 to 4 beats, with the side alternating per 4-bar phrase and flipped when notes occupy that lane. ExpertPlus may replace a build-up side wall with a crouch wall (`y` 2, width 2 at lane 1, height 3) when no note falls inside it. Spacing caps density: Hard one wall per 2 bars, Expert 1.5 bars, ExpertPlus 1 bar. Placement is deterministic per seed, and the `wall-trap`, `wall-short` and `note-in-wall` rules hold by construction. The fixer deletes a wall that a scan flags with `wall-trap` or `wall-short`.
+
 ## Finding identity
 
 The fixer and apply decide whether a change added a problem by comparing findings before and after. Two findings are the same when their difficulty and rule match, the set of hand colours involved matches, and their beat ranges overlap or touch. The notes themselves are not part of the identity, because a valid fix moves, recolours or flips notes and would otherwise look like a new finding. See [ADR 0007](adr/0007-finding-identity-by-rule-colours-and-overlap.md).

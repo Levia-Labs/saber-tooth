@@ -7,6 +7,7 @@ from saber_tooth.generator.candidates import Candidate, build_candidates, phase_
 from saber_tooth.generator.motifs import Step, motif_steps, phrase_picks
 from saber_tooth.generator.placer import GenerationError, Placer
 from saber_tooth.generator.plan import BAR_BEATS, Event, plan_events
+from saber_tooth.generator.walls import place_walls
 from saber_tooth.model import BpmEvent, Color, Difficulty
 from saber_tooth.profiles import Profile
 from saber_tooth.swings import Swing
@@ -160,6 +161,7 @@ def generate_with_stats(
         profile.njs,
         profile.offset,
         notes=placer.all_notes(),
+        walls=place_walls(placer.all_notes(), bars, phase, profile, seed) if window is None else [],
         bpm_events=timing_events(timing),
     )
     stats.final = len(d.notes)

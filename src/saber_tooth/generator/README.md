@@ -8,5 +8,6 @@ Rule-based note placer. Inputs come from [analysis.py](../analysis.py) and a per
 4. `placer.py`: places notes and raises `GenerationError` when it cannot.
 5. `motifs.py`: swing direction patterns.
 6. `tempo.py`: `tempo_map`, BPM events from the beat grid.
+7. `walls.py`: `place_walls`, walls only (no bombs) on Hard and above.
 
 Tests: `task st:test -- tests/test_generator.py`. Design: [architecture](../../../docs/architecture.md).
