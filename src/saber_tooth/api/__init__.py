@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 
 from saber_tooth.analyser_client import AnalyserClient
 from saber_tooth.api.core import Api, ApiError, _error
+from saber_tooth.api.hosts import allowed_hosts, host_allowed
 from saber_tooth.api.upload import _save_upload
 from saber_tooth.audio import encode_egg
 from saber_tooth.service import ApplyConflict, MapNotFound, MapUnreadable, Service
@@ -20,9 +21,12 @@ def create_app(service: Service) -> FastAPI:
     app = FastAPI(title="saber-tooth", docs_url=None, redoc_url=None, openapi_url=None)
     api = Api(service)
     app.state.api = api
+    hosts = allowed_hosts()
 
     @app.middleware("http")
     async def same_origin(request: Request, call_next):
+        if not host_allowed(request.headers.get("host"), hosts):
+            return _error(403, "host not allowed")
         origin = request.headers.get("origin")
         here = f"{request.url.scheme}://{request.headers.get('host', '')}".lower()
         unsafe = request.method not in ("GET", "HEAD", "OPTIONS")

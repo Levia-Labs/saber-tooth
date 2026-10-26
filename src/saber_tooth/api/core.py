@@ -13,6 +13,7 @@ from saber_tooth.jobs import Jobs
 from saber_tooth.mapio import MapParseError, load_map
 from saber_tooth.service import MapNotFound, MapUnreadable, Service
 from saber_tooth.service.core import CREATE_MAP, STAGING_PREFIX
+from saber_tooth.store import ProposalApplied
 
 log = logging.getLogger(__name__)
 
@@ -127,14 +128,21 @@ class Api:
             self.store.set_status(pid, status)
         except KeyError:
             raise ApiError(404, f"unknown proposal: {pid}") from None
+        except ProposalApplied:
+            raise ApiError(409, "proposal already applied") from None
         return {"id": pid, "status": status}
 
     def approve_all(self, map_id: str) -> dict:
         pending = [p for p in self.store.proposals(self.map_id(map_id, True))]
         pending = [p for p in pending if p["status"] == "pending"]
+        done = 0
         for p in pending:
-            self.store.set_status(p["id"], "approved")
-        return {"approved": len(pending)}
+            try:
+                self.store.set_status(p["id"], "approved")
+            except (KeyError, ProposalApplied):
+                continue
+            done += 1
+        return {"approved": done}
 
     # jobs ----------------------------------------------------------------------
 

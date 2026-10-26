@@ -23,7 +23,7 @@ def svc(tmp_path):
 
 @pytest.fixture
 def client(svc):
-    with TestClient(create_app(svc)) as c:
+    with TestClient(create_app(svc), base_url="http://localhost") as c:
         yield c
 
 
@@ -226,7 +226,7 @@ def test_foreign_origin_post_is_403(client):
 
 
 def test_same_and_absent_origin_allowed(client, svc):
-    ok = client.post("/api/lightshow/learn", headers={"origin": "http://testserver"})
+    ok = client.post("/api/lightshow/learn", headers={"origin": "http://localhost"})
     assert ok.status_code == 200
     resp = client.get("/api/maps", headers={"origin": "http://evil.example"})
     assert resp.status_code == 200 and "access-control-allow-origin" not in resp.headers
@@ -265,7 +265,7 @@ def test_applied_proposal_cannot_be_reopened(client, svc):
     assert svc.store.proposal(pid)["status"] == "applied"
 
 
-@pytest.mark.parametrize("origin", ["https://testserver", "http://testserver:8100"])
+@pytest.mark.parametrize("origin", ["https://localhost", "http://localhost:8100"])
 def test_origin_scheme_or_port_mismatch_is_403(client, origin):
     assert client.post("/api/lightshow/learn", headers={"origin": origin}).status_code == 403
 
@@ -291,7 +291,7 @@ def test_upload_title_is_sanitised_filename_stem(svc):
             raise AnalyserError("stop")
 
     svc.client = Client()
-    with TestClient(create_app(svc)) as c:
+    with TestClient(create_app(svc), base_url="http://localhost") as c:
         files = {"file": ("dir/My Song (v2)!.flac", b"abc")}
         job = _wait(c, c.post("/api/generate", files=files).json()["job"])
     assert job["status"] == "failed" and seen == ["My-Song-v2.flac"]

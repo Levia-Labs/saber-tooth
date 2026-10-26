@@ -9,17 +9,18 @@ from collections.abc import Callable
 from pathlib import Path
 
 from saber_tooth.analyser_client import AnalyserClient, AnalyserError
-from saber_tooth.analysis import Analysis, read_project
+from saber_tooth.analysis import Analysis
 from saber_tooth.assemble import assemble_new, folder_name
 from saber_tooth.checks import run_checks
-from saber_tooth.fixer import OpConflict, apply_ops, new_findings, op_from_dict, propose
+from saber_tooth.fixer import propose
 from saber_tooth.lightshow import Templates
 from saber_tooth.lightshow import learn as learn_templates
 from saber_tooth.mapio import MapParseError, load_map
 from saber_tooth.mapio.errors import safe_name
-from saber_tooth.model import DIFFICULTIES, Beatmap
+from saber_tooth.model import Beatmap
 from saber_tooth.service.errors import ApplyConflict, MapNotFound, MapUnreadable
-from saber_tooth.service.util import finding_from_dict, map_id_for, related, span
+from saber_tooth.service.util import map_id_for
+from saber_tooth.service.verify import fixed_map, verify
 from saber_tooth.service.writeout import commit_staged, write_fixed
 from saber_tooth.store import Store
 
@@ -28,6 +29,11 @@ log = logging.getLogger(__name__)
 SUFFIX = " [saber-tooth]"
 STAGING_PREFIX = "staging:"
 CREATE_MAP = "create-map"
+APPLY_RETRIES = 3
+
+
+class _Stale(Exception):
+    """The approved set changed between reading it and writing the result."""
 
 
 class Service:
@@ -131,13 +137,13 @@ class Service:
             if not audio.is_file():
                 return None
             return self.client.analyse_file(audio, f"{map_id}.ogg")
-        except (AnalyserError, ValueError, MapParseError):
+        except (AnalyserError, ValueError, MapParseError, OSError, KeyError):
             return None
 
     def _scan(self, map_id: str) -> tuple[int, bool]:
         folder = self._folder(map_id)
         bm = self._load(folder)
-        analysis = self._analyse(map_id, bm, folder)
+        analysis = self._analyse(map_id, bm, folder)  # slow HTTP call: the lock is not held
         templates = self._templates()
         seed = int(map_id[:8], 16)
         findings = run_checks(bm, analysis)
@@ -148,16 +154,15 @@ class Service:
                 proposals.append(p.to_dict())
         project = analysis.audio.parent.name if analysis and analysis.audio else None
         scan = {"findings": [f.to_dict() for f in findings], "analysis": project}
-        self.store.replace_open_proposals(map_id, proposals, scan)
+        with self._lock:
+            self.store.replace_open_proposals(map_id, proposals, scan)
         return len(proposals), analysis is not None
 
     def scan(self, map_id: str) -> int:
-        with self._lock:
-            return self._scan(map_id)[0]
+        return self._scan(map_id)[0]
 
     def run_scan(self, map_id: str) -> dict:
-        with self._lock:
-            count, analysed = self._scan(map_id)
+        count, analysed = self._scan(map_id)
         return {"map_id": map_id, "proposals": count, "analysis": analysed}
 
     # generate ----------------------------------------------------------------
@@ -203,13 +208,17 @@ class Service:
         with self._lock:
             if not map_id.startswith(STAGING_PREFIX):
                 self._folder(map_id)
-            approved = self.store.approved(map_id)
-            if not approved:
-                raise ApplyConflict("no approved proposals to apply", [])
-            if map_id.startswith(STAGING_PREFIX):
-                target = self._commit_staged(approved)
+            for _ in range(APPLY_RETRIES):
+                approved = self.store.approved(map_id)
+                if not approved:
+                    raise ApplyConflict("no approved proposals to apply", [])
+                try:
+                    target = self._write(map_id, approved)
+                except _Stale:  # a proposal was rejected mid-apply: redo without it
+                    continue
+                break
             else:
-                target = self._apply_fixes(map_id, approved)
+                raise ApplyConflict("proposals kept changing during apply; retry", [])
             self.store.mark_applied([p["id"] for p in approved])
             try:
                 self.refresh_library()
@@ -217,72 +226,30 @@ class Service:
                 log.exception("library refresh failed after applying %s", map_id)
             return target
 
+    def _write(self, map_id: str, approved: list[dict]) -> Path:
+        def unchanged() -> None:
+            if {p["id"] for p in self.store.approved(map_id)} != {p["id"] for p in approved}:
+                raise _Stale
+
+        if map_id.startswith(STAGING_PREFIX):
+            return self._commit_staged(approved, unchanged)
+        return self._apply_fixes(map_id, approved, unchanged)
+
     def run_apply(self, map_id: str) -> dict:
         return {"map_id": map_id, "folder": self.apply(map_id).name}
 
-    def _fixed(self, bm: Beatmap, approved: list[dict]) -> Beatmap:
-        cur = bm
-        for n, p in enumerate(approved):
-            try:
-                ops = [op_from_dict(o) for o in p["ops"]]
-                cur = apply_ops(cur, ops)
-            except OpConflict as exc:
-                spans = [s for s in map(span, ops) if s]
-                ids = related(spans, approved[: n + 1])
-                raise ApplyConflict(f"proposals conflict: {exc}", ids or [p["id"]]) from exc
-            except (KeyError, ValueError, TypeError) as exc:
-                raise ApplyConflict(f"proposal is unreadable: {exc}", [p["id"]]) from exc
-        return cur
-
-    def _stored_analysis(self, info: dict | None) -> Analysis | None:
-        name = info["analysis"] if info else None
-        if not name or self.uploads is None:
-            return None
-        root = Path(self.uploads).resolve()
-        folder = (root / name).resolve()
-        if folder.parent != root:
-            return None
-        try:
-            return read_project(folder)
-        except (OSError, KeyError, ValueError):
-            return None
-
-    def _verify(self, map_id: str, original: Beatmap, fixed: Beatmap, approved: list[dict]) -> None:
-        all_ids = [p["id"] for p in approved]
-        missing = [d for d in DIFFICULTIES if d not in fixed.difficulties]
-        if missing:
-            raise ApplyConflict(
-                f"result lacks difficulties {', '.join(missing)}; approve add-difficulty "
-                "proposals first",
-                all_ids,
-            )
-        info = self.store.scan_info(map_id)
-        if info is not None:
-            known = [finding_from_dict(d) for d in info["findings"]]
-        else:
-            known = run_checks(original)
-        analysis = self._stored_analysis(info)
-        after = run_checks(fixed, analysis)
-        bad = [f for f in after if f.severity == "error"]
-        bad += [f for f in new_findings(after, known) if f not in bad]
-        if bad:
-            spans = [(f.difficulty, f.beat_start, f.beat_end) for f in bad]
-            first = bad[0]
-            raise ApplyConflict(
-                f"result has {len(bad)} new or remaining problems; first: {first.rule} "
-                f"{first.difficulty} @ {first.beat_start:g}: {first.message}",
-                related(spans, approved) or all_ids,
-            )
-
-    def _apply_fixes(self, map_id: str, approved: list[dict]) -> Path:
+    def _apply_fixes(
+        self, map_id: str, approved: list[dict], unchanged: Callable[[], None]
+    ) -> Path:
         folder = self._folder(map_id)
         original = self._load(folder)
-        fixed = self._fixed(original, approved)
-        self._verify(map_id, original, fixed, approved)
+        fixed = fixed_map(original, approved)
+        verify(self.store, self.uploads, map_id, original, fixed, approved)
         fixed.info.song_name += SUFFIX
+        unchanged()
         return write_fixed(self.levels, folder, fixed, folder.name + SUFFIX)
 
-    def _commit_staged(self, approved: list[dict]) -> Path:
+    def _commit_staged(self, approved: list[dict], unchanged: Callable[[], None]) -> Path:
         proposal = next((p for p in approved if p["rule"] == CREATE_MAP), None)
         if proposal is None:
             raise ApplyConflict("no approved create-map proposal", [p["id"] for p in approved])
@@ -290,6 +257,7 @@ class Service:
         staging = Path(proposal["after"]["staging"]).resolve()
         if staging.parent != root or not staging.is_dir():
             raise ApplyConflict("staging folder is missing", [proposal["id"]])
+        unchanged()
         target = commit_staged(self.levels, staging, folder_name(proposal["after"]["title"]))
         shutil.rmtree(staging, ignore_errors=True)
         return target

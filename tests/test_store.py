@@ -98,6 +98,7 @@ def test_replace_open_proposals_keeps_history_and_saves_scan(tmp_path):
     a, b, c, d = store.add_proposals("m", [_open_prop(), _open_prop(), _open_prop(), _open_prop()])
     store.set_status(b, "approved")
     store.set_status(c, "rejected")
+    store.set_status(d, "approved")
     store.mark_applied([d])
     new = store.replace_open_proposals(
         "m", [_open_prop("n")], {"findings": [{"k": 1}], "analysis": "p"}

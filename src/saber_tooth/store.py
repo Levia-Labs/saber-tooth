@@ -26,6 +26,10 @@ CREATE TABLE IF NOT EXISTS scans(
 """
 
 
+class ProposalApplied(Exception):
+    """A status change was refused because the proposal is already applied."""
+
+
 def _now() -> str:
     return datetime.now(UTC).isoformat()
 
@@ -146,16 +150,24 @@ class Store:
     def set_status(self, proposal_id: int, status: str) -> None:
         if status not in PROPOSAL_STATUSES:
             raise ValueError(f"invalid status: {status}")
-        cur = self._exec("UPDATE proposals SET status=? WHERE id=?", (status, proposal_id))
+        cur = self._exec(
+            "UPDATE proposals SET status=? WHERE id=? AND status != 'applied'",
+            (status, proposal_id),
+        )
         if cur.rowcount == 0:
+            if self._query("SELECT 1 FROM proposals WHERE id=?", (proposal_id,)):
+                raise ProposalApplied(proposal_id)
             raise KeyError(proposal_id)
 
     def mark_applied(self, proposal_ids: list[int]) -> None:
-        """Set every proposal applied in one transaction."""
+        """Set every still-approved proposal applied in one transaction."""
         with self._lock:
             try:
                 for pid in proposal_ids:
-                    self._db.execute("UPDATE proposals SET status='applied' WHERE id=?", (pid,))
+                    self._db.execute(
+                        "UPDATE proposals SET status='applied' WHERE id=? AND status='approved'",
+                        (pid,),
+                    )
                 self._db.commit()
             except BaseException:
                 self._db.rollback()
