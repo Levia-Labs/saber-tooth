@@ -83,3 +83,59 @@ def test_round_trip(tmp_path_factory, ns):
     out = tmp_path_factory.mktemp("rt") / "m"
     write_map(base, out, copy_from=FIX / "v2_basic")
     assert load_map(out).difficulties["Hard"].notes == sorted(ns)
+
+
+def _copy_fixture(name: str, dest: Path) -> Path:
+    import shutil
+
+    shutil.copytree(FIX / name, dest)
+    return dest
+
+
+def test_info_filename_traversal_rejected(tmp_path):
+    m = _copy_fixture("v2_basic", tmp_path / "a")
+    info = m / "info.dat"
+    info.write_text(
+        info.read_text(encoding="utf-8").replace("song.ogg", "../x.egg"), encoding="utf-8"
+    )
+    with pytest.raises(MapParseError):
+        load_map(m)
+
+
+def test_difficulty_filename_traversal_rejected(tmp_path):
+    m = _copy_fixture("v2_basic", tmp_path / "a")
+    info = m / "info.dat"
+    info.write_text(
+        info.read_text(encoding="utf-8").replace("hard.dat", "..\\x.dat"), encoding="utf-8"
+    )
+    with pytest.raises(MapParseError):
+        load_map(m)
+
+
+def test_write_strips_nested_custom_data(tmp_path):
+    import json
+
+    m = _copy_fixture("v3_boxes", tmp_path / "a")
+    exp = m / "Expert.dat"
+    data = json.loads(exp.read_text(encoding="utf-8"))
+    data["sliders"] = [{"b": 1, "customData": {"x": 1}, "n": [{"_customData": {"y": 2}, "k": 3}]}]
+    data["lightColorEventBoxGroups"][0]["customData"] = {"z": 1}
+    exp.write_text(json.dumps(data), encoding="utf-8")
+    write_map(load_map(m), tmp_path / "o", copy_from=m)
+    text = (tmp_path / "o" / "Expert.dat").read_text(encoding="utf-8")
+    assert "ustomData" not in text and '"k":3' in text
+
+
+def test_v2_bpm_event_without_float_skipped_and_deduped(tmp_path):
+    import json
+
+    m = _copy_fixture("v2_bpm", tmp_path / "a")
+    exp = m / "Expert.dat"
+    data = json.loads(exp.read_text(encoding="utf-8"))
+    data["_events"] = [
+        {"_time": 0, "_type": 100, "_value": 0, "_floatValue": 60},
+        {"_time": 8, "_type": 100, "_value": 0},
+    ]
+    exp.write_text(json.dumps(data), encoding="utf-8")
+    bpms = load_map(m).difficulties["Expert"].bpm_events
+    assert [(b.beat, b.bpm) for b in bpms] == [(0.0, 60.0)]

@@ -35,12 +35,14 @@ def read_v2(data: dict, name: str, njs: float, offset: float, filename: str) -> 
             if kind == BOOST_TYPE:
                 d.boosts.append((beat, value == 1))
             elif kind == BPM_TYPE:
-                d.bpm_events.append(BpmEvent(beat, fv))
+                if "_floatValue" in e and fv > 0:
+                    d.bpm_events.append(BpmEvent(beat, fv))
             else:
                 d.events.append(BasicEvent(beat, kind, value, fv))
         custom = data.get("_customData") or {}
         for c in custom.get("_BPMChanges", []):
-            d.bpm_events.append(BpmEvent(float(c["_time"]), float(c["_BPM"])))
+            if all(b.beat != float(c["_time"]) for b in d.bpm_events):
+                d.bpm_events.append(BpmEvent(float(c["_time"]), float(c["_BPM"])))
     except (KeyError, TypeError, ValueError) as exc:
         raise MapParseError(f"bad v2 difficulty {filename}: {exc!r}") from exc
     _sort(d)

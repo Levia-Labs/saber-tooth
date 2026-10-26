@@ -2,6 +2,7 @@ import json
 import shutil
 from pathlib import Path
 
+from saber_tooth.mapio.errors import safe_name
 from saber_tooth.model import DIFFICULTIES, RANKS, Beatmap, Difficulty, MapInfo, Wall
 
 BOX_KEYS = (
@@ -10,6 +11,16 @@ BOX_KEYS = (
     "lightTranslationEventBoxGroups",
     "vfxEventBoxGroups",
 )
+
+
+def strip_custom(value):
+    """Recursively drop every customData/_customData key."""
+    if isinstance(value, dict):
+        drop = ("customData", "_customData")
+        return {k: strip_custom(v) for k, v in value.items() if k not in drop}
+    if isinstance(value, list):
+        return [strip_custom(v) for v in value]
+    return value
 
 
 def _wall_json(w: Wall) -> dict:
@@ -27,14 +38,14 @@ def difficulty_json(d: Difficulty) -> dict:
         ],
         "bombNotes": [{"b": b.beat, "x": b.x, "y": b.y} for b in d.bombs],
         "obstacles": [_wall_json(w) for w in d.walls],
-        "sliders": list(d.raw.get("sliders", [])),
-        "burstSliders": list(d.raw.get("burstSliders", [])),
+        "sliders": strip_custom(d.raw.get("sliders", [])),
+        "burstSliders": strip_custom(d.raw.get("burstSliders", [])),
         "waypoints": [],
         "basicBeatmapEvents": [
             {"b": e.beat, "et": e.type, "i": e.value, "f": e.float_value} for e in d.events
         ],
         "colorBoostBeatmapEvents": [{"b": b, "o": bool(o)} for b, o in d.boosts],
-        **{k: list(d.raw.get(k, [])) for k in BOX_KEYS},
+        **{k: strip_custom(d.raw.get(k, [])) for k in BOX_KEYS},
         "_fxEventsCollection": {"_fl": [], "_il": []},
         "basicEventTypesWithKeywords": {"d": []},
         "useNormalEventsAsCompatibleEvents": True,
@@ -95,6 +106,9 @@ def write_map(beatmap: Beatmap, folder: Path, copy_from: Path | None) -> None:
     _dump(folder / "Info.dat", info_json(beatmap.info, diffs))
     if copy_from is not None:
         for name in (beatmap.info.song_file, beatmap.info.cover_file):
-            src = copy_from / name if name else None
-            if src is not None and src.is_file():
+            if not name:
+                continue
+            safe_name(name)
+            src = (copy_from / name).resolve()
+            if copy_from.resolve() in src.parents and src.is_file():
                 shutil.copyfile(src, folder / name)

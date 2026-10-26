@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from saber_tooth.mapio.errors import MapParseError
+from saber_tooth.mapio.errors import MapParseError, safe_name
 from saber_tooth.mapio.read_v2 import read_v2
 from saber_tooth.mapio.read_v3 import read_v3
 from saber_tooth.mapio.read_v4 import read_v4
@@ -37,7 +37,7 @@ def find_info(folder: Path) -> Path:
 
 
 def difficulty_path(folder: Path, filename: str) -> Path:
-    found = _find_ci(folder, filename)
+    found = _find_ci(folder, safe_name(filename))
     if found is None:
         raise MapParseError(f"missing difficulty file {filename} in {folder}")
     return found
@@ -91,13 +91,17 @@ def _load_diff_file(path: Path, entry: dict, folder: Path) -> Difficulty:
     return read_v2(data, *args, path.name)
 
 
+def _opt_name(name: object) -> str:
+    return safe_name(name) if name else ""
+
+
 def _entries_v2(info: dict) -> list[dict]:
     for s in info["_difficultyBeatmapSets"]:
         if s.get("_beatmapCharacteristicName") == "Standard":
             return [
                 {
                     "name": b["_difficulty"],
-                    "file": b["_beatmapFilename"],
+                    "file": safe_name(b["_beatmapFilename"]),
                     "njs": float(b.get("_noteJumpMovementSpeed", 16)),
                     "offset": float(b.get("_noteJumpStartBeatOffset", 0)),
                     "scheme": b.get("_beatmapColorSchemeIdx"),
@@ -111,8 +115,8 @@ def _entries_v4(info: dict) -> list[dict]:
     return [
         {
             "name": b["difficulty"],
-            "file": b["beatmapDataFilename"],
-            "lightshow": b.get("lightshowDataFilename"),
+            "file": safe_name(b["beatmapDataFilename"]),
+            "lightshow": _opt_name(b.get("lightshowDataFilename")),
             "njs": float(b.get("noteJumpMovementSpeed", 16)),
             "offset": float(b.get("noteJumpStartBeatOffset", 0)),
             "scheme": b.get("beatmapColorSchemeIdx"),
@@ -133,8 +137,8 @@ def _mapinfo_v4(info: dict, scheme_idx: int | None) -> MapInfo:
         author=song.get("author", ""),
         mapper=mappers[0] if mappers else "",
         bpm=float(audio["bpm"]),
-        song_file=audio["songFilename"],
-        cover_file=info.get("coverImageFilename", ""),
+        song_file=safe_name(audio["songFilename"]),
+        cover_file=_opt_name(info.get("coverImageFilename", "")),
         preview_start=float(audio.get("previewStartTime", 0)),
         preview_duration=float(audio.get("previewDuration", 10)),
         environment=envs[0],
@@ -150,8 +154,8 @@ def _mapinfo_v2(info: dict, scheme_idx: int | None) -> MapInfo:
         author=info.get("_songAuthorName", ""),
         mapper=info.get("_levelAuthorName", ""),
         bpm=float(info["_beatsPerMinute"]),
-        song_file=info["_songFilename"],
-        cover_file=info.get("_coverImageFilename", ""),
+        song_file=safe_name(info["_songFilename"]),
+        cover_file=_opt_name(info.get("_coverImageFilename", "")),
         preview_start=float(info.get("_previewStartTime", 0)),
         preview_duration=float(info.get("_previewDuration", 10)),
         environment=info.get("_environmentName") or (envs[0] if envs else ""),
@@ -171,6 +175,8 @@ def load_map(folder: Path) -> Beatmap:
                 diffs[e["name"]] = _load_diff_file(path, e, folder)
         idx = next((e["scheme"] for e in entries if e["scheme"] is not None), None)
         meta = _mapinfo_v4(info, idx) if v4 else _mapinfo_v2(info, idx)
+    except MapParseError:
+        raise
     except (KeyError, TypeError, ValueError, IndexError) as exc:
         raise MapParseError(f"bad Info in {folder}: {exc!r}") from exc
     return Beatmap(meta, diffs, folder.name)

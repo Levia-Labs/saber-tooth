@@ -11,7 +11,11 @@ class LevelsWriter:
 
     def __init__(self, root: Path):
         self.root = root
-        self._existing = {p.resolve() for p in root.iterdir() if p.is_dir()}
+        self._existing = {
+            p.resolve()
+            for p in root.iterdir()
+            if p.is_dir() and not (p.name.startswith(".") and p.name.endswith(".partial"))
+        }
 
     def guard(self, path: Path) -> None:
         resolved = path.resolve()
