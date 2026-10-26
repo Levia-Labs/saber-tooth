@@ -71,6 +71,12 @@ repos:
         entry: npx --no -- eslint --config .crepidoma/configs/eslint.config.js
         language: system
         types_or: [javascript, ts, tsx, jsx]
+      - id: readme-check
+        name: every folder keeps a README
+        entry: uv run python scripts/readme_check.py
+        language: system
+        always_run: true
+        pass_filenames: false
       - id: ast-grep
         name: ast-grep scan (shared rules)
         entry: ast-grep scan --config .crepidoma/configs/sgconfig.yml
