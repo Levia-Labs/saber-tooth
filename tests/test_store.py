@@ -70,3 +70,10 @@ def test_job_result_round_trips(store: Store) -> None:
     assert job["result"] == {"n": [1, 2], "ok": True}
     store.update_job(jid, "failed", error="boom")
     assert store.job(jid)["error"] == "boom"
+
+
+def test_add_proposals_is_atomic(store: Store) -> None:
+    with pytest.raises(KeyError):
+        store.add_proposals("m1", [_prop(), {"rule": "r"}])
+    store.upsert_map("m1", "f", "T", "M", "Env", None)
+    assert store.proposals("m1") == []

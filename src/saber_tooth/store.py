@@ -69,27 +69,36 @@ class Store:
         return [dict(r) for r in self._query("SELECT * FROM maps ORDER BY id")]
 
     def add_proposals(self, map_id: str, proposals: list[dict]) -> list[int]:
+        now = _now()
+        rows = [
+            (
+                map_id,
+                p["rule"],
+                p["difficulty"],
+                p["severity"],
+                p["summary"],
+                json.dumps(p["ops"]),
+                json.dumps(p["before"]),
+                json.dumps(p["after"]),
+                now,
+            )
+            for p in proposals
+        ]
         ids: list[int] = []
         with self._lock:
-            for p in proposals:
-                cur = self._db.execute(
-                    "INSERT INTO proposals(map_id, rule, difficulty, severity, summary,"
-                    " ops_json, before_json, after_json, status, created_at)"
-                    " VALUES(?,?,?,?,?,?,?,?,'pending',?)",
-                    (
-                        map_id,
-                        p["rule"],
-                        p["difficulty"],
-                        p["severity"],
-                        p["summary"],
-                        json.dumps(p["ops"]),
-                        json.dumps(p["before"]),
-                        json.dumps(p["after"]),
-                        _now(),
-                    ),
-                )
-                ids.append(int(cur.lastrowid))
-            self._db.commit()
+            try:
+                for row in rows:
+                    cur = self._db.execute(
+                        "INSERT INTO proposals(map_id, rule, difficulty, severity, summary,"
+                        " ops_json, before_json, after_json, status, created_at)"
+                        " VALUES(?,?,?,?,?,?,?,?,'pending',?)",
+                        row,
+                    )
+                    ids.append(int(cur.lastrowid))
+                self._db.commit()
+            except BaseException:
+                self._db.rollback()
+                raise
         return ids
 
     @staticmethod

@@ -1,10 +1,13 @@
 """In-process job worker backed by the store."""
 
+import logging
 from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor
 from typing import Any
 
 from saber_tooth.store import Store
+
+log = logging.getLogger(__name__)
 
 
 class Jobs:
@@ -27,7 +30,13 @@ class Jobs:
             result = fn(*args)
             self._store.update_job(job_id, "done", result=result)
         except Exception as exc:
-            self._store.update_job(job_id, "failed", error=str(exc))
+            self._mark_failed(job_id, str(exc))
+
+    def _mark_failed(self, job_id: str, error: str) -> None:
+        try:
+            self._store.update_job(job_id, "failed", error=error)
+        except BaseException:
+            log.exception("could not mark job %s failed", job_id)
 
     def shutdown(self) -> None:
         self._pool.shutdown(wait=True)

@@ -40,3 +40,10 @@ def test_job_failure_records_message(env) -> None:
     job = store.job(jid)
     assert job["status"] == "failed"
     assert job["error"] == "kaboom"
+
+
+def test_unserialisable_result_fails(env) -> None:
+    store, jobs = env
+    jid = jobs.submit("scan", lambda: {1, 2})
+    _wait(jobs, jid)
+    assert store.job(jid)["status"] == "failed"
