@@ -14,11 +14,16 @@ def _at(s: dict, note: Note, b: str, x: str, y: str) -> bool:
         return False
 
 
-def _moved(s: dict, note: Note, new: Note) -> dict:
+def _tail(s: dict, note: Note, key: str) -> bool:
+    """Only arcs end on a note; a chain's tail is a bare position and never matches."""
+    return key == "sliders" and _at(s, note, "tb", "tx", "ty")
+
+
+def _moved(s: dict, note: Note, new: Note, key: str) -> dict:
     out = dict(s)
     if _at(s, note, "b", "x", "y"):
         out.update(x=new.x, y=new.y, d=int(new.cut))
-    if _at(s, note, "tb", "tx", "ty"):
+    if _tail(s, note, key):
         out.update(tx=new.x, ty=new.y)
         if "tc" in out:
             out["tc"] = int(new.cut)
@@ -35,11 +40,9 @@ def retarget(d: Difficulty, note: Note, new: Note | None) -> None:
             continue
         kept = []
         for s in d.raw[key]:
-            ends = isinstance(s, dict) and (
-                _at(s, note, "b", "x", "y") or _at(s, note, "tb", "tx", "ty")
-            )
+            ends = isinstance(s, dict) and (_at(s, note, "b", "x", "y") or _tail(s, note, key))
             if not ends:
                 kept.append(s)
             elif new is not None:
-                kept.append(_moved(s, note, new))
+                kept.append(_moved(s, note, new, key))
         d.raw[key] = kept

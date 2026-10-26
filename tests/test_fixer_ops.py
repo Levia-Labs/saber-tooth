@@ -47,6 +47,20 @@ def test_move_and_flip_retarget_arc_ends():
     assert raw(flipped)[0]["d"] == int(Cut.UP) and raw(flipped, "burstSliders")[0]["d"] == 0
 
 
+def test_chain_tail_is_not_matched_against_an_unrelated_note():
+    other = _n(9, 1, 0)
+    m = bm([HEAD, other])
+    m.difficulties["Expert"].raw = {"burstSliders": [dict(CHAIN)]}
+    for op in (fo.Move("Expert", other, 3, 2, Cut.UP), fo.Delete("Expert", other)):
+        out = fx.apply_ops(m, [op])
+        assert raw(out, "burstSliders") == [CHAIN]
+
+
+def test_arc_tail_still_follows_its_note():
+    m = fx.apply_ops(arc_map(), [fo.Move("Expert", _n(9, 2, 1), 3, 0, Cut.UP)])
+    assert raw(m)[0]["tx"] == 3 and raw(m, "burstSliders") == [CHAIN]
+
+
 def test_recolor_drops_arcs_that_would_join_two_hands():
     m = fx.apply_ops(arc_map(), [fo.Recolor("Expert", HEAD)])
     assert raw(m) == [] and raw(m, "burstSliders") == []
