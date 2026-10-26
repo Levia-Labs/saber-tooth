@@ -1,0 +1,14 @@
+{
+  "name": "saber-tooth",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint:js": "eslint --config .crepidoma/configs/eslint.config.js src/saber_tooth/web"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.13.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.0"
+  }
+}

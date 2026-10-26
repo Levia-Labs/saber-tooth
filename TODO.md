@@ -5,3 +5,4 @@
 3. Info v4 and difficulty v4 BPM changes are ignored in v1. Add support.
 4. `.claude/settings.json` is the verbatim Crepidoma template. An automated security review flagged broad allow rules (`Bash(task *)`, `git diff/log/show *` where a deny can be bypassed by long-option abbreviation, `pre-commit run *`, `git commit *` without a `--no-verify` deny) and the unpinned marketplace ref `main`. Fix upstream in Crepidoma, then resync.
 5. Task 16 adds an `st:scan -- <map_id>` task, which the spec lists.
+6. The Crepidoma eslint hook template uses `npx --no eslint --config ...`, which npm 10+ breaks, and the shared `eslint.config.js` sets no browser globals. Fix upstream in Crepidoma, then resync.
