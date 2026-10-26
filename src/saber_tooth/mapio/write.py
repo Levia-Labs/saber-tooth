@@ -1,0 +1,100 @@
+import json
+import shutil
+from pathlib import Path
+
+from saber_tooth.model import DIFFICULTIES, RANKS, Beatmap, Difficulty, MapInfo, Wall
+
+BOX_KEYS = (
+    "lightColorEventBoxGroups",
+    "lightRotationEventBoxGroups",
+    "lightTranslationEventBoxGroups",
+    "vfxEventBoxGroups",
+)
+
+
+def _wall_json(w: Wall) -> dict:
+    return {"b": w.beat, "x": w.x, "y": w.y, "d": w.duration, "w": w.width, "h": w.height}
+
+
+def difficulty_json(d: Difficulty) -> dict:
+    return {
+        "version": "3.3.0",
+        "bpmEvents": [{"b": e.beat, "m": e.bpm} for e in d.bpm_events],
+        "rotationEvents": [],
+        "colorNotes": [
+            {"b": n.beat, "x": n.x, "y": n.y, "c": int(n.color), "d": int(n.cut), "a": n.angle}
+            for n in d.notes
+        ],
+        "bombNotes": [{"b": b.beat, "x": b.x, "y": b.y} for b in d.bombs],
+        "obstacles": [_wall_json(w) for w in d.walls],
+        "sliders": list(d.raw.get("sliders", [])),
+        "burstSliders": list(d.raw.get("burstSliders", [])),
+        "waypoints": [],
+        "basicBeatmapEvents": [
+            {"b": e.beat, "et": e.type, "i": e.value, "f": e.float_value} for e in d.events
+        ],
+        "colorBoostBeatmapEvents": [{"b": b, "o": bool(o)} for b, o in d.boosts],
+        **{k: list(d.raw.get(k, [])) for k in BOX_KEYS},
+        "_fxEventsCollection": {"_fl": [], "_il": []},
+        "basicEventTypesWithKeywords": {"d": []},
+        "useNormalEventsAsCompatibleEvents": True,
+    }
+
+
+def info_json(info: MapInfo, diffs: list[Difficulty]) -> dict:
+    scheme = info.color_scheme
+    beatmaps = []
+    for d in diffs:
+        entry = {
+            "_difficulty": d.name,
+            "_difficultyRank": RANKS[d.name],
+            "_beatmapFilename": f"{d.name}.dat",
+            "_noteJumpMovementSpeed": d.njs,
+            "_noteJumpStartBeatOffset": d.offset,
+            "_environmentNameIdx": 0,
+        }
+        if scheme:
+            entry["_beatmapColorSchemeIdx"] = 0
+        beatmaps.append(entry)
+    out = {
+        "_version": "2.1.0",
+        "_songName": info.song_name,
+        "_songSubName": info.sub_name,
+        "_songAuthorName": info.author,
+        "_levelAuthorName": info.mapper,
+        "_beatsPerMinute": info.bpm,
+        "_songTimeOffset": 0,
+        "_shuffle": 0,
+        "_shufflePeriod": 0.5,
+        "_previewStartTime": info.preview_start,
+        "_previewDuration": info.preview_duration,
+        "_songFilename": info.song_file,
+        "_coverImageFilename": info.cover_file,
+        "_environmentName": info.environment,
+        "_environmentNames": [info.environment],
+        "_difficultyBeatmapSets": [
+            {"_beatmapCharacteristicName": "Standard", "_difficultyBeatmaps": beatmaps}
+        ],
+    }
+    if scheme:
+        out["_colorSchemes"] = [
+            {"useOverride": True, "colorScheme": {"colorSchemeId": scheme.id, **scheme.colors}}
+        ]
+    return out
+
+
+def _dump(path: Path, data: dict) -> None:
+    path.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
+
+
+def write_map(beatmap: Beatmap, folder: Path, copy_from: Path | None) -> None:
+    folder.mkdir(parents=True, exist_ok=True)
+    diffs = [beatmap.difficulties[n] for n in DIFFICULTIES if n in beatmap.difficulties]
+    for d in diffs:
+        _dump(folder / f"{d.name}.dat", difficulty_json(d))
+    _dump(folder / "Info.dat", info_json(beatmap.info, diffs))
+    if copy_from is not None:
+        for name in (beatmap.info.song_file, beatmap.info.cover_file):
+            src = copy_from / name if name else None
+            if src is not None and src.is_file():
+                shutil.copyfile(src, folder / name)
