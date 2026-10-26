@@ -27,6 +27,9 @@ tasks:
   gen:
     desc: "Start a map generation job from a URL. Usage: task st:gen -- <url>"
     cmds: ["uv run saber-tooth gen-url {{.CLI_ARGS}}"]
+  readme-check:
+    desc: "Check every tracked folder has a README.md. Usage: task st:readme-check [-- --list]"
+    cmds: ["uv run python scripts/readme_check.py {{.CLI_ARGS}}"]
   compose-check:
     desc: "Validate docker-compose.yml. Usage: task st:compose-check"
     cmds: ["LEVELS_DIR=${LEVELS_DIR:-./data/levels} docker compose config -q"]
