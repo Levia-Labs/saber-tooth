@@ -1,6 +1,6 @@
 # API
 
-The service listens on `127.0.0.1:${SABER_PORT:-8100}`. There is no authentication; access is limited to localhost. Requests must carry a `Host` of `127.0.0.1`, `localhost` or `[::1]` (any port), or a name listed in the comma-separated environment variable `SABER_ALLOWED_HOSTS`; any other `Host` is refused with 403 to block DNS rebinding. The static frontend is served at `/`. All other responses are JSON.
+The service listens on `127.0.0.1:${SABER_PORT:-8100}`. There is no authentication; access is limited to localhost. Requests must carry a `Host` of `127.0.0.1`, `localhost` or `[::1]` (any port), or a name listed in the comma-separated environment variable `SABER_ALLOWED_HOSTS`; any other `Host` is refused with 403 to block DNS rebinding. Behind a TLS proxy, set `SABER_TRUSTED_PROXY_IPS` (comma list of IPs or CIDRs, empty by default). When the TCP peer is in that list, the `Host` and scheme used for these checks come from the rightmost `X-Forwarded-Host` and `X-Forwarded-Proto` value, and the host must still be in the allowlist. From any other peer those headers are ignored. The static frontend is served at `/`. All other responses are JSON.
 
 ## Routes
 
@@ -30,7 +30,7 @@ Routes that start work answer `{"job": "<id>"}`. Poll the job until `status` is 
 Errors answer `{"error": "<message>"}` with these codes.
 
 1. 400: malformed body, missing `file`, or a URL that is not a YouTube URL.
-2. 403: a `Host` outside the allowlist (any method), or a state-changing request whose `Origin` header does not match the host.
+2. 403: a `Host` outside the allowlist (any method), or a state-changing request whose `Origin` header does not match the scheme and host the client addressed (see above for proxies).
 3. 404: unknown map, proposal or job. Ids that do not match their expected format are also 404.
 4. 409: the map is unreadable, the proposal is already applied, or approved proposals conflict.
 5. 413: the upload exceeds `MAX_UPLOAD_MB` (default 200).

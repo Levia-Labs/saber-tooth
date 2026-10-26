@@ -15,6 +15,7 @@ Where these goals compete with implementation simplicity, the quality bar wins.
 ## Compose stack
 
 1. `saber-tooth`: built from this repository, published on `127.0.0.1:${SABER_PORT:-8100}`.
+   The container starts as root, `docker-entrypoint.sh` maps user `app` to `PUID`/`PGID` (default 1000), chowns `/data` only, and drops privileges with `setpriv`. `LEVELS_DIR` is never chowned and must be writable by `PUID`.
 2. `beat-analyser`: image `levialabs/beat-analyser:latest`, internal network only, no published port.
 3. Volumes:
    1. `CustomLevels` bind mount, read-write, at `/levels`. The host path comes from `LEVELS_DIR`.
@@ -34,7 +35,7 @@ The package is `src/saber_tooth/`. Each file stays under 300 lines. Larger parts
 7. `store`: SQLite tables `maps`, `jobs`, `proposals` and `scans`. Proposal status is `pending`, `approved`, `rejected` or `applied`. The `scans` table holds, per map, the findings of the last scan (the baseline) and the name of the analyser project used.
 8. `service`: library refresh, scan, generate, apply and learn, over the store. The library is indexed at start and again whenever the set of folders under `/levels` changes, which `GET /api/maps` checks before it answers. Applying a map also refreshes it.
 9. `jobs`: in-process worker with one thread. A job ends `done` or `failed`; a failed apply stores the conflicting proposal ids in its result.
-10. `api`: FastAPI routes, described in [api.md](api.md). Every request whose `Host` is not `127.0.0.1`, `localhost`, `[::1]` (any port) or a name listed in the comma-separated `SABER_ALLOWED_HOSTS` gets 403, which stops DNS rebinding. Unsafe methods carrying an `Origin` header that differs from the host also get 403. Ids are matched against fixed patterns before any lookup.
+10. `api`: FastAPI routes, described in [api.md](api.md). Every request whose `Host` is not `127.0.0.1`, `localhost`, `[::1]` (any port) or a name listed in the comma-separated `SABER_ALLOWED_HOSTS` gets 403, which stops DNS rebinding. Unsafe methods carrying an `Origin` header that differs from the host also get 403. Forwarded headers count only from peers listed in `SABER_TRUSTED_PROXY_IPS` (rightmost value; see [ADR 0009](adr/0009-configurable-user-and-proxy-trust.md)). Ids are matched against fixed patterns before any lookup.
 11. `web`: static HTML and vanilla JS with a library view, a map detail view with findings and proposals, a before and after note timeline on a canvas, and a new-map form.
 
 ## Check rules

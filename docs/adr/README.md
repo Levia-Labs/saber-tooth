@@ -10,3 +10,4 @@ Each record has Context, Decision and Consequences.
 6. [0006 Single-process FastAPI with SQLite](0006-single-process-fastapi-sqlite.md)
 7. [0007 Finding identity by rule, colours and overlapping beats](0007-finding-identity-by-rule-colours-and-overlap.md)
 8. [0008 YouTube-only URL intake](0008-youtube-only-url-intake.md)
+9. [0009 Configurable container user and proxy trust](0009-configurable-user-and-proxy-trust.md)

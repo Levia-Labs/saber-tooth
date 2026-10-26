@@ -34,6 +34,7 @@ The design goals are flawless, flowing and atmospheric maps. See the [design spe
 2. Run `task st:up`.
 3. Open <http://127.0.0.1:8100>, or the port set in `SABER_PORT`.
 4. Run `task st:down` to stop.
+5. On Linux, set `PUID` and `PGID` in `.env` to the owner of `LEVELS_DIR` (default 1000). The container never changes ownership of `LEVELS_DIR`; it must be writable by that uid.
 
 ## Common tasks
 
