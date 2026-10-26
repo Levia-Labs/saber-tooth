@@ -84,7 +84,7 @@ _WEIGHTS = tuple(_weight(m) for m in RED_MOTIFS)
 
 
 def _draw(seed: int, phrase: int, exclude: dict[Color, int] | None = None) -> dict[Color, int]:
-    rng = random.Random(seed + phrase)  # noqa: S311 - musical variety, not security
+    rng = random.Random(seed + phrase)  # noqa: S311 # nosec B311 - musical variety, not security
     picks = {}
     for hand in (Color.RED, Color.BLUE):
         weights = list(_WEIGHTS)

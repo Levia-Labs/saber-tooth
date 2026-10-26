@@ -8,7 +8,7 @@ Usage: uv run python scripts/readme_check.py [--list] [--top N]
 """
 
 import argparse
-import subprocess
+import subprocess  # nosec B404 - fixed git argv, no shell
 import sys
 from collections.abc import Callable, Iterable
 from pathlib import Path, PurePosixPath
@@ -51,7 +51,7 @@ def format_report(missing: list[str], cap: int = 20) -> list[str]:
 
 
 def _git_files() -> list[str]:
-    out = subprocess.run(
+    out = subprocess.run(  # nosec B603 B607 - constant argv, no shell, git from PATH
         ["git", "ls-files", "-z"], capture_output=True, check=True, encoding="utf-8"
     ).stdout
     return [p for p in out.split("\0") if p]

@@ -36,7 +36,7 @@ def _require(t: Templates) -> None:
 def choose_environment(t: Templates, seed: int) -> str:
     _require(t)
     ranked = sorted(((len(u), e) for e, u in t.units.items() if u), key=lambda x: (-x[0], x[1]))
-    return random.Random(seed).choice([e for _, e in ranked[:3]])  # noqa: S311
+    return random.Random(seed).choice([e for _, e in ranked[:3]])  # noqa: S311 # nosec B311 - seeded layout choice, not security
 
 
 def _sections(energy: list[float]) -> list[tuple[int, int]]:
@@ -120,7 +120,7 @@ def build_lightshow(
     environment: str | None = None,
 ) -> LightshowPayload:
     _require(t)
-    rng = random.Random(seed)  # noqa: S311 - not cryptographic
+    rng = random.Random(seed)  # noqa: S311 # nosec B311 - not cryptographic
     # An environment without learned units falls back to a seeded learned one.
     env = environment if environment and t.units.get(environment) else None
     env = env or choose_environment(t, seed)

@@ -52,7 +52,7 @@ def place_walls(
     """Deterministic per seed; empty for tiers below Hard."""
     if profile.name not in WALL_TIERS:
         return []
-    rng = random.Random(f"{seed}:{profile.name}:walls")  # noqa: S311 - layout, not security
+    rng = random.Random(f"{seed}:{profile.name}:walls")  # noqa: S311 # nosec B311 - layout, not security
     flip = rng.randrange(2)
     walls: list[Wall] = []
     last_start, last_end, last_crouch = -1e9, -1e9, -1e9

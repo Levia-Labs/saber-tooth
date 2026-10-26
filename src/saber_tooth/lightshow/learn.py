@@ -1,3 +1,4 @@
+import logging
 import math
 from pathlib import Path
 
@@ -5,6 +6,8 @@ from saber_tooth.lightshow.units import BAR, Templates, Unit
 from saber_tooth.mapio import MapParseError, load_map
 from saber_tooth.mapio.write import BOX_KEYS, strip_custom
 from saber_tooth.model import BasicEvent, Beatmap, Difficulty
+
+_log = logging.getLogger(__name__)
 
 DEFAULT_ENV = "DefaultEnvironment"
 MIN_EVENTS = 16
@@ -95,7 +98,8 @@ def learn(levels: Path) -> Templates:
             continue
         try:
             units = _units(env, folder.name, d)
-        except Exception:  # noqa: S112 - one odd community map must not abort learn
+        except Exception:  # one odd community map must not abort learn
+            _log.debug("skipping unparsable units in %s", folder.name, exc_info=True)
             continue
         t.units.setdefault(env, []).extend(units)
         if m.info.color_scheme and m.info.color_scheme not in t.schemes.get(env, []):

@@ -1,6 +1,6 @@
 """Audio encoding through ffmpeg."""
 
-import subprocess
+import subprocess  # nosec B404 - fixed ffmpeg argv, no shell
 from pathlib import Path
 
 
@@ -15,7 +15,7 @@ def encode_egg(wav: Path, egg: Path) -> None:
         "-c:a", "libvorbis", "-q:a", "6", "-f", "ogg", str(egg),
     ]  # fmt: skip
     try:
-        subprocess.run(argv, check=True, capture_output=True)
+        subprocess.run(argv, check=True, capture_output=True)  # nosec B603 - list argv, no shell
     except FileNotFoundError as exc:
         raise AudioError("ffmpeg is not installed") from exc
     except subprocess.CalledProcessError as exc:
