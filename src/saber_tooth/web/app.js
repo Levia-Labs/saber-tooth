@@ -1,4 +1,3 @@
-/* global document, confirm */
 import { api, el, guard, jobButton, jobGuard, jobOutcome, runJob, setNav } from "./util.js";
 import { groupBy, proposalCard } from "./cards.js";
 import { showNew } from "./newmap.js";

@@ -1,4 +1,3 @@
-/* global document, Node, FormData, fetch, setTimeout */
 import { isRetryable } from "./retry.js";
 export const statusEl = document.getElementById("status");
 export const POLL_MS = 1000;

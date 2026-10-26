@@ -1,4 +1,3 @@
-/* global requestAnimationFrame, window, document, CSS, setTimeout, clearTimeout */
 import { drawTimeline, isNotesless } from "./timeline.js";
 import { api, el, guard } from "./util.js";
 
@@ -19,7 +18,7 @@ window.addEventListener("resize", () => {
 
 /** Move focus to the first enabled button of a proposal card, else the card. */
 function restoreFocus(id) {
-  const card = document.querySelector(`[data-proposal="${CSS.escape(String(id))}"]`);
+  const card = document.querySelector(`[data-proposal="${window.CSS.escape(String(id))}"]`);
   if (!card) return;
   const next = card.querySelector("button:not(:disabled)");
   (next || card).focus();

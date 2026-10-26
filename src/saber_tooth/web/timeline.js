@@ -1,4 +1,3 @@
-/* global window */
 // Pure canvas drawing for proposal windows: a 4x3 lane grid per beat slice.
 export const COLORS = { 0: "#ff3b4e", 1: "#2f9bff" };
 const ARROW_ANGLE = { 0: -90, 1: 90, 2: 180, 3: 0, 4: -135, 5: -45, 6: 135, 7: 45 };

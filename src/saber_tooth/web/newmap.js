@@ -1,4 +1,3 @@
-/* global document, FormData */
 import { api, el, jobButton, jobGuard, jobOutcome, runJob, setNav, setStatus } from "./util.js";
 import { proposalCard } from "./cards.js";
 
