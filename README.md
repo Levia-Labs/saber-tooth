@@ -1,6 +1,6 @@
 # saber-tooth
 
-saber-tooth is a Docker service that creates and repairs Beat Saber custom maps. It has an HTTP API and a plain HTML frontend, and it writes map folders into the game's `CustomLevels` directory. The game runs independently of the service.
+saber-tooth is a Docker service that creates and repairs Beat Saber custom maps. You drive it through an HTTP API or a plain HTML page. It writes map folders into the `CustomLevels` directory of the game, and the game does not need the service to run.
 
 ## What it does
 
@@ -14,7 +14,7 @@ Only vanilla features are used. No Chroma, Noodle Extensions, Vivify or Heck req
 
 ## Quality bar
 
-Modded gameplay must be as flawless, flowing and atmospheric as possible. This is the main acceptance criterion for every generated map, fill and fix.
+Modded gameplay must be as flawless, flowing and atmospheric as possible. Every generated map, fill and fix is accepted or rejected on this.
 
 1. Flawless: zero findings from any check rule in every output difficulty. A proposal that cannot reach zero is not offered.
 2. Flowing: swings follow natural parity, positions move in smooth arcs, and patterns follow the phrasing of the music. Fills match the density and style around them.

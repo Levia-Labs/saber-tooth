@@ -1,10 +1,10 @@
 # Architecture
 
-saber-tooth is one Python 3.12 process: FastAPI under uvicorn, an in-process job worker, a SQLite store, and a static frontend served by the same process.
+saber-tooth is one Python 3.12 process. FastAPI runs under uvicorn and serves the static frontend, a job worker runs in the same process, and state sits in SQLite.
 
 ## Quality bar
 
-Modded gameplay must be as flawless, flowing and atmospheric as possible. This applies to every generated map, fill and fix.
+Modded gameplay must be as flawless, flowing and atmospheric as possible. Every generated map, fill and fix is held to this.
 
 1. Flawless: zero findings from any check rule in every output difficulty. A proposal that cannot reach zero is not offered.
 2. Flowing: natural parity, smooth position arcs, patterns that follow the phrasing of the music, fills that match their surroundings.

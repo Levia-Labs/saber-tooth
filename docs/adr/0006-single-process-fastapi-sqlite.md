@@ -13,5 +13,5 @@ The service is for one user on localhost. Jobs are few and run for seconds to mi
 ## Consequences
 
 1. Deployment is one container plus beat-analyser, with no broker or database server.
-2. Jobs do not survive a process restart while running. Their rows record the failure state.
+2. Jobs run inside the process, so a restart interrupts any job that is running.
 3. Scaling beyond one user would need a queue and a different store.
