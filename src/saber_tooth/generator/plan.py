@@ -75,6 +75,7 @@ def plan_events(
     timing: Timing,
     profile: Profile,
     last: dict[Color, float],
+    span: tuple[float, float] | None = None,
 ) -> Plan:
     """Pick, per bar, the best candidates that fit the hand gaps, honouring the target nps."""
     plan = Plan()
@@ -90,7 +91,14 @@ def plan_events(
     state = HandState(dict(last))
     carry = 0.0
     for bar in sorted(stats.energy):
-        carry += profile.target_nps * stats.seconds[bar] * factors[bar] / mean
+        share = 1.0  # fraction of the bar inside the window; bars outside it are not planned
+        if span is not None:
+            share = (
+                min(span[1], BAR_BEATS * (bar + 1)) - max(span[0], BAR_BEATS * bar)
+            ) / BAR_BEATS
+            if share <= 0:
+                continue
+        carry += profile.target_nps * stats.seconds[bar] * factors[bar] / mean * share
         want = min(int(carry + 0.5), slots)
         chosen: list[Candidate] = []
         events: list[Event] = []

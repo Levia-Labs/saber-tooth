@@ -2,6 +2,7 @@ import itertools
 import time
 from collections import Counter
 
+import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
@@ -126,22 +127,40 @@ def realistic(bpm=140, seconds=120):
     return Analysis("r", "A minor", bpm, beats, beats[::2], beats[1::2], hh, None)
 
 
-def test_flow_variety_on_realistic_song():
-    a = realistic()
-    timing, diffs, stats = generate_all_with_stats(a, 3)
-    for name in ("Expert", "ExpertPlus"):
-        notes = diffs[name].notes
-        cells = Counter((n.color, n.x, n.y) for n in notes)
-        cuts = Counter(n.cut for n in notes)
-        assert max(cells.values()) / len(notes) <= 0.30
-        assert (cuts[Cut.UP] + cuts[Cut.DOWN]) / len(notes) < 0.55
-        assert sum(1 for n in notes if n.y == 2) / len(notes) >= 0.10
-        for hand in Color:
-            assert len({(n.x, n.y) for n in notes if n.color == hand}) >= 5
-        assert check_difficulty(diffs[name], timing, PROFILES[name], a) == []
-    for name, stat in stats.items():
-        assert stat.dropped < 0.05 * stat.selected, name
-        assert stat.final == len(diffs[name].notes)
+@pytest.mark.parametrize("bpm", [100, 140, 170])
+def test_flow_variety_across_tempos_and_seeds(bpm):
+    a = realistic(bpm)
+    for seed in range(8):
+        timing, diffs, stats = generate_all_with_stats(a, seed)
+        for name in ("Expert", "ExpertPlus"):
+            notes = diffs[name].notes
+            where = (bpm, seed, name)
+            cells = Counter((n.color, n.x, n.y) for n in notes)
+            cuts = Counter(n.cut for n in notes)
+            assert max(cells.values()) / len(notes) <= 0.30, where
+            assert (cuts[Cut.UP] + cuts[Cut.DOWN]) / len(notes) < 0.55, where
+            assert sum(1 for n in notes if n.y == 2) / len(notes) >= 0.10, where
+            for hand in Color:
+                assert len({(n.x, n.y) for n in notes if n.color == hand}) >= 5, where
+            assert check_difficulty(diffs[name], timing, PROFILES[name], a) == []
+        for name, stat in stats.items():
+            assert stat.dropped < 0.05 * stat.selected, (bpm, seed, name)
+            assert stat.final == len(diffs[name].notes)
+
+
+def test_window_planning_has_no_burst_at_first_bar():
+    a = realistic(140, 120)
+    timing, _ = generate_all(a, 1)
+    phase = timing.to_beats(a.beats[0])
+    lo_s = timing.to_seconds(phase + 40.0)
+    hi_s = timing.to_seconds(phase + 120.0)
+    for name in ("Hard", "Expert", "ExpertPlus"):
+        profile = PROFILES[name]
+        d = generate_difficulty(a, timing, profile, 1, window=(lo_s, hi_s))
+        first = [n for n in d.notes if n.beat < phase + 44.0]
+        target = profile.target_nps * (timing.to_seconds(phase + 44.0) - lo_s)
+        assert len(first) <= 1.2 * target + 1, (name, len(first), target)
+        assert len(d.notes) >= 0.8 * profile.target_nps * (hi_s - lo_s)
 
 
 def active_seconds(a, timing):
@@ -151,16 +170,18 @@ def active_seconds(a, timing):
     return bar_stats(a, timing, phase, range(0, int(len(a.beats) / 4))).active_seconds()
 
 
-def test_tier_counts_follow_targets_and_separate():
-    for a in (realistic(), synth(128, 120, 0.0)):
-        timing, diffs = generate_all(a, 5)
-        active = active_seconds(a, timing)
-        counts = [len(diffs[n].notes) for n in DIFFICULTIES]
-        for name, count in zip(DIFFICULTIES, counts, strict=True):
-            target = PROFILES[name].target_nps * active
-            assert 0.8 * target <= count <= 1.2 * target, (name, count, target)
-        assert counts == sorted(set(counts))
-        assert counts[4] >= 1.15 * counts[3] and counts[3] >= 1.15 * counts[2]
+@pytest.mark.parametrize("bpm", [100, 140, 170])
+def test_tier_counts_follow_targets_and_separate(bpm):
+    for a in (realistic(bpm), synth(bpm, 120, 0.0)):
+        for seed in (5, 6, 7):
+            timing, diffs = generate_all(a, seed)
+            active = active_seconds(a, timing)
+            counts = [len(diffs[n].notes) for n in DIFFICULTIES]
+            for name, count in zip(DIFFICULTIES, counts, strict=True):
+                target = PROFILES[name].target_nps * active
+                assert 0.8 * target <= count <= 1.2 * target, (bpm, name, count, target)
+            assert counts == sorted(set(counts))
+            assert counts[4] >= 1.15 * counts[3] and counts[3] >= 1.15 * counts[2]
 
 
 def test_silent_bars_get_no_filler_notes():

@@ -73,9 +73,29 @@ def motif_steps(hand: Color, index: int, flipped: bool) -> tuple[Step, ...]:
     return tuple(flip_v(s) for s in steps) if flipped else steps
 
 
-def phrase_picks(seed: int, phrase: int) -> dict[Color, int]:
+def _weight(motif: tuple[Step, ...]) -> float:
+    """Favour motifs that spread over diagonals, sideways swings and the top row."""
+    vertical = sum(1 for cut, _, _ in motif if cut in (C.UP, C.DOWN))
+    inner_bottom = sum(1 for _, x, y in motif if x in (1, 2) and y == 0)
+    return (1.0, 1.0, 1.0, 0.5, 0.2)[vertical] / (1 + 0.5 * inner_bottom)
+
+
+_WEIGHTS = tuple(_weight(m) for m in RED_MOTIFS)
+
+
+def _draw(seed: int, phrase: int, exclude: dict[Color, int] | None = None) -> dict[Color, int]:
     rng = random.Random(seed + phrase)  # noqa: S311 - musical variety, not security
-    return {Color.RED: rng.randrange(len(RED_MOTIFS)), Color.BLUE: rng.randrange(len(RED_MOTIFS))}
+    picks = {}
+    for hand in (Color.RED, Color.BLUE):
+        weights = list(_WEIGHTS)
+        if exclude is not None:
+            weights[exclude[hand]] = 0.0  # never repeat the previous phrase's motif
+        picks[hand] = rng.choices(range(len(weights)), weights)[0]
+    return picks
+
+
+def phrase_picks(seed: int, phrase: int) -> dict[Color, int]:
+    return _draw(seed, phrase, _draw(seed, phrase - 1))
 
 
 def pool(hand: Color) -> list[Step]:

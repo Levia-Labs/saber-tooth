@@ -124,7 +124,8 @@ def generate_with_stats(
         lo, hi = -math.inf, math.inf
     context = [n for sw in [*(entry or {}).values(), *(exit or {}).values()] for n in sw.notes]
     last = {h: entry[h].seconds if entry and h in entry else -math.inf for h in Color}
-    plan = plan_events(cands, bars, timing, profile, last)
+    span = None if window is None else (lo - phase, hi - phase)
+    plan = plan_events(cands, bars, timing, profile, last, span)
     placer = Placer(timing, profile, context)
     stats = GenerationStats(selected=plan.selected)
     stats.placed = place_events(plan.events, placer, seed)
