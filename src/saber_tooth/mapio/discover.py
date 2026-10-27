@@ -55,11 +55,11 @@ def _read_json(path: Path) -> dict:
     return data
 
 
-def _region_events(folder: Path, filename: str, keys: tuple[str, ...], bpm: float) -> list:
+def _region_events(folder: Path, filename: str, keys: tuple[str, ...]) -> list:
     path = _find_ci(folder, safe_name(filename))
     if path is None:
         return []
-    return regions_to_events(_read_json(path), keys, bpm)
+    return regions_to_events(_read_json(path), keys)
 
 
 def _hex_color(text: str) -> dict[str, float]:
@@ -186,12 +186,12 @@ def load_map(folder: Path) -> Beatmap:
         meta = _mapinfo_v4(info, idx) if v4 else _mapinfo_v2(info, idx)
         if v4:
             name = info.get("audio", {}).get("audioDataFilename")
-            extra = _region_events(folder, name, V4_KEYS, meta.bpm) if name else []
+            extra = _region_events(folder, name, V4_KEYS) if name else []
         else:
-            extra = _region_events(folder, "BPMInfo.dat", V2_KEYS, meta.bpm)
+            extra = _region_events(folder, "BPMInfo.dat", V2_KEYS)
         for d in diffs.values():
             if extra and (v4 or not d.bpm_events):
-                d.bpm_events = merge_events(d.bpm_events, extra)
+                d.bpm_events = merge_events(d.bpm_events, extra, meta.bpm)
             Timing(meta.bpm, d.bpm_events)
     except MapParseError:
         raise
