@@ -23,6 +23,7 @@ The service listens on `127.0.0.1:${SABER_PORT:-8100}`. There is no authenticati
 1. `GET /api/lightshow`: `{"source", "environments", "units", "learned_at"}` for the active lightshow set. `source` is `learned` when `/data/lightshow.json` exists (written by the Learn button, which then overrides the bundled set) and `bundled` otherwise; `learned_at` is the file modification time as an ISO 8601 UTC string, or null for the bundled set.
 1. `POST /api/lightshow/learn`: starts a `learn` job that learns from `/levels` and writes `/data/lightshow.json`, which replaces the bundled set from then on.
 1. `GET /api/jobs/{id}`: `id`, `kind`, `status`, `error` and `result`.
+1. BeatSaver routes, see [BeatSaver](#beatsaver).
 
 Routes that start work answer `{"job": "<id>"}`. Poll the job until `status` is `done` or `failed`.
 
@@ -32,7 +33,8 @@ Routes that start work answer `{"job": "<id>"}`. Poll the job until `status` is 
 2. `apply`: `{"map_id", "folder"}`, the name of the folder written to `/levels`.
 3. `generate`: `{"map_id", "proposal"}`. `map_id` is a staging id and `proposal` is the id of the `create-map` proposal.
 4. `learn`: `{"units": N}`, the number of lightshow units indexed.
-5. A failed `apply` caused by conflicting proposals has `result` set to `{"conflict": [<proposal ids>]}` and the message in `error`.
+5. `bs-download`: `{"results": [{"id", "status", "reason", "folder"}]}` with `status` `installed`, `skipped` or `failed`.
+6. A failed `apply` caused by conflicting proposals has `result` set to `{"conflict": [<proposal ids>]}` and the message in `error`.
 
 ## Errors
 
@@ -44,6 +46,22 @@ Errors answer `{"error": "<message>"}` with these codes.
 4. 409: the map is unreadable, the proposal is already applied, or approved proposals conflict.
 5. 413: the upload exceeds `MAX_UPLOAD_MB` (default 200).
 6. 415: the uploaded file extension is not a supported audio type.
+
+## BeatSaver
+
+Search and download from BeatSaver. The server calls only `https://api.beatsaver.com` and `*.beatsaver.com` download hosts, at most 5 requests per second. Map details are cached 24 hours and query pages 10 minutes in `DATA_DIR/beatsaver.db`. Design: [spec](superpowers/specs/2026-10-27-beatsaver-integration-design.md).
+
+1. `GET /api/beatsaver/search`: query keys `q` (200 characters), `tags` (comma list, matched as OR), `min_rating` (0 to 1), `nps_min`, `nps_max` (0 to 30), `nps_scope` (`any` default or `all`), `diffs` (comma list of `Easy`, `Normal`, `Hard`, `Expert`, `ExpertPlus`), `diffs_mode` (`all` default or `any`), `ranked`, `order` (`Latest`, `Relevance`, `Rating` default, `Curated`, `Random`, `Duration`), `ascending`, `from`, `to` (`YYYY-MM-DD`), `bpm_min`, `bpm_max` (0 to 1000), `duration_min`, `duration_max` (seconds, 0 to 7200), `cursor`, `limit` (1 to 100, default 40). Difficulty and NPS filters apply to the Standard characteristic only and run locally. Answers `{"items", "cursor", "scanned", "matched"}`: `scanned` and `matched` count this response only, `cursor` is null at the end and advances even when no item matched. When BeatSaver rate limits mid-scan the response keeps what was found and adds `"partial": true` and `"retry_after"` (seconds).
+   1. Item: `id`, `name`, `song`, `mapper`, `cover_url`, `preview_url` (https `*.beatsaver.com` or null), `bpm`, `duration` (seconds), `rating` (0 to 1), `upvotes`, `downvotes`, `tags`, `ranked`, `difficulties` (`[{"difficulty", "nps", "njs"}]`, Standard only), `installed`, `library_id` (library map id or null). A map is installed when a library row has its BeatSaver key or hash, or its folder starts with `<key> (`.
+2. `GET /api/beatsaver/maps/{id}`: one item, 404 when unknown.
+3. `GET /api/beatsaver/playlists/search?q=&cursor=`: `{"items": [{"id", "name", "owner", "cover_url", "map_count"}], "cursor"}`; the cursor is the next page number.
+4. `GET /api/beatsaver/playlists/{id}`: the search response over the playlist's maps (same query keys and cursor) plus `"playlist"` (the playlist item).
+5. `POST /api/beatsaver/download`: body `{"ids": [...]}`, 1 to 100 BeatSaver keys (413 above 100, 400 for malformed keys). Answers `{"job"}`; the job result is `{"results": [{"id", "status", "reason", "folder"}]}`. Archives are limited to 100 MB, 400 MB expanded and 500 entries, extracted without absolute paths, `..` or symlinks, validated with the map reader, refused when they require Noodle or Mapping Extensions, and written as a new folder `<key> (<song> - <mapper>)`. Maps already in the library are skipped. The archive hash is not verified against the BeatSaver hash.
+6. `POST /api/beatsaver/playlist-export`: body `{"title", "ids"}` (up to 500 ids), writes `<title>.bplist` into `PLAYLISTS_DIR` without overwriting, answers `{"path"}`. 404 when `PLAYLISTS_DIR` is not set.
+7. `GET /api/beatsaver/presets`: `[{"id", "name", "filters", "seeded"}]`, `filters` using the search query keys as strings. `POST /api/beatsaver/presets` with `{"name", "filters"}` answers the preset (400 invalid, 409 duplicate name or more than 100 presets); `DELETE /api/beatsaver/presets/{id}` answers `{"deleted"}` or 404. The preset "Gentle full-spread hits" is seeded once.
+8. `GET /api/beatsaver/config`: `{"playlists_enabled"}`, true when `PLAYLISTS_DIR` points to an existing folder. Compose sets it from `PLAYLISTS_DIR_HOST`.
+
+BeatSaver failures answer 404 (not found), 429 with `{"error", "retry_after"}` and a `Retry-After` header (rate limited and nothing found yet), or 502.
 
 ## URL rule
 
@@ -73,16 +91,18 @@ The same process serves a Model Context Protocol endpoint at `/mcp` (Streamable 
 
 Connect with `claude mcp add --transport http saber-tooth http://127.0.0.1:8100/mcp`. For another host name, add it to `SABER_ALLOWED_HOSTS`.
 
-| Tool                         | Effect                                                                           |
-| ---------------------------- | -------------------------------------------------------------------------------- |
-| `list_maps(filter?)`         | Read-only. Up to 200 maps (item shape above) plus `total`; filter is a substring |
-| `get_proposals(map_id)`      | Read-only. Up to 200 proposals plus `total`                                      |
-| `scan_map(map_id)`           | Starts a scan job, returns `{"job"}`                                             |
-| `job_status(job_id)`         | Read-only. Job status, error and result                                          |
-| `approve_proposal(id)`       | Marks approved; idempotent; writes nothing                                       |
-| `reject_proposal(id)`        | Marks rejected; idempotent; writes nothing                                       |
-| `apply_map(map_id)`          | Starts an apply job; writes only a new folder in `CustomLevels`                  |
-| `generate_from_youtube(url)` | Starts a generation job; same YouTube allowlist as `/api/generate`               |
-| `learn_lightshows()`         | Starts a lightshow learning job                                                  |
+| Tool                         | Effect                                                                                                                                                                          |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_maps(filter?)`         | Read-only. Up to 200 maps (item shape above) plus `total`; filter is a substring                                                                                                |
+| `get_proposals(map_id)`      | Read-only. Up to 200 proposals plus `total`                                                                                                                                     |
+| `scan_map(map_id)`           | Starts a scan job, returns `{"job"}`                                                                                                                                            |
+| `job_status(job_id)`         | Read-only. Job status, error and result                                                                                                                                         |
+| `approve_proposal(id)`       | Marks approved; idempotent; writes nothing                                                                                                                                      |
+| `reject_proposal(id)`        | Marks rejected; idempotent; writes nothing                                                                                                                                      |
+| `apply_map(map_id)`          | Starts an apply job; writes only a new folder in `CustomLevels`                                                                                                                 |
+| `generate_from_youtube(url)` | Starts a generation job; same YouTube allowlist as `/api/generate`                                                                                                              |
+| `learn_lightshows()`         | Starts a lightshow learning job                                                                                                                                                 |
+| `beatsaver_search(...)`      | Read-only. BeatSaver search with `q`, `tags`, `min_rating`, `nps_min`, `nps_max`, `nps_scope`, `diffs`, `diffs_mode`, `cursor`, `limit`; same result as `/api/beatsaver/search` |
+| `beatsaver_download(ids)`    | Starts a download job for up to 100 keys; writes only new folders in `CustomLevels`                                                                                             |
 
 Failures come back as MCP tool errors with the REST message.

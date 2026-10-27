@@ -5,6 +5,7 @@ from typing import Any
 from mcp.server.mcpserver import MCPServer
 from mcp.types import ToolAnnotations
 
+from saber_tooth.api.beatsaver import BeatSaverApi
 from saber_tooth.api.core import Api
 
 MAX_MAPS = 200
@@ -16,7 +17,7 @@ JOB = ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=
 WEB = ToolAnnotations(readOnlyHint=False, destructiveHint=False, openWorldHint=True)
 
 
-def build_mcp(api: Api) -> MCPServer:
+def build_mcp(api: Api, bs: BeatSaverApi | None = None) -> MCPServer:
     mcp = MCPServer("saber-tooth", instructions="Review and fix Beat Saber custom levels.")
 
     @mcp.tool(annotations=READ)
@@ -67,4 +68,40 @@ def build_mcp(api: Api) -> MCPServer:
         """Learn lighting patterns from the indexed library; returns a job id."""
         return api.learn()
 
+    if bs is not None:
+        _beatsaver_tools(mcp, bs)
     return mcp
+
+
+def _beatsaver_tools(mcp: MCPServer, bs: BeatSaverApi) -> None:
+    @mcp.tool(annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=True))
+    def beatsaver_search(
+        q: str = "",
+        tags: str = "",
+        min_rating: float | None = None,
+        nps_min: float | None = None,
+        nps_max: float | None = None,
+        nps_scope: str = "any",
+        diffs: str = "",
+        diffs_mode: str = "all",
+        cursor: str = "",
+        limit: int = 20,
+    ) -> dict[str, Any]:
+        """Search BeatSaver; tags and diffs are comma lists (diffs: Easy..ExpertPlus, Standard
+        only). Filters BeatSaver lacks run locally. Pass the returned cursor to continue."""
+        values = {
+            "q": q, "tags": tags, "nps_scope": nps_scope, "diffs": diffs,
+            "diffs_mode": diffs_mode, "cursor": cursor, "limit": str(limit),
+            "min_rating": "" if min_rating is None else str(min_rating),
+            "nps_min": "" if nps_min is None else str(nps_min),
+            "nps_max": "" if nps_max is None else str(nps_max),
+        }  # fmt: skip
+        return bs.search(values, MAX_MAPS)
+
+    @mcp.tool(
+        annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=False, openWorldHint=True)
+    )
+    def beatsaver_download(ids: list[str]) -> dict[str, Any]:
+        """Download BeatSaver maps (up to 100 keys) into CustomLevels as new folders; maps
+        already installed are skipped. Returns a job id for job_status."""
+        return bs.download({"ids": ids})

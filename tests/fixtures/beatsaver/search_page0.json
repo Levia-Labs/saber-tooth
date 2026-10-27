@@ -1,0 +1,112 @@
+{
+  "docs": [
+    {
+      "id": "3a1f4",
+      "name": "Neon Pulse",
+      "description": "A smooth electronic map.",
+      "uploader": { "id": 1001, "name": "pulsewright", "verifiedMapper": true },
+      "metadata": {
+        "bpm": 128.0,
+        "duration": 214,
+        "songName": "Neon Pulse",
+        "songSubName": "Radio Edit",
+        "songAuthorName": "Lumen",
+        "levelAuthorName": "pulsewright"
+      },
+      "stats": { "plays": 0, "downloads": 5120, "upvotes": 480, "downvotes": 8, "score": 0.9712 },
+      "uploaded": "2025-03-02T10:15:00.000Z",
+      "automapper": false,
+      "ranked": false,
+      "qualified": false,
+      "tags": ["electronic", "dance", "accuracy"],
+      "versions": [
+        {
+          "hash": "AABBCCDDEEFF00112233445566778899AABBCCDD",
+          "state": "Uploaded",
+          "downloadURL": "https://old.beatsaver.com/aabbccddeeff.zip",
+          "coverURL": "https://old.beatsaver.com/aabbccddeeff.jpg",
+          "previewURL": "https://old.beatsaver.com/aabbccddeeff.mp3",
+          "diffs": []
+        },
+        {
+          "hash": "aabbccddeeff00112233445566778899aabbccdd",
+          "state": "Published",
+          "downloadURL": "https://r2cdn.beatsaver.com/aabbccddeeff00112233445566778899aabbccdd.zip",
+          "coverURL": "https://eu.cdn.beatsaver.com/aabbccddeeff00112233445566778899aabbccdd.jpg",
+          "previewURL": "https://eu.cdn.beatsaver.com/aabbccddeeff00112233445566778899aabbccdd.mp3",
+          "diffs": [
+            {
+              "njs": 10.0,
+              "offset": 0.0,
+              "notes": 120,
+              "bombs": 0,
+              "obstacles": 2,
+              "nps": 0.9,
+              "length": 240,
+              "characteristic": "Standard",
+              "difficulty": "Easy",
+              "events": 100,
+              "chroma": false,
+              "me": false,
+              "ne": false,
+              "cinema": false,
+              "seconds": 130.0
+            },
+            {
+              "njs": 12.0,
+              "notes": 280,
+              "bombs": 4,
+              "obstacles": 4,
+              "nps": 1.4,
+              "length": 300,
+              "characteristic": "Standard",
+              "difficulty": "Normal",
+              "chroma": false,
+              "me": false,
+              "ne": false,
+              "seconds": 200.0
+            },
+            {
+              "njs": 14.0,
+              "notes": 440,
+              "bombs": 6,
+              "obstacles": 4,
+              "nps": 2.2,
+              "length": 300,
+              "characteristic": "Standard",
+              "difficulty": "Hard",
+              "chroma": false,
+              "me": false,
+              "ne": false,
+              "seconds": 200.0
+            },
+            {
+              "njs": 14.0,
+              "notes": 300,
+              "nps": 1.5,
+              "characteristic": "OneSaber",
+              "difficulty": "Normal",
+              "seconds": 200.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "3a1f5",
+      "name": "Bare Minimum",
+      "uploader": { "id": 1002, "name": "sparse" },
+      "metadata": { "bpm": 90.0, "duration": 100 },
+      "stats": { "downloads": 3, "upvotes": 1, "downvotes": 0, "score": 0.5 },
+      "tags": [],
+      "versions": [
+        {
+          "hash": "0011223344556677889900112233445566778899",
+          "state": "Published",
+          "downloadURL": "https://r2cdn.beatsaver.com/0011.zip",
+          "diffs": []
+        }
+      ]
+    }
+  ]
+}
