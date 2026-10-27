@@ -44,8 +44,10 @@ export function LibraryPage() {
         </div>
         <LibraryTools learn={learn} onResetColumns={columns.api.resetAll} />
       </div>
-      <JobOutcome job={learn.job} error={learn.error} />
-      <FixOutcomes />
+      <div className="lib-alerts">
+        <JobOutcome job={learn.job} error={learn.error} />
+        <FixOutcomes />
+      </div>
       {narrow && (
         <LibraryMobileBar
           state={state}

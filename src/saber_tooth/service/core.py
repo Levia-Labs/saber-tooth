@@ -23,6 +23,7 @@ from saber_tooth.service.errors import ApplyConflict, MapNotFound, MapUnreadable
 from saber_tooth.service.lightshow_set import LEARNED, active_templates
 from saber_tooth.service.lightshow_set import info as lightshow_info
 from saber_tooth.service.ordered import Outcome, apply_in_order
+from saber_tooth.service.staging import clean_staging
 from saber_tooth.service.util import map_id_for
 from saber_tooth.service.verify import stored_analysis, verify
 from saber_tooth.service.writeout import commit_staged, write_fixed
@@ -60,6 +61,7 @@ class Service:
         self.encode = encode
         self.uploads = Path(uploads) if uploads else getattr(client, "uploads", None)
         self._lock = threading.Lock()
+        self._refresh_lock = threading.Lock()  # one re-index at a time; readers never wait on it
         self._seen: frozenset[str] = frozenset()
 
     # library -----------------------------------------------------------------
@@ -78,11 +80,18 @@ class Service:
                 return False
         except OSError:
             return False
-        with self._lock:
-            self.refresh_library()
-        return True
+        return self.refresh_library(wait=False) is not None
 
-    def refresh_library(self) -> int:
+    def refresh_library(self, wait: bool = True) -> int | None:
+        """Re-index the library; with wait=False, None when another re-index is running."""
+        if not self._refresh_lock.acquire(blocking=wait):
+            return None  # readers then serve the store as it is
+        try:
+            return self._reindex()
+        finally:
+            self._refresh_lock.release()
+
+    def _reindex(self) -> int:
         self._seen = self._listing()
         seen: set[str] = set()
         for folder in sorted(self.levels.iterdir()):
@@ -100,17 +109,8 @@ class Service:
             except (MapParseError, OSError) as exc:
                 self.store.upsert_map(mid, folder.name, folder.name, "", "", str(exc))
         self.store.prune_maps(seen)
-        self._clean_staging()
+        clean_staging(self.data / "staging", self.store, STAGING_PREFIX)
         return len(seen)
-
-    def _clean_staging(self) -> None:
-        root = self.data / "staging"
-        if not root.is_dir():
-            return
-        for d in root.iterdir():
-            props = self.store.proposals(f"{STAGING_PREFIX}{d.name}")
-            if props and all(p["status"] in ("rejected", "applied") for p in props):
-                shutil.rmtree(d, ignore_errors=True)
 
     def _templates(self) -> Templates | None:
         return active_templates(self.data, self.bundled)
