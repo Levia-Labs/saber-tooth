@@ -4,7 +4,7 @@ How agents and humans work on this repo in parallel without overwriting each oth
 
 ## Lanes
 
-1. One lane per concurrent job. `task st:lane -- <name>` creates `.worktrees/<name>` on branch `lane/<name>` from `main`, initialises `.crepidoma` and runs `npm ci` in `frontend/` when it exists.
+1. One lane per concurrent job. `task st:lane -- <name>` creates `.worktrees/<name>` on branch `lane/<name>` from `main`, initialises `.crepidoma` and runs `npm ci` in `frontend` when it exists.
 2. Two agents in one working tree revert each other's uncommitted files during the pre-commit stash and restore. A lane has its own tree and index, so this cannot happen.
 3. `task st:lane-list` shows each lane with ahead/behind against `main` and dirty counts.
 4. Stay inside your lane directory. Never edit another lane or the main tree.
@@ -17,13 +17,13 @@ How agents and humans work on this repo in parallel without overwriting each oth
 
 ## Review
 
-1. `task st:review-diff -- main..lane/<name>` writes the diff without lockfiles to `.cache/reviews/` and prints its size, files and commit count.
+1. `task st:review-diff -- main..lane/<name>` writes the diff without lockfiles to `.cache/reviews` and prints its size, files and commit count.
 2. Read that file with ranges instead of pasting a diff into a message.
 
 ## Gate
 
-1. `task st:gate` runs pytest, the Python, pre-commit and web linters, the frontend checks when `frontend/` exists, SAST, the quality gate, the README check and the compose check.
-2. One line per gate: `name rc=N (Xs)`, then `gate: PASS|FAIL (k failed)`. Logs are in `.cache/gate/`; a failure prints the log path and the first error lines.
+1. `task st:gate` runs pytest, the Python, pre-commit and web linters, the frontend checks when `frontend` exists, SAST, the quality gate, the README check and the compose check.
+2. One line per gate: `name rc=N (Xs)`, then `gate: PASS|FAIL (k failed)`. Logs are in `.cache/gate`; a failure prints the log path and the first error lines.
 3. Narrow it with `--only a,b` or `--skip a,b`; add `--deep` for `quality:deep`; `--list` prints the gate names.
 
 ## Merge and finish
