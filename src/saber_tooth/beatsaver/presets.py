@@ -1,4 +1,4 @@
-"""Saved filter presets in SQLite; the "Gentle full-spread hits" preset is seeded once."""
+"""Saved filter presets in SQLite; the "Easy-to-Hard gems" preset is seeded once."""
 
 import json
 import sqlite3
@@ -9,7 +9,8 @@ from saber_tooth.beatsaver.params import FILTER_KEYS, parse_filters
 
 MAX_PRESETS = 100
 MAX_NAME = 80
-SEEDED_NAME = "Gentle full-spread hits"
+SEEDED_NAME = "Easy-to-Hard gems"
+OLD_SEEDED_NAME = "Gentle full-spread hits"
 SEEDED_FILTERS = {
     "diffs": "Easy,Normal,Hard",
     "diffs_mode": "all",
@@ -53,6 +54,11 @@ class Presets:
                     (SEEDED_NAME, json.dumps(SEEDED_FILTERS)),
                 )
                 self._db.execute("INSERT INTO bs_meta(key, value) VALUES('seeded', '1')")
+            self._db.execute(
+                "UPDATE bs_presets SET name=? WHERE name=? AND seeded=1 AND NOT EXISTS "
+                "(SELECT 1 FROM bs_presets WHERE name=?)",
+                (SEEDED_NAME, OLD_SEEDED_NAME, SEEDED_NAME),
+            )
             self._db.commit()
 
     def list(self) -> list[dict]:

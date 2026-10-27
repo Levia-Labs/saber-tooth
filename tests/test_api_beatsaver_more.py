@@ -35,7 +35,7 @@ def test_config_and_export(svc, upstream, tmp_path):
 def test_presets_seeded_once_add_delete(svc, upstream):
     with TestClient(make_app(svc, upstream), base_url="http://localhost") as c:
         presets = c.get("/api/beatsaver/presets").json()
-        assert [p["name"] for p in presets] == ["Gentle full-spread hits"] and presets[0]["seeded"]
+        assert [p["name"] for p in presets] == ["Easy-to-Hard gems"] and presets[0]["seeded"]
         f = presets[0]["filters"]
         assert f["diffs"] == "Easy,Normal,Hard" and f["min_rating"] == "0.95"
         assert f["nps_min"] == "1" and f["nps_max"] == "2" and f["order"] == "Rating"

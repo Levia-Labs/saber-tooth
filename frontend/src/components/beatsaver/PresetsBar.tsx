@@ -19,13 +19,6 @@ interface Props {
   onApply: (next: BsState) => void;
 }
 
-/** The seeded preset's stored name is opaque; the bar shows a clearer one. */
-const DISPLAY_NAMES: Record<string, string> = {
-  "Gentle full-spread hits": "Easy-to-Hard gems",
-};
-export const presetLabel = (p: Pick<BsPreset, "name" | "seeded">) =>
-  (p.seeded && DISPLAY_NAMES[p.name]) || p.name;
-
 const same = (a: Record<string, string>, b: Record<string, string>) =>
   JSON.stringify(Object.entries(a).sort()) === JSON.stringify(Object.entries(b).sort());
 
@@ -124,14 +117,14 @@ export function PresetsBar({ state, onApply }: Props) {
                 onClick={() => onApply(active ? DEFAULT_BS_STATE : stateFromPreset(p.filters))}
               >
                 <Icon name="saved-filter" />
-                <span className="preset-name">{presetLabel(p)}</span>
+                <span className="preset-name">{p.name}</span>
               </button>
             </Tip>
             {!p.seeded && (
               <Tip text={BS_TIPS.deletePreset}>
                 <button type="button" className="preset-remove" onClick={() => remove.mutate(p.id)}>
                   <Icon name="reject" />
-                  <span className="sr">{`Delete saved filters ${presetLabel(p)}`}</span>
+                  <span className="sr">{`Delete saved filters ${p.name}`}</span>
                 </button>
               </Tip>
             )}

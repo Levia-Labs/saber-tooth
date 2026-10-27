@@ -28,7 +28,7 @@ export function bsMap(n: number, patch: Partial<BsMap> = {}): BsMap {
 
 export const SEEDED: BsPreset = {
   id: 1,
-  name: "Gentle full-spread hits",
+  name: "Easy-to-Hard gems",
   seeded: true,
   filters: {
     diffs: "Easy,Normal,Hard",
