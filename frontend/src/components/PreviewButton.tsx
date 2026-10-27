@@ -1,6 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useInRouterContext, useLocation } from "react-router";
-import { stopPreview, usePreviewPlayer } from "../lib/previewPlayer";
+import { PREVIEW_SECONDS, stopPreview, usePreviewPlayer } from "../lib/previewPlayer";
 import { Icon } from "./icons";
 import { Tip } from "./Tip";
 
@@ -24,11 +24,17 @@ interface Props {
   /** Audio address; the button renders nothing without one. */
   src?: string | null;
   title: string;
+  /** Second the preview starts at; it then plays for 15 seconds. Omitted: the whole file. */
+  start?: number | null;
 }
 
 /** Play/pause toggle with a thin progress ring; shared by BeatSaver and the Library. */
-export function PreviewButton({ src, title }: Props) {
-  const { playing, progress, toggle } = usePreviewPlayer(src);
+export function PreviewButton({ src, title, start }: Props) {
+  const clip = useMemo(
+    () => (start == null ? undefined : { start: Math.max(0, start), length: PREVIEW_SECONDS }),
+    [start],
+  );
+  const { playing, progress, toggle } = usePreviewPlayer(src, clip);
   const inRouter = useInRouterContext();
   if (!src) return null;
   return (

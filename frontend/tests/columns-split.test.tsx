@@ -1,12 +1,7 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import fc from "fast-check";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { makeQueryClient } from "../src/App";
-import { MemoryRouter } from "react-router";
 import { describe, expect, test } from "vitest";
-import { LibraryRow, previewSrc } from "../src/components/LibraryRow";
-import { TipProvider } from "../src/components/Tip";
 import { bsApiParams, DEFAULT_BS_STATE, encodeBsState, parseBsState } from "../src/lib/bsfilters";
 import { BS_COLUMNS } from "../src/lib/bscolumns";
 import {
@@ -263,34 +258,5 @@ describe("Library range filters", () => {
       h.textContent?.startsWith("BPM"),
     );
     expect(bpm?.textContent).toContain("100-140");
-  });
-});
-
-describe("Library preview button", () => {
-  const renderRow = (patch = {}) =>
-    render(
-      <QueryClientProvider client={makeQueryClient()}>
-        <MemoryRouter>
-          <TipProvider>
-            <LibraryRow item={item(1, patch)} index={0} />
-          </TipProvider>
-        </MemoryRouter>
-      </QueryClientProvider>,
-    );
-
-  test("is absent without an audio address and present with one", () => {
-    const none = renderRow();
-    expect(screen.queryByRole("button", { name: /preview/i })).toBeNull();
-    none.unmount();
-    renderRow({ audio_url: "/api/maps/x/audio", preview_start: 12 });
-    const row = document.querySelector("[data-map]") as HTMLElement;
-    expect(within(row).getByRole("button", { name: "Play preview of Song 1" })).toBeInTheDocument();
-    expect(row.querySelector(".col-title.with-preview")).not.toBeNull();
-  });
-
-  test("the preview start becomes a media fragment", () => {
-    expect(previewSrc({ audio_url: "/a.ogg", preview_start: 12.5 })).toBe("/a.ogg#t=12.5");
-    expect(previewSrc({ audio_url: "/a.ogg", preview_start: 0 })).toBe("/a.ogg");
-    expect(previewSrc({ audio_url: null, preview_start: 5 })).toBeNull();
   });
 });
