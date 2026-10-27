@@ -105,7 +105,8 @@
   border: 0;
 }
 .level.missing {
-  color: var(--muted);
+  /* Plain text colour at half opacity: muted colour plus 0.5 compounded to near invisible. */
+  color: var(--ink);
   font-weight: 400;
   opacity: 0.5;
 }
