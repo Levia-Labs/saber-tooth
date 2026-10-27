@@ -9,8 +9,8 @@ export interface Level {
 
 export const LEVELS: readonly Level[] = [
   { key: "Easy", label: "Easy", abbr: "Ea", bg: "#3CB371" },
-  { key: "Normal", label: "Normal", abbr: "N", bg: "#59B0F4" },
-  { key: "Hard", label: "Hard", abbr: "H", bg: "#FF6347" },
+  { key: "Normal", label: "Normal", abbr: "No", bg: "#59B0F4" },
+  { key: "Hard", label: "Hard", abbr: "Ha", bg: "#FF6347" },
   { key: "Expert", label: "Expert", abbr: "Ex", bg: "#BF2A42" },
   { key: "ExpertPlus", label: "Expert+", abbr: "Ex+", bg: "#8F48DB" },
 ];

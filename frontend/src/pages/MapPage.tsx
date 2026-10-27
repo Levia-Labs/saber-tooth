@@ -79,39 +79,6 @@ export function MapPage() {
               <Tempo item={map.data} />
             </div>
           </div>
-          <div className="map-actions">
-            <ActionButton
-              icon="scan"
-              label="Scan"
-              tip={TIPS.scan}
-              text
-              disabled={running || map.data.status === "unreadable"}
-              onClick={() => void scan.run(() => scanMap(id)).then(refresh)}
-            />
-            <ConfirmDialog
-              title="Approve all fixes"
-              description={`Approve every pending proposal for "${name}"?`}
-              confirmLabel="Approve all"
-              onConfirm={() => void approveEverything()}
-            >
-              <ActionButton
-                icon="approve"
-                label="Approve all"
-                tip={TIPS.approveAll}
-                text
-                disabled={pendingCount === 0}
-              />
-            </ConfirmDialog>
-            <ActionButton
-              icon="apply"
-              label="Apply approved"
-              tip={applyTip(name)}
-              text
-              variant="primary"
-              disabled={running || approved === 0}
-              onClick={() => void apply.run(() => applyMap(id)).then(refresh)}
-            />
-          </div>
         </div>
       )}
       <JobOutcome job={apply.job} error={apply.error} />
@@ -120,7 +87,45 @@ export function MapPage() {
       {proposals.isPending ? null : proposals.isError ? (
         <p className="err">Could not load proposals: {errorMessage(proposals.error)}</p>
       ) : (
-        <ProposalGroups proposals={list} mapId={id} />
+        <ProposalGroups
+          proposals={list}
+          mapId={id}
+          actions={
+            <>
+              <ActionButton
+                icon="scan"
+                label="Scan"
+                tip={TIPS.scan}
+                text
+                disabled={running || map.data?.status === "unreadable"}
+                onClick={() => void scan.run(() => scanMap(id)).then(refresh)}
+              />
+              <ConfirmDialog
+                title="Approve all fixes"
+                description={`Approve every pending proposal for "${name}"?`}
+                confirmLabel="Approve all"
+                onConfirm={() => void approveEverything()}
+              >
+                <ActionButton
+                  icon="approve-all"
+                  label="Approve all"
+                  tip={TIPS.approveAll}
+                  text
+                  disabled={pendingCount === 0}
+                />
+              </ConfirmDialog>
+              <ActionButton
+                icon="apply"
+                label="Apply approved"
+                tip={applyTip(name)}
+                text
+                variant="primary"
+                disabled={running || approved === 0}
+                onClick={() => void apply.run(() => applyMap(id)).then(refresh)}
+              />
+            </>
+          }
+        />
       )}
     </section>
   );

@@ -5,7 +5,7 @@
 .lib-row > div {
   min-width: 0;
 }
-.col-title {
+.lib-row .col-title {
   display: flex;
   flex-direction: column;
   gap: 2px;

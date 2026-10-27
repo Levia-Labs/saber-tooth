@@ -44,7 +44,7 @@ describe("level chips", () => {
       </TipProvider>,
     );
     const items = screen.getAllByRole("listitem").map((li) => li.textContent);
-    expect(items).toEqual(["Ea", "H", "Ex+"]);
+    expect(items).toEqual(["Ea", "Ha", "Ex+"]);
   });
 
   test("chips are abbreviated with the full name in the aria-label", () => {
@@ -55,8 +55,8 @@ describe("level chips", () => {
     );
     expect(screen.getAllByRole("listitem").map((li) => li.textContent)).toEqual([
       "Ea",
-      "N",
-      "H",
+      "No",
+      "Ha",
       "Ex",
       "Ex+",
     ]);
