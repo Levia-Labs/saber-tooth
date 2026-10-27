@@ -1,3 +1,11 @@
+# Frontend bundle: built in its own stage so the Python layers below stay cached.
+FROM node:22.22.2-slim AS web
+WORKDIR /build/frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm npm ci
+COPY frontend ./
+RUN npm run build
+
 FROM python:3.12-slim
 
 # ffmpeg version follows the Debian base image, so it is not pinned
@@ -27,6 +35,9 @@ RUN useradd --create-home --uid 1000 app \
     && chown app:app /data
 
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+
+# vite build writes the hashed bundle to src/saber_tooth/web, the folder the API serves at /
+COPY --from=web /build/src/saber_tooth/web/ /app/src/saber_tooth/web/
 
 # No USER here: the entrypoint starts as root only to apply PUID/PGID, then drops to app.
 ENV PUID=1000 PGID=1000

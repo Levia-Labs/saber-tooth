@@ -15,3 +15,8 @@
 tests
 docs
 data
+frontend/node_modules
+frontend/dist
+frontend/coverage
+src/saber_tooth/web/*
+!src/saber_tooth/web/README.md
