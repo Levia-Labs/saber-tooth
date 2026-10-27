@@ -11,7 +11,11 @@ includes:
     taskfile: .crepidoma/taskfiles/lint
     vars:
       # Vite output and lane checkouts are not source; the shared eslint config cannot ignore them.
-      LINT_ESLINT: 'npx --no-install eslint --ignore-pattern ".worktrees/**" --ignore-pattern "src/saber_tooth/web/**"'
+      # frontend/ has its own eslint config (react, jsx-a11y) run by `npm --prefix frontend run lint`;
+      # the shared config lacks those plugins and would reject their disable comments.
+      LINT_ESLINT: >-
+        npx --no-install eslint --ignore-pattern ".worktrees/**"
+        --ignore-pattern "src/saber_tooth/web/**" --ignore-pattern "frontend/**"
   repo: .crepidoma/taskfiles/repo
   todo: .crepidoma/taskfiles/todo
   git: .crepidoma/taskfiles/git
