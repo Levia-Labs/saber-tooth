@@ -13,8 +13,13 @@ export function SkeletonRow({ index }: { index: number }) {
       </div>
       <div className="col-title" role="cell">
         <span className="sk sk-bar" />
+      </div>
+      <div className="col-sub" role="cell">
         <span className="sk sk-bar short" />
         <span className="sk sk-pill levels-inline" />
+      </div>
+      <div className="col-author" role="cell">
+        <span className="sk sk-bar" />
       </div>
       <div className="col-levels" role="cell">
         <span className="sk sk-pill" />

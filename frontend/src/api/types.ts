@@ -11,6 +11,9 @@ export const STATUS_KEYS = [
 ] as const;
 export type StatusKey = (typeof STATUS_KEYS)[number];
 
+export const LEVEL_KEYS = ["Easy", "Normal", "Hard", "Expert", "ExpertPlus"] as const;
+export type LevelKey = (typeof LEVEL_KEYS)[number];
+
 export type JobState = "queued" | "running" | "done" | "failed";
 export type JobKind = "scan" | "apply" | "generate" | "learn";
 
@@ -50,6 +53,8 @@ export interface MapPage {
 export interface Facets {
   status: Partial<Record<StatusKey, number>>;
   environments: { name: string; count: number }[];
+  mappers: { name: string; count: number }[];
+  levels: Record<LevelKey, number>;
   total: number;
 }
 
@@ -101,5 +106,6 @@ export type SortKey =
   | "warnings"
   | "scanned_at"
   | "duration"
-  | "bpm";
+  | "bpm"
+  | "levels";
 export type SortOrder = "asc" | "desc";

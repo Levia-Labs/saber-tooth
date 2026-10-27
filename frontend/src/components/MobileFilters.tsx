@@ -1,7 +1,13 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import type { Facets } from "../api/types";
-import { filterCounts, type LibraryState } from "../lib/urlstate";
-import { EnvFilterBody, StatusFilterBody, TitleFilterBody } from "./FilterBodies";
+import { filterCounts, totalFilters, type LibraryState } from "../lib/urlstate";
+import {
+  EnvFilterBody,
+  LevelsFilterBody,
+  MapperListBody,
+  StatusFilterBody,
+  TextFilterBody,
+} from "./FilterBodies";
 import { Icon } from "./icons";
 import { Tip } from "./Tip";
 
@@ -15,10 +21,10 @@ interface Props {
 /** One Filters button that opens the three column filters as a bottom sheet. */
 export function MobileFilters({ state, facets, update, clear }: Props) {
   const counts = filterCounts(state);
-  const total = counts.title + counts.status + counts.env;
+  const total = totalFilters(counts);
   return (
     <Dialog.Root>
-      <Tip text="Filter the library by name, status and environment.">
+      <Tip text="Filter the library by title, author, levels, status and environment.">
         <Dialog.Trigger className="btn plain filters-btn">
           <Icon name="filter" filled={total > 0} />
           <span>Filters</span>
@@ -35,8 +41,34 @@ export function MobileFilters({ state, facets, update, clear }: Props) {
             </button>
           </div>
           <section>
-            <h3>Name or mapper</h3>
-            <TitleFilterBody q={state.q} onChange={(q, replace) => update({ q }, replace)} />
+            <h3>Title</h3>
+            <TextFilterBody
+              label="Title contains"
+              q={state.qField === "title" ? state.q : ""}
+              onChange={(q, replace) => update({ q, qField: "title" }, replace)}
+            />
+          </section>
+          <section>
+            <h3>Author</h3>
+            <TextFilterBody
+              label="Name contains"
+              q={state.qField === "mapper" ? state.q : ""}
+              onChange={(q, replace) => update({ q, qField: "mapper" }, replace)}
+            />
+            <MapperListBody
+              selected={state.mapper}
+              facets={facets}
+              onChange={(mapper) => update({ mapper })}
+            />
+          </section>
+          <section>
+            <h3>Levels</h3>
+            <LevelsFilterBody
+              selected={state.level}
+              mode={state.levelMode}
+              facets={facets}
+              onChange={(patch) => update(patch)}
+            />
           </section>
           <section>
             <h3>Status</h3>

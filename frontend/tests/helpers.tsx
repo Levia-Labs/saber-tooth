@@ -44,6 +44,11 @@ export const FACETS: Facets = {
     { name: "Origins", count: 4 },
     { name: "BigMirrorEnvironment", count: 3 },
   ],
+  mappers: [
+    { name: "Mapper 1", count: 4 },
+    { name: "Mapper 2, Jr", count: 3 },
+  ],
+  levels: { Easy: 5, Normal: 1, Hard: 2, Expert: 6, ExpertPlus: 4 },
   total: 7,
 };
 

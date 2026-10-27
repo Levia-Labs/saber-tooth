@@ -49,7 +49,7 @@
 }
 .lib-grid {
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr) 220px 76px 88px 160px 150px 156px;
+  grid-template-columns: 56px minmax(0, 1fr) 120px 150px 60px 84px 130px 130px 140px;
   column-gap: 12px;
   align-items: center;
   padding: 0 12px;

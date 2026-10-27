@@ -173,3 +173,14 @@
     font-size: 0.85rem;
   }
 }
+.popover .filter-body + .filter-body {
+  margin-top: 0.75rem;
+}
+.segmented {
+  display: flex;
+  gap: 0.4rem;
+}
+.segmented .btn[aria-pressed="true"] {
+  color: var(--blue);
+  border-color: var(--blue);
+}

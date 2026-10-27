@@ -1,7 +1,13 @@
 import type { ReactNode } from "react";
 import type { Facets, SortKey } from "../api/types";
 import { filterCounts, nextSort, type LibraryState } from "../lib/urlstate";
-import { EnvFilterBody, StatusFilterBody, TitleFilterBody } from "./FilterBodies";
+import {
+  EnvFilterBody,
+  LevelsFilterBody,
+  MapperListBody,
+  StatusFilterBody,
+  TextFilterBody,
+} from "./FilterBodies";
 import { FilterPopover } from "./FilterPopover";
 import { Icon } from "./icons";
 
@@ -58,12 +64,51 @@ export function LibraryHeader({ state, facets, update }: Props) {
         className="col-title"
         {...cell}
         filter={
-          <FilterPopover label="Title" tip="Filter by name or mapper." count={counts.title}>
-            <TitleFilterBody q={state.q} onChange={(q, replace) => update({ q }, replace)} />
+          <FilterPopover label="Title" tip="Filter by title." count={counts.title}>
+            <TextFilterBody
+              label="Title contains"
+              q={state.qField === "title" ? state.q : ""}
+              onChange={(q, replace) => update({ q, qField: "title" }, replace)}
+            />
           </FilterPopover>
         }
       />
-      <HeaderCell label="Levels" className="col-levels" {...cell} />
+      <HeaderCell
+        label="Author"
+        sort="mapper"
+        className="col-author"
+        {...cell}
+        filter={
+          <FilterPopover label="Author" tip="Filter by mapper." count={counts.author}>
+            <TextFilterBody
+              label="Name contains"
+              q={state.qField === "mapper" ? state.q : ""}
+              onChange={(q, replace) => update({ q, qField: "mapper" }, replace)}
+            />
+            <MapperListBody
+              selected={state.mapper}
+              facets={facets}
+              onChange={(mapper) => update({ mapper })}
+            />
+          </FilterPopover>
+        }
+      />
+      <HeaderCell
+        label="Levels"
+        sort="levels"
+        className="col-levels"
+        {...cell}
+        filter={
+          <FilterPopover label="Levels" tip="Filter by difficulty level." count={counts.levels}>
+            <LevelsFilterBody
+              selected={state.level}
+              mode={state.levelMode}
+              facets={facets}
+              onChange={(patch) => update(patch)}
+            />
+          </FilterPopover>
+        }
+      />
       <HeaderCell label="Length" sort="duration" className="col-length" {...cell} />
       <HeaderCell label="BPM" sort="bpm" className="col-bpm" {...cell} />
       <HeaderCell

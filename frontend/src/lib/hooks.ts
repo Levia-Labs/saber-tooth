@@ -30,7 +30,19 @@ export function useLibraryState(): LibraryControls {
     },
     [search, setParams],
   );
-  const clearFilters = useCallback(() => update({ q: "", status: [], env: [] }), [update]);
+  const clearFilters = useCallback(
+    () =>
+      update({
+        q: "",
+        qField: "title",
+        status: [],
+        env: [],
+        mapper: [],
+        level: [],
+        levelMode: "any",
+      }),
+    [update],
+  );
   return { state, update, clearFilters };
 }
 

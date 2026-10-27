@@ -9,11 +9,12 @@ import { LibraryTable } from "../components/LibraryTable";
 import { MobileFilters } from "../components/MobileFilters";
 import { useDocumentTitle, useLibraryState } from "../lib/hooks";
 import { TIPS } from "../lib/tips";
-import { filterCounts } from "../lib/urlstate";
+import { filterCounts, totalFilters } from "../lib/urlstate";
 
 const SORT_OPTIONS: [SortKey, string][] = [
   ["title", "Title"],
-  ["mapper", "Mapper"],
+  ["mapper", "Author"],
+  ["levels", "Levels"],
   ["environment", "Environment"],
   ["status", "Status"],
   ["errors", "Errors"],
@@ -37,7 +38,7 @@ export function LibraryPage() {
 
   const loadMore = useCallback(() => void fetchNextPage(), [fetchNextPage]);
   const counts = filterCounts(state);
-  const filtered = counts.title + counts.status + counts.env > 0;
+  const filtered = totalFilters(counts) > 0;
 
   return (
     <section className="library" aria-labelledby="library-heading">

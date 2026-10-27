@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { Proposal } from "../src/api/types";
-import { TitleFilterBody } from "../src/components/FilterBodies";
+import { TextFilterBody } from "../src/components/FilterBodies";
 import { LONG_PRESS_MS, Tip, TipProvider } from "../src/components/Tip";
 import { item, mockFetch, renderApp } from "./helpers";
 
@@ -82,8 +82,8 @@ describe("touch tooltips", () => {
 describe("title filter", () => {
   test("a search typed just before the popover closes is still sent", async () => {
     const onChange = vi.fn();
-    const { unmount } = render(<TitleFilterBody q="" onChange={onChange} />);
-    await userEvent.setup().type(screen.getByLabelText("Name or mapper"), "moon");
+    const { unmount } = render(<TextFilterBody label="Title contains" q="" onChange={onChange} />);
+    await userEvent.setup().type(screen.getByLabelText("Title contains"), "moon");
     expect(onChange).not.toHaveBeenCalled();
     unmount();
     expect(onChange).toHaveBeenCalledWith("moon", true);

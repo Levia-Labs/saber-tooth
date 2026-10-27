@@ -32,7 +32,7 @@ describe("library page", () => {
       expect(container.querySelectorAll("[data-skeleton]")).toHaveLength(FIRST_SKELETONS),
     );
     const first = container.querySelector("[data-skeleton]") as HTMLElement;
-    expect(first.querySelectorAll("[role=cell]")).toHaveLength(8);
+    expect(first.querySelectorAll("[role=cell]")).toHaveLength(10);
     expect(screen.getByRole("columnheader", { name: /title/i })).toBeInTheDocument();
   });
 
@@ -51,6 +51,57 @@ describe("library page", () => {
     );
     expect(row.getByRole("button", { name: "Scan Song 1" })).toBeEnabled();
     expect(row.queryByRole("button", { name: /Apply approved/ })).toBeNull();
+  });
+
+  test("each column cell shows only its own data", async () => {
+    api();
+    renderApp("/");
+    const first = (await screen.findByRole("link", { name: "Song 1" })).closest("[role=row]");
+    const cells = (cls: string) => (first as HTMLElement).querySelector(`.${cls}`) as HTMLElement;
+    const title = cells("col-title");
+    expect(title.textContent).toBe("Song 1");
+    expect(title.querySelector(".level, .chip")).toBeNull();
+    expect(title.textContent).not.toContain("Mapper 1");
+    const levels = cells("col-levels");
+    expect(levels.querySelectorAll("li.level")).toHaveLength(3);
+    expect(levels.textContent).toBe("EasyExpertExpert+");
+    expect(levels.querySelector(".chip")).toBeNull();
+    expect(cells("col-author").textContent).toBe("Mapper 1");
+    expect(cells("col-env").textContent).toBe("Origins");
+  });
+
+  test("environment names are shown without the Environment suffix", async () => {
+    api();
+    renderApp("/");
+    const second = (await screen.findByRole("link", { name: "Song 2" })).closest("[role=row]");
+    expect((second as HTMLElement).querySelector(".col-env")?.textContent).toBe("Big Mirror");
+  });
+
+  test("mapper and level URL filters become API parameters", async () => {
+    const { calls } = api();
+    renderApp("/?mapper=Mapper%201&mapper=A%2C%20B&level=Easy&level=Hard&lmode=all&sort=levels");
+    await screen.findByRole("link", { name: "Song 1" });
+    const request = calls.find((u) => u.pathname === "/api/maps");
+    expect(request?.searchParams.getAll("mapper")).toEqual(["Mapper 1", "A, B"]);
+    expect(request?.searchParams.getAll("level")).toEqual(["Easy", "Hard"]);
+    expect(request?.searchParams.get("level_mode")).toBe("all");
+    expect(request?.searchParams.get("sort")).toBe("levels");
+  });
+
+  test("author and levels headers sort and open their filters", async () => {
+    api();
+    renderApp("/");
+    await screen.findByRole("link", { name: "Song 1" });
+    expect(screen.getByRole("button", { name: "Sort by Author" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sort by Levels" })).toBeInTheDocument();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Filter Levels" }));
+    const dialog = await screen.findByRole("dialog", { name: "Levels filter" });
+    expect(within(dialog).getByRole("button", { name: "Any" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(within(dialog).getByRole("checkbox", { name: "Expert+" })).toBeInTheDocument();
   });
 
   test("a row with approved fixes offers Apply and a running row disables Scan", async () => {
@@ -74,7 +125,7 @@ describe("library page", () => {
     await screen.findByRole("link", { name: "Song 1" });
     const request = calls.find((u) => u.pathname === "/api/maps");
     expect(request?.searchParams.get("q")).toBe("moon");
-    expect(request?.searchParams.get("q_fields")).toBe("title,mapper");
+    expect(request?.searchParams.get("q_fields")).toBe("title");
     expect(request?.searchParams.get("status")).toBe("error,warn");
     expect(request?.searchParams.getAll("env")).toEqual(["Origins"]);
     expect(request?.searchParams.get("sort")).toBe("bpm");
@@ -131,7 +182,7 @@ describe("column filters", () => {
     const user = userEvent.setup();
     await screen.findByRole("link", { name: "Song 1" });
     await user.click(screen.getByRole("button", { name: "Filter Title" }));
-    await user.type(await screen.findByLabelText("Name or mapper"), "moon");
+    await user.type(await screen.findByLabelText("Title contains"), "moon");
     await waitFor(() => expect(router.state.location.search).toBe("?q=moon"));
     await user.keyboard("{Escape}");
     expect(
