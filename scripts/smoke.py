@@ -35,11 +35,14 @@ def default_base(env_file: Path = Path(".env")) -> str:
 
 def http(url: str, body: bytes | None = None) -> Response:
     """GET (or JSON POST when body is set); never raises on HTTP errors, status 0 on failure."""
+    if not url.startswith(("http://", "https://")):
+        return 0, "", b""
     headers = {"Accept": "application/json, text/event-stream, */*"}
     if body is not None:
         headers["Content-Type"] = "application/json"
     req = urllib.request.Request(url, data=body, headers=headers)  # noqa: S310  # nosec B310
     try:
+        # nosemgrep: dynamic-urllib-use-detected - scheme checked above
         with urllib.request.urlopen(req, timeout=10) as res:  # noqa: S310  # nosec B310
             return res.status, res.headers.get("Content-Type", ""), res.read()
     except urllib.error.HTTPError as exc:

@@ -29,6 +29,7 @@ ARGV: dict[str, list[str]] = {
     "st:compose-check": ["task", "st:compose-check"],
     "quality:deep": ["task", "quality:deep"],
 }
+STRONG_RE = re.compile(r"^(FAILED|FAIL |ERROR|E {2,})|Traceback|Blocking|error:")
 ERROR_RE = re.compile(r"error|fail|traceback", re.IGNORECASE)
 
 
@@ -47,9 +48,10 @@ def select(
 def excerpt(log: str, count: int = 3) -> list[str]:
     """First error-looking line and what follows it, else the log tail; at most `count` lines."""
     lines = [ln.rstrip() for ln in log.splitlines() if ln.strip()]
-    for i, line in enumerate(lines):
-        if ERROR_RE.search(line):
-            return lines[i : i + count]
+    for pattern in (STRONG_RE, ERROR_RE):
+        for i, line in enumerate(lines):
+            if pattern.search(line.strip()):
+                return lines[i : i + count]
     return lines[-count:]
 
 

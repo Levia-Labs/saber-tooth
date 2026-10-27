@@ -32,6 +32,11 @@ def test_excerpt_first_error_line_else_tail():
     assert gate.excerpt("") == []
 
 
+def test_excerpt_prefers_strong_markers_over_warnings():
+    log = "Rule x-without-fail contains a pattern\nFAILED tests/a.py::t - boom\nend\n"
+    assert gate.excerpt(log)[0].startswith("FAILED tests/a.py")
+
+
 @given(st.text(max_size=300))
 def test_excerpt_never_exceeds_three_lines(text):
     assert len(gate.excerpt(text)) <= 3
