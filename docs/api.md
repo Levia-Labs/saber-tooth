@@ -57,3 +57,23 @@ saber-tooth calls these beat-analyser routes server to server on the internal ne
 4. `GET /download/<name>`: download a project.
 
 Project output is read from the shared volume instead; see [ADR 0005](adr/0005-beat-analyser-via-shared-volume.md).
+
+## MCP
+
+The same process serves a Model Context Protocol endpoint at `/mcp` (Streamable HTTP, stateless, JSON responses). It sits behind the same Host allowlist and same-origin check as the REST routes. See [ADR 0010](adr/0010-mcp-over-streamable-http-in-the-api-process.md).
+
+Connect with `claude mcp add --transport http saber-tooth http://127.0.0.1:8100/mcp`. For another host name, add it to `SABER_ALLOWED_HOSTS`.
+
+| Tool                         | Effect                                                             |
+| ---------------------------- | ------------------------------------------------------------------ |
+| `list_maps(filter?)`         | Read-only. Up to 200 maps plus `total`; filter is a substring      |
+| `get_proposals(map_id)`      | Read-only. Up to 200 proposals plus `total`                        |
+| `scan_map(map_id)`           | Starts a scan job, returns `{"job"}`                               |
+| `job_status(job_id)`         | Read-only. Job status, error and result                            |
+| `approve_proposal(id)`       | Marks approved; idempotent; writes nothing                         |
+| `reject_proposal(id)`        | Marks rejected; idempotent; writes nothing                         |
+| `apply_map(map_id)`          | Starts an apply job; writes only a new folder in `CustomLevels`    |
+| `generate_from_youtube(url)` | Starts a generation job; same YouTube allowlist as `/api/generate` |
+| `learn_lightshows()`         | Starts a lightshow learning job                                    |
+
+Failures come back as MCP tool errors with the REST message.

@@ -1,10 +1,12 @@
 """HTTP API: JSON routes for the review UI, plus the static frontend at /."""
 
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
+from mcp.server.transport_security import TransportSecuritySettings
 
 from saber_tooth.analyser_client import AnalyserClient
 from saber_tooth.api.core import Api, ApiError, _error
@@ -15,6 +17,7 @@ from saber_tooth.api.hosts import (
     peer_trusted,
     trusted_proxies,
 )
+from saber_tooth.api.mcp_tools import build_mcp
 from saber_tooth.api.upload import _save_upload
 from saber_tooth.audio import encode_egg
 from saber_tooth.service import ApplyConflict, MapNotFound, MapUnreadable, Service
@@ -24,8 +27,23 @@ WEB = Path(__file__).resolve().parents[1] / "web"
 
 
 def create_app(service: Service) -> FastAPI:
-    app = FastAPI(title="saber-tooth", docs_url=None, redoc_url=None, openapi_url=None)
     api = Api(service)
+    # The SDK's own Host check is off: same_origin below already covers /mcp, and honours
+    # SABER_ALLOWED_HOSTS and trusted proxies, which the SDK list cannot.
+    mcp_app = build_mcp(api).streamable_http_app(
+        json_response=True,
+        stateless_http=True,
+        transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False),
+    )
+
+    @asynccontextmanager
+    async def lifespan(_: FastAPI):
+        async with mcp_app.router.lifespan_context(mcp_app):
+            yield
+
+    app = FastAPI(
+        title="saber-tooth", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan
+    )
     app.state.api = api
     hosts = allowed_hosts()
     proxies = trusted_proxies()
@@ -104,6 +122,8 @@ def create_app(service: Service) -> FastAPI:
     def job(job_id: str):
         return api.job(job_id)
 
+    # The /mcp route sits behind the same_origin middleware above, which is the Host check.
+    app.router.routes.extend(mcp_app.routes)
     app.mount("/", StaticFiles(directory=WEB, html=True), name="web")
     return app
 
