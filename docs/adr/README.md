@@ -12,3 +12,4 @@ Each record has Context, Decision and Consequences.
 8. [0008 YouTube-only URL intake](0008-youtube-only-url-intake.md)
 9. [0009 Configurable container user and proxy trust](0009-configurable-user-and-proxy-trust.md)
 10. [0010 MCP over streamable HTTP in the API process](0010-mcp-over-streamable-http-in-the-api-process.md)
+11. [0011 React + TypeScript + Vite frontend](0011-react-typescript-vite-frontend.md)

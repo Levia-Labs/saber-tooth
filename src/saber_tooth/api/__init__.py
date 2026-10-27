@@ -5,7 +5,6 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.staticfiles import StaticFiles
 from mcp.server.transport_security import TransportSecuritySettings
 
 from saber_tooth.analyser_client import AnalyserClient
@@ -18,6 +17,7 @@ from saber_tooth.api.hosts import (
     trusted_proxies,
 )
 from saber_tooth.api.mcp_tools import build_mcp
+from saber_tooth.api.static import WebFiles
 from saber_tooth.api.upload import _save_upload
 from saber_tooth.api.web_routes import register as register_web_routes
 from saber_tooth.audio import encode_egg
@@ -27,7 +27,7 @@ from saber_tooth.store import Store
 WEB = Path(__file__).resolve().parents[1] / "web"
 
 
-def create_app(service: Service) -> FastAPI:
+def create_app(service: Service, web: Path = WEB) -> FastAPI:
     api = Api(service)
     # The SDK's own Host check is off: same_origin below already covers /mcp, and honours
     # SABER_ALLOWED_HOSTS and trusted proxies, which the SDK list cannot.
@@ -121,10 +121,10 @@ def create_app(service: Service) -> FastAPI:
     def job(job_id: str):
         return api.job(job_id)
 
-    register_web_routes(app, api, WEB)
+    register_web_routes(app, api, web)
     # The /mcp route sits behind the same_origin middleware above, which is the Host check.
     app.router.routes.extend(mcp_app.routes)
-    app.mount("/", StaticFiles(directory=WEB, html=True), name="web")
+    app.mount("/", WebFiles(directory=web, html=True), name="web")
     return app
 
 

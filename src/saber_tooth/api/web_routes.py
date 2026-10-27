@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse
 
 from saber_tooth.api.core import Api, ApiError, _error
 from saber_tooth.api.library import MAX_COVER_BYTES
+from saber_tooth.api.static import SHELL_CACHE
 
 COVER_CACHE = "private, max-age=86400"
 
@@ -62,4 +63,6 @@ def register(app: FastAPI, api: Api, web: Path) -> None:
     @app.get("/maps/{map_id}", include_in_schema=False)
     @app.get("/new", include_in_schema=False)
     def spa(map_id: str = ""):
-        return FileResponse(web / "index.html", media_type="text/html")
+        return FileResponse(
+            web / "index.html", media_type="text/html", headers={"Cache-Control": SHELL_CACHE}
+        )

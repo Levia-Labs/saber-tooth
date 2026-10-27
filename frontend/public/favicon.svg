@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img">
+<title>saber-tooth</title>
+<defs>
+<filter id="g" x="-50%" y="-30%" width="200%" height="160%"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<filter id="s" x="-50%" y="-30%" width="200%" height="160%"><feGaussianBlur stdDeviation="2"/></filter>
+</defs>
+<rect width="256" height="256" rx="48" fill="#07070D"/>
+<g fill="none" stroke-linecap="round">
+<path d="M40 72Q128 38 216 72" stroke="#8b8ba7" stroke-width="10"/>
+<g filter="url(#g)"><path d="M78 78C68 134 90 182 118 216" stroke="#C81414" stroke-width="16"/><path d="M178 78C188 134 166 182 138 216" stroke="#288ED2" stroke-width="16"/></g>
+<path d="M78 78C68 134 90 182 118 216" stroke="#FF3B3B" stroke-width="9"/><path d="M178 78C188 134 166 182 138 216" stroke="#4FC3FF" stroke-width="9"/>
+<path d="M78 78C68 134 90 182 118 216" stroke="#fff" stroke-width="3"/><path d="M178 78C188 134 166 182 138 216" stroke="#fff" stroke-width="3"/>
+<path d="M64 72h28M164 72h28" stroke="#2a2a3a" stroke-width="12"/>
+</g>
+</svg>

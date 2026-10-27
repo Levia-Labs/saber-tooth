@@ -226,3 +226,9 @@ data/
 
 # Node tooling
 node_modules/
+
+# Built frontend: vite build writes here (src/saber_tooth/web), only the README is tracked
+/src/saber_tooth/web/*
+!/src/saber_tooth/web/README.md
+/frontend/dist/
+/frontend/coverage/

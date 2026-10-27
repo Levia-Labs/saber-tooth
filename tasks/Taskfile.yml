@@ -6,6 +6,29 @@ tasks:
   js-test:
     desc: "Run the node:test suite for web JS. Usage: task st:js-test"
     cmds: ["npm run test:js"]
+  web:install:
+    desc: "Install the frontend dependencies from the lockfile. Usage: task st:web:install"
+    dir: "{{.ROOT_DIR}}"
+    cmds: ["npm --prefix frontend ci"]
+  web:dev:
+    desc: "Run the Vite dev server on :5173, proxying /api and /mcp to 127.0.0.1:8100. Usage: task st:web:dev"
+    dir: "{{.ROOT_DIR}}"
+    cmds: ["npm --prefix frontend run dev -- {{.CLI_ARGS}}"]
+  web:build:
+    desc: "Type check and build the frontend into src/saber_tooth/web. Usage: task st:web:build"
+    dir: "{{.ROOT_DIR}}"
+    cmds: ["npm --prefix frontend run build"]
+  web:test:
+    desc: "Run the frontend Vitest suite. Usage: task st:web:test [-- <vitest args>]"
+    dir: "{{.ROOT_DIR}}"
+    cmds: ["npm --prefix frontend run test -- {{.CLI_ARGS}}"]
+  web:check:
+    desc: "Type check, lint and format-check the frontend. Usage: task st:web:check"
+    dir: "{{.ROOT_DIR}}"
+    cmds:
+      - "npm --prefix frontend run typecheck"
+      - "npm --prefix frontend run lint"
+      - "npm --prefix frontend run format"
   check:
     desc: "Run quality checks on one map folder. Usage: task st:check -- <folder>"
     cmds: ["uv run saber-tooth check {{.CLI_ARGS}}"]
