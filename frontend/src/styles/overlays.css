@@ -1,0 +1,141 @@
+.tooltip {
+  z-index: 60;
+  max-width: min(20rem, calc(100vw - 16px));
+  padding: 0.55rem 0.75rem;
+  background: #0a0818;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+}
+.popover {
+  z-index: 40;
+  width: min(300px, calc(100vw - 16px));
+  max-height: min(70vh, 460px);
+  overflow: auto;
+  padding: 0.8rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.55);
+}
+.popover-close {
+  width: 100%;
+  margin-top: 0.6rem;
+}
+.filter-body {
+  display: grid;
+  gap: 0.5rem;
+}
+.filter-body label {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.field {
+  position: relative;
+}
+.field .ic {
+  position: absolute;
+  left: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+.field input {
+  width: 100%;
+  padding-left: 2.2rem;
+}
+.filter-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.checks {
+  display: grid;
+  gap: 2px;
+}
+.check-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 2px 0;
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+.check label {
+  color: var(--ink);
+  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.checkbox {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  padding: 0;
+  color: #07121b;
+  background: var(--stage);
+  border: 1px solid var(--muted);
+  border-radius: 5px;
+  cursor: pointer;
+}
+.checkbox[data-state="checked"] {
+  background: var(--blue);
+  border-color: var(--blue);
+}
+.checkbox .ic {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.5;
+}
+.checks .count {
+  font-size: 0.85rem;
+}
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(5, 3, 14, 0.6);
+}
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 41;
+  display: grid;
+  gap: 0.25rem;
+  max-height: 85vh;
+  overflow: auto;
+  padding: 1rem;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  border-radius: 14px 14px 0 0;
+}
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sheet-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.sheet .btn.primary {
+  margin-top: 0.75rem;
+}
+@media (min-width: 1100px) {
+  .sheet,
+  .overlay {
+    display: none;
+  }
+}

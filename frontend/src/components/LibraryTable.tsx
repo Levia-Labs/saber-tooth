@@ -1,0 +1,119 @@
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { useEffect, useRef, useState } from "react";
+import type { Facets, MapItem } from "../api/types";
+import { useMediaQuery } from "../lib/hooks";
+import type { LibraryState } from "../lib/urlstate";
+import { LibraryHeader } from "./LibraryHeader";
+import { LibraryRow } from "./LibraryRow";
+import { SkeletonRow } from "./SkeletonRow";
+
+export const FIRST_SKELETONS = 14;
+export const NEXT_SKELETONS = 3;
+const LOAD_AHEAD = 6;
+
+interface Props {
+  items: MapItem[];
+  total: number;
+  /** True while the first page of the current query is loading. */
+  loading: boolean;
+  hasNext: boolean;
+  fetchingNext: boolean;
+  nextFailed: boolean;
+  onLoadMore: () => void;
+  state: LibraryState;
+  facets: Facets | undefined;
+  update: (patch: Partial<LibraryState>, replace?: boolean) => void;
+  onClear: () => void;
+  filtered: boolean;
+}
+
+function useRowEstimate(): number {
+  const mobile = useMediaQuery("(max-width: 719px)");
+  const compact = useMediaQuery("(max-width: 1099px)");
+  if (mobile) return 148;
+  return compact ? 92 : 72;
+}
+
+/** Scroll region with a sticky header and a virtualised body; only this region scrolls. */
+export function LibraryTable(props: Props) {
+  const { items, loading, hasNext, fetchingNext, nextFailed, onLoadMore } = props;
+  const scroller = useRef<HTMLDivElement>(null);
+  const body = useRef<HTMLDivElement>(null);
+  const [margin, setMargin] = useState(0);
+  const estimate = useRowEstimate();
+  const skeletons = loading ? FIRST_SKELETONS : fetchingNext ? NEXT_SKELETONS : 0;
+  const count = items.length + skeletons;
+
+  const virtual = useVirtualizer({
+    count,
+    getScrollElement: () => scroller.current,
+    estimateSize: () => estimate,
+    overscan: 8,
+    scrollMargin: margin,
+    getItemKey: (i) => items[i]?.id ?? `skeleton-${i}`,
+  });
+  useEffect(() => setMargin(body.current?.offsetTop ?? 0), [estimate]);
+
+  const stateKey = JSON.stringify(props.state);
+  useEffect(() => {
+    if (scroller.current) scroller.current.scrollTop = 0;
+  }, [stateKey]);
+
+  const last = virtual.getVirtualItems().at(-1)?.index ?? -1;
+  useEffect(() => {
+    if (hasNext && !fetchingNext && !nextFailed && last >= items.length - LOAD_AHEAD) onLoadMore();
+  }, [hasNext, fetchingNext, nextFailed, last, items.length, onLoadMore]);
+
+  const empty = !loading && items.length === 0;
+  return (
+    <div className="lib-scroll" ref={scroller} tabIndex={-1}>
+      <div role="table" aria-label="Maps" aria-rowcount={props.total + 1} className="lib-table">
+        <LibraryHeader state={props.state} facets={props.facets} update={props.update} />
+        <div
+          role="rowgroup"
+          className="lib-body"
+          ref={body}
+          style={{ height: virtual.getTotalSize() }}
+          aria-busy={loading || fetchingNext}
+        >
+          {virtual.getVirtualItems().map((v) => {
+            const item = items[v.index];
+            return (
+              <div
+                key={v.key}
+                ref={virtual.measureElement}
+                data-index={v.index}
+                className="lib-slot"
+                style={{ transform: `translateY(${v.start - virtual.options.scrollMargin}px)` }}
+              >
+                {item ? (
+                  <LibraryRow item={item} index={v.index} />
+                ) : (
+                  <SkeletonRow index={v.index} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      {empty && (
+        <div className="lib-empty">
+          <p>{props.filtered ? "No maps match these filters." : "No maps found in the library."}</p>
+          {props.filtered && (
+            <button type="button" className="btn plain" onClick={props.onClear}>
+              Clear filters
+            </button>
+          )}
+        </div>
+      )}
+      {nextFailed && (
+        <div className="lib-more">
+          <p className="err">Could not load more maps.</p>
+          <button type="button" className="btn plain" onClick={onLoadMore}>
+            Load more
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -71,6 +71,13 @@ repos:
         entry: npx --no-install eslint --config .crepidoma/configs/eslint.config.js
         language: system
         types_or: [javascript, ts, tsx, jsx]
+        exclude: ^frontend/
+      - id: eslint-frontend
+        name: eslint (frontend, with react rules)
+        entry: npm --prefix frontend run lint
+        language: system
+        files: ^frontend/.*\.(ts|tsx|js)$
+        pass_filenames: false
       - id: readme-check
         name: every folder keeps a README
         entry: uv run python scripts/readme_check.py

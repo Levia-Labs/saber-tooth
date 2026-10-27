@@ -1,0 +1,31 @@
+:root {
+  --stage: #110e1f;
+  --panel: #1a1630;
+  --panel-2: #231e40;
+  --line: #2c2650;
+  --red: #e0303a;
+  --blue: #2e9be6;
+  --ink: #ece9f7;
+  --muted: #a39fbf;
+  --amber: #e8a33d;
+  --green: #3dd68c;
+  --radius: 8px;
+  --row-h: 72px;
+  --head-h: 44px;
+  --font: "Bahnschrift", "DIN Alternate", "DIN 2014", system-ui, sans-serif;
+  --condensed: condensed;
+  font-family: var(--font);
+  color-scheme: dark;
+}
+
+@media (max-width: 1099px) {
+  :root {
+    --row-h: 92px;
+  }
+}
+
+@media (max-width: 719px) {
+  :root {
+    --row-h: 148px;
+  }
+}

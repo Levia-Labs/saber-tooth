@@ -13,4 +13,8 @@ export default [
   { files: ["vite.config.ts", "eslint.config.js"], languageOptions: { globals: globals.node } },
   jsxA11y.flatConfigs.recommended,
   react.configs.flat["recommended-latest"],
+  {
+    // TanStack Virtual returns functions React Compiler cannot memoise; we do not use the compiler.
+    rules: { "react-hooks/incompatible-library": "off" },
+  },
 ];

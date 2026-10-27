@@ -1,0 +1,104 @@
+.chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 100%;
+  padding: 0.25rem 0.7rem 0.25rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--stage);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.chip::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: -1px;
+  bottom: -1px;
+  width: 3px;
+  border-radius: 6px 0 0 6px;
+  background: var(--tone);
+  box-shadow: 0 0 10px 1px var(--tone);
+}
+.chip-error {
+  --tone: var(--red);
+  background: rgba(224, 48, 58, 0.12);
+}
+.chip-warn {
+  --tone: var(--amber);
+  background: rgba(232, 163, 61, 0.1);
+}
+.chip-ok {
+  --tone: var(--green);
+  background: rgba(61, 214, 140, 0.08);
+}
+.chip-scanning,
+.chip-applying,
+.chip-queued {
+  --tone: var(--blue);
+  background: rgba(46, 155, 230, 0.1);
+}
+.chip-queued::before {
+  box-shadow: none;
+  opacity: 0.6;
+}
+.chip-unscanned,
+.chip-unreadable {
+  --tone: var(--muted);
+  color: var(--muted);
+}
+.chip-unscanned::before,
+.chip-unreadable::before {
+  box-shadow: none;
+  opacity: 0.6;
+}
+.chip-unreadable {
+  border-style: dashed;
+}
+.chip-error .ic {
+  color: var(--red);
+}
+.chip-warn .ic {
+  color: var(--amber);
+}
+.chip-ok .ic {
+  color: var(--green);
+}
+.chip-scanning .ic,
+.chip-applying .ic,
+.chip-queued .ic {
+  color: var(--blue);
+}
+.sweep-arm {
+  transform-origin: 12px 12px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .chip-scanning .sweep-arm,
+  .chip-applying .sweep-arm {
+    animation: sweep 1.2s linear infinite;
+  }
+}
+@keyframes sweep {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.levels {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.level {
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 18px;
+  white-space: nowrap;
+}
