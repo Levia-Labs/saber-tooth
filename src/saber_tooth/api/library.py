@@ -11,6 +11,8 @@ from saber_tooth.store_maps import (
     MAX_ENVS,
     MAX_MAPPERS,
     Q_FIELDS,
+    RANGE_LIMITS,
+    RANGES,
     SORT_KEYS,
     STATUS_FILTERS,
 )
@@ -41,6 +43,10 @@ class MapQuery:
     mapper: tuple[str, ...] = ()
     level: tuple[str, ...] = ()
     level_mode: str = "any"
+    duration_min: float | None = None
+    duration_max: float | None = None
+    bpm_min: float | None = None
+    bpm_max: float | None = None
 
 
 def _split(raw: str) -> tuple[str, ...]:
@@ -60,6 +66,7 @@ def parse_query(params: dict[str, str], max_limit: int = MAX_LIMIT) -> MapQuery:
     levels = _split(params.get("level", ""))
     level_mode = params.get("level_mode", "any")
     q = params.get("q", "")
+    ranges = {name: _number(params.get(name), name) for name, _, _ in RANGES}
     if sort not in SORT_KEYS:
         raise ValueError(f"sort must be one of {', '.join(SORT_KEYS)}")
     if order not in ("asc", "desc"):
@@ -78,9 +85,29 @@ def parse_query(params: dict[str, str], max_limit: int = MAX_LIMIT) -> MapQuery:
         raise ValueError("level_mode must be any or all")
     if len(q) > MAX_QUERY:
         raise ValueError(f"q is longer than {MAX_QUERY} characters")
+    for dim in RANGE_LIMITS:
+        low, high = ranges[f"{dim}_min"], ranges[f"{dim}_max"]
+        if low is not None and high is not None and low > high:
+            raise ValueError(f"{dim}_min must not exceed {dim}_max")
     status = () if "all" in statuses else statuses
     scope = "name" if len(fields) > 1 else fields[0] if fields else "all"
-    return MapQuery(offset, limit, sort, order, q, status, envs, scope, mappers, levels, level_mode)
+    return MapQuery(
+        offset, limit, sort, order, q, status, envs, scope, mappers, levels, level_mode, **ranges
+    )
+
+
+def _number(raw: str | None, name: str) -> float | None:
+    """A finite number within the range limits, or None when the parameter is absent or empty."""
+    if raw is None or raw.strip() == "":
+        return None
+    low, high = RANGE_LIMITS[name.split("_")[0]]
+    try:
+        value = float(raw) if raw.isascii() and len(raw) <= 20 else float("nan")
+    except ValueError:
+        value = float("nan")
+    if not low <= value <= high:
+        raise ValueError(f"{name} must be a number from {low:g} to {high:g}")
+    return value
 
 
 def _int(raw: str, name: str, low: int, high: int) -> int:

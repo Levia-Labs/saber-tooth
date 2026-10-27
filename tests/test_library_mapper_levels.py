@@ -136,3 +136,78 @@ def test_http_filters_and_facets(svc, client):
 
 def test_refresh_fills_levels_from_the_map(svc, client):
     assert sum(client.get("/api/maps/facets").json()["levels"].values()) >= 1
+
+
+def _ranged(tmp_path) -> Store:
+    s = Store(tmp_path / "r.sqlite")
+    s.upsert_map("a", "a", "A", "m", "E", None, 100.0, 60.0)
+    s.upsert_map("b", "b", "B", "m", "E", None, 140.0, 120.0)
+    s.upsert_map("c", "c", "C", "m", "E", None, 200.0, 180.0)
+    s.upsert_map("d", "d", "D", "m", "E", None, None, None)
+    return s
+
+
+def test_range_filters_are_inclusive_and_exclude_nulls(tmp_path):
+    s = _ranged(tmp_path)
+    assert _ids(s) == "abcd"
+    assert _ids(s, duration_min=120) == "bc"
+    assert _ids(s, duration_max=120) == "ab"
+    assert _ids(s, duration_min=60, duration_max=119) == "a"
+    assert _ids(s, bpm_min=120, bpm_max=200) == "bc"
+    assert _ids(s, duration_min=0) == "abc"
+    assert _ids(s, bpm_min=140, duration_max=130) == "b"
+    assert s.query_maps(bpm_max=90)[1] == 0
+
+
+def test_range_bounds_are_validated(tmp_path):
+    s = _ranged(tmp_path)
+    for kw in (
+        {"duration_min": -1},
+        {"duration_max": 7201},
+        {"bpm_min": 1001},
+        {"bpm_max": float("nan")},
+    ):
+        with pytest.raises(ValueError):
+            s.query_maps(**kw)
+
+
+def test_facets_report_ranges(tmp_path):
+    f = _ranged(tmp_path).facets()
+    assert f["duration"] == {"min": 60.0, "max": 180.0}
+    assert f["bpm"] == {"min": 100.0, "max": 200.0}
+    assert Store(tmp_path / "e.sqlite").facets()["bpm"] == {"min": None, "max": None}
+
+
+def test_parse_query_ranges():
+    q = parse_query({"duration_min": "30.5", "bpm_max": "180", "bpm_min": ""})
+    assert (q.duration_min, q.duration_max, q.bpm_min, q.bpm_max) == (30.5, None, None, 180.0)
+    for bad in (
+        {"duration_min": "x"},
+        {"bpm_min": "nan"},
+        {"bpm_max": "inf"},
+        {"duration_max": "-1"},
+        {"bpm_min": "9999"},
+        {"bpm_min": "200", "bpm_max": "100"},
+        {"duration_min": "٣"},
+    ):
+        with pytest.raises(ValueError):
+            parse_query(bad)
+
+
+@given(st.text(max_size=25))
+def test_hostile_range_values_never_reach_sql(value):
+    try:
+        q = parse_query({"bpm_min": value})
+    except ValueError:
+        return
+    assert q.bpm_min is None or 0 <= q.bpm_min <= 1000
+
+
+def test_http_range_filters(svc, client):
+    svc.store.upsert_map("rr", "rr", "R", "m", "E", None, 150.0, 100.0)
+    r = client.get("/api/maps", params={"bpm_min": "140", "bpm_max": "160"}).json()
+    assert [i["id"] for i in r["items"]] == ["rr"]
+    assert client.get("/api/maps?bpm_min=abc").status_code == 400
+    assert client.get("/api/maps?duration_min=9&duration_max=1").status_code == 400
+    f = client.get("/api/maps/facets").json()
+    assert f["bpm"]["min"] <= 150.0 <= f["bpm"]["max"]

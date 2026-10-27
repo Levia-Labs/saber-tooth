@@ -12,6 +12,14 @@ MAX_ENVS = 50
 MAX_MAPPERS = 50
 LEVEL_NAMES = ("Easy", "Normal", "Hard", "Expert", "ExpertPlus")  # bit i of maps.levels
 LEVEL_MODES = ("any", "all")
+# (query keyword, SQL column, comparison) of the range filters, in bound order
+RANGES = (
+    ("duration_min", "duration_s", ">="),
+    ("duration_max", "duration_s", "<="),
+    ("bpm_min", "bpm", ">="),
+    ("bpm_max", "bpm", "<="),
+)
+RANGE_LIMITS = {"duration": (0.0, 7200.0), "bpm": (0.0, 1000.0)}
 
 
 def level_mask(names) -> int:
@@ -89,7 +97,7 @@ _LEVEL_WHERE = {"any": "(levels & ?) != 0", "all": "(levels & ?) = ?"}
 
 
 def _where(shape: tuple) -> str:
-    n_status, n_env, n_mapper, level_mode, search = shape
+    n_status, n_env, n_mapper, level_mode, search, ranges = shape
     parts = ["1=1"]
     if n_status:
         parts.append(f"status IN ({_marks(n_status)})")
@@ -101,6 +109,8 @@ def _where(shape: tuple) -> str:
         parts.append(_LEVEL_WHERE[level_mode])
     if search:
         parts.append(_SEARCH[search])
+    # a bound excludes maps without the value, since NULL compares false
+    parts.extend(f"{col} {op} ?" for (_, col, op), used in zip(RANGES, ranges, strict=True) if used)
     return "WHERE " + " AND ".join(parts)
 
 
@@ -122,12 +132,17 @@ def _page_sql(shape: tuple, key: str, direction: str) -> str:
 
 
 _ONE_SQL = f"SELECT * FROM ({_MAP_VIEW}) WHERE id=?"  # noqa: S608
-_FACET_SQL = f"SELECT status, environment, mapper, levels FROM ({_MAP_VIEW})"  # noqa: S608
+_FACET_SQL = f"SELECT status, environment, mapper, levels, bpm, duration_s FROM ({_MAP_VIEW})"  # noqa: S608
 
 
 def _ranked(counts: dict[str, int]) -> list[dict]:
     ordered = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0].lower(), kv[0]))
     return [{"name": n, "count": c} for n, c in ordered]
+
+
+def _span(values: list) -> dict:
+    """Smallest and largest value, or nulls when no map has one."""
+    return {"min": min(values), "max": max(values)} if values else {"min": None, "max": None}
 
 
 class MapQueries:
@@ -150,6 +165,10 @@ class MapQueries:
         mapper: tuple[str, ...] = (),
         level: tuple[str, ...] = (),
         level_mode: str = "any",
+        duration_min: float | None = None,
+        duration_max: float | None = None,
+        bpm_min: float | None = None,
+        bpm_max: float | None = None,
     ) -> tuple[list[dict], int]:
         """One page of maps with counts and status, plus the total matching the filters."""
         statuses = (status,) if isinstance(status, str) else tuple(status)
@@ -170,13 +189,20 @@ class MapQueries:
             or level_mode not in LEVEL_MODES
         ):
             raise ValueError("invalid sort, order, status, env, mapper, level or q_fields")
+        bounds = (duration_min, duration_max, bpm_min, bpm_max)
+        for (name, _, _), value in zip(RANGES, bounds, strict=True):
+            low, high = RANGE_LIMITS[name.split("_")[0]]
+            if value is not None and not low <= value <= high:  # NaN fails the comparison too
+                raise ValueError(f"{name} must be from {low:g} to {high:g}")
+        ranges = tuple(v is not None for v in bounds)
         needle = q.strip().lower()
         search = q_fields if needle else None
         mask = level_mask(levels)
         mode = level_mode if levels else None
         mask_args = [] if not mode else [mask] if mode == "any" else [mask, mask]
         args: list = [*statuses, *envs, *mappers, *mask_args, *([needle] if needle else [])]
-        shape = (len(statuses), len(envs), len(mappers), mode, search)
+        args += [v for v in bounds if v is not None]
+        shape = (len(statuses), len(envs), len(mappers), mode, search, ranges)
         count = _count_sql(shape)
         page = _page_sql(shape, sort, order.upper())
         with self._lock:
@@ -191,6 +217,8 @@ class MapQueries:
         envs: dict[str, int] = {}
         mappers: dict[str, int] = {}
         levels = dict.fromkeys(LEVEL_NAMES, 0)
+        durations = [r["duration_s"] for r in rows if r["duration_s"] is not None]
+        bpms = [r["bpm"] for r in rows if r["bpm"] is not None]
         for r in rows:
             status[r["status"]] = status.get(r["status"], 0) + 1
             if r["environment"]:
@@ -205,6 +233,8 @@ class MapQueries:
             "environments": _ranked(envs),
             "mappers": _ranked(mappers),
             "levels": levels,
+            "duration": _span(durations),
+            "bpm": _span(bpms),
             "total": len(rows),
         }
 

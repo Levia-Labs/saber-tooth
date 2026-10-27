@@ -121,6 +121,10 @@ class Api:
             query.mapper,
             query.level,
             query.level_mode,
+            query.duration_min,
+            query.duration_max,
+            query.bpm_min,
+            query.bpm_max,
         )
         items = [shape_item(r, self.service.levels, self.extras) for r in rows]
         return {"items": items, "total": total, "offset": query.offset, "limit": query.limit}
