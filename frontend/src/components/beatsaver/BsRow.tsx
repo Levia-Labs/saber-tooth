@@ -16,6 +16,9 @@ interface Props {
   status: RowStatus;
   onSelect: (item: BsMap) => void;
   onDownload: (id: string) => void;
+  /** Tags in the active filter, shown pressed. */
+  activeTags?: readonly string[];
+  onToggleTag?: (tag: string) => void;
 }
 
 const MAX_TAGS = 3;
@@ -26,17 +29,40 @@ function levelsOf(item: BsMap) {
   return { names, nps };
 }
 
-function Tags({ tags }: { tags: string[] }) {
+function Tags({
+  tags,
+  active,
+  onToggle,
+}: {
+  tags: string[];
+  active: readonly string[];
+  onToggle?: (tag: string) => void;
+}) {
   if (!tags.length) return null;
   const shown = tags.slice(0, MAX_TAGS);
   const rest = tags.slice(MAX_TAGS);
   return (
     <ul className="bs-tags" aria-label="Tags">
-      {shown.map((t) => (
-        <li key={t} className="bs-tag">
-          {t}
-        </li>
-      ))}
+      {shown.map((t) => {
+        const on = active.includes(t);
+        return (
+          <li key={t} className="bs-tag-item">
+            <Tip text={on ? `Remove ${t} filter` : `Filter by ${t}`}>
+              <button
+                type="button"
+                className="bs-tag"
+                aria-pressed={on}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggle?.(t);
+                }}
+              >
+                {t}
+              </button>
+            </Tip>
+          </li>
+        );
+      })}
       {rest.length > 0 && (
         <li className="bs-tag more">
           <Tip text={rest.join(", ")}>
@@ -72,7 +98,16 @@ export function BsStatusChip({ status }: { status: RowStatus }) {
   );
 }
 
-export function BsRow({ item, index, selected, status, onSelect, onDownload }: Props) {
+export function BsRow({
+  item,
+  index,
+  selected,
+  status,
+  onSelect,
+  onDownload,
+  activeTags = [],
+  onToggleTag,
+}: Props) {
   const name = item.song || item.name;
   const { names, nps } = levelsOf(item);
   const href = `https://beatsaver.com/maps/${encodeURIComponent(item.id)}`;
@@ -137,7 +172,7 @@ export function BsRow({ item, index, selected, status, onSelect, onDownload }: P
         {formatBpm(item.bpm)}
       </div>
       <div className="col-tags" role="cell">
-        <Tags tags={item.tags} />
+        <Tags tags={item.tags} active={activeTags} onToggle={onToggleTag} />
       </div>
       <div className="col-status" role="cell">
         <BsStatusChip status={status} />

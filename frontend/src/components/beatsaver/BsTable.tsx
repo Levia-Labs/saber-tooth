@@ -8,6 +8,7 @@ import {
   type RefObject,
 } from "react";
 import type { BsMap } from "../../api/beatsaver";
+import { toggle } from "../../lib/urlstate";
 import type { BsState } from "../../lib/bsfilters";
 import type { useColumns } from "../../lib/useColumns";
 import { FIRST_SKELETONS, NEXT_SKELETONS, useRowEstimate } from "../LibraryTable";
@@ -128,6 +129,8 @@ export function BsTable(props: Props) {
                     status={props.status(item)}
                     onSelect={props.onSelect}
                     onDownload={props.onDownload}
+                    activeTags={props.state.tags}
+                    onToggleTag={(tag) => props.update({ tags: toggle(props.state.tags, tag) })}
                   />
                 ) : (
                   <BsSkeletonRow index={v.index} />

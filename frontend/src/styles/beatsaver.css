@@ -161,6 +161,19 @@
   line-height: 1.5rem;
   white-space: nowrap;
 }
+button.bs-tag {
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+button.bs-tag:hover,
+button.bs-tag[aria-pressed="true"] {
+  border-color: var(--accent, currentColor);
+  color: var(--accent, inherit);
+}
+button.bs-tag[aria-pressed="true"] {
+  font-weight: 600;
+}
 .col-status .chip {
   min-width: 0;
 }
