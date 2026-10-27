@@ -3,6 +3,7 @@ import { Suspense, useEffect, useRef } from "react";
 import { createBrowserRouter, Link, Outlet, useLocation, type RouteObject } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import { AnnouncerProvider } from "./components/Announcer";
+import { Icon } from "./components/icons";
 import { Logo } from "./components/Logo";
 import { Tip, TipProvider } from "./components/Tip";
 import { PageBoundary } from "./components/ErrorPanel";
@@ -18,6 +19,9 @@ const BeatSaverPage = lazyRoute(() =>
 );
 const BeatSaverPlaylistsPage = lazyRoute(() =>
   import("./pages/BeatSaverPlaylistsPage").then((m) => ({ default: m.BeatSaverPlaylistsPage })),
+);
+const AboutPage = lazyRoute(() =>
+  import("./pages/AboutPage").then((m) => ({ default: m.AboutPage })),
 );
 const NewPage = lazyRoute(() => import("./pages/NewPage").then((m) => ({ default: m.NewPage })));
 
@@ -77,6 +81,17 @@ export function Shell() {
           </span>
         </Link>
         <ModeSwitch />
+        <Tip text="What saber-tooth is">
+          <Link
+            className="about-link"
+            to="/about"
+            aria-label="About"
+            aria-current={pathname === "/about" ? "page" : undefined}
+          >
+            <Icon name="info" />
+            <span className="about-label">About</span>
+          </Link>
+        </Tip>
       </header>
       <AnnouncerProvider>
         <main id="main" tabIndex={-1}>
@@ -98,6 +113,7 @@ export const routes: RouteObject[] = [
     children: [
       { path: "/", element: <LibraryPage />, errorElement: <RouteError /> },
       { path: "/maps/:id", element: <MapPage />, errorElement: <RouteError /> },
+      { path: "/about", element: <AboutPage />, errorElement: <RouteError /> },
       { path: "/new", element: <NewPage />, errorElement: <RouteError /> },
       { path: "/beatsaver", element: <BeatSaverPage />, errorElement: <RouteError /> },
       {

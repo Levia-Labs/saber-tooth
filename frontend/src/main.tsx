@@ -12,6 +12,7 @@ import "./styles/beatsaver.css";
 import "./styles/playlists.css";
 import "./styles/preview.css";
 import "./styles/alerts.css";
+import "./styles/about.css";
 
 const root = document.getElementById("root");
 if (!root) throw new Error("missing #root");

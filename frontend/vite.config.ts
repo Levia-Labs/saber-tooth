@@ -1,4 +1,4 @@
-import { rmSync } from "node:fs";
+import { readFileSync, rmSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import type { Plugin } from "vite";
@@ -32,11 +32,18 @@ function manualChunks(id: string): string | undefined {
   return "react";
 }
 
+const APP_VERSION = (
+  JSON.parse(readFileSync(fileURLToPath(new URL("./package.json", import.meta.url)), "utf8")) as {
+    version: string;
+  }
+).version;
+
 const proxy = { target: BACKEND, changeOrigin: true, headers: { Host: "127.0.0.1:8100" } };
 
 export default defineConfig({
   plugins: [react(), cleanBuildOutput()],
   base: "/",
+  define: { __APP_VERSION__: JSON.stringify(APP_VERSION) },
   build: {
     outDir: OUT,
     emptyOutDir: false,
