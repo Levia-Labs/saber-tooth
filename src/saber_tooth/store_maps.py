@@ -211,3 +211,21 @@ class MapQueries:
     def get_map(self, map_id: str) -> dict | None:
         rows = self._query(_ONE_SQL, (map_id,))
         return dict(rows[0]) if rows else None
+
+    def set_bs(self, map_id: str, bs_id: str, bs_hash: str) -> None:
+        """Record the BeatSaver key and hash a library map was installed from."""
+        self._exec("UPDATE maps SET bs_id=?, bs_hash=? WHERE id=?", (bs_id, bs_hash, map_id))
+
+    def bs_rows(self) -> list[dict]:
+        """Library maps with their folder and recorded BeatSaver key and hash."""
+        rows = self._query("SELECT id, folder, bs_id, bs_hash FROM maps")
+        return [dict(r) for r in rows]
+
+    def find_bs(self, bs_id: str, bs_hash: str) -> dict | None:
+        """A library map with this BeatSaver key or hash, or whose folder starts with the key."""
+        rows = self._query(
+            "SELECT id, folder FROM maps WHERE bs_id = ? OR (? != '' AND bs_hash = ?)"
+            " OR folder = ? OR instr(folder, ?) = 1 LIMIT 1",
+            (bs_id, bs_hash, bs_hash, bs_id, f"{bs_id} ("),
+        )
+        return dict(rows[0]) if rows else None

@@ -33,6 +33,8 @@ _MIGRATIONS = (
     ("maps", "bpm", "ALTER TABLE maps ADD COLUMN bpm REAL"),
     ("maps", "duration_s", "ALTER TABLE maps ADD COLUMN duration_s REAL"),
     ("maps", "levels", "ALTER TABLE maps ADD COLUMN levels INTEGER"),
+    ("maps", "bs_id", "ALTER TABLE maps ADD COLUMN bs_id TEXT"),
+    ("maps", "bs_hash", "ALTER TABLE maps ADD COLUMN bs_hash TEXT"),
     ("jobs", "map_id", "ALTER TABLE jobs ADD COLUMN map_id TEXT"),
 )
 

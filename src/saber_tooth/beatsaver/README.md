@@ -7,5 +7,6 @@ Search, filter and download BeatSaver maps and playlists. Design: [spec](../../.
 3. `cache.py`: `BsCache`, SQLite cache of map details (24 h) and query pages (10 min).
 4. `filters.py`: `LocalFilter` (difficulties, NPS, rating) and `ServerQuery` (BeatSaver parameters).
 5. `search.py`: cursor search over BeatSaver pages; the cursor `page.offset` always advances.
+6. `download.py`, `naming.py`: safe zip extraction, install into CustomLevels, folder names.
 
-Tests: `task st:test -- tests/test_beatsaver_client.py tests/test_beatsaver_cache.py tests/test_beatsaver_search.py`, using [fixtures](../../../tests/fixtures/beatsaver/README.md). Parent: [saber_tooth](../README.md).
+Tests: `task st:test -- tests/test_beatsaver_client.py tests/test_beatsaver_cache.py tests/test_beatsaver_search.py tests/test_beatsaver_download.py`, using [fixtures](../../../tests/fixtures/beatsaver/README.md). Parent: [saber_tooth](../README.md).
