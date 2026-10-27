@@ -17,6 +17,8 @@ from saber_tooth.beatsaver.search import SearchResult, search
 from saber_tooth.safe_fs import LevelsWriter
 
 MAX_DOWNLOAD = 100
+DOWNLOAD_DEADLINE = 600.0
+RATE_SKIP = "skipped: BeatSaver rate limit, try again later"
 MAX_EXPORT = 500
 BS_ID = re.compile(r"[0-9a-fA-F]{1,12}")
 PLAYLIST_ID = re.compile(r"[0-9]{1,9}")
@@ -215,7 +217,12 @@ class BeatSaverApi:
         tmp.mkdir(parents=True, exist_ok=True)
         writer = LevelsWriter(self.service.levels)
         results = []
+        deadline = self.client.deadline_in(DOWNLOAD_DEADLINE)
+        limited = False
         for i in ids:
+            if limited:
+                results.append({"id": i, "status": "skipped", "reason": RATE_SKIP, "folder": None})
+                continue
             bs = found.get(i)
             if bs is None:
                 results.append({
@@ -224,7 +231,8 @@ class BeatSaverApi:
                 })  # fmt: skip
                 continue
             try:
-                out = install(self.client, writer, self.service.store, bs, tmp)
+                out = install(self.client, writer, self.service.store, bs, tmp, deadline)
+                limited = out.rate_limited
                 row = {"status": out.status, "reason": out.reason, "folder": out.folder}
             except Exception as exc:  # one map must never abort the batch
                 row = {"status": "failed", "reason": type(exc).__name__, "folder": None}

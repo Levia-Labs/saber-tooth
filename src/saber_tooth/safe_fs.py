@@ -1,5 +1,27 @@
+import re
 import shutil
 from pathlib import Path
+
+_BAD_CHARS = re.compile(r'[\x00-\x1f\x7f-\x9f<>:"|?*]')
+_RESERVED = frozenset(
+    {"con", "prn", "aux", "nul"}
+    | {f"com{n}" for n in "123456789¹²³"}
+    | {f"lpt{n}" for n in "123456789¹²³"}
+)
+
+
+def windows_safe_component(name: str) -> bool:
+    """True when `name` is a legal single path component on Windows NTFS.
+
+    Rejects empty names, `.`/`..`, separators, ':' (alternate data streams), control
+    characters, `<>"|?*`, a trailing '.' or ' ' and reserved device names (CON, NUL,
+    COM1-9, LPT1-9 ...) with or without an extension, case-insensitively.
+    """
+    if not name or name in {".", ".."} or "/" in name or "\\" in name:
+        return False
+    if _BAD_CHARS.search(name) or name[-1] in ". ":
+        return False
+    return name.split(".", 1)[0].rstrip(" ").casefold() not in _RESERVED
 
 
 class WriteRefused(Exception):
@@ -33,6 +55,8 @@ class LevelsWriter:
         return f"{stem} {n}{suffix}"
 
     def new_folder(self, name: str) -> Path:
+        if not windows_safe_component(name):
+            raise WriteRefused(f"unsafe folder name: {name!r}")
         partial = self.root / f".{name}.partial"
         self.guard(partial)
         if partial.exists():
@@ -41,6 +65,8 @@ class LevelsWriter:
         return partial
 
     def commit(self, partial: Path, name: str) -> Path:
+        if not windows_safe_component(name):
+            raise WriteRefused(f"unsafe folder name: {name!r}")
         target = self.root / name
         self.guard(target)
         if target.exists():

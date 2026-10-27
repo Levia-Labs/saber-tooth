@@ -1,4 +1,10 @@
-"""Rate-limited, host-restricted client for api.beatsaver.com and its download hosts."""
+"""Rate-limited, host-restricted client for api.beatsaver.com and its download hosts.
+
+The httpx client sets `trust_env=False`: proxy variables, netrc credentials and custom CA
+bundles from the environment are ignored, so traffic only ever goes straight to BeatSaver.
+A download job may carry a deadline (monotonic seconds); `BeatSaverRateLimited` marks a
+request that stayed rate limited after every retry so callers can stop a whole batch.
+"""
 
 import re
 import threading
@@ -35,6 +41,10 @@ class BeatSaverError(Exception):
     def __init__(self, message: str, retry_after: float | None = None) -> None:
         super().__init__(message)
         self.retry_after = retry_after
+
+
+class BeatSaverRateLimited(BeatSaverError):
+    """HTTP 429 persisted through every retry."""
 
 
 def _version() -> str:
@@ -80,6 +90,7 @@ class BeatSaverClient:
         self._http = httpx.Client(
             transport=transport,
             timeout=httpx.Timeout(30.0, connect=10.0),
+            trust_env=False,
             headers={"User-Agent": agent},
         )
         self._gap = 1.0 / rate
@@ -96,9 +107,20 @@ class BeatSaverClient:
                 now = max(self._clock(), self._next)
             self._next = now + self._gap
 
-    def _send(self, url: str, params: dict[str, str] | None = None) -> httpx.Response:
+    def deadline_in(self, seconds: float) -> float:
+        """A deadline `seconds` from now, for the `deadline` argument of `download`."""
+        return self._clock() + seconds
+
+    def _expired(self, deadline: float | None) -> bool:
+        return deadline is not None and self._clock() > deadline
+
+    def _send(
+        self, url: str, params: dict[str, str] | None = None, deadline: float | None = None
+    ) -> httpx.Response:
         """GET with pacing and backoff; the caller closes the returned stream."""
         for attempt in range(MAX_RETRIES + 1):
+            if self._expired(deadline):
+                raise BeatSaverError("download job timed out")
             self._pace()
             try:
                 request = self._http.build_request("GET", url, params=params)
@@ -111,8 +133,9 @@ class BeatSaverClient:
             status = response.status_code
             response.close()
             if attempt == MAX_RETRIES:
-                text = "BeatSaver rate limited" if status == 429 else f"BeatSaver error {status}"
-                raise BeatSaverError(text, retry_after=wait)
+                if status == 429:
+                    raise BeatSaverRateLimited("BeatSaver rate limited", retry_after=wait)
+                raise BeatSaverError(f"BeatSaver error {status}", retry_after=wait)
             self._sleep(wait)
         raise AssertionError("unreachable")  # pragma: no cover
 
@@ -180,22 +203,24 @@ class BeatSaverClient:
         meta = data.get("playlist")
         return BsPlaylist.from_json(meta if isinstance(meta, dict) else {}), maps
 
-    def download(self, url: str, dest: Path, max_bytes: int) -> Path:
+    def download(self, url: str, dest: Path, max_bytes: int, deadline: float | None = None) -> Path:
         """Stream a zip from a BeatSaver host into dest; abort and delete it past max_bytes."""
         for _ in range(MAX_REDIRECTS + 1):
             if not download_url_ok(url):
                 raise BeatSaverError("refusing download from a non-BeatSaver host")
-            response = self._send(url)
+            response = self._send(url, deadline=deadline)
             location = response.headers.get("location")
             if response.status_code in (301, 302, 303, 307, 308) and location:
                 url = urljoin(url, location)
                 response.close()
                 continue
-            return self._save(response, dest, max_bytes)
+            return self._save(response, dest, max_bytes, lambda: self._expired(deadline))
         raise BeatSaverError("too many redirects")
 
     @staticmethod
-    def _save(response: httpx.Response, dest: Path, max_bytes: int) -> Path:
+    def _save(
+        response: httpx.Response, dest: Path, max_bytes: int, expired: Callable[[], bool]
+    ) -> Path:
         try:
             if response.status_code != 200:
                 raise BeatSaverError(f"download failed: HTTP {response.status_code}")
@@ -207,6 +232,8 @@ class BeatSaverClient:
                 with dest.open("wb") as out:
                     for chunk in response.iter_bytes(65536):
                         total += len(chunk)
+                        if expired():
+                            raise BeatSaverError("download job timed out")
                         if total > max_bytes:
                             raise BeatSaverError("download too large")
                         out.write(chunk)

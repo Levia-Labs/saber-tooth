@@ -1,6 +1,6 @@
 import pytest
 
-from saber_tooth.safe_fs import LevelsWriter, WriteRefused
+from saber_tooth.safe_fs import LevelsWriter, WriteRefused, windows_safe_component
 
 
 def test_refuses_write_into_existing_map(tmp_path):
@@ -34,3 +34,27 @@ def test_stale_partial_does_not_block(tmp_path):
     w = LevelsWriter(tmp_path)
     p = w.new_folder("n")
     assert p.is_dir() and not (p / "old.dat").exists()
+
+
+@pytest.mark.parametrize(
+    "name",
+    ["a:b", "a:stream", "x\x01y", "a<b", "a>b", 'a"b', "a|b", "a?b", "a*b", "a.", "a ", "", "..",
+     "CON", "con", "Nul.txt", "aux.tar.gz", "COM1", "lpt9.dat", "prn ", "a/b", "a\b"],
+)  # fmt: skip
+def test_windows_unsafe_components_rejected(name):
+    assert not windows_safe_component(name)
+
+
+@pytest.mark.parametrize(
+    "name", ["Info.dat", "song.ogg", "CONSOLE", "COM10", "a b", "3a1f4 (S - M)"]
+)
+def test_windows_safe_components_accepted(name):
+    assert windows_safe_component(name)
+
+
+def test_new_folder_refuses_reserved_name(tmp_path):
+    w = LevelsWriter(tmp_path)
+    with pytest.raises(WriteRefused):
+        w.new_folder("NUL")
+    with pytest.raises(WriteRefused):
+        w.commit(tmp_path, "a:b")

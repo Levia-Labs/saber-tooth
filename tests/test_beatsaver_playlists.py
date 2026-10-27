@@ -52,3 +52,10 @@ def test_refuses_when_dir_unset_or_missing(tmp_path):
         export_bplist("x", maps(), None)
     with pytest.raises(PlaylistsDisabled):
         export_bplist("x", maps(), tmp_path / "missing")
+
+
+@pytest.mark.parametrize("title", ["CON", "nul", "Aux", "COM1", "lpt3"])
+def test_reserved_title_gets_prefix(tmp_path, title):
+    path = export_bplist(title, maps(), tmp_path)
+    assert path.name == f"playlist-{title}.bplist"
+    assert path.is_file()
