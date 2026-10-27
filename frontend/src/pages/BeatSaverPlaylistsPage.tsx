@@ -50,7 +50,9 @@ function DownloadAll({ query, downloads }: { query: Query; downloads: Downloads 
           onClick={() => void begin()}
         >
           <Icon name="download" />
-          <span>{loading ? "Loading matches" : "Download all matching"}</span>
+          <span className="label-hide-mobile">
+            {loading ? "Loading matches" : "Download all matching"}
+          </span>
         </button>
       </Tip>
       <DownloadConfirm
@@ -79,7 +81,7 @@ function PlaylistDetail({ id }: { id: string }) {
           <div className="bs-playlist-actions">
             <Link className="btn plain" to="/beatsaver/playlists">
               <Icon name="back" />
-              <span>All playlists</span>
+              <span className="label-hide-mobile">All playlists</span>
             </Link>
             <DownloadAll query={query} downloads={downloads} />
           </div>

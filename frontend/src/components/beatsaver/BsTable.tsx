@@ -1,5 +1,12 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import type { BsMap } from "../../api/beatsaver";
 import type { BsState } from "../../lib/bsfilters";
 import type { useColumns } from "../../lib/useColumns";
@@ -50,6 +57,23 @@ export function BsTable(props: Props) {
     getItemKey: (i) => items[i]?.id ?? `skeleton-${i}`,
   });
   useEffect(() => setMargin(body.current?.offsetTop ?? 0), [estimate]);
+
+  // Keep the viewport anchored when a loaded page sorts in above the rows being read.
+  const anchor = useRef<{ id: string; start: number } | null>(null);
+  useLayoutEffect(() => {
+    const el = scroller.current;
+    const held = anchor.current;
+    if (el && held && el.scrollTop > 0) {
+      const at = items.findIndex((i) => i.id === held.id);
+      const start = at >= 0 ? virtual.measurementsCache[at]?.start : undefined;
+      if (start !== undefined && start !== held.start) el.scrollTop += start - held.start;
+    }
+  }, [items, virtual]);
+  useEffect(() => {
+    const first = virtual.getVirtualItems().find((v) => items[v.index]);
+    const item = first && items[first.index];
+    anchor.current = first && item ? { id: item.id, start: first.start } : null;
+  });
 
   const stateKey = JSON.stringify(props.state);
   useEffect(() => {

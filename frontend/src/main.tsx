@@ -9,6 +9,7 @@ import "./styles/chips.css";
 import "./styles/overlays.css";
 import "./styles/page.css";
 import "./styles/beatsaver.css";
+import "./styles/preview.css";
 import "./styles/alerts.css";
 
 const root = document.getElementById("root");

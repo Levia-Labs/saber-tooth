@@ -1,13 +1,13 @@
 import * as Checkbox from "@radix-ui/react-checkbox";
 import type { BsMap } from "../../api/beatsaver";
 import { BS_TIPS } from "../../lib/bstips";
-import { formatBpm, formatDuration } from "../../lib/format";
+import { formatBpm, formatCount, formatDuration } from "../../lib/format";
 import { ActionButton } from "../Buttons";
+import { PreviewButton } from "../PreviewButton";
 import { Cover, LevelChips } from "../Chips";
 import { Icon } from "../icons";
 import { Tip } from "../Tip";
 import type { RowStatus } from "./downloads";
-import { PreviewButton } from "./Preview";
 
 interface Props {
   item: BsMap;
@@ -101,6 +101,7 @@ export function BsRow({ item, index, selected, status, onSelect, onDownload }: P
         <span className="bs-title" title={name}>
           {name}
         </span>
+        <PreviewButton src={item.preview_url} title={name} />
       </div>
       <div className="col-sub" role="cell">
         <div className="sub">
@@ -121,10 +122,11 @@ export function BsRow({ item, index, selected, status, onSelect, onDownload }: P
       <div className="col-rating num" role="cell">
         <Tip text={`Rated ${Math.round(item.rating * 100)} percent: ${votes}.`}>
           <span className="bs-rating">
-            <strong>{Math.round(item.rating * 100)}%</strong>
-            <span className="bs-votes">
-              {item.upvotes} / {item.downvotes}
-            </span>
+            <strong className="bs-ups">
+              <Icon name="thumb-up" />
+              <span>{formatCount(item.upvotes)}</span>
+            </strong>
+            <span className="bs-votes">{Math.round(item.rating * 100)}%</span>
           </span>
         </Tip>
       </div>
@@ -147,14 +149,10 @@ export function BsRow({ item, index, selected, status, onSelect, onDownload }: P
             disabled={blocked}
             onClick={() => onDownload(item.id)}
           />
-          {item.preview_url && <PreviewButton url={item.preview_url} name={name} />}
           <Tip text={BS_TIPS.open}>
             <a className="btn icon" href={href} target="_blank" rel="noopener noreferrer">
               <Icon name="external" />
               <span className="sr">{`Open ${name} on BeatSaver (new tab)`}</span>
-              <span className="short" aria-hidden="true">
-                Open
-              </span>
             </a>
           </Tip>
         </div>

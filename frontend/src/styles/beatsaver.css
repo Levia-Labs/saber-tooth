@@ -264,3 +264,21 @@
     gap: 0.5rem;
   }
 }
+.col-title:has(> .bs-title) {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+.col-title > .bs-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.bs-ups {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.bs-ups .ic {
+  width: 0.95em;
+  height: 0.95em;
+}

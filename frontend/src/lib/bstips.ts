@@ -24,7 +24,7 @@ export const BS_TIPS = {
   rating: "Only show maps rated at or above this percentage by players.",
   tags: "Show maps that have at least one of these tags.",
   tempo: "Limit by song length and beats per minute.",
-  sortRating: "Sort by player rating.",
+  sortRating: "Sorted by upvotes, then rating, among the maps loaded so far.",
   sortLength: "Sort by song length.",
   playlistOpen: "Open this playlist to browse its maps with the same filters.",
   downloadAll:

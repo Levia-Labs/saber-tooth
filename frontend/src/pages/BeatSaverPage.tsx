@@ -1,6 +1,7 @@
 import { useBsSearch } from "../api/beatsaver";
 import { BsResults } from "../components/beatsaver/BsResults";
 import { BsTabs } from "../components/beatsaver/BsTabs";
+import { bsSiteUrl } from "../lib/bsfilters";
 import { useDocumentTitle } from "../lib/hooks";
 import { useBsState } from "../lib/useBsState";
 
@@ -10,7 +11,12 @@ export function BeatSaverPage() {
   const query = useBsSearch(controls.state);
   return (
     <section className="library" aria-labelledby="bs-heading">
-      <BsTabs tab="maps" heading="BeatSaver" headingId="bs-heading" />
+      <BsTabs
+        tab="maps"
+        heading="BeatSaver"
+        headingId="bs-heading"
+        siteUrl={bsSiteUrl(controls.state)}
+      />
       <BsResults query={query} controls={controls} />
     </section>
   );
