@@ -15,7 +15,16 @@ from pathlib import Path, PurePosixPath
 
 # Any path component in this set removes the folder (and everything below it).
 EXCLUDED_PARTS = frozenset(
-    {".git", ".crepidoma", "node_modules", ".venv", "__pycache__", ".superpowers", ".ratchet"}
+    {
+        ".git",
+        ".crepidoma",
+        "node_modules",
+        ".venv",
+        "__pycache__",
+        ".superpowers",
+        ".ratchet",
+        ".worktrees",
+    }
 )
 
 # Fixture roots whose child folders are excluded: a README inside a map or analyser

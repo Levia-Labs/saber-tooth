@@ -7,7 +7,11 @@ vars:
 
 includes:
   claude: .crepidoma/taskfiles/claude
-  lint: .crepidoma/taskfiles/lint
+  lint:
+    taskfile: .crepidoma/taskfiles/lint
+    vars:
+      # Vite output and lane checkouts are not source; the shared eslint config cannot ignore them.
+      LINT_ESLINT: 'npx --no-install eslint --ignore-pattern ".worktrees/**" --ignore-pattern "src/saber_tooth/web/**"'
   repo: .crepidoma/taskfiles/repo
   todo: .crepidoma/taskfiles/todo
   git: .crepidoma/taskfiles/git

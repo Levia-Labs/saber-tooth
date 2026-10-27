@@ -8,6 +8,7 @@ Usage: uv run python scripts/gate.py [--only a,b] [--skip a,b] [--deep] [--list]
 
 import argparse
 import re
+import shutil
 import subprocess  # nosec B404 - argv lists from the constant table below, no shell
 import sys
 import time
@@ -31,6 +32,11 @@ ARGV: dict[str, list[str]] = {
 }
 STRONG_RE = re.compile(r"^(FAILED|FAIL |ERROR|E {2,})|Traceback|Blocking|error:")
 ERROR_RE = re.compile(r"error|fail|traceback", re.IGNORECASE)
+
+
+def resolve_argv(argv: list[str]) -> list[str]:
+    """Replace argv[0] with its full PATH match (npm is npm.cmd on Windows); keep it if absent."""
+    return [shutil.which(argv[0]) or argv[0], *argv[1:]]
 
 
 def select(
@@ -67,7 +73,7 @@ def run_gate(name: str, log_dir: Path = LOG_DIR, cwd: Path = ROOT) -> tuple[int,
     try:
         with path.open("w", encoding="utf-8") as fh:
             rc = subprocess.run(  # nosec B603 - constant argv table, no shell
-                ARGV[name], cwd=cwd, stdout=fh, stderr=subprocess.STDOUT, check=False
+                resolve_argv(ARGV[name]), cwd=cwd, stdout=fh, stderr=subprocess.STDOUT, check=False
             ).returncode
     except OSError as exc:
         path.write_text(f"error: cannot start {ARGV[name][0]}: {exc}\n", encoding="utf-8")

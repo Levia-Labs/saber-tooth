@@ -1,0 +1,9 @@
+{
+  "ignore": [
+    "**/.worktrees/**",
+    "**/.crepidoma/**",
+    "**/node_modules/**",
+    "**/.venv/**",
+    "src/saber_tooth/web/**"
+  ]
+}

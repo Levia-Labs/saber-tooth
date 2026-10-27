@@ -27,8 +27,10 @@ packages = ["src/saber_tooth"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+norecursedirs = [".worktrees", ".venv", "node_modules", ".crepidoma"]
 
 [tool.ruff]
 extend = ".crepidoma/configs/ruff.toml"
+extend-exclude = [".worktrees"]
 line-length = 100
 target-version = "py312"

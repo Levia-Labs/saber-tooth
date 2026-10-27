@@ -71,3 +71,9 @@ def test_run_all_pass():
 def test_main_rejects_unknown_gate(capsys):
     assert gate.main(["--only", "nope"]) == 2
     assert "unknown gate" in capsys.readouterr().err
+
+
+def test_resolve_argv_uses_which_and_falls_back(monkeypatch):
+    monkeypatch.setattr(gate.shutil, "which", lambda n: "C:/n/npm.cmd" if n == "npm" else None)
+    assert gate.resolve_argv(["npm", "run", "x"]) == ["C:/n/npm.cmd", "run", "x"]
+    assert gate.resolve_argv(["task", "y"]) == ["task", "y"]
