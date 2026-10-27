@@ -1,15 +1,18 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { lazy, Suspense, useEffect, useRef } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import { createBrowserRouter, Link, Outlet, useLocation, type RouteObject } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import { AnnouncerProvider } from "./components/Announcer";
 import { Logo } from "./components/Logo";
 import { TipProvider } from "./components/Tip";
+import { PageBoundary } from "./components/ErrorPanel";
+import { RouteError } from "./components/RouteError";
+import { lazyRoute } from "./lib/lazyRoute";
 import { LibraryPage } from "./pages/LibraryPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
-const MapPage = lazy(() => import("./pages/MapPage").then((m) => ({ default: m.MapPage })));
-const NewPage = lazy(() => import("./pages/NewPage").then((m) => ({ default: m.NewPage })));
+const MapPage = lazyRoute(() => import("./pages/MapPage").then((m) => ({ default: m.MapPage })));
+const NewPage = lazyRoute(() => import("./pages/NewPage").then((m) => ({ default: m.NewPage })));
 
 export function makeQueryClient(): QueryClient {
   return new QueryClient({
@@ -32,6 +35,7 @@ function useFocusHeading() {
 
 export function Shell() {
   useFocusHeading();
+  const { pathname } = useLocation();
   return (
     <div className="app">
       <a className="skip" href="#main">
@@ -47,9 +51,11 @@ export function Shell() {
       </header>
       <AnnouncerProvider>
         <main id="main" tabIndex={-1}>
-          <Suspense fallback={<p className="muted">Loading</p>}>
-            <Outlet />
-          </Suspense>
+          <PageBoundary resetKey={pathname}>
+            <Suspense fallback={<p className="muted">Loading</p>}>
+              <Outlet />
+            </Suspense>
+          </PageBoundary>
         </main>
       </AnnouncerProvider>
     </div>
@@ -59,11 +65,12 @@ export function Shell() {
 export const routes: RouteObject[] = [
   {
     element: <Shell />,
+    errorElement: <RouteError />,
     children: [
-      { path: "/", element: <LibraryPage /> },
-      { path: "/maps/:id", element: <MapPage /> },
-      { path: "/new", element: <NewPage /> },
-      { path: "*", element: <NotFoundPage /> },
+      { path: "/", element: <LibraryPage />, errorElement: <RouteError /> },
+      { path: "/maps/:id", element: <MapPage />, errorElement: <RouteError /> },
+      { path: "/new", element: <NewPage />, errorElement: <RouteError /> },
+      { path: "*", element: <NotFoundPage />, errorElement: <RouteError /> },
     ],
   },
 ];
