@@ -4,6 +4,7 @@ import type { Facets, MapItem } from "../api/types";
 import { useMediaQuery } from "../lib/hooks";
 import { useColumns } from "../lib/useColumns";
 import type { LibraryState } from "../lib/urlstate";
+import { Alert } from "./Alert";
 import { LibraryHeader } from "./LibraryHeader";
 import { LibraryRow } from "./LibraryRow";
 import { SkeletonRow } from "./SkeletonRow";
@@ -115,20 +116,36 @@ export function LibraryTable(props: Props) {
       </div>
       {empty && (
         <div className="lib-empty">
-          <p>{props.filtered ? "No maps match these filters." : "No maps found in the library."}</p>
-          {props.filtered && (
-            <button type="button" className="btn plain" onClick={props.onClear}>
-              Clear filters
-            </button>
-          )}
+          <Alert
+            variant="info"
+            title={props.filtered ? "No maps match these filters" : "No maps found"}
+            message={
+              props.filtered
+                ? "Loosen or clear the filters to see more maps."
+                : "Add map folders to the library, then scan them."
+            }
+            actions={
+              props.filtered ? (
+                <button type="button" className="btn plain" onClick={props.onClear}>
+                  Clear filters
+                </button>
+              ) : undefined
+            }
+          />
         </div>
       )}
       {nextFailed && (
         <div className="lib-more">
-          <p className="err">Could not load more maps.</p>
-          <button type="button" className="btn plain" onClick={onLoadMore}>
-            Load more
-          </button>
+          <Alert
+            variant="danger"
+            title="Could not load more maps"
+            message="Check your connection and try again."
+            actions={
+              <button type="button" className="btn plain" onClick={onLoadMore}>
+                Load more
+              </button>
+            }
+          />
         </div>
       )}
     </div>

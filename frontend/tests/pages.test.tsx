@@ -123,7 +123,7 @@ describe("routes", () => {
   test("the map page links back to the library with its filters", async () => {
     mapApi([]);
     const { router } = renderApp("/?status=error");
-    await screen.findByText("No maps match these filters.");
+    await screen.findByText("No maps match these filters");
     await router.navigate("/maps/id0000000001");
     const main = within(screen.getByRole("main"));
     const back = await main.findAllByRole("link", { name: /Library/ });

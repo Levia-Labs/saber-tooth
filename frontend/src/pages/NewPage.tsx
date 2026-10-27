@@ -112,7 +112,7 @@ export function NewPage() {
           disabled={gen.busy}
         />
       </form>
-      {gen.error && <p className="err">Generate failed: {gen.error}</p>}
+      {gen.error && <JobOutcome job={gen.job} error={gen.error} />}
       {gen.state === "done" && !mapId && <JobOutcome job={gen.job} error={null} />}
       {mapId && <Preview mapId={mapId} />}
     </section>
