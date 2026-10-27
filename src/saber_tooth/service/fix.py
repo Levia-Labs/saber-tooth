@@ -113,14 +113,14 @@ def fix_map(svc, map_id: str, max_rounds: int = MAX_ROUNDS) -> dict:
         report["difficulties"] = sorted(original.difficulties)
         return report
     run.fixed.info.song_name += SUFFIX
-    with svc._lock:
-        target = write_fixed(svc.levels, folder, run.fixed, folder.name + SUFFIX)
+    target = write_fixed(svc.levels, folder, run.fixed, folder.name + SUFFIX)
+    with svc._lock:  # short store mutations only; the slow re-index runs outside it
         ids = svc.store.add_proposals(map_id, [p.to_dict() for p in run.steps])
         svc.store.mark_applied(ids)
-        try:
-            svc.refresh_library()
-        except Exception:
-            log.exception("library refresh failed after fixing %s", map_id)
+    try:
+        svc.refresh_library()
+    except Exception:
+        log.exception("library refresh failed after fixing %s", map_id)
     written = svc._load(target)
     after = run_checks(written, analysis)
     report.update(
