@@ -11,5 +11,5 @@ Shared UI.
 7. `ProposalCard.tsx`, `ProposalGroups.tsx`, `TimelineCanvas.tsx`: proposed fixes with before and after note grids.
 8. `ConfirmDialog.tsx`, `JobOutcome.tsx`: confirmation dialog and the alert under a finished job.
 9. `beatsaver/`: the BeatSaver view: table, row, header, filter bodies, presets bar, selection bar, download hooks and playlist list.
-10. `Alert.tsx`: danger, warning, info and success alerts; `lib/alerts.ts` maps jobs and errors to them.
+10. `Alert.tsx`: danger, warning, info and success alerts; [alerts.ts](../lib/alerts.ts) maps jobs and errors to them.
 11. `Skeletons.tsx`: layout-matching loading placeholders for the map page and route fallback.
