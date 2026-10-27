@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { applyMap, scanMap } from "../api/client";
 import { markRunning } from "../api/queries";
 import type { MapItem } from "../api/types";
+import { formatEnvironment } from "../lib/environment";
 import { formatBpm, formatDuration } from "../lib/format";
 import { applyTip, TIPS } from "../lib/tips";
 import { mapName } from "../lib/status";
@@ -32,15 +33,24 @@ export function LibraryRow({ item, index }: { item: MapItem; index: number }) {
         <Link className="title-link" to={href} title={name}>
           {name}
         </Link>
+      </div>
+      <div className="col-sub" role="cell">
         <div className="sub">
-          {item.parse_error ? "Unreadable Info file" : item.mapper || "Unknown mapper"}
-          {item.environment && <span className="sub-env"> &middot; {item.environment}</span>}
+          {item.parse_error ? (
+            "Unreadable Info file"
+          ) : (
+            <span>{item.mapper || "Unknown mapper"}</span>
+          )}
+          {item.environment && <span> &middot; {formatEnvironment(item.environment)}</span>}
           <span className="sub-tempo">
             {" "}
             &middot; {formatDuration(item.duration_s)} &middot; {formatBpm(item.bpm)}
           </span>
         </div>
         <LevelChips names={item.difficulties} className="levels-inline" />
+      </div>
+      <div className="col-author" role="cell" title={item.mapper}>
+        {item.mapper}
       </div>
       <div className="col-levels" role="cell">
         <LevelChips names={item.difficulties} />
@@ -51,8 +61,8 @@ export function LibraryRow({ item, index }: { item: MapItem; index: number }) {
       <div className="col-bpm num" role="cell">
         {formatBpm(item.bpm)}
       </div>
-      <div className="col-env" role="cell" title={item.environment}>
-        {item.environment}
+      <div className="col-env" role="cell" title={formatEnvironment(item.environment)}>
+        {formatEnvironment(item.environment)}
       </div>
       <div className="col-status" role="cell">
         <StatusChip item={item} />

@@ -25,6 +25,7 @@ from saber_tooth.service.util import map_id_for
 from saber_tooth.service.verify import fixed_map, verify
 from saber_tooth.service.writeout import commit_staged, write_fixed
 from saber_tooth.store import Store
+from saber_tooth.store_maps import level_mask
 
 log = logging.getLogger(__name__)
 
@@ -98,7 +99,7 @@ class Service:
                 i = beatmap.info
                 self.store.upsert_map(
                     mid, folder.name, i.song_name, i.mapper, i.environment, None,
-                    i.bpm, _duration(folder, beatmap),
+                    i.bpm, _duration(folder, beatmap), level_mask(beatmap.difficulties),
                 )  # fmt: skip
             except (MapParseError, OSError) as exc:
                 self.store.upsert_map(mid, folder.name, folder.name, "", "", str(exc))

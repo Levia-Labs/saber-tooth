@@ -1,19 +1,24 @@
 import * as Checkbox from "@radix-ui/react-checkbox";
 import { useEffect, useId, useRef, useState } from "react";
-import type { Facets, StatusKey } from "../api/types";
+import { LEVEL_KEYS, type Facets, type LevelKey, type StatusKey } from "../api/types";
+import { formatEnvironment } from "../lib/environment";
+import { LEVELS } from "../lib/levels";
 import { STATUS_META, STATUS_ORDER } from "../lib/status";
-import { toggle } from "../lib/urlstate";
+import { toggle, type LevelMode } from "../lib/urlstate";
 import { Icon } from "./icons";
 
 export const SEARCH_DEBOUNCE_MS = 250;
 const ENV_SEARCH_MIN = 10;
 
-interface TitleProps {
+interface TextProps {
   q: string;
+  /** Visible label of the text box, e.g. "Title contains". */
+  label: string;
   onChange: (q: string, replace: boolean) => void;
 }
 
-export function TitleFilterBody({ q, onChange }: TitleProps) {
+/** Debounced "contains" text box shared by the Title and Author filters. */
+export function TextFilterBody({ q, label, onChange }: TextProps) {
   const [text, setText] = useState(q);
   const [emitted, setEmitted] = useState(q);
   const [seen, setSeen] = useState(q);
@@ -52,7 +57,7 @@ export function TitleFilterBody({ q, onChange }: TitleProps) {
   const id = useId();
   return (
     <div className="filter-body">
-      <label htmlFor={id}>Name or mapper</label>
+      <label htmlFor={id}>{label}</label>
       <div className="field">
         <Icon name="search" />
         <input
@@ -148,7 +153,10 @@ export function EnvFilterBody({ selected, facets, onChange }: EnvProps) {
   const all = facets?.environments ?? [];
   const names = [...new Set([...selected, ...all.map((e) => e.name)])];
   const counts = new Map(all.map((e) => [e.name, e.count]));
-  const shown = names.filter((n) => n.toLowerCase().includes(search.trim().toLowerCase()));
+  const needle = search.trim().toLowerCase();
+  const shown = names.filter(
+    (n) => n.toLowerCase().includes(needle) || formatEnvironment(n).toLowerCase().includes(needle),
+  );
   return (
     <div className="filter-body">
       {names.length > ENV_SEARCH_MIN && (
@@ -176,12 +184,110 @@ export function EnvFilterBody({ selected, facets, onChange }: EnvProps) {
               checked={selected.includes(name)}
               onToggle={() => onChange(toggle(selected, name))}
             >
-              {name}
+              {formatEnvironment(name)}
             </Box>
             <span className="count">{counts.get(name) ?? 0}</span>
           </div>
         ))}
         {!shown.length && <p className="muted">No environments.</p>}
+      </div>
+    </div>
+  );
+}
+
+interface MapperProps {
+  selected: string[];
+  facets: Facets | undefined;
+  onChange: (next: string[]) => void;
+}
+
+/** Searchable checklist of mapper names with map counts. */
+export function MapperListBody({ selected, facets, onChange }: MapperProps) {
+  const base = useId();
+  const [search, setSearch] = useState("");
+  const all = facets?.mappers ?? [];
+  const names = [...new Set([...selected, ...all.map((m) => m.name)])];
+  const counts = new Map(all.map((m) => [m.name, m.count]));
+  const needle = search.trim().toLowerCase();
+  const shown = names.filter((n) => n.toLowerCase().includes(needle));
+  return (
+    <div className="filter-body">
+      <div className="field">
+        <Icon name="search" />
+        <input
+          type="search"
+          aria-label="Search mappers"
+          value={search}
+          autoComplete="off"
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+      <div className="filter-actions">
+        <button type="button" className="btn plain" onClick={() => onChange([])}>
+          Clear
+        </button>
+      </div>
+      <div role="group" aria-label="Mapper" className="checks">
+        {shown.map((name, i) => (
+          <div className="check-row" key={name}>
+            <Box
+              id={`${base}-${i}`}
+              checked={selected.includes(name)}
+              onToggle={() => onChange(toggle(selected, name))}
+            >
+              {name}
+            </Box>
+            <span className="count">{counts.get(name) ?? 0}</span>
+          </div>
+        ))}
+        {!shown.length && <p className="muted">No mappers.</p>}
+      </div>
+    </div>
+  );
+}
+
+interface LevelsProps {
+  selected: LevelKey[];
+  mode: LevelMode;
+  facets: Facets | undefined;
+  onChange: (patch: { level?: LevelKey[]; levelMode?: LevelMode }) => void;
+}
+
+export function LevelsFilterBody({ selected, mode, facets, onChange }: LevelsProps) {
+  const base = useId();
+  return (
+    <div className="filter-body">
+      <div role="group" aria-label="Match" className="segmented">
+        {(["any", "all"] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            className="btn plain"
+            aria-pressed={mode === m}
+            onClick={() => onChange({ levelMode: m })}
+          >
+            {m === "any" ? "Any" : "All"}
+          </button>
+        ))}
+      </div>
+      <div className="filter-actions">
+        <button type="button" className="btn plain" onClick={() => onChange({ level: [] })}>
+          Clear
+        </button>
+      </div>
+      <div role="group" aria-label="Levels" className="checks">
+        {LEVEL_KEYS.map((key) => (
+          <div className="check-row" key={key}>
+            <Box
+              id={`${base}-${key}`}
+              checked={selected.includes(key)}
+              onToggle={() => onChange({ level: toggle(selected, key) })}
+            >
+              {LEVELS.find((l) => l.key === key)?.label ?? key}
+            </Box>
+            <span className="count">{facets?.levels?.[key] ?? 0}</span>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -9,6 +9,24 @@ STATUS_VALUES = (
 )  # fmt: skip
 STATUS_FILTERS = {"all", *STATUS_VALUES}
 MAX_ENVS = 50
+MAX_MAPPERS = 50
+LEVEL_NAMES = ("Easy", "Normal", "Hard", "Expert", "ExpertPlus")  # bit i of maps.levels
+LEVEL_MODES = ("any", "all")
+
+
+def level_mask(names) -> int:
+    """Bitmask of the known level names; unknown names are ignored."""
+    return sum(1 << i for i, n in enumerate(LEVEL_NAMES) if n in set(names))
+
+
+def _levels_bits(col: str = "levels") -> str:
+    return " + ".join(f"(({col} >> {i}) & 1)" for i in range(len(LEVEL_NAMES)))
+
+
+def _levels_height() -> str:
+    return " + ".join(f"(levels >= {1 << i})" for i in range(len(LEVEL_NAMES)))
+
+
 _STATUS_RANK = (
     "CASE status " + " ".join(f"WHEN '{v}' THEN {i}" for i, v in enumerate(STATUS_VALUES)) + " END"
 )
@@ -23,11 +41,13 @@ SORT_KEYS = {
     "scanned_at": "scanned_at IS NULL, scanned_at",
     "bpm": "bpm IS NULL, bpm",
     "duration": "duration_s IS NULL, duration_s",
+    # highest level present, then how many levels; maps without levels sort last either way
+    "levels": f"levels IS NULL OR levels = 0, ({_levels_height()}) * 8 + ({_levels_bits()})",
 }
 _TIE_BREAK = "lower(title) ASC, id ASC"
 _MAP_VIEW = """
 SELECT m.id, m.folder, m.title, m.mapper, m.environment, m.parse_error, s.scanned_at,
-  m.bpm, m.duration_s,
+  m.bpm, m.duration_s, m.levels,
   COALESCE((SELECT count(*) FROM json_each(s.keys_json)
             WHERE json_extract(value, '$.severity') = 'error'), 0) AS errors,
   COALESCE((SELECT count(*) FROM json_each(s.keys_json)
@@ -55,6 +75,8 @@ LEFT JOIN jobs j ON j.id = (
 _SEARCH = {
     "all": "instr(lower(title||char(10)||mapper||char(10)||environment||char(10)||folder), ?)>0",
     "name": "instr(lower(title||char(10)||mapper), ?)>0",
+    "title": "instr(lower(title), ?)>0",
+    "mapper": "instr(lower(mapper), ?)>0",
 }
 Q_FIELDS = {"title", "mapper"}
 
@@ -63,12 +85,20 @@ def _marks(n: int) -> str:
     return ",".join("?" * n)
 
 
-def _where(n_status: int, n_env: int, search: str | None) -> str:
+_LEVEL_WHERE = {"any": "(levels & ?) != 0", "all": "(levels & ?) = ?"}
+
+
+def _where(shape: tuple) -> str:
+    n_status, n_env, n_mapper, level_mode, search = shape
     parts = ["1=1"]
     if n_status:
         parts.append(f"status IN ({_marks(n_status)})")
     if n_env:
         parts.append(f"environment IN ({_marks(n_env)})")
+    if n_mapper:
+        parts.append(f"mapper IN ({_marks(n_mapper)})")
+    if level_mode:
+        parts.append(_LEVEL_WHERE[level_mode])
     if search:
         parts.append(_SEARCH[search])
     return "WHERE " + " AND ".join(parts)
@@ -77,22 +107,27 @@ def _where(n_status: int, n_env: int, search: str | None) -> str:
 # Statement text is assembled only from constants, whitelisted keys and runs of "?". Request input
 # never reaches SQL text: it selects a statement by key and travels as bound parameters.
 @functools.cache
-def _count_sql(n_status: int, n_env: int, search: str | None) -> str:
-    return f"SELECT count(*) FROM ({_MAP_VIEW}) {_where(n_status, n_env, search)}"  # noqa: S608
+def _count_sql(shape: tuple) -> str:
+    return f"SELECT count(*) FROM ({_MAP_VIEW}) {_where(shape)}"  # noqa: S608
 
 
 @functools.cache
-def _page_sql(n_status: int, n_env: int, search: str | None, key: str, direction: str) -> str:
+def _page_sql(shape: tuple, key: str, direction: str) -> str:
     order = SORT_KEYS[key]
     d = "DESC" if direction == "DESC" else "ASC"
     return (
-        f"SELECT * FROM ({_MAP_VIEW}) {_where(n_status, n_env, search)}"  # noqa: S608
+        f"SELECT * FROM ({_MAP_VIEW}) {_where(shape)}"  # noqa: S608
         f" ORDER BY {order} {d}, {_TIE_BREAK} LIMIT ? OFFSET ?"
     )
 
 
 _ONE_SQL = f"SELECT * FROM ({_MAP_VIEW}) WHERE id=?"  # noqa: S608
-_FACET_SQL = f"SELECT status, environment FROM ({_MAP_VIEW})"  # noqa: S608
+_FACET_SQL = f"SELECT status, environment, mapper, levels FROM ({_MAP_VIEW})"  # noqa: S608
+
+
+def _ranked(counts: dict[str, int]) -> list[dict]:
+    ordered = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0].lower(), kv[0]))
+    return [{"name": n, "count": c} for n, c in ordered]
 
 
 class MapQueries:
@@ -112,6 +147,9 @@ class MapQueries:
         status: tuple[str, ...] | str = (),
         env: tuple[str, ...] = (),
         q_fields: str = "all",
+        mapper: tuple[str, ...] = (),
+        level: tuple[str, ...] = (),
+        level_mode: str = "any",
     ) -> tuple[list[dict], int]:
         """One page of maps with counts and status, plus the total matching the filters."""
         statuses = (status,) if isinstance(status, str) else tuple(status)
@@ -119,37 +157,54 @@ class MapQueries:
             statuses = ()
         statuses = tuple(dict.fromkeys(statuses))
         envs = tuple(dict.fromkeys(env))
+        mappers = tuple(dict.fromkeys(mapper))
+        levels = tuple(dict.fromkeys(level))
         if (
             sort not in SORT_KEYS
             or order not in ("asc", "desc")
             or not set(statuses) <= set(STATUS_VALUES)
             or len(envs) > MAX_ENVS
             or q_fields not in _SEARCH
+            or len(mappers) > MAX_MAPPERS
+            or not set(levels) <= set(LEVEL_NAMES)
+            or level_mode not in LEVEL_MODES
         ):
-            raise ValueError("invalid sort, order, status, env or q_fields")
+            raise ValueError("invalid sort, order, status, env, mapper, level or q_fields")
         needle = q.strip().lower()
         search = q_fields if needle else None
-        args: list = [*statuses, *envs, *([needle] if needle else [])]
-        count = _count_sql(len(statuses), len(envs), search)
-        page = _page_sql(len(statuses), len(envs), search, sort, order.upper())
+        mask = level_mask(levels)
+        mode = level_mode if levels else None
+        mask_args = [] if not mode else [mask] if mode == "any" else [mask, mask]
+        args: list = [*statuses, *envs, *mappers, *mask_args, *([needle] if needle else [])]
+        shape = (len(statuses), len(envs), len(mappers), mode, search)
+        count = _count_sql(shape)
+        page = _page_sql(shape, sort, order.upper())
         with self._lock:
             total = self._db.execute(count, args).fetchone()[0]
             rows = self._db.execute(page, [*args, limit, offset]).fetchall()
         return [dict(r) for r in rows], int(total)
 
     def facets(self) -> dict:
-        """Counts per status and per environment over every map, ignoring any filter."""
+        """Counts per status, environment, mapper and level over every map, ignoring any filter."""
         rows = self._query(_FACET_SQL)
         status: dict[str, int] = {}
         envs: dict[str, int] = {}
+        mappers: dict[str, int] = {}
+        levels = dict.fromkeys(LEVEL_NAMES, 0)
         for r in rows:
             status[r["status"]] = status.get(r["status"], 0) + 1
             if r["environment"]:
                 envs[r["environment"]] = envs.get(r["environment"], 0) + 1
-        ordered = sorted(envs.items(), key=lambda kv: (-kv[1], kv[0].lower(), kv[0]))
+            if r["mapper"]:
+                mappers[r["mapper"]] = mappers.get(r["mapper"], 0) + 1
+            for i, name in enumerate(LEVEL_NAMES):
+                if (r["levels"] or 0) >> i & 1:
+                    levels[name] += 1
         return {
             "status": {v: status.get(v, 0) for v in STATUS_VALUES},
-            "environments": [{"name": n, "count": c} for n, c in ordered],
+            "environments": _ranked(envs),
+            "mappers": _ranked(mappers),
+            "levels": levels,
             "total": len(rows),
         }
 

@@ -1,3 +1,4 @@
+import { formatEnvironment } from "../lib/environment";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useParams } from "react-router";
@@ -70,7 +71,7 @@ export function MapPage() {
             </h1>
             <p className="sub">
               {map.data.mapper || "Unknown mapper"}
-              {map.data.environment ? ` - ${map.data.environment}` : ""}
+              {map.data.environment ? ` - ${formatEnvironment(map.data.environment)}` : ""}
             </p>
             <div className="metarow">
               <StatusChip item={map.data} />
