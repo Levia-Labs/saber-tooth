@@ -33,14 +33,17 @@ The design goals are flawless, flowing and atmospheric maps. See the [design spe
 1. Copy `.env.example` to `.env` and set `LEVELS_DIR` to your `CustomLevels` folder.
 2. Run `task st:up`.
 3. Open <http://127.0.0.1:8100>, or the port set in `SABER_PORT`.
-4. Run `task st:down` to stop.
-5. On Linux, set `PUID` and `PGID` in `.env` to the owner of `LEVELS_DIR` (default 1000). The container never changes ownership of `LEVELS_DIR`; it must be writable by that uid.
+4. Run `task st:stop` to pause (containers kept) and `task st:start` to resume. `task st:down` removes the containers; volumes and images stay.
+5. Agents can connect over MCP: `claude mcp add --transport http saber-tooth http://127.0.0.1:8100/mcp`. See [API](docs/api.md#mcp).
+6. On Linux, set `PUID` and `PGID` in `.env` to the owner of `LEVELS_DIR` (default 1000). The container never changes ownership of `LEVELS_DIR`; it must be writable by that uid.
 
 ## Common tasks
 
 | Task                                       | Purpose                                             |
 | ------------------------------------------ | --------------------------------------------------- |
-| `task st:up` / `task st:down`              | Build and start, or stop, the compose stack         |
+| `task st:up`                               | Build if needed and start; reuses cached layers     |
+| `task st:stop` / `task st:start`           | Pause or resume; containers and volumes kept        |
+| `task st:down`                             | Remove the containers; volumes and images kept      |
 | `task st:logs`                             | Show recent container logs                          |
 | `task st:test`                             | Run the pytest suite                                |
 | `task st:check -- <folder>`                | Run the quality checks on one map folder            |

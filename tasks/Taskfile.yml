@@ -19,10 +19,16 @@ tasks:
     desc: "Build lightshow templates. Usage: task st:learn -- <levels_dir> <out.json>"
     cmds: ["uv run saber-tooth learn {{.CLI_ARGS}}"]
   up:
-    desc: "Build and start the compose stack. Usage: task st:up"
+    desc: "Build if needed (cached layers reused) and start; keeps containers. Usage: task st:up"
     cmds: ["docker compose up -d --build"]
+  stop:
+    desc: "Stop the containers, keeping them and volumes. Usage: task st:stop"
+    cmds: ["docker compose stop"]
+  start:
+    desc: "Start stopped containers without rebuilding. Usage: task st:start"
+    cmds: ["docker compose start"]
   down:
-    desc: "Stop the compose stack. Usage: task st:down"
+    desc: "Remove the containers; volumes and images are kept. Usage: task st:down"
     cmds: ["docker compose down"]
   logs:
     desc: "Tail saber-tooth logs. Usage: task st:logs"

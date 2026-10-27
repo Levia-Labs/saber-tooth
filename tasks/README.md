@@ -9,7 +9,7 @@ Tasks:
 3. `st:survey`: read-only finding counts across a levels directory.
 4. `st:learn`: build lightshow templates from installed maps.
 5. `st:gen`: start a generation job from a URL.
-6. `st:up`, `st:down`, `st:logs`: manage the docker compose stack.
+6. `st:up`, `st:stop`, `st:start`, `st:down`, `st:logs`: manage the docker compose stack; only `st:down` removes containers.
 7. `st:readme-check`: folder README coverage, see [scripts](../scripts/README.md).
 8. `st:compose-check`: validate `docker-compose.yml`.
 
