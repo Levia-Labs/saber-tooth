@@ -73,7 +73,7 @@ export const LIMITS: Partial<Record<ColumnKey, { min: number; max: number }>> = 
 };
 
 /**
- * Default widths, sized for the compact chips (Levels: five 28px chips and four 3px gaps; Status:
+ * Default widths, sized for the compact cells (Levels: the 23-character text "Ea | No | Ha | Ex | Ex+"; Status:
  * icon-only chip) so that Title, the flexible track, gets the rest at every viewport width.
  */
 export const DEFAULTS: Record<Breakpoint, Record<string, number>> = {
@@ -81,7 +81,7 @@ export const DEFAULTS: Record<Breakpoint, Record<string, number>> = {
     cover: 56,
     title: 200,
     author: 120,
-    levels: 152,
+    levels: 140,
     length: 88,
     bpm: 80,
     env: 120,
@@ -92,7 +92,7 @@ export const DEFAULTS: Record<Breakpoint, Record<string, number>> = {
     cover: 56,
     title: 200,
     author: 120,
-    levels: 152,
+    levels: 140,
     length: 88,
     bpm: 80,
     status: 96,

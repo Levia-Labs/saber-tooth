@@ -89,35 +89,28 @@
 }
 
 .levels {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 3px;
+  display: inline-block;
   margin: 0;
   padding: 0;
-  list-style: none;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: pre;
+}
+.level-part {
+  white-space: pre;
 }
 .level {
-  box-sizing: border-box;
-  width: 28px;
-  padding: 0;
-  border: 1.5px solid;
-  border-radius: 999px;
-  background: transparent;
-  font-size: 0.68rem;
-  font-weight: 700;
-  line-height: 15px;
-  text-align: center;
-  white-space: nowrap;
+  background: none;
+  border: 0;
 }
 .level.missing {
-  border-style: dashed;
-  border-color: var(--muted);
   color: var(--muted);
-  opacity: 0.45;
+  font-weight: 400;
 }
-.level-text {
-  display: block;
-  border-radius: 999px;
+.level-sep {
+  color: var(--muted);
+  font-weight: 400;
 }
 
 .chip {

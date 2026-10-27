@@ -30,7 +30,10 @@ export function StatusChip({
   );
 }
 
-/** Outlined, abbreviated level chips; the full name and the NPS (when known) are in the Tip. */
+/**
+ * Plain-text level display "Ea | No | Ha | Ex | Ex+": present levels in their beatsaver colour,
+ * missing ones muted so gaps stay visible. The full name and the NPS (when known) are in the Tip.
+ */
 export function LevelChips({
   names,
   className,
@@ -42,33 +45,35 @@ export function LevelChips({
   nps?: Readonly<Record<string, number>>;
 }) {
   return (
-    <ul className={`levels ${className ?? ""}`.trim()} aria-label="Difficulties">
-      {levelSlots(names).map(({ level: l, present }) => {
-        if (!present) {
-          const gone = `Missing: ${l.label}`;
-          return (
-            <li key={l.key} className="level missing">
-              <Tip text={gone}>
-                <span className="level-text" role="img" aria-label={gone}>
-                  <span aria-hidden="true">{l.abbr}</span>
-                </span>
-              </Tip>
-            </li>
-          );
-        }
+    <span className={`levels ${className ?? ""}`.trim()} role="group" aria-label="Difficulties">
+      {levelSlots(names).map(({ level: l, present }, i) => {
         const rate = nps?.[l.key];
-        const full = rate === undefined ? l.label : `${l.label}, ${rate.toFixed(1)} NPS`;
+        const text = present
+          ? rate === undefined
+            ? l.label
+            : `${l.label}, ${rate.toFixed(1)} NPS`
+          : `Missing: ${l.label}`;
         return (
-          <li key={l.key} className="level" style={{ borderColor: l.bg, color: ringText(l.bg) }}>
-            <Tip text={full}>
-              <span className="level-text" role="img" aria-label={full}>
+          <span key={l.key} className="level-part">
+            {i > 0 && (
+              <span className="level-sep" aria-hidden="true">
+                {" | "}
+              </span>
+            )}
+            <Tip text={text}>
+              <span
+                className={present ? "level" : "level missing"}
+                style={present ? { color: ringText(l.bg) } : undefined}
+                role="img"
+                aria-label={text}
+              >
                 <span aria-hidden="true">{l.abbr}</span>
               </span>
             </Tip>
-          </li>
+          </span>
         );
       })}
-    </ul>
+    </span>
   );
 }
 

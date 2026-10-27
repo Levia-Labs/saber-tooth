@@ -42,10 +42,6 @@
   color: var(--muted);
   font-size: 0.9rem;
 }
-.col-levels .levels {
-  flex-wrap: wrap;
-  row-gap: 3px;
-}
 .num {
   font-variant-numeric: tabular-nums;
 }

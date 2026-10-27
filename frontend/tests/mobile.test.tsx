@@ -236,9 +236,10 @@ describe("icons and chips", () => {
     expect(css("chips.css")).toMatch(/\.chip\s*\{[^}]*min-width:\s*3\.6rem/);
   });
 
-  test("level chips are outlined with a narrow fixed width", () => {
-    expect(css("chips.css")).toMatch(
-      /\.level\s*\{[^}]*width:\s*28px[^}]*border:\s*1\.5px solid[^}]*background:\s*transparent/,
-    );
+  test("level text is borderless with muted separators and missing levels", () => {
+    const text = css("chips.css");
+    expect(text).toMatch(/\.level\s*\{[^}]*border:\s*0/);
+    expect(text).toMatch(/\.level\.missing\s*\{[^}]*color:\s*var\(--muted\)/);
+    expect(text).toMatch(/\.level-sep\s*\{[^}]*color:\s*var\(--muted\)/);
   });
 });
