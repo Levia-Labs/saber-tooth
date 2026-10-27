@@ -3,7 +3,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { bsKeys, deletePreset, savePreset, usePresets, type BsPreset } from "../../api/beatsaver";
 import { errorMessage } from "../../api/client";
-import { presetFilters, stateFromPreset, type BsState } from "../../lib/bsfilters";
+import {
+  DEFAULT_BS_STATE,
+  presetFilters,
+  stateFromPreset,
+  type BsState,
+} from "../../lib/bsfilters";
+import { describePreset } from "../../lib/presetdescribe";
 import { BS_TIPS } from "../../lib/bstips";
 import { Icon } from "../icons";
 import { Tip } from "../Tip";
@@ -12,6 +18,13 @@ interface Props {
   state: BsState;
   onApply: (next: BsState) => void;
 }
+
+/** The seeded preset's stored name is opaque; the bar shows a clearer one. */
+const DISPLAY_NAMES: Record<string, string> = {
+  "Gentle full-spread hits": "Easy-to-Hard gems",
+};
+export const presetLabel = (p: Pick<BsPreset, "name" | "seeded">) =>
+  (p.seeded && DISPLAY_NAMES[p.name]) || p.name;
 
 const same = (a: Record<string, string>, b: Record<string, string>) =>
   JSON.stringify(Object.entries(a).sort()) === JSON.stringify(Object.entries(b).sort());
@@ -37,8 +50,8 @@ function SavePreset({ state }: { state: BsState }) {
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Tip text={BS_TIPS.savePreset}>
         <Dialog.Trigger className="btn plain preset-save">
-          <Icon name="bookmark" />
-          <span className="label-hide-mobile">Save current filters</span>
+          <Icon name="bookmark-plus" />
+          <span className="label-hide-mobile">Save filters</span>
         </Dialog.Trigger>
       </Tip>
       <Dialog.Portal>
@@ -94,26 +107,31 @@ export function PresetsBar({ state, onApply }: Props) {
   const current = presetFilters(state);
   return (
     <div className="presets" role="group" aria-label="Saved filters">
+      <Tip text={BS_TIPS.savedSearches}>
+        <span className="presets-label">Saved searches</span>
+      </Tip>
       {orderPresets(presets.data ?? []).map((p) => {
         const active = same(presetFilters(stateFromPreset(p.filters)), current);
         return (
           <span key={p.id} className={`preset${active ? " active" : ""}`}>
-            <Tip text={BS_TIPS.applyPreset}>
+            <Tip
+              text={`${describePreset(p.filters)} ${active ? "Click to clear." : "Click to apply."}`}
+            >
               <button
                 type="button"
                 className="preset-apply"
                 aria-pressed={active}
-                onClick={() => onApply(stateFromPreset(p.filters))}
+                onClick={() => onApply(active ? DEFAULT_BS_STATE : stateFromPreset(p.filters))}
               >
-                <Icon name="bookmark" />
-                {p.name}
+                <Icon name="saved-filter" />
+                <span className="preset-name">{presetLabel(p)}</span>
               </button>
             </Tip>
             {!p.seeded && (
               <Tip text={BS_TIPS.deletePreset}>
                 <button type="button" className="preset-remove" onClick={() => remove.mutate(p.id)}>
                   <Icon name="reject" />
-                  <span className="sr">{`Delete saved filters ${p.name}`}</span>
+                  <span className="sr">{`Delete saved filters ${presetLabel(p)}`}</span>
                 </button>
               </Tip>
             )}

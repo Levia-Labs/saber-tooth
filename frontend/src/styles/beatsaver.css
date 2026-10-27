@@ -72,9 +72,22 @@
   font: inherit;
   cursor: pointer;
 }
+.presets-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
 .preset-apply {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   min-height: 40px;
   padding: 0 0.9rem;
+  line-height: 1;
+}
+.preset-apply .ic {
+  flex: none;
+  width: 18px;
+  height: 18px;
 }
 .preset.active .preset-apply {
   color: var(--blue);
@@ -90,6 +103,8 @@
   color: var(--red);
 }
 .preset-save {
+  display: inline-flex;
+  align-items: center;
   min-height: 40px;
 }
 .selection-bar,

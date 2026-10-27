@@ -139,6 +139,18 @@ const ICONS = {
     <path d="M7 11v9H4v-9zM7 11l4-7c1.7 0 2.5 1.2 2.2 2.8L12.8 9H19a2 2 0 0 1 2 2.3l-1 6.5A2 2 0 0 1 18 20H7" />
   ),
   bookmark: <path d="M7 4h10v16l-5-4-5 4z" />,
+  "bookmark-plus": (
+    <>
+      <path d="M6.5 4.2h11v15.8l-5.5-4-5.5 4z" />
+      <path d="M12 7.6v4.8M9.6 10h4.8" />
+    </>
+  ),
+  "saved-filter": (
+    <>
+      <path d="M3.8 5.2c5.4-.4 10.8-.4 16.2 0l-6.2 7v6.6l-3.6 1.8v-8.4z" />
+      <path d="M14.8 17.6l2 2 3.6-4" />
+    </>
+  ),
 } satisfies Record<string, ReactNode>;
 
 export type IconName = keyof typeof ICONS;

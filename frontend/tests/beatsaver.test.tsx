@@ -111,7 +111,7 @@ describe("BeatSaver view", () => {
     const { calls } = bsApi();
     const { router } = renderApp("/beatsaver");
     await screen.findByText("Song 1");
-    const chip = await screen.findByRole("button", { name: "Gentle full-spread hits" });
+    const chip = await screen.findByRole("button", { name: "Easy-to-Hard gems" });
     await userEvent.click(chip);
     await waitFor(() => expect(chip).toHaveAttribute("aria-pressed", "true"));
     const search = new URLSearchParams(router.state.location.search);
@@ -137,8 +137,8 @@ describe("BeatSaver view", () => {
     const names = within(group)
       .getAllByRole("button", { pressed: undefined })
       .map((b) => b.textContent);
-    expect(names.indexOf("Gentle full-spread hits")).toBeLessThan(names.indexOf("Mine"));
-    await userEvent.click(screen.getByRole("button", { name: "Save current filters" }));
+    expect(names.indexOf("Easy-to-Hard gems")).toBeLessThan(names.indexOf("Mine"));
+    await userEvent.click(screen.getByRole("button", { name: "Save filters" }));
     await userEvent.type(await screen.findByLabelText("Name"), "Ranked only");
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() =>

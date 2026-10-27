@@ -28,7 +28,7 @@ describe("icon-only row actions and icons", () => {
     bsApi();
     renderApp("/beatsaver");
     await screen.findByText("Song 1");
-    const save = screen.getByRole("button", { name: /Save current filters/ });
+    const save = screen.getByRole("button", { name: /Save filters/ });
     expect(save.querySelector("svg")).not.toBeNull();
     expect(save.querySelector(".label-hide-mobile")).not.toBeNull();
   });

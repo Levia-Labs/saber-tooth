@@ -14,7 +14,7 @@ export const BS_TIPS = {
     "Save the ticked maps as a playlist file in your game's Playlists folder, so the game lists them together.",
   clearSelection: "Untick every map.",
   savePreset: "Save the current filters under a name so you can apply them again with one click.",
-  applyPreset: "Apply this saved set of filters.",
+  savedSearches: "Filter sets you saved. Click one to apply it, click it again to clear it.",
   deletePreset: "Delete this saved set of filters. Maps are not affected.",
   moreFilters: "Open every filter: ranked, dates, order, and the ones in the column headers.",
   retry: "Ask BeatSaver again. Maps already shown stay in the list.",
