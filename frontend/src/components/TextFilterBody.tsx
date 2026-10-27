@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { ClearFilterButton, type RowClear } from "./ClearFilterButton";
 import { Icon } from "./icons";
 
 export const SEARCH_DEBOUNCE_MS = 250;
@@ -10,10 +11,12 @@ interface TextProps {
   /** Short hint inside the empty box, e.g. "Title". */
   placeholder?: string;
   onChange: (q: string, replace: boolean) => void;
+  /** Desktop popover: clear icon beside the input instead of the X inside it. onClear must clear the text itself (q = ""). */
+  rowClear?: RowClear;
 }
 
 /** Debounced "contains" text box shared by the Title and Author filters. */
-export function TextFilterBody({ q, label, placeholder, onChange }: TextProps) {
+export function TextFilterBody({ q, label, placeholder, onChange, rowClear }: TextProps) {
   const [text, setText] = useState(q);
   const [emitted, setEmitted] = useState(q);
   const [seen, setSeen] = useState(q);
@@ -49,35 +52,51 @@ export function TextFilterBody({ q, label, placeholder, onChange }: TextProps) {
       onChange(value, true);
     }, SEARCH_DEBOUNCE_MS);
   };
+  const wipe = () => {
+    clearTimeout(timer.current);
+    pending.current = null;
+    setText("");
+    setEmitted("");
+  };
+  const reset = () => {
+    wipe();
+    onChange("", true);
+  };
+  const input = (
+    <div className="field">
+      <input
+        type="text"
+        aria-label={label}
+        placeholder={placeholder}
+        value={text}
+        maxLength={200}
+        autoComplete="off"
+        onChange={(e) => change(e.target.value)}
+      />
+      {!rowClear && text && (
+        <button type="button" className="field-clear" aria-label="Clear" onClick={reset}>
+          <Icon name="reject" />
+        </button>
+      )}
+    </div>
+  );
   return (
     <div className="filter-body">
-      <div className="field">
-        <input
-          type="text"
-          aria-label={label}
-          placeholder={placeholder}
-          value={text}
-          maxLength={200}
-          autoComplete="off"
-          onChange={(e) => change(e.target.value)}
-        />
-        {text && (
-          <button
-            type="button"
-            className="field-clear"
-            aria-label="Clear"
-            onClick={() => {
-              clearTimeout(timer.current);
-              pending.current = null;
-              setText("");
-              setEmitted("");
-              onChange("", true);
+      {rowClear ? (
+        <div className="filter-row">
+          {input}
+          <ClearFilterButton
+            {...rowClear}
+            disabled={rowClear.disabled && !text}
+            onClear={() => {
+              wipe();
+              rowClear.onClear();
             }}
-          >
-            <Icon name="reject" />
-          </button>
-        )}
-      </div>
+          />
+        </div>
+      ) : (
+        input
+      )}
     </div>
   );
 }

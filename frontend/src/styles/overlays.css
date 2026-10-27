@@ -277,3 +277,24 @@
   color: var(--blue);
   border-color: var(--blue);
 }
+.filter-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.filter-row .field {
+  flex: 1;
+  min-width: 0;
+}
+.filter-row .segmented {
+  flex: 1;
+}
+.filter-row .clear-filter {
+  flex: none;
+}
+.filter-actions:has(.clear-filter) {
+  justify-content: space-between;
+}
+.filter-actions.end {
+  justify-content: flex-end;
+}
