@@ -11,7 +11,7 @@ from saber_tooth.fixer.verify import Context, Strategy
 from saber_tooth.fixer.wall_fixes import wall_short, wall_trap
 from saber_tooth.generator.candidates import build_candidates, phase_of
 from saber_tooth.model import OPPOSITE, Cut, Note
-from saber_tooth.swings import Swing
+from saber_tooth.swings import Swing, build_swings
 
 SCORE_TOLERANCE_BEATS = 0.05
 
@@ -88,6 +88,20 @@ def swing_speed(ctx: Context) -> Iterator[list[Op]]:
             for n in single:
                 yield [Delete(ctx.d.name, n)]
         yield [Delete(ctx.d.name, n) for n in s.notes]
+    yield from _run_deletes(ctx, first)
+
+
+def _run_deletes(ctx: Context, first: Swing) -> Iterator[list[Op]]:
+    """Runs of one hand's swings: removing one swing of a fast chain only shifts the problem."""
+    hand = build_swings(ctx.d.notes, ctx.timing)[first.hand]
+    i = next((k for k, s in enumerate(hand) if s.notes == first.notes), None)
+    if i is None:
+        return
+    for size in (2, 3, 4, 5):
+        for start in range(max(0, i - size + 2), i + 1):
+            window = hand[start : start + size]
+            if len(window) == size:
+                yield [Delete(ctx.d.name, n) for s in window for n in s.notes]
 
 
 STRATEGIES: dict[str, Strategy] = {
