@@ -16,7 +16,7 @@ from saber_tooth.generator import (
 )
 from saber_tooth.generator.motifs import BLUE_MOTIFS, RED_MOTIFS
 from saber_tooth.model import CUT_VECTORS, DIFFICULTIES, BpmEvent, Color, Cut, Difficulty
-from saber_tooth.profiles import PROFILES
+from saber_tooth.profiles import PROFILES, WALL_TIERS
 from saber_tooth.swings import build_swings
 from saber_tooth.timing import Timing
 
@@ -100,7 +100,8 @@ def test_flow_parity_hands_and_no_dots():
     a = synth(128, 90, 0.0)
     timing, diffs = generate_all(a, 11)
     for name, d in diffs.items():
-        assert d.njs == PROFILES[name].njs and not d.bombs and not d.walls
+        assert d.njs == PROFILES[name].njs and not d.bombs
+        assert d.walls == [] or name in WALL_TIERS
         assert all(n.cut != Cut.ANY for n in d.notes)
         assert all((n.x <= 1) == (n.color == Color.RED) for n in d.notes)
         for swings in build_swings(d.notes, timing).values():

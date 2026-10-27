@@ -62,9 +62,17 @@ def test_walls_are_deterministic_per_seed():
     assert all(one[n].walls == two[n].walls for n in DIFFICULTIES)
 
 
-def test_uniform_song_gets_no_walls():
-    _, diffs = generate_all(realistic(140), 1)
-    assert all(d.walls == [] for d in diffs.values())
+def test_uniform_song_gets_sparse_phrase_boundary_walls():
+    a = realistic(140)
+    timing, diffs = generate_all(a, 1)
+    assert diffs["Easy"].walls == [] and diffs["Normal"].walls == []
+    for name in ("Hard", "Expert", "ExpertPlus"):
+        d = diffs[name]
+        assert d.walls, name
+        assert check_difficulty(d, timing, PROFILES[name], a) == []
+        for w in d.walls:
+            assert w.x in (0, 3) and w.duration <= 2 and w.beat % 32 < 4
+        assert all(b.beat - a_.beat >= 24 for a_, b in pairwise(d.walls))
 
 
 def test_crouch_wall_needs_a_build_up_and_empty_lanes():
