@@ -110,6 +110,7 @@ def register(app: FastAPI, api: Api, web: Path) -> None:
 
     @app.get("/maps/{map_id}", include_in_schema=False)
     @app.get("/new", include_in_schema=False)
+    @app.get("/about", include_in_schema=False)
     @app.get("/beatsaver", include_in_schema=False)
     @app.get("/beatsaver/playlists", include_in_schema=False)
     @app.get("/beatsaver/playlists/{map_id}", include_in_schema=False)

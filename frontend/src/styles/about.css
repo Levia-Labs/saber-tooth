@@ -1,0 +1,52 @@
+.about {
+  max-width: 70ch;
+  margin: 0 auto;
+  padding: 1.5rem 0.25rem 2rem;
+  line-height: 1.6;
+}
+.about h1 {
+  margin: 0.8rem 0 0.6rem;
+}
+.about h2 {
+  margin: 1.6rem 0 0.4rem;
+}
+.about ol,
+.about ul {
+  padding-left: 1.4rem;
+  margin: 0.4rem 0;
+}
+.about li + li {
+  margin-top: 0.3rem;
+}
+.about-lead {
+  color: var(--ink);
+}
+.about a {
+  color: var(--blue);
+}
+.about-links {
+  list-style: none;
+  padding-left: 0;
+}
+.about-version {
+  margin-top: 2rem;
+}
+.about-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 40px;
+  padding: 0 0.6rem;
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 600;
+}
+.about-link:hover,
+.about-link[aria-current="page"] {
+  color: var(--ink);
+}
+@media (max-width: 719px) {
+  .about-label {
+    display: none;
+  }
+}

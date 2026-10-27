@@ -6,7 +6,7 @@ from tests.test_api import svc  # noqa: F401
 
 
 @pytest.mark.parametrize(
-    "path", ["/beatsaver", "/beatsaver/playlists", "/beatsaver/playlists/52354", "/new"]
+    "path", ["/beatsaver", "/beatsaver/playlists", "/beatsaver/playlists/52354", "/new", "/about"]
 )
 def test_client_routes_serve_the_shell_on_reload(svc, tmp_path, path):  # noqa: F811
     web = tmp_path / "web"
