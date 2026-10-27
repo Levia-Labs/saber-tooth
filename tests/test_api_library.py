@@ -1,9 +1,23 @@
 # ruff: noqa: F811
 import pytest
+from fastapi.testclient import TestClient
 
-from saber_tooth.api import WEB
+from saber_tooth.api import create_app
 from saber_tooth.api.library import MAX_COVER_BYTES, parse_query
 from tests.test_api import MID, NAME, client, svc  # noqa: F401
+
+
+@pytest.fixture
+def web_client(svc, tmp_path):
+    """Client over a stand-in build output, so tests do not need `task st:web:build`."""
+    web = tmp_path / "web"
+    (web / "assets").mkdir(parents=True)
+    (web / "index.html").write_text("<!doctype html><title>saber-tooth</title>", encoding="utf-8")
+    (web / "favicon.svg").write_text("<svg xmlns='http://www.w3.org/2000/svg'/>", encoding="utf-8")
+    (web / "assets" / "index-abc12345.js").write_text("export {};", encoding="utf-8")
+    with TestClient(create_app(svc, web=web), base_url="http://localhost") as c:
+        c.web = web  # type: ignore[attr-defined]
+        yield c
 
 
 def test_item_has_difficulties_status_and_cover(client):
@@ -111,15 +125,17 @@ def test_cover_is_case_insensitive_match_inside_folder(client, svc):
     assert client.get(f"/api/maps/{MID}/cover").status_code == 200
 
 
-def test_spa_routes_serve_index(client):
-    index = (WEB / "index.html").read_bytes()
+def test_spa_routes_serve_index(web_client):
+    client = web_client
+    index = (client.web / "index.html").read_bytes()
     for path in (f"/maps/{MID}", "/maps/staging:abc", "/new"):
         resp = client.get(path)
         assert resp.status_code == 200 and resp.content == index
         assert resp.headers["content-type"].startswith("text/html")
 
 
-def test_spa_does_not_shadow_api_mcp_or_static(client):
+def test_spa_does_not_shadow_api_mcp_or_static(web_client):
+    client = web_client
     unknown = client.get("/api/nope")
     assert unknown.status_code == 404 and unknown.json() == {"error": "not found"}
     assert client.get("/api/maps/x/y/z").status_code == 404
@@ -152,8 +168,8 @@ def test_item_counts_approved_and_pending_proposals(client, svc):
     assert client.get("/api/maps").json()["items"][0]["approved"] == 1
 
 
-def test_every_web_file_is_served(client):
-    for path in WEB.iterdir():
+def test_every_web_file_is_served(web_client):
+    for path in web_client.web.rglob("*"):
         if path.is_file():
-            resp = client.get(f"/{path.name}")
+            resp = web_client.get("/" + path.relative_to(web_client.web).as_posix())
             assert resp.status_code == 200 and resp.content == path.read_bytes(), path.name

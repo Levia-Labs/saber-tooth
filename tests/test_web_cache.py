@@ -42,3 +42,9 @@ def test_other_static_files_are_revalidated(client):
 def test_missing_asset_is_404_without_immutable_header(client):
     resp = client.get("/assets/missing.js")
     assert resp.status_code == 404 and "immutable" not in resp.headers.get("cache-control", "")
+
+
+def test_static_frontend_is_mounted_at_root(client):
+    assert "saber-tooth" not in client.get("/missing.js").text
+    assert client.get("/missing.js").status_code == 404
+    assert "<title>x</title>" in client.get("/").text

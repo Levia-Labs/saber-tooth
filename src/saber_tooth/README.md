@@ -10,7 +10,7 @@ Subpackages:
 4. [generator/](generator/README.md): rule-based note placement.
 5. [lightshow/](lightshow/README.md): learn and apply lightshow templates.
 6. [service/](service/README.md): library refresh, scan, generate, apply and learn.
-7. [web/](web/README.md): static browser UI.
+7. [web/](web/README.md): build output of the browser UI from [frontend](../../frontend/README.md).
 
 Top-level modules:
 

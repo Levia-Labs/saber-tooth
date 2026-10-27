@@ -3,12 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:js": "node --test \"tests/js/**/*.test.mjs\"",
     "web:dev": "npm --prefix frontend run dev",
     "web:build": "npm --prefix frontend run build",
     "web:test": "npm --prefix frontend run test",
-    "web:lint": "npm --prefix frontend run lint",
-    "lint:js": "eslint --config .crepidoma/configs/eslint.config.js src/saber_tooth/web"
+    "web:lint": "npm --prefix frontend run lint"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

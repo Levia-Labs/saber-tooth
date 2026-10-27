@@ -1,6 +1,6 @@
 # Architecture
 
-saber-tooth is one Python 3.12 process. FastAPI runs under uvicorn and serves the static frontend, a job worker runs in the same process, and state sits in SQLite.
+saber-tooth is one Python 3.12 process. FastAPI runs under uvicorn and serves the built frontend, a job worker runs in the same process, and state sits in SQLite.
 
 ## Quality bar
 
@@ -36,7 +36,7 @@ The package is `src/saber_tooth/`. Each file stays under 300 lines. Larger parts
 8. `service`: library refresh, scan, generate, apply and learn, over the store. The library is indexed at start and again whenever the set of folders under `/levels` changes, which `GET /api/maps` checks before it answers. Applying a map also refreshes it.
 9. `jobs`: in-process worker with one thread. A job ends `done` or `failed`; a failed apply stores the conflicting proposal ids in its result.
 10. `api`: FastAPI routes, described in [api.md](api.md). Every request whose `Host` is not `127.0.0.1`, `localhost`, `[::1]` (any port) or a name listed in the comma-separated `SABER_ALLOWED_HOSTS` gets 403, which stops DNS rebinding. Unsafe methods carrying an `Origin` header that differs from the host also get 403. Forwarded headers count only from single peer addresses listed in `SABER_TRUSTED_PROXY_IPS` (rightmost value, direct `Host` must also be allowed, the proxy must overwrite them; see [ADR 0009](adr/0009-configurable-user-and-proxy-trust.md)). Ids are matched against fixed patterns before any lookup.
-11. `web`: static HTML and vanilla JS with a library view, a map detail view with findings and proposals, a before and after note timeline on a canvas, and a new-map form.
+11. `web`: build output of the React + TypeScript + Vite app in `frontend/` ([ADR 0011](adr/0011-react-typescript-vite-frontend.md)): a virtualised library with column filters and live job status, a map page with findings and proposals, a before and after note timeline on a canvas, and a generate page. Only its README is tracked; `task st:web:build` or the Docker `web` stage writes the bundle, and `/assets/*` is served `immutable` while `index.html` is `no-cache`.
 
 ## Check rules
 

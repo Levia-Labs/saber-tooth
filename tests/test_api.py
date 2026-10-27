@@ -240,12 +240,6 @@ def test_learn_job(client):
     assert job["status"] == "done" and "units" in job["result"]
 
 
-def test_static_frontend(client):
-    assert "saber-tooth" in client.get("/").text.lower()
-    assert client.get("/favicon.svg").status_code == 200
-    assert client.get("/app.js").status_code == 200
-
-
 def test_staged_proposal_view_hides_path(client, svc, tmp_path):
     token = "c" * 32
     staging = svc.data / "staging" / token

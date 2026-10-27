@@ -72,4 +72,4 @@ def test_foreign_host_is_rejected(svc):
 
 def test_rest_routes_unaffected(client):
     assert client.get("/api/maps").status_code == 200
-    assert client.get("/").status_code == 200
+    assert client.get("/api/maps/facets").status_code == 200

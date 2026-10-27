@@ -3,9 +3,6 @@ tasks:
   test:
     desc: "Run the pytest suite. Usage: task st:test [-- <pytest args>]"
     cmds: ["uv run pytest -q {{.CLI_ARGS}}"]
-  js-test:
-    desc: "Run the node:test suite for web JS. Usage: task st:js-test"
-    cmds: ["npm run test:js"]
   web:install:
     desc: "Install the frontend dependencies from the lockfile. Usage: task st:web:install"
     dir: "{{.ROOT_DIR}}"
