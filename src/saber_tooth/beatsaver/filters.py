@@ -19,6 +19,7 @@ class LocalFilter:
     nps_scope: Literal["any", "all"] = "any"
     characteristic: str = "Standard"
     min_rating: float | None = None
+    min_upvotes: int | None = None
 
     def _chosen(self, m: BsMap) -> list[BsDiff]:
         return [d for d in m.diffs if d.characteristic == self.characteristic]
@@ -30,6 +31,8 @@ class LocalFilter:
 
     def matches(self, m: BsMap) -> bool:
         if self.min_rating is not None and m.score < self.min_rating:
+            return False
+        if self.min_upvotes is not None and m.upvotes < self.min_upvotes:
             return False
         chosen = self._chosen(m)
         if self.diffs:
@@ -54,6 +57,7 @@ class ServerQuery:
     q: str = ""
     tags: tuple[str, ...] = ()
     min_rating: float | None = None
+    min_upvotes: int | None = None
     order: str = "Rating"
     ascending: bool = False
     ranked: bool = False
@@ -78,6 +82,8 @@ class ServerQuery:
             params["tags"] = "|".join(self.tags)
         if self.min_rating is not None:
             params["minRating"] = _num(self.min_rating)
+        if self.min_upvotes is not None:
+            params["minUpVotes"] = str(self.min_upvotes)
         if self.ranked:
             params["leaderboard"] = "Ranked"
         optional = {

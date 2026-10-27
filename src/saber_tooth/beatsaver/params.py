@@ -10,12 +10,14 @@ from saber_tooth.beatsaver.filters import DIFFICULTIES, ORDERS, LocalFilter, Ser
 from saber_tooth.beatsaver.search import parse_cursor
 
 FILTER_KEYS = frozenset({
-    "q", "tags", "min_rating", "nps_min", "nps_max", "nps_scope", "diffs", "diffs_mode",
+    "q", "tags", "min_rating", "min_upvotes",
+    "nps_min", "nps_max", "nps_scope", "diffs", "diffs_mode",
     "ranked", "order", "ascending", "from", "to", "bpm_min", "bpm_max", "duration_min",
     "duration_max",
 })  # fmt: skip
 MAX_Q = 200
 MAX_TAGS = 30
+MAX_UPVOTES = 1_000_000
 DEFAULT_LIMIT = 40
 _TAG = re.compile(r"[a-z0-9][a-z0-9 _.+-]{0,39}")
 _DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
@@ -93,6 +95,9 @@ def parse_filters(params: dict[str, str]) -> tuple[ServerQuery, LocalFilter]:
     mode = _choice(params.get("diffs_mode"), "diffs_mode", ("all", "any"), "all")
     scope = _choice(params.get("nps_scope"), "nps_scope", ("any", "all"), "any")
     rating = _number(params.get("min_rating"), "min_rating", 0, 1)
+    upvotes = _number(params.get("min_upvotes"), "min_upvotes", 0, MAX_UPVOTES)
+    if upvotes is not None and not upvotes.is_integer():
+        raise ValueError("min_upvotes must be an integer from 0 to 1000000")
     nps_min, nps_max = _range(params, "nps_min", "nps_max", 30)
     bpm_min, bpm_max = _range(params, "bpm_min", "bpm_max", 1000)
     dur_min, dur_max = _range(params, "duration_min", "duration_max", 7200)
@@ -104,6 +109,7 @@ def parse_filters(params: dict[str, str]) -> tuple[ServerQuery, LocalFilter]:
         q=q,
         tags=tags,
         min_rating=rating,
+        min_upvotes=None if upvotes is None else int(upvotes),
         order=_choice(params.get("order"), "order", ORDERS, "Rating"),
         ascending=_flag(params.get("ascending"), "ascending"),
         ranked=_flag(params.get("ranked"), "ranked"),
@@ -124,6 +130,7 @@ def parse_filters(params: dict[str, str]) -> tuple[ServerQuery, LocalFilter]:
         nps_max=nps_max,
         nps_scope=cast(Literal["any", "all"], scope),
         min_rating=rating,
+        min_upvotes=None if upvotes is None else int(upvotes),
     )
     return server, local
 
