@@ -6,6 +6,8 @@ import { AnnouncerProvider } from "./components/Announcer";
 import { Logo } from "./components/Logo";
 import { TipProvider } from "./components/Tip";
 import { LibraryPage } from "./pages/LibraryPage";
+import { MapPage } from "./pages/MapPage";
+import { NewPage } from "./pages/NewPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
 export function makeQueryClient(): QueryClient {
@@ -56,6 +58,8 @@ export const routes: RouteObject[] = [
     element: <Shell />,
     children: [
       { path: "/", element: <LibraryPage /> },
+      { path: "/maps/:id", element: <MapPage /> },
+      { path: "/new", element: <NewPage /> },
       { path: "*", element: <NotFoundPage /> },
     ],
   },

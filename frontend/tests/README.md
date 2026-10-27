@@ -7,3 +7,5 @@ Vitest suites run with `task st:web:test`.
 3. `urlstate.test.ts`: URL and API parameter encoding, sort rules and property tests.
 4. `formatting.test.tsx`: formatters, level chips and contrast, status chips and tooltip copy.
 5. `library.test.tsx`: skeleton rows, rows, filters, popover keyboard use and live status.
+6. `timeline.test.ts`: note grid and wall geometry.
+7. `pages.test.tsx`: map page, approve flows, generate form, 404 and back link.

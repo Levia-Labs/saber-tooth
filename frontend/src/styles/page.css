@@ -1,0 +1,140 @@
+.page h2 {
+  margin: 1.25rem 0 0.5rem;
+  font-size: 1.15rem;
+}
+.group-title {
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 500;
+}
+.maphead {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 0.5rem 0 1rem;
+}
+.mapmeta {
+  min-width: 0;
+  flex: 1 1 18rem;
+}
+.sub {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.metarow {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+.tempo {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+.map-actions,
+.row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.map-actions {
+  flex-basis: 100%;
+}
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--muted);
+  border-radius: var(--radius);
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.9rem;
+}
+.card.sev-error {
+  border-left-color: var(--red);
+}
+.card.sev-warning {
+  border-left-color: var(--amber);
+}
+.card.st-approved {
+  border-left-color: var(--green);
+}
+.card.st-rejected {
+  opacity: 0.6;
+}
+.card header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.card-title {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.badge {
+  font-size: 0.75rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  color: var(--muted);
+}
+.timeline {
+  width: 100%;
+  display: block;
+  margin-top: 0.7rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+}
+.result {
+  margin: 1rem 0;
+  padding: 0.8rem 1rem;
+  border-radius: var(--radius);
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.gen-form {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+  max-width: 34rem;
+  margin: 1rem 0;
+}
+.gen-form label {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.gen-form input[type="url"] {
+  width: 100%;
+}
+.gen-form input[type="file"] {
+  color: var(--muted);
+}
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 41;
+  width: min(26rem, calc(100vw - 2rem));
+  transform: translate(-50%, -50%);
+  padding: 1.25rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.55);
+}
+.modal h2 {
+  margin: 0 0 0.5rem;
+}
+.modal p {
+  margin: 0 0 1rem;
+  color: var(--muted);
+}
+.modal .row {
+  justify-content: flex-end;
+}

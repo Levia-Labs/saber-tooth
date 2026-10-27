@@ -7,6 +7,7 @@ import "./styles/library.css";
 import "./styles/rows.css";
 import "./styles/chips.css";
 import "./styles/overlays.css";
+import "./styles/page.css";
 
 const root = document.getElementById("root");
 if (!root) throw new Error("missing #root");

@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { learnLightshows } from "../api/client";
+import { errorMessage, learnLightshows } from "../api/client";
 import { useFacets, useLibrary, useLiveRows } from "../api/queries";
 import { useJobRunner } from "../api/jobs";
 import type { SortKey } from "../api/types";
@@ -91,10 +91,7 @@ export function LibraryPage() {
       </div>
       {library.isError && !library.data ? (
         <div className="lib-empty">
-          <p className="err">
-            Could not load the library:{" "}
-            {library.error instanceof Error ? library.error.message : "unknown error"}
-          </p>
+          <p className="err">Could not load the library: {errorMessage(library.error)}</p>
           <button type="button" className="btn plain" onClick={() => void library.refetch()}>
             Try again
           </button>

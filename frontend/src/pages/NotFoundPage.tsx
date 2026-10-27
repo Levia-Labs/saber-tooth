@@ -1,10 +1,17 @@
 import { Link } from "react-router";
 import { Icon } from "../components/icons";
-import { useDocumentTitle } from "../lib/hooks";
-import { libraryHref } from "../lib/hooks";
+import { libraryHref, useDocumentTitle } from "../lib/hooks";
 
-export function NotFoundPage() {
-  useDocumentTitle("Page not found");
+interface Props {
+  title?: string;
+  detail?: string;
+}
+
+export function NotFoundPage({
+  title = "Page not found",
+  detail = "There is nothing at this address.",
+}: Props) {
+  useDocumentTitle(title);
   return (
     <section className="page">
       <Link className="back" to={libraryHref()}>
@@ -12,9 +19,9 @@ export function NotFoundPage() {
         Library
       </Link>
       <h1 tabIndex={-1} data-page-heading>
-        Page not found
+        {title}
       </h1>
-      <p className="muted">There is nothing at this address.</p>
+      <p className="muted">{detail}</p>
     </section>
   );
 }

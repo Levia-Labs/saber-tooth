@@ -43,6 +43,10 @@ async function request<T>(
 
 const seg = encodeURIComponent;
 
+export function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : "unknown error";
+}
+
 export const LIBRARY_PAGE_SIZE = 40;
 
 export function listMaps(
