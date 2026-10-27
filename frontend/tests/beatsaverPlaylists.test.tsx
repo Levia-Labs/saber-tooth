@@ -3,11 +3,12 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, test } from "vitest";
 import type { BsPlaylist } from "../src/api/beatsaver";
 import { bsMap } from "./bshelpers";
+import { bsPlaylist } from "./plhelpers";
 import { mockFetch, renderApp } from "./helpers";
 
 const PLAYLISTS: BsPlaylist[] = [
-  { id: "p1", name: "Gentle electronic", owner: "Alice", cover_url: null, map_count: 12 },
-  { id: "p2", name: "Rock set", owner: "Bob", cover_url: null, map_count: 1, curated: true },
+  bsPlaylist("p1", { name: "Gentle electronic", owner: "Alice", map_count: 12 }),
+  bsPlaylist("p2", { name: "Rock set", owner: "Bob", map_count: 1, curated: true }),
 ];
 
 function api(extra?: { maps?: (url: URL) => unknown }) {
@@ -50,8 +51,10 @@ describe("BeatSaver playlists tab", () => {
     renderApp("/beatsaver/playlists");
     const link = await screen.findByRole("link", { name: "Gentle electronic" });
     expect(link).toHaveAttribute("href", "/beatsaver/playlists/p1");
-    expect(screen.getByText(/Bob/)).toHaveTextContent("1 map");
-    await userEvent.type(screen.getByLabelText("Search playlists"), "rock");
+    expect(screen.getByText("Bob", { selector: ".col-author" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Filter Name" }));
+    await userEvent.type(await screen.findByLabelText("Search playlists"), "rock");
+    await userEvent.click(screen.getByRole("button", { name: "Close filter" }));
     await waitFor(() =>
       expect(screen.queryByRole("link", { name: "Gentle electronic" })).toBeNull(),
     );

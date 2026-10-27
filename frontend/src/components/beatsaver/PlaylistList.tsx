@@ -1,80 +1,146 @@
 import type { InfiniteData, UseInfiniteQueryResult } from "@tanstack/react-query";
-import { Link } from "react-router";
-import type { BsPlaylist, BsPlaylistPage } from "../../api/beatsaver";
-import { errorMessage } from "../../api/client";
-import { BS_TIPS } from "../../lib/bstips";
-import { plural } from "../../lib/format";
-import { Cover } from "../Chips";
+import { useCallback, useMemo, useRef, useState } from "react";
+import {
+  getPlaylistMaps,
+  type BsMap,
+  type BsPlaylist,
+  type BsPlaylistPage,
+} from "../../api/beatsaver";
+import { DEFAULT_BS_STATE } from "../../lib/bsfilters";
+import { errorToAlert } from "../../lib/alerts";
+import { useMediaQuery } from "../../lib/hooks";
+import { PL_COLUMNS } from "../../lib/plcolumns";
+import { isPlDefault, viewPlaylists } from "../../lib/plfilters";
+import { PL_TIPS } from "../../lib/pltips";
+import type { PlControls } from "../../lib/usePlState";
+import { useColumns } from "../../lib/useColumns";
+import { SpecAlert } from "../Alert";
 import { Icon } from "../icons";
 import { Tip } from "../Tip";
+import { useDownloads } from "./downloads";
+import { DownloadSummary } from "./BsResults";
+import { PlaylistTable } from "./PlaylistTable";
+import { PlaylistToolbar } from "./PlaylistToolbar";
+import { DownloadConfirm, MAX_BATCH } from "./SelectionBar";
+
+const MAX_PAGES = 50;
 
 type Query = UseInfiniteQueryResult<InfiniteData<BsPlaylistPage>, unknown>;
 
-function Row({ playlist }: { playlist: BsPlaylist }) {
-  const to = `/beatsaver/playlists/${encodeURIComponent(playlist.id)}`;
-  return (
-    <li className="playlist-row">
-      <Cover url={playlist.cover_url} />
-      <div className="playlist-main">
-        <Tip text={BS_TIPS.playlistOpen}>
-          <Link className="title-link" to={to}>
-            <Icon name="playlist" />
-            <span>{playlist.name}</span>
-          </Link>
-        </Tip>
-        <span className="sub">
-          {playlist.owner} &middot; {plural(playlist.map_count, "map")}
-          {playlist.curated ? " · Curated" : ""}
-        </span>
-      </div>
-    </li>
-  );
+/** Every map of one playlist, following the cursor; stops at MAX_PAGES or a partial page. */
+async function allMaps(id: string): Promise<BsMap[]> {
+  const maps: BsMap[] = [];
+  let cursor: string | null = null;
+  for (let i = 0; i < MAX_PAGES; i++) {
+    const page = await getPlaylistMaps(id, DEFAULT_BS_STATE, cursor);
+    maps.push(...page.items);
+    cursor = page.cursor;
+    if (cursor === null || page.partial) break;
+  }
+  return maps;
 }
 
-/** Playlist search results; the list scrolls inside the page shell like the maps table. */
-export function PlaylistList({ query }: { query: Query }) {
-  const items = query.data?.pages.flatMap((p) => p.items) ?? [];
-  if (query.isPending) return <p className="muted">Loading playlists</p>;
-  if (query.isError && !query.data) {
-    return (
-      <div className="lib-empty">
-        <p className="err">Could not reach BeatSaver: {errorMessage(query.error)}</p>
-        <button type="button" className="btn plain" onClick={() => void query.refetch()}>
-          <Icon name="reset" />
-          <span className="label-hide-mobile">Try again</span>
-        </button>
-      </div>
-    );
-  }
+/** Playlist search results as a table; header filters, infinite scroll and mobile cards. */
+export function PlaylistList({ query, controls }: { query: Query; controls: PlControls }) {
+  const { state, update, clearFilters } = controls;
+  const table = useRef<HTMLDivElement>(null);
+  const columns = useColumns(table, PL_COLUMNS);
+  const narrow = useMediaQuery("(max-width: 1099px)");
+  const downloads = useDownloads();
+  const [fetching, setFetching] = useState(false);
+  const [failure, setFailure] = useState<unknown>(null);
+  const [confirm, setConfirm] = useState<{ open: boolean; items: BsMap[] }>({
+    open: false,
+    items: [],
+  });
+  const { fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError, refetch } = query;
+
+  const pages = query.data?.pages;
+  const items = useMemo(
+    () => viewPlaylists(pages?.flatMap((p) => p.items) ?? [], state),
+    [pages, state],
+  );
+  const loadMore = useCallback(() => void fetchNextPage(), [fetchNextPage]);
+  const retry = useCallback(
+    () => void (hasNextPage ? fetchNextPage() : refetch()),
+    [hasNextPage, fetchNextPage, refetch],
+  );
+  const downloadAll = useCallback(async (p: BsPlaylist) => {
+    setFetching(true);
+    setFailure(null);
+    try {
+      setConfirm({ open: true, items: await allMaps(p.id) });
+    } catch (err) {
+      setFailure(err);
+    } finally {
+      setFetching(false);
+    }
+  }, []);
+
+  const filtered = !isPlDefault(state);
+  const failedFirst = query.isError && !query.data;
   return (
-    <div className="lib-scroll">
-      {items.length === 0 ? (
+    <>
+      <PlaylistToolbar state={state} update={update} clear={clearFilters} narrow={narrow} />
+      <DownloadSummary downloads={downloads} />
+      {failure !== null && (
+        <SpecAlert
+          spec={errorToAlert(failure, "Could not load the playlist's maps")}
+          onDismiss={() => setFailure(null)}
+        />
+      )}
+      {failedFirst ? (
         <div className="lib-empty">
-          <p>No playlists found.</p>
+          <SpecAlert
+            spec={errorToAlert(query.error, "Could not reach BeatSaver")}
+            onRetry={retry}
+          />
         </div>
       ) : (
-        <ul className="playlist-list" aria-label="Playlists">
-          {items.map((p) => (
-            <Row key={p.id} playlist={p} />
-          ))}
-        </ul>
-      )}
-      {query.hasNextPage && (
-        <div className="lib-more">
-          {query.isFetchNextPageError && (
-            <p className="err">Could not load more: {errorMessage(query.error)}</p>
+        <>
+          <PlaylistTable
+            items={items}
+            loading={query.isPending}
+            hasNext={hasNextPage}
+            fetchingNext={isFetchingNextPage}
+            paused={isFetchNextPageError}
+            onLoadMore={loadMore}
+            state={state}
+            update={update}
+            busy={fetching || downloads.runner.busy}
+            onDownloadAll={(p) => void downloadAll(p)}
+            table={table}
+            columns={columns}
+            empty={
+              <div className="lib-empty">
+                <p>{filtered ? "No playlists match these filters." : "No playlists found."}</p>
+                {filtered && (
+                  <Tip text={PL_TIPS.clearFilters}>
+                    <button type="button" className="btn plain" onClick={clearFilters}>
+                      <Icon name="filter-x" />
+                      <span className="label-hide-mobile">Clear filters</span>
+                    </button>
+                  </Tip>
+                )}
+              </div>
+            }
+          />
+          {isFetchNextPageError && (
+            <div className="lib-more">
+              <SpecAlert
+                spec={errorToAlert(query.error, "Could not load more playlists")}
+                onRetry={retry}
+              />
+            </div>
           )}
-          <button
-            type="button"
-            className="btn plain"
-            disabled={query.isFetchingNextPage}
-            onClick={() => void query.fetchNextPage()}
-          >
-            <Icon name="expand" />
-            <span className="label-hide-mobile">Load more playlists</span>
-          </button>
-        </div>
+        </>
       )}
-    </div>
+      <DownloadConfirm
+        items={confirm.items}
+        open={confirm.open}
+        onOpenChange={(open) => setConfirm((c) => ({ ...c, open }))}
+        onConfirm={(ids) => void downloads.start(ids.slice(0, MAX_BATCH))}
+      />
+    </>
   );
 }

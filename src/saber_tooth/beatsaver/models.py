@@ -109,6 +109,14 @@ class BsMap:
         return cls(**d)
 
 
+def _rating(stats: dict, up: int, down: int) -> float:
+    """BeatSaver avgScore when present and positive, else upvotes / (upvotes + downvotes)."""
+    score = _num(stats.get("avgScore"))
+    if 0 < score <= 1:
+        return score
+    return up / (up + down) if up + down else 0.0
+
+
 @dataclass(frozen=True)
 class BsPlaylist:
     id: int
@@ -118,10 +126,18 @@ class BsPlaylist:
     min_nps: float
     max_nps: float
     cover_url: str
+    mapper_count: int = 0
+    duration: int = 0
+    upvotes: int = 0
+    downvotes: int = 0
+    rating: float = 0.0
+    created_at: str = ""
+    curated: bool = False
 
     @classmethod
     def from_json(cls, d: dict) -> "BsPlaylist":
         stats = _dict(d.get("stats"))
+        up, down = _int(stats.get("upVotes")), _int(stats.get("downVotes"))
         return cls(
             _int(d.get("playlistId")),
             _text(d.get("name")),
@@ -130,4 +146,11 @@ class BsPlaylist:
             _num(stats.get("minNps")),
             _num(stats.get("maxNps")),
             _text(d.get("playlistImage512") or d.get("playlistImage")),
+            _int(stats.get("mapperCount")),
+            _int(stats.get("totalDuration")),
+            up,
+            down,
+            _rating(stats, up, down),
+            _text(d.get("createdAt")),
+            bool(_text(d.get("curatedAt"))),
         )

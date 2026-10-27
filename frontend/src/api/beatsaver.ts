@@ -2,6 +2,7 @@
 // /api/beatsaver/* routes; adjust them here only.
 import { useInfiniteQuery, useQuery, type QueryClient } from "@tanstack/react-query";
 import { bsApiParams, BS_PAGE_SIZE, type BsState } from "../lib/bsfilters";
+import { plApiParams, plFetched, type PlState } from "../lib/plfilters";
 import { request, type Started } from "./client";
 import { retry } from "./queries";
 
@@ -51,8 +52,18 @@ export interface BsPlaylist {
   description?: string;
   cover_url: string | null;
   map_count: number;
-  curated?: boolean;
-  verified?: boolean;
+  mapper_count: number;
+  /** Total playing time in seconds. */
+  duration: number;
+  upvotes: number;
+  downvotes: number;
+  /** Fraction 0 to 1: BeatSaver's score, else upvotes over all votes. */
+  rating: number;
+  min_nps: number;
+  max_nps: number;
+  /** ISO timestamp. */
+  created_at: string;
+  curated: boolean;
 }
 
 export interface BsPlaylistPage {
@@ -95,15 +106,11 @@ export const searchMaps = (
   request("GET", `${base}/search?${bsApiParams(state, cursor, BS_PAGE_SIZE)}`, undefined, signal);
 
 export const searchPlaylists = (
-  q: string,
+  state: PlState,
   cursor: string | null,
   signal?: AbortSignal,
-): Promise<BsPlaylistPage> => {
-  const p = new URLSearchParams();
-  if (q.trim()) p.set("q", q.trim());
-  if (cursor) p.set("cursor", cursor);
-  return request("GET", `${base}/playlists/search?${p}`, undefined, signal);
-};
+): Promise<BsPlaylistPage> =>
+  request("GET", `${base}/playlists/search?${plApiParams(state, cursor)}`, undefined, signal);
 
 export const getPlaylistMaps = (
   id: string,
@@ -153,7 +160,7 @@ function fetched(state: BsState): BsState {
 export const bsKeys = {
   all: ["beatsaver"] as const,
   search: (state: BsState) => ["beatsaver", "search", fetched(state)] as const,
-  playlists: (q: string) => ["beatsaver", "playlists", q] as const,
+  playlists: (state: PlState) => ["beatsaver", "playlists", plFetched(state)] as const,
   playlist: (id: string, state: BsState) => ["beatsaver", "playlist", id, fetched(state)] as const,
   presets: ["beatsaver", "presets"] as const,
   config: ["beatsaver", "config"] as const,
@@ -181,10 +188,10 @@ export function useBsPlaylistMaps(id: string, state: BsState) {
   });
 }
 
-export function useBsPlaylists(q: string) {
+export function useBsPlaylists(state: PlState) {
   return useInfiniteQuery({
-    queryKey: bsKeys.playlists(q),
-    queryFn: ({ pageParam, signal }) => searchPlaylists(q, pageParam, signal),
+    queryKey: bsKeys.playlists(state),
+    queryFn: ({ pageParam, signal }) => searchPlaylists(state, pageParam, signal),
     initialPageParam: null as string | null,
     getNextPageParam: nextCursor,
     retry,
