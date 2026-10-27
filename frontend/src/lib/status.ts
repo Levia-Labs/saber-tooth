@@ -35,15 +35,13 @@ export function isRunning(status: StatusKey): boolean {
 type StatusFields = Pick<MapItem, "status" | "errors" | "warnings"> &
   Partial<Pick<MapItem, "parse_error">>;
 
-/** The only text a chip shows: a count, or "--" when unscanned; null means icon only. */
+/** The only text a chip shows: a count; null means icon only (also when unscanned). */
 export function statusText(item: StatusFields): string | null {
   switch (item.status) {
     case "error":
       return String(item.errors);
     case "warn":
       return String(item.warnings);
-    case "unscanned":
-      return "--";
     default:
       return null;
   }

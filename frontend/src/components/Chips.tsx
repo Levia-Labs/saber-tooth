@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { MapItem } from "../api/types";
 import { formatBpm, formatDuration } from "../lib/format";
-import { levelsFor, textColor } from "../lib/levels";
+import { levelsFor, ringText } from "../lib/levels";
 import { STATUS_META, statusLabel, statusText } from "../lib/status";
 import { Icon } from "./icons";
 import { Tip } from "./Tip";
@@ -30,16 +30,34 @@ export function StatusChip({
   );
 }
 
-export function LevelChips({ names, className }: { names: readonly string[]; className?: string }) {
+/** Outlined, abbreviated level chips; the full name and the NPS (when known) are in the Tip. */
+export function LevelChips({
+  names,
+  className,
+  nps,
+}: {
+  names: readonly string[];
+  className?: string;
+  /** Notes per second by level key, when known. */
+  nps?: Readonly<Record<string, number>>;
+}) {
   const levels = levelsFor(names);
   if (!levels.length) return null;
   return (
     <ul className={`levels ${className ?? ""}`.trim()} aria-label="Difficulties">
-      {levels.map((l) => (
-        <li key={l.key} className="level" style={{ background: l.bg, color: textColor(l.bg) }}>
-          {l.label}
-        </li>
-      ))}
+      {levels.map((l) => {
+        const rate = nps?.[l.key];
+        const full = rate === undefined ? l.label : `${l.label}, ${rate.toFixed(1)} NPS`;
+        return (
+          <li key={l.key} className="level" style={{ borderColor: l.bg, color: ringText(l.bg) }}>
+            <Tip text={full}>
+              <span className="level-text" role="img" aria-label={full}>
+                <span aria-hidden="true">{l.abbr}</span>
+              </span>
+            </Tip>
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -69,7 +87,14 @@ export function Cover({ url, big = false }: { url: string | null; big?: boolean 
 export function Tempo({ item }: { item: Pick<MapItem, "bpm" | "duration_s"> }) {
   return (
     <span className="tempo">
-      {formatDuration(item.duration_s)} <span className="dot">&middot;</span> {formatBpm(item.bpm)}
+      <span className="tempo-item">
+        <Icon name="clock" />
+        {formatDuration(item.duration_s)}
+      </span>
+      <span className="tempo-item">
+        <Icon name="bpm" />
+        {formatBpm(item.bpm)}
+      </span>
     </span>
   );
 }

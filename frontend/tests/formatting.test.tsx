@@ -5,7 +5,7 @@ import { TipProvider } from "../src/components/Tip";
 import { describe, expect, test } from "vitest";
 import { LevelChips, StatusChip } from "../src/components/Chips";
 import { formatBpm, formatDuration } from "../src/lib/format";
-import { contrast, LEVELS, levelsFor, textColor } from "../src/lib/levels";
+import { contrast, LEVELS, levelsFor, ringText, SURFACE, textColor } from "../src/lib/levels";
 import { applyTip, TIPS } from "../src/lib/tips";
 
 describe("formatters", () => {
@@ -38,9 +38,49 @@ describe("formatters", () => {
 
 describe("level chips", () => {
   test("render in game order whatever the input order", () => {
-    render(<LevelChips names={["ExpertPlus", "Easy", "Hard", "Unknown"]} />);
+    render(
+      <TipProvider>
+        <LevelChips names={["ExpertPlus", "Easy", "Hard", "Unknown"]} />
+      </TipProvider>,
+    );
     const items = screen.getAllByRole("listitem").map((li) => li.textContent);
-    expect(items).toEqual(["Easy", "Hard", "Expert+"]);
+    expect(items).toEqual(["Ea", "H", "Ex+"]);
+  });
+
+  test("chips are abbreviated with the full name in the aria-label", () => {
+    render(
+      <TipProvider>
+        <LevelChips names={["Easy", "Normal", "Hard", "Expert", "ExpertPlus"]} />
+      </TipProvider>,
+    );
+    expect(screen.getAllByRole("listitem").map((li) => li.textContent)).toEqual([
+      "Ea",
+      "N",
+      "H",
+      "Ex",
+      "Ex+",
+    ]);
+    for (const name of ["Easy", "Normal", "Hard", "Expert", "Expert+"]) {
+      expect(screen.getByRole("img", { name })).toBeInTheDocument();
+    }
+  });
+
+  test("chips are outlined in the level colour and the Tip carries the NPS", async () => {
+    render(
+      <TipProvider delayDuration={0}>
+        <LevelChips names={["Expert"]} nps={{ Expert: 6.25 }} />
+      </TipProvider>,
+    );
+    const li = screen.getByRole("listitem");
+    expect(li.style.borderColor).toBe("rgb(191, 42, 66)");
+    expect(li.style.background).toBe("");
+    const chip = screen.getByRole("img", { name: "Expert, 6.3 NPS" });
+    await userEvent.hover(chip);
+    expect((await screen.findAllByText("Expert, 6.3 NPS")).length).toBeGreaterThan(0);
+  });
+
+  test("outline text colour reaches AA contrast on the dark surface", () => {
+    for (const l of LEVELS) expect(contrast(ringText(l.bg), SURFACE)).toBeGreaterThanOrEqual(4.5);
   });
 
   test("missing difficulties are not shown", () => {
@@ -78,7 +118,7 @@ describe("status chip", () => {
     [{ status: "error", errors: 1, warnings: 2 }, "1 error", "1"],
     [{ status: "warn", errors: 0, warnings: 1 }, "1 warning", "1"],
     [{ status: "ok", ...base }, "All good", ""],
-    [{ status: "unscanned", ...base }, "Not scanned", "--"],
+    [{ status: "unscanned", ...base }, "Not scanned", ""],
     [{ status: "unreadable", ...base }, "Unreadable", ""],
     [{ status: "unreadable", ...base, parse_error: "bad json" }, "Unreadable: bad json", ""],
     [{ status: "scanning", ...base }, "Scanning", ""],
@@ -93,7 +133,7 @@ describe("status chip", () => {
   test("unknown status falls back to not scanned", () => {
     const { container } = chip({ status: "weird" as never, ...base });
     expect(screen.getByRole("img", { name: "Not scanned" })).toBeInTheDocument();
-    expect(container.textContent).toBe("--");
+    expect(container.textContent).toBe("");
   });
 
   test("hovering a chip shows the full meaning", async () => {
@@ -107,7 +147,7 @@ describe("tooltip copy", () => {
   test("keeps the promises the buttons make", () => {
     expect(TIPS.scan).toContain("Nothing is written yet.");
     expect(TIPS.apply).toContain("The original map is never changed.");
-    expect(TIPS.learn).toContain("again after adding new maps");
+    expect(TIPS.learn).toContain("Optional: saber-tooth already lights maps with its bundled set.");
     expect(TIPS.generate).toContain("all five difficulties");
     expect(TIPS.approve).toBe("Accept this fix. It is written when you click Apply.");
     expect(TIPS.reject).toBe("Discard this fix.");
