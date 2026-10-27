@@ -6,5 +6,6 @@ The layer between the CLI or HTTP routes and the engine modules. Routes are desc
 2. `errors.py`: `MapNotFound`, `MapUnreadable`, `ApplyConflict`.
 3. `util.py`: pure helpers for map ids, finding keys and op spans.
 4. `writeout.py`: writes output folders, never into an existing map folder.
+5. `lightshow_set.py`: picks the learned or bundled lightshow set and reports it for `GET /api/lightshow`.
 
 Storage is in [store.py](../store.py). Tests: `task st:test -- tests/test_service.py tests/test_service_more.py`.

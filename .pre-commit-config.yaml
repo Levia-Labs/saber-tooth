@@ -22,6 +22,12 @@ repos:
       - id: detect-private-key
       - id: check-added-large-files
         args: [--maxkb=1024]
+        exclude: ^src/saber_tooth/lightshow/data/templates\.json\.gz$
+      # The bundled lightshow set is 1.2 MB gzipped (ADR 0012); the limit is raised for this path only.
+      - id: check-added-large-files
+        name: check for added large files (bundled lightshow set)
+        args: [--maxkb=2048]
+        files: ^src/saber_tooth/lightshow/data/templates\.json\.gz$
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.17.1
     hooks:

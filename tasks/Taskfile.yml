@@ -38,6 +38,9 @@ tasks:
   learn:
     desc: "Build lightshow templates. Usage: task st:learn -- <levels_dir> <out.json>"
     cmds: ["uv run saber-tooth learn {{.CLI_ARGS}}"]
+  learn-bundle:
+    desc: "Regenerate the bundled lightshow set reproducibly. Usage: task st:learn-bundle -- <levels_dir> [--out PATH]"
+    cmds: ["uv run python scripts/learn_bundle.py {{.CLI_ARGS}}"]
   up:
     desc: "Build if needed (cached layers reused) and start; keeps containers. Usage: task st:up"
     cmds: ["docker compose up -d --build"]

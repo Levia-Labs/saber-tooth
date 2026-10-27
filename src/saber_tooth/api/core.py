@@ -212,6 +212,9 @@ class Api:
         self.map_id(map_id, True)
         return {"job": self.jobs.submit("apply", self.service.run_apply, map_id, map_id=map_id)}
 
+    def lightshow(self) -> dict:
+        return self.service.lightshow_info()
+
     def learn(self) -> dict:
         return {"job": self.jobs.submit("learn", lambda: {"units": self.service.learn()})}
 
