@@ -190,7 +190,7 @@ describe("column filters", () => {
     await user.click(within(dialog).getByRole("checkbox", { name: "Errors" }));
     await user.click(within(dialog).getByRole("checkbox", { name: "Warnings" }));
     expect(router.state.location.search).toBe("?status=error%2Cwarn");
-    await user.click(within(dialog).getByRole("button", { name: "Clear" }));
+    await user.click(within(dialog).getByRole("button", { name: "Clear Status filter" }));
     expect(router.state.location.search).toBe("");
   });
 

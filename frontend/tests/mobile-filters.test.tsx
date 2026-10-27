@@ -129,7 +129,7 @@ describe("text inputs", () => {
     const input = await screen.findByLabelText("Title contains");
     expect(input).toHaveAttribute("placeholder", "Title");
     await user.type(input, "x");
-    expect(screen.getByRole("button", { name: "Clear" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Clear Title filter" })).toBeEnabled();
   });
 });
 

@@ -80,6 +80,11 @@ export function LibraryHeader({ state, facets, update, columns }: Props) {
               placeholder="Title"
               q={state.qField === "title" ? state.q : ""}
               onChange={(q, replace) => update({ q, qField: "title" }, replace)}
+              rowClear={{
+                column: "Title",
+                disabled: !counts.title,
+                onClear: () => update({ q: "", qField: "title" }, true),
+              }}
             />
           </FilterPopover>
         }
@@ -95,11 +100,21 @@ export function LibraryHeader({ state, facets, update, columns }: Props) {
               placeholder="Mapper"
               q={state.qField === "mapper" ? state.q : ""}
               onChange={(q, replace) => update({ q, qField: "mapper" }, replace)}
+              rowClear={{
+                column: "Author",
+                disabled: !counts.author,
+                onClear: () => update({ q: "", qField: "mapper", mapper: [] }),
+              }}
             />
             <MapperListBody
               selected={state.mapper}
               facets={facets}
               onChange={(mapper) => update({ mapper })}
+              rowClear={{
+                column: "Author",
+                disabled: !counts.author,
+                onClear: () => update({ q: "", qField: "mapper", mapper: [] }),
+              }}
             />
           </FilterPopover>
         }
@@ -115,6 +130,11 @@ export function LibraryHeader({ state, facets, update, columns }: Props) {
               mode={state.levelMode}
               facets={facets}
               onChange={(patch) => update(patch)}
+              rowClear={{
+                column: "Levels",
+                disabled: !counts.levels,
+                onClear: () => update({ level: [] }),
+              }}
             />
           </FilterPopover>
         }
@@ -131,6 +151,11 @@ export function LibraryHeader({ state, facets, update, columns }: Props) {
               selected={state.env}
               facets={facets}
               onChange={(env) => update({ env })}
+              rowClear={{
+                column: "Env",
+                disabled: !counts.env,
+                onClear: () => update({ env: [] }),
+              }}
             />
           </FilterPopover>
         }
@@ -145,6 +170,11 @@ export function LibraryHeader({ state, facets, update, columns }: Props) {
               selected={state.status}
               facets={facets}
               onChange={(status) => update({ status })}
+              rowClear={{
+                column: "Status",
+                disabled: !counts.status,
+                onClear: () => update({ status: [] }),
+              }}
             />
           </FilterPopover>
         }

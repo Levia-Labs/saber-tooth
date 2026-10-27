@@ -5,6 +5,7 @@ import { formatEnvironment } from "../lib/environment";
 import { LEVELS } from "../lib/levels";
 import { STATUS_META, STATUS_ORDER } from "../lib/status";
 import { toggle, type LevelMode } from "../lib/urlstate";
+import { ClearFilterButton, type RowClear } from "./ClearFilterButton";
 import { Icon } from "./icons";
 
 export { SEARCH_DEBOUNCE_MS, TextFilterBody } from "./TextFilterBody";
@@ -15,6 +16,7 @@ interface StatusProps {
   selected: StatusKey[];
   facets: Facets | undefined;
   onChange: (next: StatusKey[]) => void;
+  rowClear?: RowClear;
 }
 
 function Box(props: { id: string; checked: boolean; onToggle: () => void; children: string }) {
@@ -35,7 +37,7 @@ function Box(props: { id: string; checked: boolean; onToggle: () => void; childr
   );
 }
 
-export function StatusFilterBody({ selected, facets, onChange }: StatusProps) {
+export function StatusFilterBody({ selected, facets, onChange, rowClear }: StatusProps) {
   const base = useId();
   return (
     <div className="filter-body">
@@ -49,15 +51,19 @@ export function StatusFilterBody({ selected, facets, onChange }: StatusProps) {
         >
           <Icon name="approve" />
         </button>
-        <button
-          type="button"
-          className="btn icon"
-          aria-label="Clear"
-          title="Clear"
-          onClick={() => onChange([])}
-        >
-          <Icon name="filter-x" />
-        </button>
+        {rowClear ? (
+          <ClearFilterButton {...rowClear} />
+        ) : (
+          <button
+            type="button"
+            className="btn icon"
+            aria-label="Clear"
+            title="Clear"
+            onClick={() => onChange([])}
+          >
+            <Icon name="filter-x" />
+          </button>
+        )}
       </div>
       <div role="group" aria-label="Status" className="checks">
         {STATUS_ORDER.map((key) => (
@@ -81,9 +87,10 @@ interface EnvProps {
   selected: string[];
   facets: Facets | undefined;
   onChange: (next: string[]) => void;
+  rowClear?: RowClear;
 }
 
-export function EnvFilterBody({ selected, facets, onChange }: EnvProps) {
+export function EnvFilterBody({ selected, facets, onChange, rowClear }: EnvProps) {
   const base = useId();
   const [search, setSearch] = useState("");
   const all = facets?.environments ?? [];
@@ -96,28 +103,38 @@ export function EnvFilterBody({ selected, facets, onChange }: EnvProps) {
   return (
     <div className="filter-body">
       {names.length > ENV_SEARCH_MIN && (
-        <div className="field">
-          <Icon name="search" />
-          <input
-            type="search"
-            aria-label="Search environments"
-            value={search}
-            autoComplete="off"
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        <div className="filter-row">
+          <div className="field">
+            <Icon name="search" />
+            <input
+              type="search"
+              aria-label="Search environments"
+              value={search}
+              autoComplete="off"
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          {rowClear && <ClearFilterButton {...rowClear} />}
         </div>
       )}
-      <div className="filter-actions">
-        <button
-          type="button"
-          className="btn icon"
-          aria-label="Clear"
-          title="Clear"
-          onClick={() => onChange([])}
-        >
-          <Icon name="filter-x" />
-        </button>
-      </div>
+      {rowClear && names.length <= ENV_SEARCH_MIN && (
+        <div className="filter-actions end">
+          <ClearFilterButton {...rowClear} />
+        </div>
+      )}
+      {!rowClear && (
+        <div className="filter-actions">
+          <button
+            type="button"
+            className="btn icon"
+            aria-label="Clear"
+            title="Clear"
+            onClick={() => onChange([])}
+          >
+            <Icon name="filter-x" />
+          </button>
+        </div>
+      )}
       <div role="group" aria-label="Environment" className="checks">
         {shown.map((name, i) => (
           <div className="check-row" key={name}>
@@ -141,10 +158,11 @@ interface MapperProps {
   selected: string[];
   facets: Facets | undefined;
   onChange: (next: string[]) => void;
+  rowClear?: RowClear;
 }
 
 /** Searchable checklist of mapper names with map counts. */
-export function MapperListBody({ selected, facets, onChange }: MapperProps) {
+export function MapperListBody({ selected, facets, onChange, rowClear }: MapperProps) {
   const base = useId();
   const [search, setSearch] = useState("");
   const all = facets?.mappers ?? [];
@@ -154,27 +172,32 @@ export function MapperListBody({ selected, facets, onChange }: MapperProps) {
   const shown = names.filter((n) => n.toLowerCase().includes(needle));
   return (
     <div className="filter-body">
-      <div className="field">
-        <Icon name="search" />
-        <input
-          type="search"
-          aria-label="Search mappers"
-          value={search}
-          autoComplete="off"
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      <div className="filter-row">
+        <div className="field">
+          <Icon name="search" />
+          <input
+            type="search"
+            aria-label="Search mappers"
+            value={search}
+            autoComplete="off"
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        {rowClear && <ClearFilterButton {...rowClear} />}
       </div>
-      <div className="filter-actions">
-        <button
-          type="button"
-          className="btn icon"
-          aria-label="Clear"
-          title="Clear"
-          onClick={() => onChange([])}
-        >
-          <Icon name="filter-x" />
-        </button>
-      </div>
+      {!rowClear && (
+        <div className="filter-actions">
+          <button
+            type="button"
+            className="btn icon"
+            aria-label="Clear"
+            title="Clear"
+            onClick={() => onChange([])}
+          >
+            <Icon name="filter-x" />
+          </button>
+        </div>
+      )}
       <div role="group" aria-label="Mapper" className="checks">
         {shown.map((name, i) => (
           <div className="check-row" key={name}>
@@ -199,36 +222,42 @@ interface LevelsProps {
   mode: LevelMode;
   facets: Facets | undefined;
   onChange: (patch: { level?: LevelKey[]; levelMode?: LevelMode }) => void;
+  rowClear?: RowClear;
 }
 
-export function LevelsFilterBody({ selected, mode, facets, onChange }: LevelsProps) {
+export function LevelsFilterBody({ selected, mode, facets, onChange, rowClear }: LevelsProps) {
   const base = useId();
   return (
     <div className="filter-body">
-      <div role="group" aria-label="Match" className="segmented">
-        {(["any", "all"] as const).map((m) => (
+      <div className="filter-row">
+        <div role="group" aria-label="Match" className="segmented">
+          {(["any", "all"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              className="btn plain"
+              aria-pressed={mode === m}
+              onClick={() => onChange({ levelMode: m })}
+            >
+              {m === "any" ? "Any" : "All"}
+            </button>
+          ))}
+        </div>
+        {rowClear && <ClearFilterButton {...rowClear} />}
+      </div>
+      {!rowClear && (
+        <div className="filter-actions">
           <button
-            key={m}
             type="button"
-            className="btn plain"
-            aria-pressed={mode === m}
-            onClick={() => onChange({ levelMode: m })}
+            className="btn icon"
+            aria-label="Clear"
+            title="Clear"
+            onClick={() => onChange({ level: [] })}
           >
-            {m === "any" ? "Any" : "All"}
+            <Icon name="filter-x" />
           </button>
-        ))}
-      </div>
-      <div className="filter-actions">
-        <button
-          type="button"
-          className="btn icon"
-          aria-label="Clear"
-          title="Clear"
-          onClick={() => onChange({ level: [] })}
-        >
-          <Icon name="filter-x" />
-        </button>
-      </div>
+        </div>
+      )}
       <div role="group" aria-label="Levels" className="checks">
         {LEVEL_KEYS.map((key) => (
           <div className="check-row" key={key}>
