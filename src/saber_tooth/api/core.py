@@ -9,9 +9,11 @@ from urllib.parse import urlparse
 from fastapi.responses import JSONResponse
 
 from saber_tooth.api.library import (
+    AUDIO_TYPES,
     COVER_TYPES,
     MAX_LIMIT,
     Extras,
+    audio_path,
     cover_path,
     folder_path,
     parse_query,
@@ -131,10 +133,21 @@ class Api:
         folder = folder_path(self.service.levels, row["folder"]) if row else None
         if row is None or folder is None or row["parse_error"]:
             raise MapNotFound(f"no cover for map: {raw}")
-        path = cover_path(folder, self.extras.get(folder)[0])
+        path = cover_path(folder, self.extras.get(folder).cover)
         if path is None:
             raise MapNotFound(f"no cover for map: {raw}")
         return path, COVER_TYPES[path.suffix.lower()]
+
+    def audio(self, raw: str) -> tuple[Path, str]:
+        """Path and content type of a map's song; MapNotFound when there is none."""
+        row = self.store.get_map(self.map_id(raw))
+        folder = folder_path(self.service.levels, row["folder"]) if row else None
+        if row is None or folder is None or row["parse_error"]:
+            raise MapNotFound(f"no audio for map: {raw}")
+        path = audio_path(folder, self.extras.get(folder).song)
+        if path is None:
+            raise MapNotFound(f"no audio for map: {raw}")
+        return path, AUDIO_TYPES[path.suffix.lower()]
 
     def _staged_notes(self, proposal: dict) -> list[dict]:
         root = (self.service.data / "staging").resolve()
