@@ -5,13 +5,16 @@ from pathlib import Path
 
 from saber_tooth.mapio import MapParseError
 from saber_tooth.mapio.discover import _entries_v2, _entries_v4, _opt_name, _read_json, find_info
-from saber_tooth.store_maps import SORT_KEYS, STATUS_FILTERS
+from saber_tooth.store_maps import MAX_ENVS, Q_FIELDS, SORT_KEYS, STATUS_FILTERS
 
 MAX_LIMIT = 100
 MAX_QUERY = 200
 MAX_COVER_BYTES = 5 * 1024 * 1024
 COVER_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
-ITEM_FIELDS = ("id", "folder", "title", "mapper", "environment", "parse_error", "scanned_at")
+ITEM_FIELDS = (
+    "id", "folder", "title", "mapper", "environment", "parse_error", "scanned_at", "bpm",
+)  # fmt: skip
+MAX_ENV_LEN = 200
 _CACHE_SIZE = 4096
 
 
@@ -22,7 +25,13 @@ class MapQuery:
     sort: str = "title"
     order: str = "asc"
     q: str = ""
-    status: str = "all"
+    status: tuple[str, ...] = ()
+    env: tuple[str, ...] = ()
+    q_fields: str = "all"
+
+
+def _split(raw: str) -> tuple[str, ...]:
+    return tuple(dict.fromkeys(p.strip() for p in raw.split(",") if p.strip()))
 
 
 def parse_query(params: dict[str, str], max_limit: int = MAX_LIMIT) -> MapQuery:
@@ -31,17 +40,24 @@ def parse_query(params: dict[str, str], max_limit: int = MAX_LIMIT) -> MapQuery:
     limit = _int(params.get("limit", "40"), "limit", 1, max_limit)
     sort = params.get("sort", "title")
     order = params.get("order", "asc")
-    status = params.get("status", "all")
+    statuses = _split(params.get("status", "all"))
+    envs = _split(params.get("env", ""))
+    fields = _split(params.get("q_fields", ""))
     q = params.get("q", "")
     if sort not in SORT_KEYS:
         raise ValueError(f"sort must be one of {', '.join(SORT_KEYS)}")
     if order not in ("asc", "desc"):
         raise ValueError("order must be asc or desc")
-    if status not in STATUS_FILTERS:
+    if not set(statuses) <= STATUS_FILTERS:
         raise ValueError(f"status must be one of {', '.join(sorted(STATUS_FILTERS))}")
+    if len(envs) > MAX_ENVS or any(len(e) > MAX_ENV_LEN for e in envs):
+        raise ValueError(f"env takes at most {MAX_ENVS} names of {MAX_ENV_LEN} characters")
+    if not set(fields) <= Q_FIELDS:
+        raise ValueError(f"q_fields must be a list of {', '.join(sorted(Q_FIELDS))}")
     if len(q) > MAX_QUERY:
         raise ValueError(f"q is longer than {MAX_QUERY} characters")
-    return MapQuery(offset, limit, sort, order, q, status)
+    status = () if "all" in statuses else statuses
+    return MapQuery(offset, limit, sort, order, q, status, envs, "name" if fields else "all")
 
 
 def _int(raw: str, name: str, low: int, high: int) -> int:
@@ -114,6 +130,9 @@ def shape_item(row: dict, levels: Path, extras: Extras) -> dict:
     item = {k: row[k] for k in ITEM_FIELDS}
     item.update(errors=row["errors"], warnings=row["warnings"], status=row["status"])
     item.update(approved=row["approved"], pending=row["pending"])
+    item["duration_s"] = row["duration_s"]
+    job = {"id": row["job_id"], "kind": row["job_kind"], "status": row["job_status"]}
+    item["job"] = job if row["job_id"] else None
     item.update(cover_url=None, difficulties=[])
     folder = folder_path(levels, row["folder"])
     if folder is not None and not row["parse_error"]:

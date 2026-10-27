@@ -16,10 +16,10 @@ CLAIMED = "applying"  # internal: approved rows an apply has claimed; the API sh
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS maps(
     id TEXT PRIMARY KEY, folder TEXT, title TEXT, mapper TEXT,
-    environment TEXT, parse_error TEXT, scanned_at TEXT);
+    environment TEXT, parse_error TEXT, scanned_at TEXT, bpm REAL, duration_s REAL);
 CREATE TABLE IF NOT EXISTS jobs(
     id TEXT PRIMARY KEY, kind TEXT, status TEXT, error TEXT,
-    result_json TEXT, created_at TEXT, updated_at TEXT);
+    result_json TEXT, created_at TEXT, updated_at TEXT, map_id TEXT);
 CREATE TABLE IF NOT EXISTS proposals(
     id INTEGER PRIMARY KEY AUTOINCREMENT, map_id TEXT, rule TEXT,
     difficulty TEXT, severity TEXT, summary TEXT, ops_json TEXT,
@@ -27,6 +27,13 @@ CREATE TABLE IF NOT EXISTS proposals(
 CREATE TABLE IF NOT EXISTS scans(
     map_id TEXT PRIMARY KEY, keys_json TEXT, analysis TEXT, scanned_at TEXT);
 """
+_INDEXES = "CREATE INDEX IF NOT EXISTS jobs_map ON jobs(map_id, status);"
+# Columns added after the first release: (table, column, statement). Added in place when missing.
+_MIGRATIONS = (
+    ("maps", "bpm", "ALTER TABLE maps ADD COLUMN bpm REAL"),
+    ("maps", "duration_s", "ALTER TABLE maps ADD COLUMN duration_s REAL"),
+    ("jobs", "map_id", "ALTER TABLE jobs ADD COLUMN map_id TEXT"),
+)
 
 
 class ProposalApplied(Exception):
@@ -44,7 +51,15 @@ class Store(MapQueries):
         self._db.row_factory = sqlite3.Row
         with self._lock:
             self._db.executescript(_SCHEMA)
+            self._migrate()
+            self._db.executescript(_INDEXES)
             self._db.commit()
+
+    def _migrate(self) -> None:
+        for table, column, statement in _MIGRATIONS:
+            have = self._db.execute("SELECT name FROM pragma_table_info(?)", (table,)).fetchall()
+            if column not in {r["name"] for r in have}:
+                self._db.execute(statement)
 
     def _query(self, sql: str, args: tuple = ()) -> list[sqlite3.Row]:
         with self._lock:
@@ -64,14 +79,17 @@ class Store(MapQueries):
         mapper: str,
         environment: str,
         parse_error: str | None,
+        bpm: float | None = None,
+        duration_s: float | None = None,
     ) -> None:
         self._exec(
             "INSERT INTO maps(id, folder, title, mapper, environment, parse_error,"
-            " scanned_at) VALUES(?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET"
+            " scanned_at, bpm, duration_s) VALUES(?,?,?,?,?,?,?,?,?)"
+            " ON CONFLICT(id) DO UPDATE SET"
             " folder=excluded.folder, title=excluded.title, mapper=excluded.mapper,"
             " environment=excluded.environment, parse_error=excluded.parse_error,"
-            " scanned_at=excluded.scanned_at",
-            (id, folder, title, mapper, environment, parse_error, _now()),
+            " scanned_at=excluded.scanned_at, bpm=excluded.bpm, duration_s=excluded.duration_s",
+            (id, folder, title, mapper, environment, parse_error, _now(), bpm, duration_s),
         )
 
     def list_maps(self) -> list[dict]:
@@ -224,12 +242,13 @@ class Store(MapQueries):
     def approved(self, map_id: str) -> list[dict]:
         return [p for p in self.proposals(map_id) if p["status"] == "approved"]
 
-    def create_job(self, kind: str) -> str:
+    def create_job(self, kind: str, map_id: str | None = None) -> str:
         job_id = uuid.uuid4().hex
         now = _now()
         self._exec(
-            "INSERT INTO jobs(id, kind, status, created_at, updated_at) VALUES(?,?,'queued',?,?)",
-            (job_id, kind, now, now),
+            "INSERT INTO jobs(id, kind, status, created_at, updated_at, map_id)"
+            " VALUES(?,?,'queued',?,?,?)",
+            (job_id, kind, now, now, map_id),
         )
         return job_id
 

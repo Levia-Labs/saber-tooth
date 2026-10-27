@@ -16,8 +16,10 @@ class Jobs:
         self._pool = ThreadPoolExecutor(max_workers=max_workers)
         self._futures: dict[str, Future] = {}
 
-    def submit(self, kind: str, fn: Callable[..., Any], *args: Any) -> str:
-        job_id = self._store.create_job(kind)
+    def submit(
+        self, kind: str, fn: Callable[..., Any], *args: Any, map_id: str | None = None
+    ) -> str:
+        job_id = self._store.create_job(kind, map_id)
         self._futures[job_id] = self._pool.submit(self._run, job_id, fn, args)
         return job_id
 

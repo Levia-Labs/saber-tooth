@@ -37,7 +37,16 @@ def read_cover(path: Path) -> tuple[bytes, str] | None:
 def register(app: FastAPI, api: Api, web: Path) -> None:
     @app.get("/api/maps")
     def maps(request: Request):
-        return api.maps_page(dict(request.query_params))
+        qp = request.query_params
+        params = {k: qp[k] for k in qp}
+        for key in ("status", "env"):  # repeatable as well as comma-separated
+            if key in qp:
+                params[key] = ",".join(qp.getlist(key))
+        return api.maps_page(params)
+
+    @app.get("/api/maps/facets")
+    def facets():
+        return api.facets()
 
     @app.get("/api/maps/{map_id}")
     def map_detail(map_id: str):

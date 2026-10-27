@@ -47,7 +47,7 @@ def test_list_maps_has_ui_fields(client):
     assert set(rows[0]) == {
         "id", "folder", "title", "mapper", "environment", "parse_error", "errors", "warnings",
         "scanned_at", "status", "cover_url", "difficulties", "approved", "pending",
-    }  # fmt: skip
+    } | {"bpm", "duration_s", "job"}  # fmt: skip
     assert rows[0]["id"] == MID and rows[0]["folder"] == NAME
 
 

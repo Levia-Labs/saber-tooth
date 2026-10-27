@@ -50,7 +50,7 @@ def test_query_filters_sort_and_pages(client, svc):
 
 def test_parse_query_defaults():
     q = parse_query({})
-    assert (q.offset, q.limit, q.sort, q.order, q.q, q.status) == (0, 40, "title", "asc", "", "all")
+    assert (q.offset, q.limit, q.sort, q.order, q.q, q.status) == (0, 40, "title", "asc", "", ())
 
 
 def test_cover_serves_bytes_with_cache_headers_and_304(client, svc):

@@ -99,10 +99,21 @@ class Api:
             raise ApiError(400, str(exc)) from None
         self.service.refresh_if_changed()
         rows, total = self.store.query_maps(
-            query.offset, query.limit, query.sort, query.order, query.q, query.status
+            query.offset,
+            query.limit,
+            query.sort,
+            query.order,
+            query.q,
+            query.status,
+            query.env,
+            query.q_fields,
         )
         items = [shape_item(r, self.service.levels, self.extras) for r in rows]
         return {"items": items, "total": total, "offset": query.offset, "limit": query.limit}
+
+    def facets(self) -> dict:
+        self.service.refresh_if_changed()
+        return self.store.facets()
 
     def map_item(self, raw: str) -> dict:
         self.service.refresh_if_changed()
@@ -192,11 +203,11 @@ class Api:
         row = next(m for m in self.store.list_maps() if m["id"] == self.map_id(map_id))
         if row["parse_error"]:
             raise MapUnreadable(f"map {row['folder']} cannot be read: {row['parse_error']}")
-        return {"job": self.jobs.submit("scan", self.service.run_scan, map_id)}
+        return {"job": self.jobs.submit("scan", self.service.run_scan, map_id, map_id=map_id)}
 
     def apply(self, map_id: str) -> dict:
         self.map_id(map_id, True)
-        return {"job": self.jobs.submit("apply", self.service.run_apply, map_id)}
+        return {"job": self.jobs.submit("apply", self.service.run_apply, map_id, map_id=map_id)}
 
     def learn(self) -> dict:
         return {"job": self.jobs.submit("learn", lambda: {"units": self.service.learn()})}
