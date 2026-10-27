@@ -15,10 +15,10 @@ The service listens on `127.0.0.1:${SABER_PORT:-8100}`. There is no authenticati
 1. `GET /api/maps/{id}/cover`: the cover image. The filename comes from Info.dat, must be a plain name ending `.png`, `.jpg` or `.jpeg`, must resolve to a regular file inside the map folder (no symlink out) and be at most 5 MB, else 404. Sends `Content-Type`, `Cache-Control: private, max-age=86400` and an `ETag` from modification time and size; `If-None-Match` answers 304.
 1. `POST /api/maps/{id}/scan`: starts a `scan` job. Answers 409 if the map has a parse error.
 1. `GET /api/maps/{id}/proposals`: proposals for a map or for a staged new map, with before and after excerpts. For a `create-map` proposal the excerpt shows the Expert notes of the staged map.
-1. `POST /api/proposals/{id}/approve`: approve one proposal. Answers 409 for an applied proposal.
-1. `POST /api/proposals/{id}/reject`: reject one proposal. Answers 409 for an applied proposal.
+1. `POST /api/proposals/{id}/approve`: approve one proposal. Answers 409 for an applied or superseded proposal.
+1. `POST /api/proposals/{id}/reject`: reject one proposal. Answers 409 for an applied or superseded proposal.
 1. `POST /api/maps/{id}/approve-all`: approve every pending proposal for one map. Answers `{"approved": N}`.
-1. `POST /api/maps/{id}/apply`: starts an `apply` job that writes the approved proposals into the sibling folder `<original name> [saber-tooth]`, or a numbered variant.
+1. `POST /api/maps/{id}/apply`: starts an `apply` job that writes the approved proposals into the sibling folder `<original name> [saber-tooth]`, or a numbered variant. Approved proposals apply in id order to an evolving map. A proposal whose notes an earlier one changed is re-checked: if its finding is gone it becomes `superseded` and is skipped; if the finding remains, a fresh `pending` proposal (`replaces` = the old id) is stored and the old one becomes `superseded`. The job result is `{"map_id", "folder", "applied", "superseded", "needs_review"}`, the three being proposal id lists (`needs_review` holds the new pending ids). The job fails only when applying leaves a new problem or a proposal has no finding to re-check.
 1. `POST /api/generate`: body `{"url": "<youtube url>"}` or a multipart audio file in the field `file`. Starts a `generate` job that ends in a `create-map` proposal.
 1. `GET /api/lightshow`: `{"source", "environments", "units", "learned_at"}` for the active lightshow set. `source` is `learned` when `/data/lightshow.json` exists (written by the Learn button, which then overrides the bundled set) and `bundled` otherwise; `learned_at` is the file modification time as an ISO 8601 UTC string, or null for the bundled set.
 1. `POST /api/lightshow/learn`: starts a `learn` job that learns from `/levels` and writes `/data/lightshow.json`, which replaces the bundled set from then on.
@@ -55,6 +55,7 @@ Errors answer `{"error": "<message>"}` with these codes.
 2. `approved`: accepted, not yet written.
 3. `rejected`: declined, never written.
 4. `applied`: written into the sibling folder.
+5. `superseded`: an earlier approved proposal made it stale during an apply. It is never written and cannot be approved again; a still-open finding gets a new `pending` proposal whose `replaces` is this id.
 
 ## Upstream: beat-analyser
 

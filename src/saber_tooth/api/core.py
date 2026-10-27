@@ -178,8 +178,8 @@ class Api:
         current = self.store.proposal(pid)
         if current is None:
             raise ApiError(404, f"unknown proposal: {pid}")
-        if current["status"] == "applied":
-            raise ApiError(409, "proposal already applied")
+        if current["status"] in ("applied", "superseded"):
+            raise ApiError(409, f"proposal already {current['status']}")
         try:
             self.store.set_status(pid, status)
         except KeyError:

@@ -8,10 +8,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from saber_tooth.store_claims import ProposalClaims
 from saber_tooth.store_maps import MapQueries
 
-PROPOSAL_STATUSES = {"pending", "approved", "rejected", "applied"}
-CLAIMED = "applying"  # internal: approved rows an apply has claimed; the API shows "approved"
+PROPOSAL_STATUSES = {"pending", "approved", "rejected", "applied", "superseded"}
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS maps(
@@ -23,7 +23,8 @@ CREATE TABLE IF NOT EXISTS jobs(
 CREATE TABLE IF NOT EXISTS proposals(
     id INTEGER PRIMARY KEY AUTOINCREMENT, map_id TEXT, rule TEXT,
     difficulty TEXT, severity TEXT, summary TEXT, ops_json TEXT,
-    before_json TEXT, after_json TEXT, status TEXT, created_at TEXT);
+    before_json TEXT, after_json TEXT, status TEXT, created_at TEXT,
+    finding_json TEXT, replaces INTEGER);
 CREATE TABLE IF NOT EXISTS scans(
     map_id TEXT PRIMARY KEY, keys_json TEXT, analysis TEXT, scanned_at TEXT);
 """
@@ -33,6 +34,8 @@ _MIGRATIONS = (
     ("maps", "bpm", "ALTER TABLE maps ADD COLUMN bpm REAL"),
     ("maps", "duration_s", "ALTER TABLE maps ADD COLUMN duration_s REAL"),
     ("maps", "levels", "ALTER TABLE maps ADD COLUMN levels INTEGER"),
+    ("proposals", "finding_json", "ALTER TABLE proposals ADD COLUMN finding_json TEXT"),
+    ("proposals", "replaces", "ALTER TABLE proposals ADD COLUMN replaces INTEGER"),
     ("jobs", "map_id", "ALTER TABLE jobs ADD COLUMN map_id TEXT"),
 )
 
@@ -45,7 +48,7 @@ def _now() -> str:
     return datetime.now(UTC).isoformat()
 
 
-class Store(MapQueries):
+class Store(MapQueries, ProposalClaims):
     def __init__(self, path: Path) -> None:
         self._lock = threading.Lock()
         self._db = sqlite3.connect(str(path), check_same_thread=False)
@@ -110,24 +113,37 @@ class Store(MapQueries):
         """
         return self._insert(map_id, proposals, delete_open=True, scan=scan)
 
+    _INSERT = (
+        "INSERT INTO proposals(map_id, rule, difficulty, severity, summary,"
+        " ops_json, before_json, after_json, status, created_at, finding_json, replaces)"
+        " VALUES(?,?,?,?,?,?,?,?,'pending',?,?,?)"
+    )
+
+    @staticmethod
+    def _row(map_id: str, p: dict, now: str) -> tuple:
+        return (
+            map_id,
+            p["rule"],
+            p["difficulty"],
+            p["severity"],
+            p["summary"],
+            json.dumps(p["ops"]),
+            json.dumps(p["before"]),
+            json.dumps(p["after"]),
+            now,
+            json.dumps(p["finding"]) if p.get("finding") else None,
+            p.get("replaces"),
+        )
+
+    def _add_one(self, map_id: str, p: dict) -> int:
+        """Insert one pending proposal inside a held lock; the caller commits."""
+        return int(self._db.execute(self._INSERT, self._row(map_id, p, _now())).lastrowid)
+
     def _insert(
         self, map_id: str, proposals: list[dict], delete_open: bool, scan: dict | None
     ) -> list[int]:
         now = _now()
-        rows = [
-            (
-                map_id,
-                p["rule"],
-                p["difficulty"],
-                p["severity"],
-                p["summary"],
-                json.dumps(p["ops"]),
-                json.dumps(p["before"]),
-                json.dumps(p["after"]),
-                now,
-            )
-            for p in proposals
-        ]
+        rows = [self._row(map_id, p, now) for p in proposals]
         ids: list[int] = []
         with self._lock:
             try:
@@ -143,12 +159,7 @@ class Store(MapQueries):
                         (map_id, json.dumps(scan["findings"]), scan.get("analysis"), now),
                     )
                 for row in rows:
-                    cur = self._db.execute(
-                        "INSERT INTO proposals(map_id, rule, difficulty, severity, summary,"
-                        " ops_json, before_json, after_json, status, created_at)"
-                        " VALUES(?,?,?,?,?,?,?,?,'pending',?)",
-                        row,
-                    )
+                    cur = self._db.execute(self._INSERT, row)
                     ids.append(int(cur.lastrowid))
                 self._db.commit()
             except BaseException:
@@ -161,6 +172,8 @@ class Store(MapQueries):
         d = dict(row)
         for key in ("ops", "before", "after"):
             d[key] = json.loads(d.pop(f"{key}_json"))
+        raw = d.pop("finding_json", None)
+        d["finding"] = json.loads(raw) if raw else None
         return d
 
     def proposals(self, map_id: str) -> list[dict]:
@@ -175,56 +188,14 @@ class Store(MapQueries):
         if status not in PROPOSAL_STATUSES:
             raise ValueError(f"invalid status: {status}")
         cur = self._exec(
-            "UPDATE proposals SET status=? WHERE id=? AND status NOT IN ('applied', 'applying')",
+            "UPDATE proposals SET status=? WHERE id=?"
+            " AND status NOT IN ('applied', 'applying', 'superseded')",
             (status, proposal_id),
         )
         if cur.rowcount == 0:
             if self._query("SELECT 1 FROM proposals WHERE id=?", (proposal_id,)):
                 raise ProposalApplied(proposal_id)
             raise KeyError(proposal_id)
-
-    def claim(self, proposal_ids: list[int]) -> bool:
-        """Atomically move all of these approved proposals to applying, or none."""
-        with self._lock:
-            try:
-                for pid in proposal_ids:
-                    cur = self._db.execute(
-                        "UPDATE proposals SET status=? WHERE id=? AND status='approved'",
-                        (CLAIMED, pid),
-                    )
-                    if cur.rowcount == 0:
-                        self._db.rollback()
-                        return False
-                self._db.commit()
-                return True
-            except BaseException:
-                self._db.rollback()
-                raise
-
-    def release(self, proposal_ids: list[int]) -> None:
-        """Return claimed proposals to approved after a failed apply."""
-        with self._lock:
-            for pid in proposal_ids:
-                self._db.execute(
-                    "UPDATE proposals SET status='approved' WHERE id=? AND status=?",
-                    (pid, CLAIMED),
-                )
-            self._db.commit()
-
-    def mark_applied(self, proposal_ids: list[int]) -> None:
-        """Set every approved or claimed proposal applied in one transaction."""
-        with self._lock:
-            try:
-                for pid in proposal_ids:
-                    self._db.execute(
-                        "UPDATE proposals SET status='applied'"
-                        " WHERE id=? AND status IN ('approved', ?)",
-                        (pid, CLAIMED),
-                    )
-                self._db.commit()
-            except BaseException:
-                self._db.rollback()
-                raise
 
     def scan_info(self, map_id: str) -> dict | None:
         rows = self._query("SELECT * FROM scans WHERE map_id=?", (map_id,))

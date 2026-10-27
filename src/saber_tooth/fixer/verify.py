@@ -37,6 +37,11 @@ def _overlaps(a: Finding, b: Finding) -> bool:
     return equal or (a.beat_start < b.beat_end - EPS and b.beat_start < a.beat_end - EPS)
 
 
+def find_same(findings: list[Finding], target: Finding) -> Finding | None:
+    """The first finding with the target's identity and an overlapping beat range, or None."""
+    return next((f for f in findings if _same(f, target)), None)
+
+
 def new_findings(after: list[Finding], before: list[Finding]) -> list[Finding]:
     """Findings in `after` that match no `before` finding or are more severe than all matches."""
     out = []

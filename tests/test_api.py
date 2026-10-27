@@ -81,7 +81,13 @@ def test_approve_reject_and_approve_all(client, svc):
 def test_apply_job_done_and_conflict(client, svc):
     _propose(svc, MID, [Flip("Hard", NOTE, Cut(0))])
     job = _wait(client, client.post(f"/api/maps/{MID}/apply").json()["job"])
-    assert job["status"] == "done" and set(job["result"]) == {"map_id", "folder"}
+    assert job["status"] == "done" and set(job["result"]) == {
+        "map_id",
+        "folder",
+        "applied",
+        "superseded",
+        "needs_review",
+    }
     assert (svc.levels / job["result"]["folder"]).is_dir()
     again = _wait(client, client.post(f"/api/maps/{MID}/apply").json()["job"])
     assert again["status"] == "failed" and again["error"]

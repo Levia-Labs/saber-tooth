@@ -16,15 +16,15 @@ from saber_tooth.fixer import propose
 from saber_tooth.lightshow import BUNDLED, Templates
 from saber_tooth.lightshow import learn as learn_templates
 from saber_tooth.mapio import MapParseError, load_map
-from saber_tooth.mapio.discover import _read_json, find_info
 from saber_tooth.mapio.errors import safe_name
 from saber_tooth.model import Beatmap
-from saber_tooth.service.duration import map_duration
+from saber_tooth.service.duration import folder_duration
 from saber_tooth.service.errors import ApplyConflict, MapNotFound, MapUnreadable
 from saber_tooth.service.lightshow_set import LEARNED, active_templates
 from saber_tooth.service.lightshow_set import info as lightshow_info
+from saber_tooth.service.ordered import Outcome, apply_in_order
 from saber_tooth.service.util import map_id_for
-from saber_tooth.service.verify import fixed_map, verify
+from saber_tooth.service.verify import stored_analysis, verify
 from saber_tooth.service.writeout import commit_staged, write_fixed
 from saber_tooth.store import Store
 from saber_tooth.store_maps import level_mask
@@ -35,14 +35,6 @@ SUFFIX = " [saber-tooth]"
 STAGING_PREFIX = "staging:"
 CREATE_MAP = "create-map"
 APPLY_RETRIES = 3
-
-
-def _duration(folder: Path, beatmap: Beatmap) -> float | None:
-    try:
-        raw = _read_json(find_info(folder))
-    except (MapParseError, OSError):
-        raw = None
-    return map_duration(folder, beatmap, raw)
 
 
 class _Stale(Exception):
@@ -103,7 +95,7 @@ class Service:
                 i = beatmap.info
                 self.store.upsert_map(
                     mid, folder.name, i.song_name, i.mapper, i.environment, None,
-                    i.bpm, _duration(folder, beatmap), level_mask(beatmap.difficulties),
+                    i.bpm, folder_duration(folder, beatmap), level_mask(beatmap.difficulties),
                 )  # fmt: skip
             except (MapParseError, OSError) as exc:
                 self.store.upsert_map(mid, folder.name, folder.name, "", "", str(exc))
@@ -174,7 +166,7 @@ class Service:
         for finding in findings:
             p = propose(bm, finding, analysis, templates, seed)
             if p is not None:
-                proposals.append(p.to_dict())
+                proposals.append({**p.to_dict(), "finding": finding.to_dict()})
         project = analysis.audio.parent.name if analysis and analysis.audio else None
         scan = {"findings": [f.to_dict() for f in findings], "analysis": project}
         with self._lock:
@@ -228,6 +220,9 @@ class Service:
     # apply -------------------------------------------------------------------
 
     def apply(self, map_id: str) -> Path:
+        return self._apply(map_id)[0]
+
+    def _apply(self, map_id: str) -> tuple[Path, Outcome]:
         with self._lock:
             if not map_id.startswith(STAGING_PREFIX):
                 self._folder(map_id)
@@ -237,7 +232,7 @@ class Service:
                     raise ApplyConflict("no approved proposals to apply", [])
                 ids = [p["id"] for p in approved]
                 try:
-                    target = self._write(map_id, approved)
+                    target, outcome = self._write(map_id, approved)
                 except _Stale:  # a proposal was rejected mid-apply: redo without it
                     continue
                 except BaseException:
@@ -246,16 +241,15 @@ class Service:
                 break
             else:
                 raise ApplyConflict("proposals kept changing during apply; retry", [])
-            self.store.mark_applied([p["id"] for p in approved])
+            self.store.mark_applied(outcome.applied)
             try:
                 self.refresh_library()
             except Exception:
                 log.exception("library refresh failed after applying %s", map_id)
-            return target
+            return target, outcome
 
-    def _write(self, map_id: str, approved: list[dict]) -> Path:
-        def unchanged() -> None:
-            ids = [p["id"] for p in approved]
+    def _write(self, map_id: str, approved: list[dict]) -> tuple[Path, Outcome]:
+        def unchanged(ids: list[int]) -> None:
             if {p["id"] for p in self.store.approved(map_id)} != set(ids):
                 raise _Stale
             if not self.store.claim(ids):  # from here a reject gets 409 until written
@@ -266,20 +260,31 @@ class Service:
         return self._apply_fixes(map_id, approved, unchanged)
 
     def run_apply(self, map_id: str) -> dict:
-        return {"map_id": map_id, "folder": self.apply(map_id).name}
+        target, outcome = self._apply(map_id)
+        return {"map_id": map_id, "folder": target.name, **outcome.to_dict()}
 
     def _apply_fixes(
-        self, map_id: str, approved: list[dict], unchanged: Callable[[], None]
-    ) -> Path:
+        self, map_id: str, approved: list[dict], unchanged: Callable[[list[int]], None]
+    ) -> tuple[Path, Outcome]:
         folder = self._folder(map_id)
         original = self._load(folder)
-        fixed = fixed_map(original, approved)
-        verify(self.store, self.uploads, map_id, original, fixed, approved)
+        analysis = stored_analysis(self.uploads, self.store.scan_info(map_id))
+        seed, templates = int(map_id[:8], 16), self._templates()
+        fixed, kept, outcome = apply_in_order(
+            self.store, map_id, original, approved, analysis, templates, seed
+        )
+        if not kept:
+            msg = "every approved proposal was superseded; review the new proposals"
+            raise ApplyConflict(msg, outcome.superseded)
+        verify(self.store, self.uploads, map_id, original, fixed, kept)
         fixed.info.song_name += SUFFIX
-        unchanged()
-        return write_fixed(self.levels, folder, fixed, folder.name + SUFFIX)
+        unchanged(outcome.applied)
+        target = write_fixed(self.levels, folder, fixed, folder.name + SUFFIX)
+        return target, outcome
 
-    def _commit_staged(self, approved: list[dict], unchanged: Callable[[], None]) -> Path:
+    def _commit_staged(
+        self, approved: list[dict], unchanged: Callable[[list[int]], None]
+    ) -> tuple[Path, Outcome]:
         proposal = next((p for p in approved if p["rule"] == CREATE_MAP), None)
         if proposal is None:
             raise ApplyConflict("no approved create-map proposal", [p["id"] for p in approved])
@@ -287,7 +292,8 @@ class Service:
         staging = Path(proposal["after"]["staging"]).resolve()
         if staging.parent != root or not staging.is_dir():
             raise ApplyConflict("staging folder is missing", [proposal["id"]])
-        unchanged()
+        ids = [p["id"] for p in approved]
+        unchanged(ids)
         target = commit_staged(self.levels, staging, folder_name(proposal["after"]["title"]))
         shutil.rmtree(staging, ignore_errors=True)
-        return target
+        return target, Outcome(applied=ids)

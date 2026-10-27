@@ -24,6 +24,7 @@ from saber_tooth.fixer.verify import (
     Proposal,
     accepts,
     build_proposal,
+    find_same,
     finding_key,
     new_findings,
 )
@@ -96,6 +97,7 @@ __all__ = [
     "Proposal",
     "Recolor",
     "apply_ops",
+    "find_same",
     "finding_key",
     "is_noop",
     "new_findings",

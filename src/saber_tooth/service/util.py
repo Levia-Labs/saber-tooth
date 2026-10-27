@@ -3,7 +3,7 @@
 import hashlib
 
 from saber_tooth.checks import Finding
-from saber_tooth.fixer.codec import note_from_dict
+from saber_tooth.fixer.codec import note_from_dict, wall_from_dict
 from saber_tooth.fixer.ops import Fill, Op, op_from_dict
 
 EPS = 1e-6
@@ -23,6 +23,7 @@ def finding_from_dict(d: dict) -> Finding:
         d["severity"],
         d["message"],
         tuple(note_from_dict(n) for n in d["notes"]),
+        tuple(wall_from_dict(w) for w in d.get("walls", [])),
     )
 
 
