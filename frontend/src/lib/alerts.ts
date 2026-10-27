@@ -192,6 +192,15 @@ export function errorToAlert(err: unknown, what: string): AlertSpec {
       action: RETRY,
     };
   }
+  if (err instanceof ApiError && err.status === 408) {
+    return {
+      variant: "warning",
+      title: `${what}: the server is slow to answer`,
+      message: "A long job may be running. Wait a moment and try again.",
+      details,
+      action: RETRY,
+    };
+  }
   if (err instanceof ApiError && err.status === 404) {
     return {
       variant: "danger",

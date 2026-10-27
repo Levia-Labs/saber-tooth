@@ -13,25 +13,56 @@ export class ApiError extends Error {
 
 type Body = Record<string, unknown> | FormData | undefined;
 
+export const TIMEOUT_STATUS = 408;
+export const GET_TIMEOUT_MS = 15_000;
+export const POST_TIMEOUT_MS = 120_000;
+
+/** A signal that aborts when the caller's does or after `ms`; `timedOut` tells which. */
+function withTimeout(ms: number, outer?: AbortSignal) {
+  const ctl = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    ctl.abort();
+  }, ms);
+  const forward = () => ctl.abort();
+  if (outer?.aborted) ctl.abort();
+  outer?.addEventListener("abort", forward);
+  return {
+    signal: ctl.signal,
+    timedOut: () => timedOut,
+    done: () => {
+      clearTimeout(timer);
+      outer?.removeEventListener("abort", forward);
+    },
+  };
+}
+
 export async function request<T>(
   method: "GET" | "POST" | "DELETE",
   path: string,
   body?: Body,
   signal?: AbortSignal,
+  timeoutMs: number = method === "GET" ? GET_TIMEOUT_MS : POST_TIMEOUT_MS,
 ): Promise<T> {
-  const init: RequestInit = { method, headers: {}, signal: signal ?? null };
+  const guard = withTimeout(timeoutMs, signal);
+  const init: RequestInit = { method, headers: {}, signal: guard.signal };
   if (body instanceof FormData) {
     init.body = body;
   } else if (body !== undefined) {
     init.headers = { "Content-Type": "application/json" };
     init.body = JSON.stringify(body);
   }
-  const res = await fetch(path, init);
+  let res: Response;
   let data: unknown;
   try {
-    data = await res.json();
-  } catch {
-    data = null;
+    res = await fetch(path, init);
+    data = await res.json().catch(() => null);
+  } catch (err) {
+    if (guard.timedOut()) throw new ApiError("Request timed out", TIMEOUT_STATUS);
+    throw err;
+  } finally {
+    guard.done();
   }
   if (!res.ok) {
     const record = (data ?? {}) as { detail?: unknown; error?: unknown };
