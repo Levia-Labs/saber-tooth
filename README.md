@@ -15,7 +15,7 @@ saber-tooth is a local Docker service with a browser interface. Give it a song o
 1. New maps from a YouTube URL or an uploaded audio file, in Easy, Normal, Hard, Expert and ExpertPlus.
 2. Checks for impossible swings, broken parity and long empty stretches where the music has onsets.
 3. Fix and fill proposals that are verified to reach zero findings before they are offered.
-4. Lighting that follows the energy and structure of the song, built from templates learned from installed maps.
+4. Lighting that follows the energy and structure of the song, built from a learned set that ships with the service, so lightshows work without any setup. "Learn lightshows" only adds the styles of your own installed maps and then replaces the bundled set.
 5. Review in the browser. Nothing is written until you approve it, and fixes go into a new sibling folder so the original map is never touched.
 
 ## How it works
@@ -52,6 +52,7 @@ The design goals are flawless, flowing and atmospheric maps. See the [design spe
 | `task st:inspect -- <folder>`              | Summarise one map folder                            |
 | `task st:survey -- <levels_dir>`           | Count findings across a levels directory, read-only |
 | `task st:learn -- <levels_dir> <out.json>` | Build lightshow templates                           |
+| `task st:learn-bundle -- <levels_dir>`     | Regenerate the bundled lightshow set                |
 | `task st:gen -- <url>`                     | Start a generation job from a URL                   |
 | `task st:gate`                             | Run every validation gate, one line each            |
 | `task st:lane -- <name>`                   | Create a work lane worktree; see the workflow doc   |

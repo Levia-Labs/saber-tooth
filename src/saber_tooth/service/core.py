@@ -13,7 +13,7 @@ from saber_tooth.analysis import Analysis
 from saber_tooth.assemble import assemble_new, folder_name
 from saber_tooth.checks import run_checks
 from saber_tooth.fixer import propose
-from saber_tooth.lightshow import Templates
+from saber_tooth.lightshow import BUNDLED, Templates
 from saber_tooth.lightshow import learn as learn_templates
 from saber_tooth.mapio import MapParseError, load_map
 from saber_tooth.mapio.discover import _read_json, find_info
@@ -21,6 +21,8 @@ from saber_tooth.mapio.errors import safe_name
 from saber_tooth.model import Beatmap
 from saber_tooth.service.duration import map_duration
 from saber_tooth.service.errors import ApplyConflict, MapNotFound, MapUnreadable
+from saber_tooth.service.lightshow_set import LEARNED, active_templates
+from saber_tooth.service.lightshow_set import info as lightshow_info
 from saber_tooth.service.util import map_id_for
 from saber_tooth.service.verify import fixed_map, verify
 from saber_tooth.service.writeout import commit_staged, write_fixed
@@ -48,6 +50,8 @@ class _Stale(Exception):
 
 
 class Service:
+    bundled: Path | None = BUNDLED  # tests may point this elsewhere
+
     def __init__(
         self,
         levels: Path,
@@ -117,13 +121,17 @@ class Service:
                 shutil.rmtree(d, ignore_errors=True)
 
     def _templates(self) -> Templates | None:
-        path = self.data / "templates.json"
-        return Templates.load(path) if path.is_file() else None
+        return active_templates(self.data, self.bundled)
+
+    def lightshow_info(self) -> dict:
+        return lightshow_info(self.data, self.bundled)
 
     def learn(self) -> int:
         templates = learn_templates(self.levels)
         self.data.mkdir(parents=True, exist_ok=True)
-        templates.save(self.data / "templates.json")
+        tmp = self.data / f"{LEARNED}.tmp"
+        templates.save(tmp)
+        tmp.replace(self.data / LEARNED)
         return sum(len(units) for units in templates.units.values())
 
     def _folder(self, map_id: str) -> Path:

@@ -20,7 +20,8 @@ The service listens on `127.0.0.1:${SABER_PORT:-8100}`. There is no authenticati
 1. `POST /api/maps/{id}/approve-all`: approve every pending proposal for one map. Answers `{"approved": N}`.
 1. `POST /api/maps/{id}/apply`: starts an `apply` job that writes the approved proposals into the sibling folder `<original name> [saber-tooth]`, or a numbered variant.
 1. `POST /api/generate`: body `{"url": "<youtube url>"}` or a multipart audio file in the field `file`. Starts a `generate` job that ends in a `create-map` proposal.
-1. `POST /api/lightshow/learn`: starts a `learn` job that rebuilds the lightshow template index.
+1. `GET /api/lightshow`: `{"source", "environments", "units", "learned_at"}` for the active lightshow set. `source` is `learned` when `/data/lightshow.json` exists (written by the Learn button, which then overrides the bundled set) and `bundled` otherwise; `learned_at` is the file modification time as an ISO 8601 UTC string, or null for the bundled set.
+1. `POST /api/lightshow/learn`: starts a `learn` job that learns from `/levels` and writes `/data/lightshow.json`, which replaces the bundled set from then on.
 1. `GET /api/jobs/{id}`: `id`, `kind`, `status`, `error` and `result`.
 
 Routes that start work answer `{"job": "<id>"}`. Poll the job until `status` is `done` or `failed`.

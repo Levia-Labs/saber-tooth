@@ -13,3 +13,4 @@ Each record has Context, Decision and Consequences.
 9. [0009 Configurable container user and proxy trust](0009-configurable-user-and-proxy-trust.md)
 10. [0010 MCP over streamable HTTP in the API process](0010-mcp-over-streamable-http-in-the-api-process.md)
 11. [0011 React + TypeScript + Vite frontend](0011-react-typescript-vite-frontend.md)
+12. [0012 Ship a learned lightshow set](0012-ship-a-learned-lightshow-set.md)

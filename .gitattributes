@@ -31,3 +31,4 @@
 *.woff2 binary
 *.zip   binary
 *.svg   binary
+*.gz    binary

@@ -8,6 +8,7 @@ Usage: uv run python scripts/commit.py -m "<message>" <paths...>
 """
 
 import argparse
+import shutil
 import subprocess  # nosec B404 - fixed argv lists, no shell
 import sys
 from collections.abc import Callable
@@ -39,10 +40,15 @@ def check_paths(paths: list[str]) -> None:
             raise ValueError(f"invalid path: {p!r}")
 
 
+def resolve_argv(argv: list[str]) -> list[str]:
+    """Replace argv[0] with its full PATH match (npx is npx.cmd on Windows); keep it if absent."""
+    return [shutil.which(argv[0]) or argv[0], *argv[1:]]
+
+
 def run(argv: list[str]) -> subprocess.CompletedProcess:
     try:
         return subprocess.run(  # nosec B603 B607 - constant argv, validated paths, no shell
-            argv, capture_output=True, check=False, encoding="utf-8"
+            resolve_argv(argv), capture_output=True, check=False, encoding="utf-8"
         )
     except OSError as exc:
         return subprocess.CompletedProcess(argv, 127, "", str(exc))

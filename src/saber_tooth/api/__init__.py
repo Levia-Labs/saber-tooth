@@ -125,6 +125,10 @@ def create_app(service: Service, web: Path = WEB, warm: bool = False) -> FastAPI
             raise ApiError(400, "send JSON {\"url\"} or a multipart 'file'") from None
         return api.generate_url(body.get("url") if isinstance(body, dict) else None)
 
+    @app.get("/api/lightshow")
+    def lightshow():
+        return api.lightshow()
+
     @app.post("/api/lightshow/learn")
     def learn():
         return api.learn()

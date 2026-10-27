@@ -92,3 +92,21 @@ def test_real_repo_commit_only_named_paths(tmp_path, monkeypatch):
     assert "b.txt" not in git("show", "--name-only", "--format=", "HEAD").stdout
     assert cm.TRAILER in git("log", "-1", "--format=%B").stdout
     assert cm.verify("other", run) is None
+
+
+def test_resolve_argv_uses_path_match(monkeypatch):
+    monkeypatch.setattr(cm.shutil, "which", lambda n: f"C:/bin/{n}.cmd" if n == "npx" else None)
+    assert cm.resolve_argv(["npx", "--no-install", "prettier"]) == [
+        "C:/bin/npx.cmd",
+        "--no-install",
+        "prettier",
+    ]
+    assert cm.resolve_argv(["ruff", "format"]) == ["ruff", "format"]
+
+
+def test_run_executes_the_resolved_executable(monkeypatch):
+    seen = []
+    monkeypatch.setattr(cm.shutil, "which", lambda n: f"/x/{n}.cmd")
+    monkeypatch.setattr(cm.subprocess, "run", lambda argv, **kw: seen.append(argv) or done())
+    cm.run(["npx", "prettier"])
+    assert seen == [["/x/npx.cmd", "prettier"]]

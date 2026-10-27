@@ -12,6 +12,8 @@ Standalone helper scripts run through the task runner.
 8. `crepidoma_bump.py`: fetches and checks out a `.crepidoma` ref, prints the log, runs the lint and quality gates and stages the gitlink. `task st:crepidoma-bump [-- <ref>]`. Never commits.
 9. `docker_health.py`: state, health, probe output and recent logs per compose service. `task st:docker-health`. Read-only.
 
+10. `learn_bundle.py`: regenerates the bundled lightshow set from a levels directory with a fixed gzip header, so equal input gives equal bytes; prints environments, units and size. `task st:learn-bundle -- <levels_dir> [--out PATH]`.
+
 Each script has `-h`. Tests are `tests/test_script_*.py`; they use fakes or temporary git repositories and never touch Docker or the network. See [workflow](../docs/workflow.md).
 
 Tasks are defined in [tasks/Taskfile.yml](../tasks/README.md).
