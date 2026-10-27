@@ -5,10 +5,12 @@ import {
   columnVars,
   defaultWidths,
   gridTemplate,
+  LIBRARY_COLUMNS,
   loadWidths,
   saveWidths,
   tableMinWidth,
   type Breakpoint,
+  type ColumnSet,
   type ColumnKey,
   type Widths,
 } from "./columns";
@@ -34,15 +36,18 @@ export function useBreakpoint(): Breakpoint {
 }
 
 /** Column widths for the library list; `style` goes on the list container that holds the rows. */
-export function useColumns(table: RefObject<HTMLElement | null>): {
+export function useColumns(
+  table: RefObject<HTMLElement | null>,
+  set: ColumnSet = LIBRARY_COLUMNS,
+): {
   api: ColumnsApi;
   style: CSSProperties;
 } {
   const bp = useBreakpoint();
   const [all, setAll] = useState<All>(() => ({
-    wide: loadWidths("wide"),
-    mid: loadWidths("mid"),
-    compact: loadWidths("compact"),
+    wide: loadWidths("wide", undefined, set),
+    mid: loadWidths("mid", undefined, set),
+    compact: loadWidths("compact", undefined, set),
   }));
 
   const preview = useCallback(
@@ -50,37 +55,37 @@ export function useColumns(table: RefObject<HTMLElement | null>): {
       const next = { ...all[bp], [key]: clampWidth(key, px) };
       const el = table.current;
       if (!el) return;
-      el.style.setProperty(`--cols-${bp}`, gridTemplate(bp, next));
-      el.style.setProperty(`--min-${bp}`, `${tableMinWidth(bp, next)}px`);
+      el.style.setProperty(`--cols-${bp}`, gridTemplate(bp, next, set));
+      el.style.setProperty(`--min-${bp}`, `${tableMinWidth(bp, next, set)}px`);
     },
-    [all, bp, table],
+    [all, bp, table, set],
   );
 
-  const set = useCallback(
+  const settle = useCallback(
     (next: Widths) => {
-      saveWidths(bp, next);
+      saveWidths(bp, next, undefined, set);
       setAll((prev) => ({ ...prev, [bp]: next }));
     },
-    [bp],
+    [bp, set],
   );
   const commit = useCallback(
-    (key: ColumnKey, px: number) => set({ ...all[bp], [key]: clampWidth(key, px) }),
-    [all, bp, set],
+    (key: ColumnKey, px: number) => settle({ ...all[bp], [key]: clampWidth(key, px) }),
+    [all, bp, settle],
   );
   const reset = useCallback(
-    (key: ColumnKey) => set({ ...all[bp], [key]: defaultWidths(bp)[key] }),
-    [all, bp, set],
+    (key: ColumnKey) => settle({ ...all[bp], [key]: defaultWidths(bp, set)[key] }),
+    [all, bp, settle, set],
   );
   const resetAll = useCallback(() => {
-    for (const each of BREAKPOINTS) saveWidths(each, defaultWidths(each));
+    for (const each of BREAKPOINTS) saveWidths(each, defaultWidths(each, set), undefined, set);
     setAll({
-      wide: defaultWidths("wide"),
-      mid: defaultWidths("mid"),
-      compact: defaultWidths("compact"),
+      wide: defaultWidths("wide", set),
+      mid: defaultWidths("mid", set),
+      compact: defaultWidths("compact", set),
     });
-  }, []);
+  }, [set]);
 
-  const style = useMemo(() => columnVars(all) as CSSProperties, [all]);
+  const style = useMemo(() => columnVars(all, set) as CSSProperties, [all, set]);
   const api = useMemo(
     () => ({ bp, widths: all[bp], preview, commit, reset, resetAll }),
     [bp, all, preview, commit, reset, resetAll],

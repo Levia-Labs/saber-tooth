@@ -4,11 +4,14 @@ import { createBrowserRouter, Link, Outlet, useLocation, type RouteObject } from
 import { RouterProvider } from "react-router/dom";
 import { AnnouncerProvider } from "./components/Announcer";
 import { Logo } from "./components/Logo";
-import { TipProvider } from "./components/Tip";
+import { Tip, TipProvider } from "./components/Tip";
 import { LibraryPage } from "./pages/LibraryPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
 const MapPage = lazy(() => import("./pages/MapPage").then((m) => ({ default: m.MapPage })));
+const BeatSaverPage = lazy(() =>
+  import("./pages/BeatSaverPage").then((m) => ({ default: m.BeatSaverPage })),
+);
 const NewPage = lazy(() => import("./pages/NewPage").then((m) => ({ default: m.NewPage })));
 
 export function makeQueryClient(): QueryClient {
@@ -30,6 +33,27 @@ function useFocusHeading() {
   }, [pathname]);
 }
 
+/** Library | BeatSaver switch: two real links, the active one follows the route. */
+function ModeSwitch() {
+  const { pathname } = useLocation();
+  const onBeatSaver = pathname === "/beatsaver" || pathname.startsWith("/beatsaver/");
+  const items = [
+    { to: "/", label: "Library", active: !onBeatSaver, tip: "Maps in your CustomLevels folder." },
+    { to: "/beatsaver", label: "BeatSaver", active: onBeatSaver, tip: "Search and download maps." },
+  ];
+  return (
+    <nav className="mode-switch" aria-label="Section">
+      {items.map((i) => (
+        <Tip key={i.to} text={i.tip}>
+          <Link to={i.to} aria-current={i.active ? "page" : undefined}>
+            {i.label}
+          </Link>
+        </Tip>
+      ))}
+    </nav>
+  );
+}
+
 export function Shell() {
   useFocusHeading();
   return (
@@ -44,6 +68,7 @@ export function Shell() {
             <span className="red">saber</span>-<span className="blue">tooth</span>
           </span>
         </Link>
+        <ModeSwitch />
       </header>
       <AnnouncerProvider>
         <main id="main" tabIndex={-1}>
@@ -63,6 +88,7 @@ export const routes: RouteObject[] = [
       { path: "/", element: <LibraryPage /> },
       { path: "/maps/:id", element: <MapPage /> },
       { path: "/new", element: <NewPage /> },
+      { path: "/beatsaver", element: <BeatSaverPage /> },
       { path: "*", element: <NotFoundPage /> },
     ],
   },

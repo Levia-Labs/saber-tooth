@@ -31,7 +31,7 @@ interface Props {
   columns: ReturnType<typeof useColumns>;
 }
 
-function useRowEstimate(): number {
+export function useRowEstimate(): number {
   const mobile = useMediaQuery("(max-width: 719px)");
   const compact = useMediaQuery("(max-width: 1099px)");
   if (mobile) return 180;
