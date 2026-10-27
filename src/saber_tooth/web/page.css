@@ -1,0 +1,154 @@
+/* Status chip: the one bold element */
+.chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.7rem 0.25rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--stage);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.chip::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: -1px;
+  bottom: -1px;
+  width: 3px;
+  border-radius: 6px 0 0 6px;
+  background: var(--tone);
+  box-shadow: 0 0 10px 1px var(--tone);
+}
+.chip-error {
+  --tone: var(--red);
+  background: rgba(224, 48, 58, 0.12);
+}
+.chip-warn {
+  --tone: var(--amber);
+  background: rgba(232, 163, 61, 0.1);
+}
+.chip-ok {
+  --tone: var(--green);
+  background: rgba(61, 214, 140, 0.08);
+}
+.chip-unscanned {
+  --tone: var(--muted);
+  color: var(--muted);
+}
+.chip-unscanned::before {
+  box-shadow: none;
+  opacity: 0.6;
+}
+.chip-unreadable {
+  --tone: var(--muted);
+  color: var(--muted);
+  border-style: dashed;
+}
+.chip-unreadable::before {
+  box-shadow: none;
+  opacity: 0.6;
+}
+.chip-error .ic {
+  color: var(--red);
+}
+.chip-warn .ic {
+  color: var(--amber);
+}
+.chip-ok .ic {
+  color: var(--green);
+}
+
+/* Map page */
+.maphead {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 0.5rem 0 1rem;
+}
+.maphead h2 {
+  margin: 0;
+}
+.metarow {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 0.4rem;
+}
+.maphead .toolbar {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+/* Proposal cards */
+.err {
+  color: var(--red);
+}
+.ok {
+  color: var(--green);
+}
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--muted);
+  border-radius: var(--radius);
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.9rem;
+}
+.card.sev-error {
+  border-left-color: var(--red);
+}
+.card.sev-warning {
+  border-left-color: var(--amber);
+}
+.card.st-approved {
+  border-left-color: var(--green);
+}
+.card.st-rejected {
+  opacity: 0.6;
+}
+.card header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.badge {
+  font-size: 0.75rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  color: var(--muted);
+}
+canvas {
+  width: 100%;
+  display: block;
+  margin-top: 0.7rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+}
+.result {
+  margin-top: 1rem;
+  padding: 0.8rem 1rem;
+  border-radius: var(--radius);
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

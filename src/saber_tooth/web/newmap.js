@@ -1,10 +1,11 @@
-import { api, el, jobButton, jobGuard, jobOutcome, runJob, setNav, setStatus } from "./util.js";
+import { api, el, jobGuard, jobOutcome, runJob, setStatus } from "./util.js";
 import { proposalCard } from "./cards.js";
+import { actionButton } from "./ui.js";
+import { TIPS } from "./tips.js";
 
 const main = document.getElementById("main");
 
 export function showNew() {
-  setNav("new");
   const url = el("input", {
     type: "url",
     id: "gen-url",
@@ -18,34 +19,35 @@ export function showNew() {
     "aria-label": "Audio file",
   });
   const out = el("div");
-  const go = jobButton(
-    {
-      type: "button",
-      class: "primary",
-      onclick: jobGuard(async () => {
-        let body;
-        if (file.files.length) {
-          body = new FormData();
-          body.append("file", file.files[0]);
-        } else if (url.value.trim()) body = { url: url.value.trim() };
-        else {
-          setStatus("Provide a URL or an audio file.");
-          return;
-        }
-        out.replaceChildren();
-        const job = await runJob("Generate", await api.generate(body));
-        const mapId = job.result && job.result.map_id;
-        if (mapId === undefined || mapId === null) {
-          out.replaceChildren(jobOutcome(job));
-          return;
-        }
-        await showCreate(mapId, out);
-      }),
-    },
-    "Generate",
-  );
+  const go = actionButton({
+    name: "generate",
+    label: "Generate",
+    text: true,
+    tip: TIPS.generate,
+    job: true,
+    class: "primary",
+    onclick: jobGuard(async () => {
+      let body;
+      if (file.files.length) {
+        body = new FormData();
+        body.append("file", file.files[0]);
+      } else if (url.value.trim()) body = { url: url.value.trim() };
+      else {
+        setStatus("Provide a URL or an audio file.");
+        return;
+      }
+      out.replaceChildren();
+      const job = await runJob("Generate", await api.generate(body));
+      const mapId = job.result && job.result.map_id;
+      if (mapId === undefined || mapId === null) {
+        out.replaceChildren(jobOutcome(job));
+        return;
+      }
+      await showCreate(mapId, out);
+    }),
+  });
   main.replaceChildren(
-    el("h2", {}, "New map"),
+    el("h2", {}, "Generate map"),
     el(
       "div",
       { class: "toolbar" },
@@ -55,6 +57,7 @@ export function showNew() {
     ),
     out,
   );
+  return "Generate map";
 }
 
 const FIRST_16_BARS = 64;
@@ -74,17 +77,18 @@ async function showCreate(mapId, out) {
     .map((p) => proposalCard(p, reload, firstBars));
   const approvedAny = proposals.some((p) => p.status === "approved");
   const res = el("div");
-  const write = jobButton(
-    {
-      type: "button",
-      class: "primary",
-      disabled: !approvedAny,
-      onclick: jobGuard(async () => {
-        const job = await runJob("Write map", await api.apply(mapId));
-        res.replaceChildren(jobOutcome(job));
-      }),
-    },
-    "Write map folder",
-  );
+  const write = actionButton({
+    name: "apply",
+    label: "Write map folder",
+    text: true,
+    tip: TIPS.apply,
+    job: true,
+    class: "primary",
+    disabled: !approvedAny,
+    onclick: jobGuard(async () => {
+      const job = await runJob("Write map", await api.apply(mapId));
+      res.replaceChildren(jobOutcome(job));
+    }),
+  });
   out.replaceChildren(head, counts, ...shown, write, res);
 }

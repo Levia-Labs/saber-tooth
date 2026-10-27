@@ -20,8 +20,8 @@ export function setStatus(text) {
   statusEl.textContent = text;
 }
 
-export async function request(method, path, body) {
-  const init = { method, headers: {} };
+export async function request(method, path, body, signal) {
+  const init = { method, headers: {}, signal };
   if (body instanceof FormData) init.body = body;
   else if (body !== undefined) {
     init.headers["Content-Type"] = "application/json";
@@ -44,7 +44,8 @@ export async function request(method, path, body) {
 }
 
 export const api = {
-  maps: () => request("GET", "/api/maps"),
+  mapsPage: (query, signal) => request("GET", `/api/maps?${query}`, undefined, signal),
+  map: (id) => request("GET", `/api/maps/${encodeURIComponent(id)}`),
   scan: (id) => request("POST", `/api/maps/${encodeURIComponent(id)}/scan`),
   proposals: (id) => request("GET", `/api/maps/${encodeURIComponent(id)}/proposals`),
   approve: (id) => request("POST", `/api/proposals/${encodeURIComponent(id)}/approve`),
@@ -156,11 +157,4 @@ export function jobOutcome(job) {
   else if (result.folder) box.append(el("p", { class: "ok" }, `Written to: ${result.folder}`));
   else box.append(el("p", { class: "ok" }, "Job finished."));
   return box;
-}
-
-export function setNav(view) {
-  for (const tab of document.querySelectorAll(".tab")) {
-    if (tab.dataset.view === view) tab.setAttribute("aria-current", "page");
-    else tab.removeAttribute("aria-current");
-  }
 }

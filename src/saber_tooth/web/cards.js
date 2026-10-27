@@ -1,5 +1,7 @@
 import { drawTimeline, isNotesless } from "./timeline.js";
 import { api, el, guard } from "./util.js";
+import { icon } from "./icons.js";
+import { TIPS } from "./tips.js";
 
 const drawn = new Set();
 let resizeTimer;
@@ -43,7 +45,8 @@ export function proposalCard(p, onChange, notesFilter) {
     "button",
     {
       type: "button",
-      class: "approve",
+      class: "btn approve",
+      "data-tip": TIPS.approve,
       disabled: p.status === "approved",
       onclick: guard(async () => {
         await api.approve(p.id);
@@ -51,13 +54,14 @@ export function proposalCard(p, onChange, notesFilter) {
         restoreFocus(p.id);
       }),
     },
-    "Approve",
+    [icon("approve"), "Approve"],
   );
   const reject = el(
     "button",
     {
       type: "button",
-      class: "reject",
+      class: "btn reject",
+      "data-tip": TIPS.reject,
       disabled: p.status === "rejected",
       onclick: guard(async () => {
         await api.reject(p.id);
@@ -65,7 +69,7 @@ export function proposalCard(p, onChange, notesFilter) {
         restoreFocus(p.id);
       }),
     },
-    "Reject",
+    [icon("reject"), "Reject"],
   );
   const card = el(
     "article",
