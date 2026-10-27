@@ -242,6 +242,11 @@
   padding: 2rem 1rem;
   color: var(--muted);
 }
+.lib-empty .alert,
+.lib-more .alert {
+  margin: 0;
+  width: min(100%, 34rem);
+}
 .th-quiet {
   font-size: 0.75rem;
   opacity: 0.6;

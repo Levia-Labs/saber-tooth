@@ -240,23 +240,3 @@
 .error-panel {
   max-width: 640px;
 }
-
-.error-panel details {
-  margin: 12px 0;
-}
-
-.error-panel summary {
-  cursor: pointer;
-}
-
-.error-panel pre {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  margin: 8px 0 0;
-}
-
-.error-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}

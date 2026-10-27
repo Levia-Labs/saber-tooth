@@ -2,7 +2,10 @@ import { formatEnvironment } from "../lib/environment";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useParams } from "react-router";
-import { ApiError, applyMap, approveAll, errorMessage, scanMap } from "../api/client";
+import { ApiError, applyMap, approveAll, scanMap } from "../api/client";
+import { Alert, SpecAlert } from "../components/Alert";
+import { FixesSkeleton, MapHeadSkeleton } from "../components/Skeletons";
+import { errorToAlert } from "../lib/alerts";
 import { useJobRunner } from "../api/jobs";
 import { keys, useLiveRows, useMap, useProposals } from "../api/queries";
 import { ActionButton } from "../components/Buttons";
@@ -21,7 +24,7 @@ export function MapPage() {
   const client = useQueryClient();
   const map = useMap(id);
   const proposals = useProposals(id);
-  const [approveError, setApproveError] = useState<string | null>(null);
+  const [approveError, setApproveError] = useState<unknown>(null);
   const scan = useJobRunner("Scan");
   const apply = useJobRunner("Apply");
   useLiveRows(map.data ? [map.data] : []);
@@ -44,7 +47,7 @@ export function MapPage() {
       await approveAll(id);
       await refresh();
     } catch (err) {
-      setApproveError(errorMessage(err));
+      setApproveError(err);
     }
   };
   const approved = list.filter((p) => p.status === "approved").length;
@@ -57,11 +60,12 @@ export function MapPage() {
         Library
       </Link>
       {map.isPending ? (
-        <p className="muted" role="status">
-          Loading map
-        </p>
+        <MapHeadSkeleton />
       ) : map.isError ? (
-        <p className="err">Could not load the map: {errorMessage(map.error)}</p>
+        <SpecAlert
+          spec={errorToAlert(map.error, "Could not load the map")}
+          onRetry={() => void map.refetch()}
+        />
       ) : (
         <div className="maphead">
           <Cover url={map.data.cover_url} big />
@@ -81,11 +85,39 @@ export function MapPage() {
           </div>
         </div>
       )}
-      <JobOutcome job={apply.job} error={apply.error} />
-      {approveError && <p className="err">Approve all failed: {approveError}</p>}
-      {scan.error && <p className="err">Scan failed: {scan.error}</p>}
-      {proposals.isPending ? null : proposals.isError ? (
-        <p className="err">Could not load proposals: {errorMessage(proposals.error)}</p>
+      <JobOutcome
+        job={apply.job}
+        error={apply.error}
+        onRetry={() => void apply.run(() => applyMap(id)).then(refresh)}
+        onReview={() => document.getElementById("fixes-top")?.scrollIntoView?.()}
+      />
+      <JobOutcome
+        job={scan.job}
+        error={scan.error}
+        onRetry={() => void scan.run(() => scanMap(id)).then(refresh)}
+      />
+      {approveError !== null && (
+        <SpecAlert
+          spec={errorToAlert(approveError, "Approve all failed")}
+          onRetry={() => void approveEverything()}
+          onDismiss={() => setApproveError(null)}
+        />
+      )}
+      {approved === 0 && pendingCount > 0 && (
+        <Alert
+          variant="info"
+          title="No fixes approved yet"
+          message="Approve the fixes you want, then choose Apply approved."
+        />
+      )}
+      <span id="fixes-top" />
+      {proposals.isPending ? (
+        <FixesSkeleton />
+      ) : proposals.isError ? (
+        <SpecAlert
+          spec={errorToAlert(proposals.error, "Could not load proposals")}
+          onRetry={() => void proposals.refetch()}
+        />
       ) : (
         <ProposalGroups
           proposals={list}

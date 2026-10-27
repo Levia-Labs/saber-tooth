@@ -1,21 +1,15 @@
 import type { Job } from "../api/types";
+import { toAlert } from "../lib/alerts";
+import { SpecAlert } from "./Alert";
 
 interface Props {
   job: Job | null;
   error: string | null;
+  onRetry?: () => void;
+  onReview?: () => void;
 }
 
-/** Result box under a finished apply or learn job. */
-export function JobOutcome({ job, error }: Props) {
-  if (!job && !error) return null;
-  const result = job?.result ?? {};
-  const conflict = result["conflict"];
-  const folder = result["folder"];
-  return (
-    <div className="result" role="status">
-      {error && <p className="err">{conflict ? `Conflict: ${String(conflict)}` : error}</p>}
-      {!error && typeof folder === "string" && <p className="ok">Written to: {folder}</p>}
-      {!error && typeof folder !== "string" && <p className="ok">Job finished.</p>}
-    </div>
-  );
+/** Alert under a finished or failed job: scan, apply, generate or learn. */
+export function JobOutcome({ job, error, onRetry, onReview }: Props) {
+  return <SpecAlert spec={toAlert(job, error)} onRetry={onRetry} onReview={onReview} />;
 }

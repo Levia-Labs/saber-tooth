@@ -2,6 +2,7 @@ import { Component, type ErrorInfo, type ReactNode } from "react";
 import { Link } from "react-router";
 import { errorMessage } from "../api/client";
 import { libraryHref } from "../lib/hooks";
+import { Alert } from "./Alert";
 
 interface PanelProps {
   error: unknown;
@@ -11,23 +12,24 @@ interface PanelProps {
 /** What went wrong in plain words, the technical message folded away, and the two ways out. */
 export function ErrorPanel({ error, onRetry }: PanelProps) {
   return (
-    <section className="page error-panel" role="alert">
-      <h1 tabIndex={-1} data-page-heading>
-        Something went wrong
-      </h1>
-      <p>This page hit a problem and could not be shown.</p>
-      <details>
-        <summary>Details</summary>
-        <pre>{errorMessage(error)}</pre>
-      </details>
-      <div className="error-actions">
-        <button type="button" className="btn primary" onClick={onRetry}>
-          Try again
-        </button>
-        <Link className="btn plain" to={libraryHref()}>
-          Back to library
-        </Link>
-      </div>
+    <section className="page error-panel">
+      <Alert
+        variant="danger"
+        pageHeading
+        title="Something went wrong"
+        message="This page hit a problem and could not be shown."
+        details={[errorMessage(error)]}
+        actions={
+          <>
+            <button type="button" className="btn primary" onClick={onRetry}>
+              Try again
+            </button>
+            <Link className="btn plain" to={libraryHref()}>
+              Back to library
+            </Link>
+          </>
+        }
+      />
     </section>
   );
 }

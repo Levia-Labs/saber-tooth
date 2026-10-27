@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef } from "react";
-import { errorMessage } from "../api/client";
+import { SpecAlert } from "../components/Alert";
+import { errorToAlert } from "../lib/alerts";
 import { useFacets, useLibrary, useLiveRows } from "../api/queries";
 import { useJobRunner } from "../api/jobs";
 import { JobOutcome } from "../components/JobOutcome";
@@ -54,10 +55,10 @@ export function LibraryPage() {
       )}
       {library.isError && !library.data ? (
         <div className="lib-empty">
-          <p className="err">Could not load the library: {errorMessage(library.error)}</p>
-          <button type="button" className="btn plain" onClick={() => void library.refetch()}>
-            Try again
-          </button>
+          <SpecAlert
+            spec={errorToAlert(library.error, "Could not load the library")}
+            onRetry={() => void library.refetch()}
+          />
         </div>
       ) : (
         <LibraryTable

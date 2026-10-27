@@ -6,6 +6,7 @@ import { AnnouncerProvider } from "./components/Announcer";
 import { Logo } from "./components/Logo";
 import { TipProvider } from "./components/Tip";
 import { PageBoundary } from "./components/ErrorPanel";
+import { PageSkeleton } from "./components/Skeletons";
 import { RouteError } from "./components/RouteError";
 import { lazyRoute } from "./lib/lazyRoute";
 import { LibraryPage } from "./pages/LibraryPage";
@@ -52,7 +53,7 @@ export function Shell() {
       <AnnouncerProvider>
         <main id="main" tabIndex={-1}>
           <PageBoundary resetKey={pathname}>
-            <Suspense fallback={<p className="muted">Loading</p>}>
+            <Suspense fallback={<PageSkeleton />}>
               <Outlet />
             </Suspense>
           </PageBoundary>

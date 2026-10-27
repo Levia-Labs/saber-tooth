@@ -126,7 +126,9 @@ describe("approve all", () => {
     await user.click(screen.getByRole("button", { name: "Approve all" }));
     const dialog = await screen.findByRole("dialog");
     await user.click(within(dialog).getByRole("button", { name: "Approve all" }));
-    expect(await screen.findByText(/Approve all failed: database is locked/)).toBeInTheDocument();
+    expect(await screen.findByText("Approve all failed")).toBeInTheDocument();
+    expect(screen.getByText(/database is busy/)).toBeInTheDocument();
+    expect(screen.getByText("database is locked")).toBeInTheDocument();
   });
 
   test("is disabled when nothing is pending", async () => {

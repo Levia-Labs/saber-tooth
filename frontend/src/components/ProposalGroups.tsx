@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import type { Proposal } from "../api/types";
+import { Alert } from "./Alert";
 import { ActionButton } from "./Buttons";
 import { ProposalCard } from "./ProposalCard";
 
@@ -54,7 +55,13 @@ export function ProposalGroups({
         />
       </div>
       <div className="fixes-scroll">
-        {none && <p className="muted">No proposals. Scan the map first.</p>}
+        {none && (
+          <Alert
+            variant="info"
+            title="No fixes yet"
+            message="Scan the map to look for fixes to propose."
+          />
+        )}
         {[...groupBy(proposals, (p) => p.difficulty)].map(([difficulty, byDiff]) => (
           <section key={difficulty}>
             <h2 className="group-title">{difficulty}</h2>
