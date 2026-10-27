@@ -1,6 +1,6 @@
 import type { InfiniteData, UseInfiniteQueryResult } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router";
+import { Link, useParams } from "react-router";
 import {
   useBsPlaylistMaps,
   useBsPlaylists,
@@ -12,12 +12,12 @@ import { BsTabs } from "../components/beatsaver/BsTabs";
 import type { Downloads } from "../components/beatsaver/downloads";
 import { PlaylistList } from "../components/beatsaver/PlaylistList";
 import { DownloadConfirm, MAX_BATCH } from "../components/beatsaver/SelectionBar";
-import { TextFilterBody } from "../components/FilterBodies";
 import { Icon } from "../components/icons";
 import { Tip } from "../components/Tip";
 import { BS_TIPS } from "../lib/bstips";
 import { useDocumentTitle } from "../lib/hooks";
 import { useBsState } from "../lib/useBsState";
+import { usePlState } from "../lib/usePlState";
 
 const MAX_PAGES = 50;
 type Query = UseInfiniteQueryResult<InfiniteData<BsPlaylistMaps>, unknown>;
@@ -93,20 +93,12 @@ function PlaylistDetail({ id }: { id: string }) {
 
 function PlaylistSearch() {
   useDocumentTitle("BeatSaver playlists");
-  const [params, setParams] = useSearchParams();
-  const q = params.get("q") ?? "";
-  const query = useBsPlaylists(q);
+  const controls = usePlState();
+  const query = useBsPlaylists(controls.state);
   return (
     <section className="library" aria-labelledby="bs-heading">
       <BsTabs tab="playlists" heading="BeatSaver playlists" headingId="bs-heading" />
-      <div className="bs-toolbar">
-        <TextFilterBody
-          label="Search playlists"
-          q={q}
-          onChange={(next, replace) => setParams(next ? { q: next } : {}, { replace })}
-        />
-      </div>
-      <PlaylistList query={query} />
+      <PlaylistList query={query} controls={controls} />
     </section>
   );
 }

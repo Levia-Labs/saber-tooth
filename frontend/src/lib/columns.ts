@@ -17,7 +17,10 @@ export type ColumnKey =
   | "select"
   | "rating"
   | "upvotes"
-  | "tags";
+  | "tags"
+  | "maps"
+  | "nps"
+  | "created";
 export type Widths = Partial<Record<ColumnKey, number>>;
 
 export const BREAKPOINTS: readonly Breakpoint[] = ["wide", "mid", "compact"];
@@ -57,6 +60,9 @@ export const LABELS: Record<ColumnKey, string> = {
   rating: "Rating",
   upvotes: "Upvotes",
   tags: "Tags",
+  maps: "Maps",
+  nps: "NPS",
+  created: "Created",
 };
 
 export const LIMITS: Partial<Record<ColumnKey, { min: number; max: number }>> = {
@@ -70,6 +76,9 @@ export const LIMITS: Partial<Record<ColumnKey, { min: number; max: number }>> = 
   rating: { min: 72, max: 200 },
   upvotes: { min: 72, max: 200 },
   tags: { min: 96, max: 500 },
+  maps: { min: 64, max: 200 },
+  nps: { min: 72, max: 200 },
+  created: { min: 84, max: 200 },
 };
 
 /**

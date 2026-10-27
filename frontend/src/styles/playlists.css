@@ -1,0 +1,64 @@
+/* Playlists table: its own columns on the shared grid. */
+.col-maps,
+.col-nps,
+.col-created {
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.pl-table .col-title {
+  display: flex;
+  align-items: center;
+}
+.pl-table .title-link {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pl-table .col-actions .actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+@media (max-width: 1099px) {
+  .pl-table .col-upvotes,
+  .pl-table .col-nps,
+  .pl-table .col-created {
+    display: none;
+  }
+  .pl-table .lib-grid {
+    grid-template-areas:
+      "cover title maps rating length actions"
+      "cover sub maps rating length actions";
+  }
+  .pl-table .col-maps {
+    grid-area: maps;
+  }
+  .pl-table .col-rating {
+    grid-area: rating;
+  }
+  .pl-table .sub-tempo {
+    display: none;
+  }
+}
+
+@media (max-width: 719px) {
+  .pl-table .col-length {
+    display: flex;
+  }
+  .pl-table .sub-tempo {
+    display: inline;
+  }
+  .pl-table .lib-row {
+    height: auto;
+    min-height: 150px;
+    grid-template-columns: 56px minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "cover title title title"
+      "cover sub sub sub"
+      "maps rating length length"
+      "actions actions actions actions";
+  }
+}
