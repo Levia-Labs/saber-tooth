@@ -13,8 +13,8 @@ export class ApiError extends Error {
 
 type Body = Record<string, unknown> | FormData | undefined;
 
-async function request<T>(
-  method: "GET" | "POST",
+export async function request<T>(
+  method: "GET" | "POST" | "DELETE",
   path: string,
   body?: Body,
   signal?: AbortSignal,

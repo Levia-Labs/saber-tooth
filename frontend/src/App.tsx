@@ -4,7 +4,7 @@ import { createBrowserRouter, Link, Outlet, useLocation, type RouteObject } from
 import { RouterProvider } from "react-router/dom";
 import { AnnouncerProvider } from "./components/Announcer";
 import { Logo } from "./components/Logo";
-import { TipProvider } from "./components/Tip";
+import { Tip, TipProvider } from "./components/Tip";
 import { PageBoundary } from "./components/ErrorPanel";
 import { RouteError } from "./components/RouteError";
 import { lazyRoute } from "./lib/lazyRoute";
@@ -12,6 +12,12 @@ import { LibraryPage } from "./pages/LibraryPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
 const MapPage = lazyRoute(() => import("./pages/MapPage").then((m) => ({ default: m.MapPage })));
+const BeatSaverPage = lazyRoute(() =>
+  import("./pages/BeatSaverPage").then((m) => ({ default: m.BeatSaverPage })),
+);
+const BeatSaverPlaylistsPage = lazyRoute(() =>
+  import("./pages/BeatSaverPlaylistsPage").then((m) => ({ default: m.BeatSaverPlaylistsPage })),
+);
 const NewPage = lazyRoute(() => import("./pages/NewPage").then((m) => ({ default: m.NewPage })));
 
 export function makeQueryClient(): QueryClient {
@@ -33,6 +39,27 @@ function useFocusHeading() {
   }, [pathname]);
 }
 
+/** Library | BeatSaver switch: two real links, the active one follows the route. */
+function ModeSwitch() {
+  const { pathname } = useLocation();
+  const onBeatSaver = pathname === "/beatsaver" || pathname.startsWith("/beatsaver/");
+  const items = [
+    { to: "/", label: "Library", active: !onBeatSaver, tip: "Maps in your CustomLevels folder." },
+    { to: "/beatsaver", label: "BeatSaver", active: onBeatSaver, tip: "Search and download maps." },
+  ];
+  return (
+    <nav className="mode-switch" aria-label="Section">
+      {items.map((i) => (
+        <Tip key={i.to} text={i.tip}>
+          <Link to={i.to} aria-current={i.active ? "page" : undefined}>
+            {i.label}
+          </Link>
+        </Tip>
+      ))}
+    </nav>
+  );
+}
+
 export function Shell() {
   useFocusHeading();
   const { pathname } = useLocation();
@@ -48,6 +75,7 @@ export function Shell() {
             <span className="red">saber</span>-<span className="blue">tooth</span>
           </span>
         </Link>
+        <ModeSwitch />
       </header>
       <AnnouncerProvider>
         <main id="main" tabIndex={-1}>
@@ -70,6 +98,17 @@ export const routes: RouteObject[] = [
       { path: "/", element: <LibraryPage />, errorElement: <RouteError /> },
       { path: "/maps/:id", element: <MapPage />, errorElement: <RouteError /> },
       { path: "/new", element: <NewPage />, errorElement: <RouteError /> },
+      { path: "/beatsaver", element: <BeatSaverPage />, errorElement: <RouteError /> },
+      {
+        path: "/beatsaver/playlists",
+        element: <BeatSaverPlaylistsPage />,
+        errorElement: <RouteError />,
+      },
+      {
+        path: "/beatsaver/playlists/:id",
+        element: <BeatSaverPlaylistsPage />,
+        errorElement: <RouteError />,
+      },
       { path: "*", element: <NotFoundPage />, errorElement: <RouteError /> },
     ],
   },

@@ -117,6 +117,11 @@ const ICONS = {
   spinner: <path d="M12 3a9 9 0 1 0 9 9" />,
   chevron: <path d="M6 9l6 6 6-6" />,
   upload: <path d="M12 16V4M7 9l5-5 5 5M4 17v3h16v-3" />,
+  download: <path d="M12 4v12M7 11l5 5 5-5M4 17v3h16v-3" />,
+  play: <path d="M8 5l11 7-11 7z" />,
+  stop: <rect x="6" y="6" width="12" height="12" rx="1.5" />,
+  playlist: <path d="M4 6h12M4 11h12M4 16h7M17 14v6l5-3z" />,
+  bookmark: <path d="M7 4h10v16l-5-4-5 4z" />,
 } satisfies Record<string, ReactNode>;
 
 export type IconName = keyof typeof ICONS;

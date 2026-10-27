@@ -5,7 +5,19 @@
 
 export type Breakpoint = "wide" | "mid" | "compact";
 export type ColumnKey =
-  "cover" | "title" | "author" | "levels" | "length" | "bpm" | "env" | "status" | "actions";
+  | "cover"
+  | "title"
+  | "author"
+  | "levels"
+  | "length"
+  | "bpm"
+  | "env"
+  | "status"
+  | "actions"
+  | "select"
+  | "rating"
+  | "tempo"
+  | "tags";
 export type Widths = Partial<Record<ColumnKey, number>>;
 
 export const BREAKPOINTS: readonly Breakpoint[] = ["wide", "mid", "compact"];
@@ -41,6 +53,10 @@ export const LABELS: Record<ColumnKey, string> = {
   env: "Env",
   status: "Status",
   actions: "Actions",
+  select: "Select",
+  rating: "Rating",
+  tempo: "Length / BPM",
+  tags: "Tags",
 };
 
 export const LIMITS: Partial<Record<ColumnKey, { min: number; max: number }>> = {
@@ -51,6 +67,9 @@ export const LIMITS: Partial<Record<ColumnKey, { min: number; max: number }>> = 
   bpm: { min: 56, max: 200 },
   env: { min: 72, max: 400 },
   status: { min: 84, max: 300 },
+  rating: { min: 72, max: 200 },
+  tempo: { min: 84, max: 240 },
+  tags: { min: 96, max: 500 },
 };
 
 /**
@@ -82,11 +101,27 @@ export const DEFAULTS: Record<Breakpoint, Record<string, number>> = {
   compact: { cover: 64, title: 100, length: 64, bpm: 80, status: 100, actions: 140 },
 };
 
-const GAP = 12;
-const PAD = 24;
 /** Bumped when the default widths change, so widths saved against older defaults are dropped. */
 const STORE_PREFIX = "saber-tooth.columns.v2.";
 const LEGACY_PREFIXES = ["saber-tooth.columns.v1."];
+
+/** Tracks, default widths and storage key of one list; the library is the default. */
+export interface ColumnSet {
+  tracks: Record<Breakpoint, readonly ColumnKey[]>;
+  defaults: Record<Breakpoint, Record<string, number>>;
+  storePrefix: string;
+  legacyPrefixes: readonly string[];
+}
+
+export const LIBRARY_COLUMNS: ColumnSet = {
+  tracks: TRACKS,
+  defaults: DEFAULTS,
+  storePrefix: STORE_PREFIX,
+  legacyPrefixes: LEGACY_PREFIXES,
+};
+
+const GAP = 12;
+const PAD = 24;
 const MAIN_PAD = 40;
 const MAIN_MAX = 1480;
 const SCROLL_BORDER = 2;
@@ -100,9 +135,14 @@ export function availableWidth(viewport: number): number {
 }
 
 /** Rendered Title width at a viewport width: whatever the fixed tracks leave over. */
-export function titleWidthAt(bp: Breakpoint, widths: Widths, viewport: number): number {
-  const rest = tableMinWidth(bp, widths) - width(bp, widths, "title");
-  return Math.max(width(bp, widths, "title"), availableWidth(viewport) - rest);
+export function titleWidthAt(
+  bp: Breakpoint,
+  widths: Widths,
+  viewport: number,
+  set: ColumnSet = LIBRARY_COLUMNS,
+): number {
+  const rest = tableMinWidth(bp, widths, set) - width(bp, widths, "title", set);
+  return Math.max(width(bp, widths, "title", set), availableWidth(viewport) - rest);
 }
 
 export function isResizable(key: ColumnKey): boolean {
@@ -116,8 +156,8 @@ export function clampWidth(key: ColumnKey, px: number): number {
   return Math.min(limit.max, Math.max(limit.min, v));
 }
 
-export function defaultWidths(bp: Breakpoint): Widths {
-  return { ...DEFAULTS[bp] };
+export function defaultWidths(bp: Breakpoint, set: ColumnSet = LIBRARY_COLUMNS): Widths {
+  return { ...set.defaults[bp] };
 }
 
 /** Width after an arrow key, or null when the key is not a resize key. */
@@ -133,33 +173,44 @@ export function stepWidth(
   return null;
 }
 
-function width(bp: Breakpoint, widths: Widths, key: ColumnKey): number {
-  return widths[key] ?? DEFAULTS[bp][key] ?? 0;
+function width(bp: Breakpoint, widths: Widths, key: ColumnKey, set: ColumnSet): number {
+  return widths[key] ?? set.defaults[bp][key] ?? 0;
 }
 
 /** CSS grid-template-columns for a breakpoint; Title is the flexible track. */
-export function gridTemplate(bp: Breakpoint, widths: Widths): string {
-  return TRACKS[bp]
+export function gridTemplate(
+  bp: Breakpoint,
+  widths: Widths,
+  set: ColumnSet = LIBRARY_COLUMNS,
+): string {
+  return set.tracks[bp]
     .map((key) => {
-      const w = width(bp, widths, key);
+      const w = width(bp, widths, key, set);
       return key === "title" ? `minmax(${w}px, 1fr)` : `${w}px`;
     })
     .join(" ");
 }
 
 /** Minimum table width in px; below it the scroll region scrolls horizontally. */
-export function tableMinWidth(bp: Breakpoint, widths: Widths): number {
-  const cols = TRACKS[bp];
-  const sum = cols.reduce((acc, key) => acc + width(bp, widths, key), 0);
+export function tableMinWidth(
+  bp: Breakpoint,
+  widths: Widths,
+  set: ColumnSet = LIBRARY_COLUMNS,
+): number {
+  const cols = set.tracks[bp];
+  const sum = cols.reduce((acc, key) => acc + width(bp, widths, key, set), 0);
   return sum + GAP * (cols.length - 1) + PAD;
 }
 
 /** Custom properties for the list container, one grid template and one min width per breakpoint. */
-export function columnVars(all: Record<Breakpoint, Widths>): Record<string, string> {
+export function columnVars(
+  all: Record<Breakpoint, Widths>,
+  set: ColumnSet = LIBRARY_COLUMNS,
+): Record<string, string> {
   const vars: Record<string, string> = {};
   for (const bp of BREAKPOINTS) {
-    vars[`--cols-${bp}`] = gridTemplate(bp, all[bp]);
-    vars[`--min-${bp}`] = `${tableMinWidth(bp, all[bp])}px`;
+    vars[`--cols-${bp}`] = gridTemplate(bp, all[bp], set);
+    vars[`--min-${bp}`] = `${tableMinWidth(bp, all[bp], set)}px`;
   }
   return vars;
 }
@@ -173,22 +224,26 @@ export function getStorage(): Storage | null {
 }
 
 /** Saved widths merged over the defaults; any storage or parse failure yields the defaults. */
-export function loadWidths(bp: Breakpoint, storage: Storage | null = getStorage()): Widths {
-  const widths = defaultWidths(bp);
+export function loadWidths(
+  bp: Breakpoint,
+  storage: Storage | null = getStorage(),
+  set: ColumnSet = LIBRARY_COLUMNS,
+): Widths {
+  const widths = defaultWidths(bp, set);
   try {
-    for (const old of LEGACY_PREFIXES) storage?.removeItem(old + bp);
-    const raw = storage?.getItem(STORE_PREFIX + bp);
+    for (const old of set.legacyPrefixes) storage?.removeItem(old + bp);
+    const raw = storage?.getItem(set.storePrefix + bp);
     if (!raw) return widths;
     const saved: unknown = JSON.parse(raw);
     if (typeof saved !== "object" || saved === null) return widths;
-    for (const key of TRACKS[bp]) {
+    for (const key of set.tracks[bp]) {
       const v = (saved as Record<string, unknown>)[key];
       if (isResizable(key) && typeof v === "number" && Number.isFinite(v)) {
         widths[key] = clampWidth(key, v);
       }
     }
   } catch {
-    return defaultWidths(bp);
+    return defaultWidths(bp, set);
   }
   return widths;
 }
@@ -198,12 +253,13 @@ export function saveWidths(
   bp: Breakpoint,
   widths: Widths,
   storage: Storage | null = getStorage(),
+  set: ColumnSet = LIBRARY_COLUMNS,
 ): void {
   try {
     if (!storage) return;
-    const same = TRACKS[bp].every((k) => widths[k] === DEFAULTS[bp][k]);
-    if (same) storage.removeItem(STORE_PREFIX + bp);
-    else storage.setItem(STORE_PREFIX + bp, JSON.stringify(widths));
+    const same = set.tracks[bp].every((k) => widths[k] === set.defaults[bp][k]);
+    if (same) storage.removeItem(set.storePrefix + bp);
+    else storage.setItem(set.storePrefix + bp, JSON.stringify(widths));
   } catch {
     /* storage unavailable or full: widths last for this session only */
   }

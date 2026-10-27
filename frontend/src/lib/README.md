@@ -9,3 +9,5 @@ Pure helpers and small hooks.
 5. `tips.ts`: tooltip copy.
 6. `hooks.ts`: URL-backed library state, debounce, media query and document title.
 7. `timeline.ts`: canvas geometry and drawing for the before and after note grids.
+8. `bsfilters.ts`, `useBsState.ts`: BeatSaver filter state in the URL, API parameters and presets.
+9. `bscolumns.ts`, `bstips.ts`, `preview.ts`: BeatSaver column set, tooltip copy and the single audio preview.

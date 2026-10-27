@@ -10,3 +10,4 @@ Shared UI.
 6. `LibraryHeader.tsx`, `LibraryTable.tsx`, `LibraryRow.tsx`, `SkeletonRow.tsx`: the virtualised library table.
 7. `ProposalCard.tsx`, `ProposalGroups.tsx`, `TimelineCanvas.tsx`: proposed fixes with before and after note grids.
 8. `ConfirmDialog.tsx`, `JobOutcome.tsx`: confirmation dialog and the result box under a finished job.
+9. `beatsaver/`: the BeatSaver view: table, row, header, filter bodies, presets bar, selection bar, download hooks and playlist list.
