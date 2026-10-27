@@ -60,6 +60,7 @@ def search(
     cursor: str | None,
     limit: int = 40,
     max_pages: int = 10,
+    scope: str = "",
 ) -> SearchResult:
     """Collect up to `limit` matches, scanning at most `max_pages` BeatSaver pages.
 
@@ -69,7 +70,7 @@ def search(
     page, offset = parse_cursor(cursor)
     limit = max(1, min(limit, MAX_LIMIT))
     params = server.to_params()
-    key = query_key(params)
+    key = query_key({**params, "_scope": scope})
     res = SearchResult(cursor=cursor)
     fetched = 0
     while len(res.items) < limit and fetched < max_pages:

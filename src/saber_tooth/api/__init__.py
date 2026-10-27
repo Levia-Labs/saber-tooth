@@ -10,6 +10,8 @@ from fastapi import FastAPI, Request
 from mcp.server.transport_security import TransportSecuritySettings
 
 from saber_tooth.analyser_client import AnalyserClient
+from saber_tooth.api.beatsaver import BeatSaverApi
+from saber_tooth.api.beatsaver_routes import register as register_beatsaver
 from saber_tooth.api.core import Api, ApiError, _error
 from saber_tooth.api.hosts import (
     allowed_hosts,
@@ -23,6 +25,7 @@ from saber_tooth.api.static import WebFiles
 from saber_tooth.api.upload import _save_upload
 from saber_tooth.api.web_routes import register as register_web_routes
 from saber_tooth.audio import encode_egg
+from saber_tooth.beatsaver.client import BeatSaverClient
 from saber_tooth.service import ApplyConflict, MapNotFound, MapUnreadable, Service
 from saber_tooth.store import Store
 
@@ -30,12 +33,25 @@ log = logging.getLogger(__name__)
 WEB = Path(__file__).resolve().parents[1] / "web"
 
 
-def create_app(service: Service, web: Path = WEB, warm: bool = False) -> FastAPI:
-    """Build the app; `warm` runs the first library refresh in a background thread."""
+def create_app(
+    service: Service,
+    web: Path = WEB,
+    warm: bool = False,
+    bs_client: BeatSaverClient | None = None,
+    playlists_dir: Path | None = None,
+) -> FastAPI:
+    """Build the app; `warm` runs the first library refresh in a background thread.
+
+    `bs_client` and `playlists_dir` (default: env PLAYLISTS_DIR) configure the BeatSaver routes.
+    """
     api = Api(service)
+    env_dir = os.environ.get("PLAYLISTS_DIR")
+    bs = BeatSaverApi(
+        api, bs_client or BeatSaverClient(), playlists_dir or (env_dir and Path(env_dir)) or None
+    )
     # The SDK's own Host check is off: same_origin below already covers /mcp, and honours
     # SABER_ALLOWED_HOSTS and trusted proxies, which the SDK list cannot.
-    mcp_app = build_mcp(api).streamable_http_app(
+    mcp_app = build_mcp(api, bs).streamable_http_app(
         json_response=True,
         stateless_http=True,
         transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False),
@@ -87,6 +103,8 @@ def create_app(service: Service, web: Path = WEB, warm: bool = False) -> FastAPI
     @app.get("/api/health")
     def health():
         return {"status": "ok"}
+
+    register_beatsaver(app, bs)
 
     # The library, cover and SPA routes are registered after the JSON routes below so the
     # catch-all /api/* 404 never shadows them.

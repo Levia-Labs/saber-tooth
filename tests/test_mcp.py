@@ -8,8 +8,9 @@ HEADERS = {"accept": "application/json, text/event-stream", "content-type": "app
 TOOLS = {
     "list_maps", "get_proposals", "scan_map", "job_status", "approve_proposal",
     "reject_proposal", "apply_map", "generate_from_youtube", "learn_lightshows",
+    "beatsaver_search", "beatsaver_download",
 }  # fmt: skip
-READ_ONLY = {"list_maps", "get_proposals", "job_status"}
+READ_ONLY = {"list_maps", "get_proposals", "job_status", "beatsaver_search"}
 
 
 def rpc(c, method, params=None, ident=1):

@@ -168,10 +168,17 @@ class BeatSaverClient:
         return [BsPlaylist.from_json(x) for x in docs or [] if isinstance(x, dict)]
 
     def playlist_page(self, pid: int, page: int) -> list[BsMap]:
+        return self.playlist_page_full(pid, page)[1]
+
+    def playlist_page_full(self, pid: int, page: int) -> tuple[BsPlaylist, list[BsMap]]:
+        """The playlist itself and one page of its maps."""
         if not isinstance(pid, int) or isinstance(pid, bool) or pid < 0:
             raise ValueError("invalid playlist id")
-        rows = self._json(f"/playlists/id/{pid}/{self._page(page)}").get("maps")
-        return self._maps([r.get("map") for r in rows or [] if isinstance(r, dict)])
+        data = self._json(f"/playlists/id/{pid}/{self._page(page)}")
+        rows = data.get("maps")
+        maps = self._maps([r.get("map") for r in rows or [] if isinstance(r, dict)])
+        meta = data.get("playlist")
+        return BsPlaylist.from_json(meta if isinstance(meta, dict) else {}), maps
 
     def download(self, url: str, dest: Path, max_bytes: int) -> Path:
         """Stream a zip from a BeatSaver host into dest; abort and delete it past max_bytes."""
