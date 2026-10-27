@@ -211,3 +211,22 @@ def test_rate_limiter_spaces_calls():
         client.search({}, 0)
     gaps = [b - a for a, b in pairwise(stamps)]
     assert all(g >= 0.2 - 1e-9 for g in gaps)
+
+
+def test_playlist_search_hides_empty_playlists_and_sends_include_empty_false():
+    seen: dict[str, str] = {}
+    base = fixture("playlist_search.json")["docs"][0]
+
+    def doc(pid: int, total: object) -> dict:
+        stats = {} if total is None else {"totalMaps": total}
+        return {**base, "playlistId": pid, "stats": stats}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.update(request.url.params)
+        return httpx.Response(200, json={"docs": [doc(1, 0), doc(2, 5), doc(3, None)]})
+
+    client, _ = make(handler)
+    raw, shown = client.playlist_search_page({"includeEmpty": "true"}, 0)
+    assert seen["includeEmpty"] == "false"
+    assert raw == 3 and [p.id for p in shown] == [2]
+    assert [p.id for p in client.playlist_search({}, 0)] == [2]

@@ -241,3 +241,13 @@ def test_download_rejects_non_json(bs):
 def test_exactly_100_ids_accepted(bs):
     ids = [f"{i:x}" for i in range(100)]
     assert bs.post("/api/beatsaver/download", json={"ids": ids}).status_code == 200
+
+
+def test_playlist_cursor_advances_when_page_is_all_empty(svc):
+    def upstream(request):
+        doc = fixture("playlist_search.json")["docs"][0]
+        return httpx.Response(200, json={"docs": [{**doc, "stats": {"totalMaps": 0}}]})
+
+    with TestClient(make_app(svc, upstream), base_url="http://localhost") as client:
+        body = client.get("/api/beatsaver/playlists/search?q=x").json()
+    assert body == {"items": [], "cursor": "1"}

@@ -186,9 +186,18 @@ class BeatSaverClient:
         return found
 
     def playlist_search(self, params: dict[str, str], page: int) -> list[BsPlaylist]:
+        """Non-empty playlists of one result page."""
+        return self.playlist_search_page(params, page)[1]
+
+    def playlist_search_page(
+        self, params: dict[str, str], page: int
+    ) -> tuple[int, list[BsPlaylist]]:
+        """(raw playlist count, non-empty playlists) so callers can still advance the cursor."""
         path = f"/playlists/search/{self._page(page)}"
-        docs = self._json(path, self._clean(params, PLAYLIST_KEYS)).get("docs")
-        return [BsPlaylist.from_json(x) for x in docs or [] if isinstance(x, dict)]
+        query = {**self._clean(params, PLAYLIST_KEYS), "includeEmpty": "false"}
+        docs = self._json(path, query).get("docs")
+        rows = [BsPlaylist.from_json(x) for x in docs or [] if isinstance(x, dict)]
+        return len(rows), [p for p in rows if p.maps_count > 0]
 
     def playlist_page(self, pid: int, page: int) -> list[BsMap]:
         return self.playlist_page_full(pid, page)[1]

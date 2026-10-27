@@ -157,12 +157,12 @@ class BeatSaverApi:
             raise ApiError(400, "invalid q or cursor")
         page = int(cursor)
         try:
-            docs = self.client.playlist_search({"q": q} if q else {}, page)
+            raw, docs = self.client.playlist_search_page({"q": q} if q else {}, page)
         except BeatSaverError as exc:
             raise bs_error(exc) from None
         return {
             "items": [playlist_view(p) for p in docs],
-            "cursor": str(page + 1) if docs else None,
+            "cursor": str(page + 1) if raw else None,
         }
 
     def playlist(self, raw: str, params: dict[str, str]) -> dict:
