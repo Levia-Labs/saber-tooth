@@ -25,7 +25,8 @@ RETRY_CAP = 60.0
 MAX_REDIRECTS = 3
 BATCH = 50
 SEARCH_KEYS = frozenset({
-    "q", "order", "ascending", "tags", "minRating", "maxRating", "minNps", "maxNps", "minBpm",
+    "q", "order", "ascending", "tags", "minRating", "minUpVotes",
+    "maxRating", "minNps", "maxNps", "minBpm",
     "maxBpm", "minDuration", "maxDuration", "fullSpread", "leaderboard", "characteristics",
     "environments", "from", "to", "curated", "verified", "automapper", "chroma", "noodle",
     "cinema", "vivify", "pageSize",
