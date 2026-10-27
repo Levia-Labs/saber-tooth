@@ -1,15 +1,16 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { lazy, Suspense, useEffect, useRef } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import { createBrowserRouter, Link, Outlet, useLocation, type RouteObject } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import { AnnouncerProvider } from "./components/Announcer";
 import { Logo } from "./components/Logo";
 import { TipProvider } from "./components/Tip";
+import { lazyRoute } from "./lib/lazyRoute";
 import { LibraryPage } from "./pages/LibraryPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
-const MapPage = lazy(() => import("./pages/MapPage").then((m) => ({ default: m.MapPage })));
-const NewPage = lazy(() => import("./pages/NewPage").then((m) => ({ default: m.NewPage })));
+const MapPage = lazyRoute(() => import("./pages/MapPage").then((m) => ({ default: m.MapPage })));
+const NewPage = lazyRoute(() => import("./pages/NewPage").then((m) => ({ default: m.NewPage })));
 
 export function makeQueryClient(): QueryClient {
   return new QueryClient({
