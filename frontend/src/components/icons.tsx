@@ -37,6 +37,9 @@ const ICONS = {
     </>
   ),
   approve: <path d="M5 12.5l4.5 4.5L19 7.5" />,
+  "approve-all": <path d="M1.5 12.5L6 17l9-9.5M10 16.5l1 .5 9.5-9.5" />,
+  expand: <path d="M6 5l6 5 6-5M6 13l6 5 6-5" />,
+  collapse: <path d="M6 11l6-5 6 5M6 19l6-5 6 5" />,
   reject: <path d="M6 6l12 12M18 6L6 18" />,
   learn: (
     <>

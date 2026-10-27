@@ -113,6 +113,10 @@
   align-items: center;
   padding: 0 12px;
 }
+.lib-grid > div {
+  text-align: left;
+  justify-self: stretch;
+}
 .lib-head {
   position: sticky;
   top: 0;
@@ -128,6 +132,9 @@
 .th {
   position: relative;
   display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  text-align: left;
   align-items: center;
   gap: 0.25rem;
   min-width: 0;

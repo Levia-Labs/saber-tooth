@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { Proposal } from "../api/types";
+import { ActionButton } from "./Buttons";
 import { ProposalCard } from "./ProposalCard";
 
 function groupBy<T>(list: T[], key: (item: T) => string): Map<string, T[]> {
@@ -12,9 +13,16 @@ function groupBy<T>(list: T[], key: (item: T) => string): Map<string, T[]> {
 }
 
 /** Proposals grouped by difficulty, then by rule. */
-export function ProposalGroups({ proposals, mapId }: { proposals: Proposal[]; mapId: string }) {
+export function ProposalGroups({
+  proposals,
+  mapId,
+  actions,
+}: {
+  proposals: Proposal[];
+  mapId: string;
+  actions?: ReactNode;
+}) {
   const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
-  if (!proposals.length) return <p className="muted">No proposals. Scan the map first.</p>;
   const setOne = (id: string, on: boolean) =>
     setOpen((prev) => {
       const next = new Set(prev);
@@ -22,41 +30,53 @@ export function ProposalGroups({ proposals, mapId }: { proposals: Proposal[]; ma
       else next.delete(id);
       return next;
     });
+  const none = proposals.length === 0;
   return (
     <>
-      <div className="card-controls">
-        <button
-          type="button"
-          className="btn plain"
+      <div className="map-toolbar" role="toolbar" aria-label="Fix actions">
+        {actions}
+        <span className="spacer" />
+        <ActionButton
+          icon="expand"
+          label="Expand all"
+          tip="Open every fix."
+          text
+          disabled={none}
           onClick={() => setOpen(new Set(proposals.map((p) => String(p.id))))}
-        >
-          Expand all
-        </button>
-        <button type="button" className="btn plain" onClick={() => setOpen(new Set())}>
-          Collapse all
-        </button>
+        />
+        <ActionButton
+          icon="collapse"
+          label="Collapse all"
+          tip="Close every fix."
+          text
+          disabled={none}
+          onClick={() => setOpen(new Set())}
+        />
       </div>
-      {[...groupBy(proposals, (p) => p.difficulty)].map(([difficulty, byDiff]) => (
-        <section key={difficulty}>
-          <h2 className="group-title">{difficulty}</h2>
-          {[...groupBy(byDiff, (p) => p.rule)].map(([rule, byRule]) => (
-            <div key={rule}>
-              <p className="muted">
-                {rule} ({byRule.length})
-              </p>
-              {byRule.map((p) => (
-                <ProposalCard
-                  key={p.id}
-                  proposal={p}
-                  mapId={mapId}
-                  open={open.has(String(p.id))}
-                  onToggle={(on) => setOne(String(p.id), on)}
-                />
-              ))}
-            </div>
-          ))}
-        </section>
-      ))}
+      <div className="fixes-scroll">
+        {none && <p className="muted">No proposals. Scan the map first.</p>}
+        {[...groupBy(proposals, (p) => p.difficulty)].map(([difficulty, byDiff]) => (
+          <section key={difficulty}>
+            <h2 className="group-title">{difficulty}</h2>
+            {[...groupBy(byDiff, (p) => p.rule)].map(([rule, byRule]) => (
+              <div key={rule}>
+                <p className="muted">
+                  {rule} ({byRule.length})
+                </p>
+                {byRule.map((p) => (
+                  <ProposalCard
+                    key={p.id}
+                    proposal={p}
+                    mapId={mapId}
+                    open={open.has(String(p.id))}
+                    onToggle={(on) => setOne(String(p.id), on)}
+                  />
+                ))}
+              </div>
+            ))}
+          </section>
+        ))}
+      </div>
     </>
   );
 }
