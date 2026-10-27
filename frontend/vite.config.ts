@@ -24,6 +24,14 @@ function cleanBuildOutput(): Plugin {
   };
 }
 
+/** Vendor chunks: React and the router, TanStack, and Radix stay cached across app releases. */
+function manualChunks(id: string): string | undefined {
+  if (!id.includes("node_modules")) return undefined;
+  if (/node_modules\/@radix-ui\//.test(id)) return "radix";
+  if (/node_modules\/@tanstack\//.test(id)) return "tanstack";
+  return "react";
+}
+
 const proxy = { target: BACKEND, changeOrigin: true, headers: { Host: "127.0.0.1:8100" } };
 
 export default defineConfig({
@@ -31,10 +39,10 @@ export default defineConfig({
   base: "/",
   build: {
     outDir: OUT,
-    chunkSizeWarningLimit: 600,
     emptyOutDir: false,
     sourcemap: false,
     target: "es2022",
+    rollupOptions: { output: { manualChunks } },
   },
   server: { port: 5173, proxy: { "/api": proxy, "/mcp": proxy } },
   test: {

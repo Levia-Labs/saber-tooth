@@ -30,7 +30,7 @@ interface Props {
 function useRowEstimate(): number {
   const mobile = useMediaQuery("(max-width: 719px)");
   const compact = useMediaQuery("(max-width: 1099px)");
-  if (mobile) return 148;
+  if (mobile) return 180;
   return compact ? 92 : 72;
 }
 

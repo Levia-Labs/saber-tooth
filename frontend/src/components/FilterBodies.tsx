@@ -26,11 +26,25 @@ export function TitleFilterBody({ q, onChange }: TitleProps) {
       setText(q);
     }
   }
-  useEffect(() => () => clearTimeout(timer.current), []);
+  const pending = useRef<string | null>(null);
+  const emit = useRef(onChange);
+  useEffect(() => {
+    emit.current = onChange;
+  }, [onChange]);
+  // Closing the popover unmounts this body: send a search typed in the last 250 ms before it goes.
+  useEffect(
+    () => () => {
+      clearTimeout(timer.current);
+      if (pending.current !== null) emit.current(pending.current, true);
+    },
+    [],
+  );
   const change = (value: string) => {
     setText(value);
     clearTimeout(timer.current);
+    pending.current = value;
     timer.current = setTimeout(() => {
+      pending.current = null;
       setEmitted(value);
       onChange(value, true);
     }, SEARCH_DEBOUNCE_MS);
@@ -56,6 +70,7 @@ export function TitleFilterBody({ q, onChange }: TitleProps) {
         disabled={!text}
         onClick={() => {
           clearTimeout(timer.current);
+          pending.current = null;
           setText("");
           setEmitted("");
           onChange("", true);

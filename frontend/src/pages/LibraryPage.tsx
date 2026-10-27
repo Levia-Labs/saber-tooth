@@ -4,6 +4,7 @@ import { useFacets, useLibrary, useLiveRows } from "../api/queries";
 import { useJobRunner } from "../api/jobs";
 import type { SortKey } from "../api/types";
 import { ActionButton, ActionLink } from "../components/Buttons";
+import { JobOutcome } from "../components/JobOutcome";
 import { LibraryTable } from "../components/LibraryTable";
 import { MobileFilters } from "../components/MobileFilters";
 import { useDocumentTitle, useLibraryState } from "../lib/hooks";
@@ -31,7 +32,7 @@ export function LibraryPage() {
   const { fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError } = library;
 
   const items = useMemo(() => library.data?.pages.flatMap((p) => p.items) ?? [], [library.data]);
-  const total = library.data?.pages[0]?.total ?? 0;
+  const total = library.data?.pages.at(-1)?.total ?? 0;
   useLiveRows(items);
 
   const loadMore = useCallback(() => void fetchNextPage(), [fetchNextPage]);
@@ -89,6 +90,7 @@ export function LibraryPage() {
           />
         </div>
       </div>
+      <JobOutcome job={learn.job} error={learn.error} />
       {library.isError && !library.data ? (
         <div className="lib-empty">
           <p className="err">Could not load the library: {errorMessage(library.error)}</p>

@@ -139,3 +139,37 @@
     display: none;
   }
 }
+.tip-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+.tip-info {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.btn .short {
+  display: none;
+}
+@media (max-width: 719px) {
+  .actions .btn.icon {
+    width: auto;
+    min-width: 40px;
+    padding: 0 0.7rem;
+  }
+  .actions .btn .short {
+    display: inline;
+    font-size: 0.85rem;
+  }
+}

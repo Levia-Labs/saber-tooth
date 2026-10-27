@@ -1,4 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { Link, useParams } from "react-router";
 import { ApiError, applyMap, approveAll, errorMessage, scanMap } from "../api/client";
 import { useJobRunner } from "../api/jobs";
@@ -19,6 +20,7 @@ export function MapPage() {
   const client = useQueryClient();
   const map = useMap(id);
   const proposals = useProposals(id);
+  const [approveError, setApproveError] = useState<string | null>(null);
   const scan = useJobRunner("Scan");
   const apply = useJobRunner("Apply");
   useLiveRows(map.data ? [map.data] : []);
@@ -34,6 +36,16 @@ export function MapPage() {
     await client.invalidateQueries({ queryKey: ["maps", "library"] });
   };
   const list = proposals.data ?? [];
+  const pendingCount = list.filter((p) => p.status === "pending").length;
+  const approveEverything = async () => {
+    setApproveError(null);
+    try {
+      await approveAll(id);
+      await refresh();
+    } catch (err) {
+      setApproveError(errorMessage(err));
+    }
+  };
   const approved = list.filter((p) => p.status === "approved").length;
   const running = map.data?.job != null || scan.busy || apply.busy;
 
@@ -79,14 +91,14 @@ export function MapPage() {
               title="Approve all fixes"
               description={`Approve every pending proposal for "${name}"?`}
               confirmLabel="Approve all"
-              onConfirm={() => void approveAll(id).then(refresh)}
+              onConfirm={() => void approveEverything()}
             >
               <ActionButton
                 icon="approve"
                 label="Approve all"
                 tip={TIPS.approveAll}
                 text
-                disabled={list.length === 0}
+                disabled={pendingCount === 0}
               />
             </ConfirmDialog>
             <ActionButton
@@ -102,6 +114,7 @@ export function MapPage() {
         </div>
       )}
       <JobOutcome job={apply.job} error={apply.error} />
+      {approveError && <p className="err">Approve all failed: {approveError}</p>}
       {scan.error && <p className="err">Scan failed: {scan.error}</p>}
       {proposals.isPending ? null : proposals.isError ? (
         <p className="err">Could not load proposals: {errorMessage(proposals.error)}</p>

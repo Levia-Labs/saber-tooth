@@ -108,7 +108,11 @@ export function useLiveRows(items: MapItem[]): void {
   useEffect(() => {
     if (!finished) return;
     for (const id of finished.split(",")) {
-      void getMap(id).then((fresh) => patchMap(client, fresh));
+      // A failed refetch must not leave the row stuck on a running status.
+      getMap(id).then(
+        (fresh) => patchMap(client, fresh),
+        () => void client.invalidateQueries({ queryKey: ["maps", "library"] }),
+      );
     }
     void client.invalidateQueries({ queryKey: keys.facets });
   }, [finished, client]);

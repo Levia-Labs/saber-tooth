@@ -113,7 +113,7 @@ describe("routes", () => {
     const { posts } = mapApi([]);
     renderApp("/new");
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: "Generate" }));
+    await user.click(await screen.findByRole("button", { name: "Generate" }));
     expect(await screen.findByText("Provide a URL or an audio file.")).toBeInTheDocument();
     await user.type(screen.getByLabelText("YouTube URL"), "https://youtu.be/abc");
     await user.click(screen.getByRole("button", { name: "Generate" }));

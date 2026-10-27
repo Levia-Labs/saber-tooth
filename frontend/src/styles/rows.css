@@ -158,11 +158,12 @@
     padding-bottom: 8px;
   }
   .lib-row {
-    height: 140px;
+    height: 172px;
     grid-template-columns: 56px minmax(0, 1fr) auto;
     grid-template-areas:
       "cover title title"
-      "status status actions";
+      "status status status"
+      "actions actions actions";
     row-gap: 6px;
     padding: 10px 12px;
     background: var(--panel);
