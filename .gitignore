@@ -232,4 +232,6 @@ node_modules/
 /src/saber_tooth/web/*
 !/src/saber_tooth/web/README.md
 /frontend/dist/
+# Vitest cache and reports
+/frontend/.vitest/
 /frontend/coverage/
