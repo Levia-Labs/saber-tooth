@@ -105,10 +105,10 @@
   border: 0;
 }
 .level.missing {
-  /* Plain text colour at half opacity: muted colour plus 0.5 compounded to near invisible. */
-  color: var(--ink);
+  /* Same treatment as the separators so missing levels read as gaps. */
+  color: var(--muted);
   font-weight: 400;
-  opacity: 0.5;
+  opacity: 0.25;
 }
 .level-sep {
   color: var(--muted);
