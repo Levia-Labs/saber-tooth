@@ -2,17 +2,31 @@ import { useState } from "react";
 import type { MapItem } from "../api/types";
 import { formatBpm, formatDuration } from "../lib/format";
 import { levelsFor, textColor } from "../lib/levels";
-import { STATUS_META, statusLabel } from "../lib/status";
+import { STATUS_META, statusLabel, statusText } from "../lib/status";
 import { Icon } from "./icons";
+import { Tip } from "./Tip";
 import { LogoGlyph } from "./Logo";
 
-export function StatusChip({ item }: { item: Pick<MapItem, "status" | "errors" | "warnings"> }) {
+export function StatusChip({
+  item,
+}: {
+  item: Pick<MapItem, "status" | "errors" | "warnings"> & Partial<Pick<MapItem, "parse_error">>;
+}) {
   const kind = Object.hasOwn(STATUS_META, item.status) ? item.status : "unscanned";
+  const full = { ...item, status: kind };
+  const label = statusLabel(full);
+  const text = statusText(full);
   return (
-    <span className={`chip chip-${kind}`} data-status={kind}>
-      <Icon name={STATUS_META[kind].icon} />
-      <span>{statusLabel({ ...item, status: kind })}</span>
-    </span>
+    <Tip text={label}>
+      <span className={`chip chip-${kind}`} data-status={kind} role="img" aria-label={label}>
+        <Icon name={STATUS_META[kind].icon} />
+        {text !== null && (
+          <span className="chip-text" aria-hidden="true">
+            {text}
+          </span>
+        )}
+      </span>
+    </Tip>
   );
 }
 

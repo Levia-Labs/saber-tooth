@@ -32,8 +32,25 @@ export function isRunning(status: StatusKey): boolean {
   return RUNNING.includes(status);
 }
 
-/** Chip text: counts for error and warn, fixed words otherwise. */
-export function statusLabel(item: Pick<MapItem, "status" | "errors" | "warnings">): string {
+type StatusFields = Pick<MapItem, "status" | "errors" | "warnings"> &
+  Partial<Pick<MapItem, "parse_error">>;
+
+/** The only text a chip shows: a count, or "--" when unscanned; null means icon only. */
+export function statusText(item: StatusFields): string | null {
+  switch (item.status) {
+    case "error":
+      return String(item.errors);
+    case "warn":
+      return String(item.warnings);
+    case "unscanned":
+      return "--";
+    default:
+      return null;
+  }
+}
+
+/** Full meaning of a chip, used for its aria-label and tooltip. */
+export function statusLabel(item: StatusFields): string {
   switch (item.status) {
     case "error":
       return plural(item.errors, "error");
@@ -48,7 +65,7 @@ export function statusLabel(item: Pick<MapItem, "status" | "errors" | "warnings"
     case "queued":
       return "Queued";
     case "unreadable":
-      return "Unreadable";
+      return item.parse_error ? `Unreadable: ${item.parse_error}` : "Unreadable";
     default:
       return "Not scanned";
   }

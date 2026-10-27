@@ -37,22 +37,24 @@ function HeaderCell({ col, columns, sort, state, update, filter }: CellProps) {
   const aria = sorted ? (state.order === "asc" ? "ascending" : "descending") : "none";
   return (
     <div className={`th ${className}`} role="columnheader" aria-sort={sort ? aria : undefined}>
-      {sort ? (
-        <button
-          type="button"
-          className="th-sort"
-          onClick={() => update(nextSort(state, sort))}
-          aria-label={`Sort by ${label}`}
-        >
+      <div className="th-row">
+        {sort ? (
+          <button
+            type="button"
+            className="th-sort"
+            onClick={() => update(nextSort(state, sort))}
+            aria-label={`Sort by ${label}`}
+          >
+            <span className="th-label">{label}</span>
+            <span className="th-slot">
+              {sorted && <Icon name={state.order === "asc" ? "sort-asc" : "sort-desc"} />}
+            </span>
+          </button>
+        ) : (
           <span className="th-label">{label}</span>
-          <span className="th-slot">
-            {sorted && <Icon name={state.order === "asc" ? "sort-asc" : "sort-desc"} />}
-          </span>
-        </button>
-      ) : (
-        <span className="th-label">{label}</span>
-      )}
-      {filter}
+        )}
+        {filter}
+      </div>
       {isResizable(col) && <ResizeHandle colKey={col} columns={columns} />}
     </div>
   );
@@ -143,21 +145,7 @@ export function LibraryHeader({ state, facets, update, columns }: Props) {
           </FilterPopover>
         }
       />
-      <HeaderCell
-        col="actions"
-        {...cell}
-        filter={
-          <button
-            type="button"
-            className="th-reset"
-            title="Reset columns to their default widths"
-            aria-label="Reset columns"
-            onClick={columns.resetAll}
-          >
-            Reset
-          </button>
-        }
-      />
+      <HeaderCell col="actions" {...cell} />
     </div>
   );
 }

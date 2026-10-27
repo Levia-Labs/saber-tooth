@@ -175,9 +175,6 @@
   .col-env {
     display: none;
   }
-  .filters-btn {
-    display: inline-flex;
-  }
 }
 
 @media (max-width: 719px) {
@@ -188,10 +185,6 @@
   .col-length,
   .col-bpm {
     display: none;
-  }
-  .sort-select,
-  .order-toggle {
-    display: inline-flex;
   }
   .sub-tempo {
     display: inline;

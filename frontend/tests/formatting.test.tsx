@@ -1,5 +1,7 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import fc from "fast-check";
+import { TipProvider } from "../src/components/Tip";
 import { describe, expect, test } from "vitest";
 import { LevelChips, StatusChip } from "../src/components/Chips";
 import { formatBpm, formatDuration } from "../src/lib/format";
@@ -65,24 +67,39 @@ describe("level chips", () => {
 
 describe("status chip", () => {
   const base = { errors: 0, warnings: 0 };
+  const chip = (item: Parameters<typeof StatusChip>[0]["item"]) =>
+    render(
+      <TipProvider>
+        <StatusChip item={item} />
+      </TipProvider>,
+    );
   test.each([
-    [{ status: "error", errors: 3, warnings: 0 }, "3 errors"],
-    [{ status: "error", errors: 1, warnings: 2 }, "1 error"],
-    [{ status: "warn", errors: 0, warnings: 1 }, "1 warning"],
-    [{ status: "ok", ...base }, "All good"],
-    [{ status: "unscanned", ...base }, "Not scanned"],
-    [{ status: "unreadable", ...base }, "Unreadable"],
-    [{ status: "scanning", ...base }, "Scanning"],
-    [{ status: "applying", ...base }, "Applying"],
-    [{ status: "queued", ...base }, "Queued"],
-  ] as const)("%j reads %s", (item, label) => {
-    render(<StatusChip item={item} />);
-    expect(screen.getByText(label)).toBeInTheDocument();
+    [{ status: "error", errors: 3, warnings: 0 }, "3 errors", "3"],
+    [{ status: "error", errors: 1, warnings: 2 }, "1 error", "1"],
+    [{ status: "warn", errors: 0, warnings: 1 }, "1 warning", "1"],
+    [{ status: "ok", ...base }, "All good", ""],
+    [{ status: "unscanned", ...base }, "Not scanned", "--"],
+    [{ status: "unreadable", ...base }, "Unreadable", ""],
+    [{ status: "unreadable", ...base, parse_error: "bad json" }, "Unreadable: bad json", ""],
+    [{ status: "scanning", ...base }, "Scanning", ""],
+    [{ status: "applying", ...base }, "Applying", ""],
+    [{ status: "queued", ...base }, "Queued", ""],
+  ] as const)("%j is labelled %s and shows %j", (item, label, visible) => {
+    const { container } = chip(item);
+    expect(screen.getByRole("img", { name: label })).toBeInTheDocument();
+    expect(container.textContent).toBe(visible);
   });
 
   test("unknown status falls back to not scanned", () => {
-    render(<StatusChip item={{ status: "weird" as never, ...base }} />);
-    expect(screen.getByText("Not scanned")).toBeInTheDocument();
+    const { container } = chip({ status: "weird" as never, ...base });
+    expect(screen.getByRole("img", { name: "Not scanned" })).toBeInTheDocument();
+    expect(container.textContent).toBe("--");
+  });
+
+  test("hovering a chip shows the full meaning", async () => {
+    chip({ status: "error", errors: 3, warnings: 0 });
+    await userEvent.hover(screen.getByRole("img", { name: "3 errors" }));
+    expect((await screen.findAllByText("3 errors")).length).toBeGreaterThan(0);
   });
 });
 
@@ -94,6 +111,7 @@ describe("tooltip copy", () => {
     expect(TIPS.generate).toContain("all five difficulties");
     expect(TIPS.approve).toBe("Accept this fix. It is written when you click Apply.");
     expect(TIPS.reject).toBe("Discard this fix.");
+    expect(TIPS.resetColumns).toBe("Reset column widths to their defaults.");
     expect(applyTip("Moon")).toContain("'Moon [saber-tooth]'");
   });
 });

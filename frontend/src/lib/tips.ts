@@ -8,6 +8,7 @@ export const TIPS = {
     "Study the lighting in the maps you have installed. saber-tooth reuses those patterns to light maps that still use the default environment. Run it once, and again after adding new maps.",
   generate:
     "Create a new map with all five difficulties from a YouTube link or an audio file. You review it before anything is written.",
+  resetColumns: "Reset column widths to their defaults.",
   approve: "Accept this fix. It is written when you click Apply.",
   reject: "Discard this fix.",
   approveAll: "Accept every proposed fix for this map. They are written when you click Apply.",

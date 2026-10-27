@@ -1,5 +1,5 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import type { Facets, MapItem } from "../api/types";
 import { useMediaQuery } from "../lib/hooks";
 import { useColumns } from "../lib/useColumns";
@@ -26,6 +26,9 @@ interface Props {
   update: (patch: Partial<LibraryState>, replace?: boolean) => void;
   onClear: () => void;
   filtered: boolean;
+  /** Ref on the table element and the column state hook result, owned by the page. */
+  table: RefObject<HTMLDivElement | null>;
+  columns: ReturnType<typeof useColumns>;
 }
 
 function useRowEstimate(): number {
@@ -40,8 +43,7 @@ export function LibraryTable(props: Props) {
   const { items, loading, hasNext, fetchingNext, nextFailed, onLoadMore } = props;
   const scroller = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLDivElement>(null);
-  const table = useRef<HTMLDivElement>(null);
-  const columns = useColumns(table);
+  const { table, columns } = props;
   const [margin, setMargin] = useState(0);
   const estimate = useRowEstimate();
   const skeletons = loading ? FIRST_SKELETONS : fetchingNext ? NEXT_SKELETONS : 0;

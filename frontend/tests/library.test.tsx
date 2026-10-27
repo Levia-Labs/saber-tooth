@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test } from "vitest";
 import { FIRST_SKELETONS } from "../src/components/LibraryTable";
 import { FACETS, item, mockFetch, renderApp } from "./helpers";
 
@@ -10,6 +10,37 @@ const items = [
   item(3, { status: "scanning", job: { id: "j1", kind: "scan", status: "running" } }),
   item(4, { status: "unscanned", bpm: null, duration_s: null, approved: 1 }),
 ];
+
+describe("sort and filter placement", () => {
+  const real = window.matchMedia;
+  afterEach(() => {
+    window.matchMedia = real;
+  });
+
+  test("wide layout has no sort select, direction toggle or Filters button outside the table", async () => {
+    api();
+    renderApp("/");
+    await screen.findByRole("link", { name: "Song 1" });
+    expect(screen.queryByRole("combobox", { name: "Sort by" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^(Ascending|Descending)$/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Filters" })).toBeNull();
+  });
+
+  test("mobile layout shows a toolbar with sort, direction and Filters", async () => {
+    window.matchMedia = ((query: string) => ({
+      ...real(query),
+      matches: query === "(max-width: 719px)",
+    })) as typeof window.matchMedia;
+    api();
+    const { container } = renderApp("/");
+    await screen.findByRole("link", { name: "Song 1" });
+    const bar = container.querySelector(".lib-mobile-bar") as HTMLElement;
+    expect(within(bar).getByRole("combobox", { name: "Sort by" })).toBeInTheDocument();
+    expect(within(bar).getByRole("button", { name: "Ascending" })).toBeInTheDocument();
+    expect(within(bar).getByRole("button", { name: "Filters" })).toBeInTheDocument();
+    expect(container.querySelector(".lib-bar .lib-mobile-bar")).toBeNull();
+  });
+});
 
 function api(page = items) {
   return mockFetch((url) => {
@@ -41,7 +72,7 @@ describe("library page", () => {
     renderApp("/");
     const first = (await screen.findByRole("link", { name: "Song 1" })).closest("[role=row]");
     const row = within(first as HTMLElement);
-    expect(row.getByText("3 errors")).toBeInTheDocument();
+    expect(row.getByRole("img", { name: "3 errors" })).toBeInTheDocument();
     expect(row.getAllByText("3:21").length).toBeGreaterThan(0);
     expect(row.getAllByText("128 BPM").length).toBeGreaterThan(0);
     expect(row.getAllByText("Expert+").length).toBeGreaterThan(0);
@@ -113,7 +144,7 @@ describe("library page", () => {
     ).toBeEnabled();
     expect(within(four as HTMLElement).getAllByText("–").length).toBeGreaterThan(0);
     const three = (await screen.findByRole("link", { name: "Song 3" })).closest("[role=row]");
-    expect(within(three as HTMLElement).getByText("Scanning")).toBeInTheDocument();
+    expect(within(three as HTMLElement).getByRole("img", { name: "Scanning" })).toBeInTheDocument();
     expect(
       within(three as HTMLElement).getByRole("button", { name: "Scan Song 3" }),
     ).toBeDisabled();
@@ -219,7 +250,7 @@ describe("live job status", () => {
     const link = await screen.findByRole("link", { name: "Song 2" });
     const row = within(link.closest("[role=row]") as HTMLElement);
     await user.click(row.getByRole("button", { name: "Scan Song 2" }));
-    expect(await row.findByText("Queued")).toBeInTheDocument();
+    expect(await row.findByRole("img", { name: "Queued" })).toBeInTheDocument();
     expect(row.getByRole("button", { name: "Scan Song 2" })).toBeDisabled();
     await waitFor(() => expect(calls.some((u) => u.pathname === "/api/jobs/j9")).toBe(true));
   });

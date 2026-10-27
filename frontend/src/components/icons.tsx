@@ -44,6 +44,12 @@ const ICONS = {
       <path d="M8 12l-2 8.5M12 11v9.5M16 12l2 8.5" />
     </>
   ),
+  "columns-reset": (
+    <>
+      <path d="M4 5v10M9 5v6M14 5v4" />
+      <path d="M20 14a5 5 0 1 1-1.8-3.8M20 6.5v4h-4" />
+    </>
+  ),
   generate: (
     <>
       <circle cx="5.5" cy="16" r="2.5" />

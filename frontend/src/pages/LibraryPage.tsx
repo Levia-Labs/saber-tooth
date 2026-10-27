@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { errorMessage, learnLightshows } from "../api/client";
 import { useFacets, useLibrary, useLiveRows } from "../api/queries";
 import { useJobRunner } from "../api/jobs";
@@ -7,8 +7,10 @@ import { ActionButton, ActionLink } from "../components/Buttons";
 import { JobOutcome } from "../components/JobOutcome";
 import { LibraryTable } from "../components/LibraryTable";
 import { MobileFilters } from "../components/MobileFilters";
-import { useDocumentTitle, useLibraryState } from "../lib/hooks";
+import { Icon } from "../components/icons";
+import { useDocumentTitle, useLibraryState, useMediaQuery } from "../lib/hooks";
 import { TIPS } from "../lib/tips";
+import { useColumns } from "../lib/useColumns";
 import { filterCounts, totalFilters } from "../lib/urlstate";
 
 const SORT_OPTIONS: [SortKey, string][] = [
@@ -29,6 +31,9 @@ export function LibraryPage() {
   const { state, update, clearFilters } = useLibraryState();
   const library = useLibrary(state);
   const facets = useFacets();
+  const table = useRef<HTMLDivElement>(null);
+  const columns = useColumns(table);
+  const mobile = useMediaQuery("(max-width: 719px)");
   const learn = useJobRunner("Learn lightshows");
   const { fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError } = library;
 
@@ -52,27 +57,6 @@ export function LibraryPage() {
           </span>
         </div>
         <div className="lib-tools">
-          <label className="sort-select">
-            <span className="sr">Sort by</span>
-            <select
-              value={state.sort}
-              onChange={(e) => update({ sort: e.target.value as SortKey })}
-            >
-              {SORT_OPTIONS.map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            type="button"
-            className="btn plain order-toggle"
-            onClick={() => update({ order: state.order === "asc" ? "desc" : "asc" })}
-          >
-            {state.order === "asc" ? "Ascending" : "Descending"}
-          </button>
-          <MobileFilters state={state} facets={facets.data} update={update} clear={clearFilters} />
           <ActionLink
             icon="generate"
             label="Generate map"
@@ -89,9 +73,43 @@ export function LibraryPage() {
             disabled={learn.busy}
             onClick={() => void learn.run(learnLightshows)}
           />
+          <ActionButton
+            icon="columns-reset"
+            label="Reset column widths"
+            tip={TIPS.resetColumns}
+            onClick={columns.api.resetAll}
+          />
         </div>
       </div>
       <JobOutcome job={learn.job} error={learn.error} />
+      {mobile && (
+        <div className="lib-mobile-bar">
+          <div className="sort-group">
+            <label className="sort-select">
+              <span className="sr">Sort by</span>
+              <select
+                value={state.sort}
+                onChange={(e) => update({ sort: e.target.value as SortKey })}
+              >
+                {SORT_OPTIONS.map(([key, label]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              className="order-toggle"
+              onClick={() => update({ order: state.order === "asc" ? "desc" : "asc" })}
+            >
+              <Icon name={state.order === "asc" ? "sort-asc" : "sort-desc"} />
+              <span className="sr">{state.order === "asc" ? "Ascending" : "Descending"}</span>
+            </button>
+          </div>
+          <MobileFilters state={state} facets={facets.data} update={update} clear={clearFilters} />
+        </div>
+      )}
       {library.isError && !library.data ? (
         <div className="lib-empty">
           <p className="err">Could not load the library: {errorMessage(library.error)}</p>
@@ -113,6 +131,8 @@ export function LibraryPage() {
           update={update}
           onClear={clearFilters}
           filtered={filtered}
+          table={table}
+          columns={columns}
         />
       )}
     </section>

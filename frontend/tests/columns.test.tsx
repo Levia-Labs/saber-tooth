@@ -1,6 +1,8 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import fc from "fast-check";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { afterEach, describe, expect, test } from "vitest";
 import {
   BREAKPOINTS,
@@ -156,6 +158,38 @@ describe("persistence", () => {
   });
 });
 
+describe("header cells", () => {
+  test("label, sort slot and filter button share one nowrap row", async () => {
+    withRow();
+    const { container } = renderApp("/");
+    await screen.findByRole("link", { name: "Song 1" });
+    const head = container.querySelector(".lib-head") as HTMLElement;
+    for (const col of ["title", "author", "levels", "env", "status"]) {
+      const row = head.querySelector(`.col-${col} > .th-row`) as HTMLElement;
+      expect(row).not.toBeNull();
+      expect(row.querySelector(".th-sort .th-label")).not.toBeNull();
+      expect(row.querySelector(".th-sort .th-slot")).not.toBeNull();
+      expect(row.querySelector(".filter-btn")).not.toBeNull();
+    }
+    const css = readFileSync(resolve(__dirname, "../src/styles/library.css"), "utf8");
+    expect(css).toMatch(/\.th-row\s*\{[^}]*flex-flow:\s*row nowrap/);
+    expect(css).toMatch(/\.th-label\s*\{[^}]*min-width:\s*0[^}]*text-overflow:\s*ellipsis/);
+    expect(css).toMatch(/\.filter-btn\s*\{[^}]*flex:\s*none/);
+  });
+
+  test("reset is an icon button beside Learn lightshows, not in the table header", async () => {
+    withRow();
+    const { container } = renderApp("/");
+    await screen.findByRole("link", { name: "Song 1" });
+    expect(container.querySelector(".lib-head")?.textContent).not.toContain("Reset");
+    const learn = screen.getByRole("button", { name: "Learn lightshows" });
+    const reset = screen.getByRole("button", { name: "Reset column widths" });
+    expect(learn.nextElementSibling).toBe(reset);
+    expect(reset.textContent).toBe("Reset column widths");
+    expect(reset.querySelector(".sr")).not.toBeNull();
+  });
+});
+
 describe("resize handles", () => {
   test("only resizable columns get a labelled separator", async () => {
     withRow();
@@ -195,7 +229,7 @@ describe("resize handles", () => {
     fireEvent.doubleClick(author);
     expect(author).toHaveAttribute("aria-valuenow", "120");
     await user.keyboard("{ArrowRight}");
-    await user.click(screen.getByRole("button", { name: "Reset columns" }));
+    await user.click(screen.getByRole("button", { name: "Reset column widths" }));
     expect(screen.getByRole("separator", { name: "Resize Author column" })).toHaveAttribute(
       "aria-valuenow",
       "120",
