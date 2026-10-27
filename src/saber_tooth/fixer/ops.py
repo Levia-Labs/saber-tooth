@@ -148,6 +148,17 @@ _KINDS = {
 }
 
 
+def is_noop(op: Op) -> bool:
+    """True for an op that leaves the map unchanged: a Move to the same cell and cut, a Flip to
+    the same cut. A Recolor always changes the colour."""
+    match op:
+        case Move():
+            return (op.x, op.y, op.cut) == (op.note.x, op.note.y, op.note.cut)
+        case Flip():
+            return op.cut == op.note.cut
+    return False
+
+
 def op_from_dict(d: dict) -> Op:
     try:
         return _KINDS[d["op"]].from_dict(d)

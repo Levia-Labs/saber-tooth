@@ -11,6 +11,8 @@ export const TIPS = {
   resetColumns: "Reset column widths to their defaults.",
   approve: "Accept this fix. It is written when you click Apply.",
   reject: "Discard this fix.",
+  overlaps:
+    "Approving both is fine: saber-tooth applies them in order and re-checks the later one.",
   approveAll: "Accept every proposed fix for this map. They are written when you click Apply.",
 } as const;
 

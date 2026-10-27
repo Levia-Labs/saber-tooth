@@ -69,7 +69,7 @@ def test_approve_reject_and_approve_all(client, svc):
     assert rows[a]["status"] == "approved" and "ops" not in rows[a]
     assert set(rows[a]) == {
         "id", "rule", "difficulty", "severity", "summary", "status", "before", "after",
-        "walls_before", "walls_after", "walls_context",
+        "walls_before", "walls_after", "walls_context", "replaces", "conflicts_with",
     }  # fmt: skip
     assert client.post(f"/api/proposals/{a}/reject").json()["status"] == "rejected"
     assert client.post(f"/api/maps/{MID}/approve-all").json() == {"approved": 1}
@@ -81,7 +81,13 @@ def test_approve_reject_and_approve_all(client, svc):
 def test_apply_job_done_and_conflict(client, svc):
     _propose(svc, MID, [Flip("Hard", NOTE, Cut(0))])
     job = _wait(client, client.post(f"/api/maps/{MID}/apply").json()["job"])
-    assert job["status"] == "done" and set(job["result"]) == {"map_id", "folder"}
+    assert job["status"] == "done" and set(job["result"]) == {
+        "map_id",
+        "folder",
+        "applied",
+        "superseded",
+        "needs_review",
+    }
     assert (svc.levels / job["result"]["folder"]).is_dir()
     again = _wait(client, client.post(f"/api/maps/{MID}/apply").json()["job"])
     assert again["status"] == "failed" and again["error"]

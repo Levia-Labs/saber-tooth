@@ -17,6 +17,7 @@ from saber_tooth.api.library import (
     parse_query,
     shape_item,
 )
+from saber_tooth.api.overlap import conflicts_with
 from saber_tooth.api.wall_context import changed_walls, stored_walls, walls_context
 from saber_tooth.fixer.codec import note_to_dict
 from saber_tooth.jobs import Jobs
@@ -31,7 +32,17 @@ log = logging.getLogger(__name__)
 MAP_ID = re.compile(r"[0-9a-f]{12}")
 STAGING_ID = re.compile(re.escape(STAGING_PREFIX) + r"[0-9a-f]{32}")
 JOB_ID = re.compile(r"[0-9a-f]{32}")
-PROPOSAL_FIELDS = ("id", "rule", "difficulty", "severity", "summary", "status", "before", "after")
+PROPOSAL_FIELDS = (
+    "id",
+    "rule",
+    "difficulty",
+    "severity",
+    "summary",
+    "status",
+    "before",
+    "after",
+    "replaces",
+)
 
 
 YOUTUBE_HOSTS = {"youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "youtu.be"}
@@ -157,8 +168,11 @@ class Api:
             return {}
         return stored_walls(folder)
 
-    def _view(self, proposal: dict, stored: dict[str, list[dict]]) -> dict:
+    def _view(
+        self, proposal: dict, stored: dict[str, list[dict]], clashes: dict[int, list[int]]
+    ) -> dict:
         view = {k: proposal[k] for k in PROPOSAL_FIELDS}
+        view["conflicts_with"] = clashes.get(proposal["id"], [])
         before, after = changed_walls(proposal)
         context = walls_context(proposal, stored, before + after)
         view.update(walls_before=before, walls_after=after, walls_context=context)
@@ -171,15 +185,16 @@ class Api:
     def proposals(self, map_id: str) -> list[dict]:
         found = self.store.proposals(self.map_id(map_id, True))
         stored = self._stored_walls(map_id)
-        return [self._view(p, stored) for p in found]
+        clashes = conflicts_with(found)
+        return [self._view(p, stored, clashes) for p in found]
 
     def set_status(self, raw: str, status: str) -> dict:
         pid = self.proposal_id(raw)
         current = self.store.proposal(pid)
         if current is None:
             raise ApiError(404, f"unknown proposal: {pid}")
-        if current["status"] == "applied":
-            raise ApiError(409, "proposal already applied")
+        if current["status"] in ("applied", "superseded"):
+            raise ApiError(409, f"proposal already {current['status']}")
         try:
             self.store.set_status(pid, status)
         except KeyError:

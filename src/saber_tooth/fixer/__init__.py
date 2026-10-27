@@ -15,6 +15,7 @@ from saber_tooth.fixer.ops import (
     OpConflict,
     Recolor,
     apply_ops,
+    is_noop,
     op_from_dict,
 )
 from saber_tooth.fixer.strategies import STRATEGIES
@@ -23,6 +24,7 @@ from saber_tooth.fixer.verify import (
     Proposal,
     accepts,
     build_proposal,
+    find_same,
     finding_key,
     new_findings,
 )
@@ -54,7 +56,8 @@ def propose_with_reason(
     ):
         return Outcome(None, f"difficulty {finding.difficulty} not found")
     tried = 0
-    for ops in islice(strategy(ctx), MAX_GENERATED):
+    for plan in islice(strategy(ctx), MAX_GENERATED):
+        ops = [op for op in plan if not is_noop(op)]
         if not ops:
             continue
         # the budget caps edit plans; Delete-only fallbacks are always verified
@@ -94,7 +97,9 @@ __all__ = [
     "Proposal",
     "Recolor",
     "apply_ops",
+    "find_same",
     "finding_key",
+    "is_noop",
     "new_findings",
     "op_from_dict",
     "propose",

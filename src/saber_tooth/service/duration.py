@@ -5,6 +5,8 @@ import math
 import struct
 from pathlib import Path
 
+from saber_tooth.mapio import MapParseError
+from saber_tooth.mapio.discover import _read_json, find_info
 from saber_tooth.model import Beatmap
 from saber_tooth.timing import Timing
 
@@ -108,3 +110,12 @@ def map_duration(folder: Path, beatmap: Beatmap, raw_info: dict | None = None) -
     except Exception:  # a bad file must never fail a library refresh
         log.warning("could not measure %s", folder.name, exc_info=True)
         return None
+
+
+def folder_duration(folder: Path, beatmap: Beatmap) -> float | None:
+    """map_duration with the Info.dat of the folder; an unreadable Info counts as absent."""
+    try:
+        raw = _read_json(find_info(folder))
+    except (MapParseError, OSError):
+        raw = None
+    return map_duration(folder, beatmap, raw)

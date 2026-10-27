@@ -70,8 +70,17 @@
 .card.st-approved {
   border-left-color: var(--green);
 }
-.card.st-rejected {
+.card.st-rejected,
+.card.st-superseded {
   opacity: 0.6;
+}
+.badge-muted {
+  color: var(--muted);
+  background: transparent;
+  border-color: var(--line);
+}
+.badge-overlap {
+  color: var(--amber);
 }
 .card header {
   display: flex;

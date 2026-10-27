@@ -19,7 +19,7 @@ Top-level modules:
 3. `analysis.py`, `analyser_client.py`, `audio.py`: beat-analyser output, its HTTP client and audio conversion.
 4. `timing.py`, `swings.py`: beat and time conversion, swing geometry.
 5. `assemble.py`: builds a map from generator output.
-6. `store.py`, `jobs.py`: SQLite storage and background jobs.
+6. `store.py`, `store_maps.py`, `store_claims.py`, `jobs.py`: SQLite storage, map queries, proposal claims and background jobs.
 7. `safe_fs.py`: path safety helpers.
 8. `cli.py`: the `saber-tooth` command line.
 

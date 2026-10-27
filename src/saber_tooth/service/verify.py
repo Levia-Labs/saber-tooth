@@ -4,26 +4,11 @@ from pathlib import Path
 
 from saber_tooth.analysis import Analysis, read_project
 from saber_tooth.checks import run_checks
-from saber_tooth.fixer import OpConflict, apply_ops, new_findings, op_from_dict
+from saber_tooth.fixer import new_findings
 from saber_tooth.model import DIFFICULTIES, Beatmap
 from saber_tooth.service.errors import ApplyConflict
-from saber_tooth.service.util import finding_from_dict, related, span
+from saber_tooth.service.util import finding_from_dict, related
 from saber_tooth.store import Store
-
-
-def fixed_map(bm: Beatmap, approved: list[dict]) -> Beatmap:
-    cur = bm
-    for n, p in enumerate(approved):
-        try:
-            ops = [op_from_dict(o) for o in p["ops"]]
-            cur = apply_ops(cur, ops)
-        except OpConflict as exc:
-            spans = [s for s in map(span, ops) if s]
-            ids = related(spans, approved[: n + 1])
-            raise ApplyConflict(f"proposals conflict: {exc}", ids or [p["id"]]) from exc
-        except (KeyError, ValueError, TypeError) as exc:
-            raise ApplyConflict(f"proposal is unreadable: {exc}", [p["id"]]) from exc
-    return cur
 
 
 def stored_analysis(uploads: Path | None, info: dict | None) -> Analysis | None:

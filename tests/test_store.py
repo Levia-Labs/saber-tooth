@@ -1,8 +1,9 @@
+import sqlite3
 from pathlib import Path
 
 import pytest
 
-from saber_tooth.store import Store
+from saber_tooth.store import ProposalApplied, Store
 
 
 def _prop(rule: str = "r1") -> dict:
@@ -189,3 +190,33 @@ def test_query_maps_rejects_unlisted_keys(store: Store) -> None:
         with pytest.raises(ValueError):
             store.query_maps(**bad)
     assert store.get_map("nope") is None
+
+
+def test_supersede_links_a_pending_replacement(store: Store) -> None:
+    old = store.add_proposals("m1", [{**_prop(), "finding": {"rule": "r1"}}])[0]
+    store.set_status(old, "approved")
+    new = store.supersede(old, {**_prop(), "finding": {"rule": "r1"}})
+    assert store.proposal(old)["status"] == "superseded"
+    row = store.proposal(new)
+    assert (row["status"], row["replaces"], row["finding"]) == ("pending", old, {"rule": "r1"})
+    assert store.supersede(old, _prop()) is None  # no longer approved: nothing added
+    assert len(store.proposals("m1")) == 2
+    with pytest.raises(ProposalApplied):
+        store.set_status(old, "approved")
+    store.set_status(new, "approved")
+    assert [p["id"] for p in store.approved("m1")] == [new]
+
+
+def test_proposal_columns_are_added_to_an_old_database(tmp_path: Path) -> None:
+    path = tmp_path / "old.sqlite"
+    db = sqlite3.connect(str(path))
+    db.execute(
+        "CREATE TABLE proposals(id INTEGER PRIMARY KEY AUTOINCREMENT, map_id TEXT, rule TEXT,"
+        " difficulty TEXT, severity TEXT, summary TEXT, ops_json TEXT, before_json TEXT,"
+        " after_json TEXT, status TEXT, created_at TEXT)"
+    )
+    db.commit()
+    db.close()
+    store = Store(path)
+    pid = store.add_proposals("m1", [_prop()])[0]
+    assert store.proposal(pid)["finding"] is None and store.proposal(pid)["replaces"] is None
