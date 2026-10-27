@@ -126,3 +126,66 @@ def test_prune_maps_drops_missing_rows(tmp_path):
     store.upsert_map("b", "B", "B", "", "", None)
     store.prune_maps({"a"})
     assert [m["id"] for m in store.list_maps()] == ["a"]
+
+
+def _library(store: Store) -> None:
+    store.upsert_map("a", "fa", "Alpha", "Zed", "Origins", None)
+    store.upsert_map("b", "fb", "beta", "Amy", "Nice", None)
+    store.upsert_map("c", "fc", "Gamma", "", "", "broken")
+    store.upsert_map("d", "fd", "Delta", "Amy", "Nice", None)
+    store.upsert_map("e", "fe", "Eps_100%", "Q", "Q", None)
+    store.replace_open_proposals(
+        "a", [], {"findings": [{"severity": "error"}] * 2 + [{"severity": "warn"}]}
+    )
+    store.replace_open_proposals("b", [], {"findings": [{"severity": "warn"}]})
+    store.replace_open_proposals("d", [], {"findings": []})
+
+
+def _ids(store: Store, **kw) -> list[str]:
+    return [m["id"] for m in store.query_maps(**kw)[0]]
+
+
+def test_query_maps_status_counts_and_filters(store: Store) -> None:
+    _library(store)
+    rows, total = store.query_maps(limit=100)
+    by_id = {m["id"]: m for m in rows}
+    assert total == 5
+    assert {k: v["status"] for k, v in by_id.items()} == {
+        "a": "error", "b": "warn", "c": "unreadable", "d": "ok", "e": "unscanned",
+    }  # fmt: skip
+    assert (by_id["a"]["errors"], by_id["a"]["warnings"]) == (2, 1)
+    assert by_id["e"]["scanned_at"] is None and by_id["a"]["scanned_at"]
+    assert _ids(store, status="warn") == ["b"]
+    assert _ids(store, status="ok") == ["d"]
+
+
+def test_query_maps_sort_order_and_ties(store: Store) -> None:
+    _library(store)
+    assert _ids(store) == ["a", "b", "d", "e", "c"]  # case-insensitive title
+    assert _ids(store, order="desc") == ["c", "e", "d", "b", "a"]
+    assert _ids(store, sort="status") == ["c", "a", "b", "e", "d"]
+    assert _ids(store, sort="errors", order="desc")[0] == "a"
+    assert _ids(store, sort="mapper")[:1] == ["c"]  # empty mapper first
+    assert _ids(store, sort="environment")[-1] == "e"
+    assert _ids(store, sort="scanned_at")[-2:] == ["e", "c"]
+    # ties break by title then id, so pages never overlap
+    pages = [_ids(store, sort="mapper", offset=o, limit=2) for o in (0, 2, 4)]
+    assert sorted(i for p in pages for i in p) == ["a", "b", "c", "d", "e"]
+
+
+def test_query_maps_search_is_literal_and_case_insensitive(store: Store) -> None:
+    _library(store)
+    assert _ids(store, q="AMY") == ["b", "d"]
+    assert _ids(store, q="fc") == ["c"]
+    assert _ids(store, q="100%") == ["e"]
+    assert _ids(store, q="%") == ["e"]
+    assert _ids(store, q="'; DROP TABLE maps;--") == []
+    assert len(store.list_maps()) == 5
+    assert store.query_maps(q="amy", limit=1) == ([store.get_map("b")], 2)
+
+
+def test_query_maps_rejects_unlisted_keys(store: Store) -> None:
+    for bad in ({"sort": "id; DROP TABLE maps"}, {"order": "sideways"}, {"status": "x"}):
+        with pytest.raises(ValueError):
+            store.query_maps(**bad)
+    assert store.get_map("nope") is None

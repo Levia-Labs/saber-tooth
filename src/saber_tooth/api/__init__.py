@@ -19,6 +19,7 @@ from saber_tooth.api.hosts import (
 )
 from saber_tooth.api.mcp_tools import build_mcp
 from saber_tooth.api.upload import _save_upload
+from saber_tooth.api.web_routes import register as register_web_routes
 from saber_tooth.audio import encode_egg
 from saber_tooth.service import ApplyConflict, MapNotFound, MapUnreadable, Service
 from saber_tooth.store import Store
@@ -75,10 +76,8 @@ def create_app(service: Service) -> FastAPI:
     async def _api_error(_: Request, exc: ApiError):
         return _error(exc.status, str(exc))
 
-    @app.get("/api/maps")
-    def maps():
-        return api.maps()
-
+    # The library, cover and SPA routes are registered after the JSON routes below so the
+    # catch-all /api/* 404 never shadows them.
     @app.post("/api/maps/{map_id}/scan")
     def scan(map_id: str):
         return api.scan(map_id)
@@ -122,6 +121,7 @@ def create_app(service: Service) -> FastAPI:
     def job(job_id: str):
         return api.job(job_id)
 
+    register_web_routes(app, api, WEB)
     # The /mcp route sits behind the same_origin middleware above, which is the Host check.
     app.router.routes.extend(mcp_app.routes)
     app.mount("/", StaticFiles(directory=WEB, html=True), name="web")

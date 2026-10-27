@@ -8,6 +8,15 @@ from urllib.parse import urlparse
 
 from fastapi.responses import JSONResponse
 
+from saber_tooth.api.library import (
+    COVER_TYPES,
+    MAX_LIMIT,
+    Extras,
+    cover_path,
+    folder_path,
+    parse_query,
+    shape_item,
+)
 from saber_tooth.api.wall_context import changed_walls, stored_walls, walls_context
 from saber_tooth.fixer.codec import note_to_dict
 from saber_tooth.jobs import Jobs
@@ -60,6 +69,7 @@ class Api:
         self.service = service
         self.store = service.store
         self.jobs = Jobs(service.store)
+        self.extras = Extras()
 
     # ids ---------------------------------------------------------------------
 
@@ -82,21 +92,35 @@ class Api:
 
     # maps and proposals --------------------------------------------------------
 
-    def maps(self) -> list[dict]:
+    def maps_page(self, params: dict[str, str], max_limit: int = MAX_LIMIT) -> dict:
+        try:
+            query = parse_query(params, max_limit)
+        except ValueError as exc:
+            raise ApiError(400, str(exc)) from None
         self.service.refresh_if_changed()
-        rows = []
-        for m in self.store.list_maps():
-            info = self.store.scan_info(m["id"])
-            found = info["findings"] if info else []
-            rows.append(
-                {
-                    **{k: m[k] for k in ("id", "folder", "title", "mapper", "environment")},
-                    "parse_error": m["parse_error"],
-                    "errors": sum(f["severity"] == "error" for f in found),
-                    "warnings": sum(f["severity"] != "error" for f in found),
-                }
-            )
-        return rows
+        rows, total = self.store.query_maps(
+            query.offset, query.limit, query.sort, query.order, query.q, query.status
+        )
+        items = [shape_item(r, self.service.levels, self.extras) for r in rows]
+        return {"items": items, "total": total, "offset": query.offset, "limit": query.limit}
+
+    def map_item(self, raw: str) -> dict:
+        self.service.refresh_if_changed()
+        row = self.store.get_map(self.map_id(raw))
+        if row is None:
+            raise MapNotFound(f"unknown map: {raw}")
+        return shape_item(row, self.service.levels, self.extras)
+
+    def cover(self, raw: str) -> tuple[Path, str]:
+        """Path and content type of a map's cover image; MapNotFound when there is none."""
+        row = self.store.get_map(self.map_id(raw))
+        folder = folder_path(self.service.levels, row["folder"]) if row else None
+        if row is None or folder is None or row["parse_error"]:
+            raise MapNotFound(f"no cover for map: {raw}")
+        path = cover_path(folder, self.extras.get(folder)[0])
+        if path is None:
+            raise MapNotFound(f"no cover for map: {raw}")
+        return path, COVER_TYPES[path.suffix.lower()]
 
     def _staged_notes(self, proposal: dict) -> list[dict]:
         root = (self.service.data / "staging").resolve()

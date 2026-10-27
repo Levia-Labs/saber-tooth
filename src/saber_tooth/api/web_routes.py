@@ -1,0 +1,65 @@
+"""Library, cover and single-page-app routes."""
+
+import os
+from pathlib import Path
+
+from fastapi import FastAPI, Request, Response
+from fastapi.responses import FileResponse
+
+from saber_tooth.api.core import Api, ApiError, _error
+from saber_tooth.api.library import MAX_COVER_BYTES
+
+COVER_CACHE = "private, max-age=86400"
+
+
+def _etag_matches(header: str | None, etag: str) -> bool:
+    if not header:
+        return False
+    wanted = [t.strip().removeprefix("W/") for t in header.split(",")]
+    return "*" in wanted or etag in wanted
+
+
+def read_cover(path: Path) -> tuple[bytes, str] | None:
+    """Cover bytes and ETag from one open handle, or None when missing or over the cap."""
+    try:
+        with path.open("rb") as fh:
+            st = os.fstat(fh.fileno())
+            if st.st_size > MAX_COVER_BYTES:
+                return None
+            data = fh.read(MAX_COVER_BYTES + 1)
+    except OSError:
+        return None
+    if len(data) > MAX_COVER_BYTES:
+        return None
+    return data, f'"{st.st_mtime_ns:x}-{st.st_size:x}"'
+
+
+def register(app: FastAPI, api: Api, web: Path) -> None:
+    @app.get("/api/maps")
+    def maps(request: Request):
+        return api.maps_page(dict(request.query_params))
+
+    @app.get("/api/maps/{map_id}")
+    def map_detail(map_id: str):
+        return api.map_item(map_id)
+
+    @app.get("/api/maps/{map_id}/cover")
+    def cover(map_id: str, request: Request):
+        path, ctype = api.cover(map_id)
+        loaded = read_cover(path)
+        if loaded is None:
+            raise ApiError(404, f"no cover for map: {map_id}")
+        data, etag = loaded
+        headers = {"ETag": etag, "Cache-Control": COVER_CACHE}
+        if _etag_matches(request.headers.get("if-none-match"), etag):
+            return Response(status_code=304, headers=headers)
+        return Response(data, media_type=ctype, headers=headers)
+
+    @app.api_route("/api/{rest:path}", methods=["GET", "HEAD"], include_in_schema=False)
+    def unknown_api(rest: str):
+        return _error(404, "not found")
+
+    @app.get("/maps/{map_id}", include_in_schema=False)
+    @app.get("/new", include_in_schema=False)
+    def spa(map_id: str = ""):
+        return FileResponse(web / "index.html", media_type="text/html")

@@ -8,6 +8,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from saber_tooth.store_maps import MapQueries
+
 PROPOSAL_STATUSES = {"pending", "approved", "rejected", "applied"}
 CLAIMED = "applying"  # internal: approved rows an apply has claimed; the API shows "approved"
 
@@ -35,7 +37,7 @@ def _now() -> str:
     return datetime.now(UTC).isoformat()
 
 
-class Store:
+class Store(MapQueries):
     def __init__(self, path: Path) -> None:
         self._lock = threading.Lock()
         self._db = sqlite3.connect(str(path), check_same_thread=False)

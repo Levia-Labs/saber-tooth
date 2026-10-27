@@ -22,13 +22,8 @@ def build_mcp(api: Api) -> MCPServer:
     @mcp.tool(annotations=READ)
     def list_maps(filter: str = "") -> dict[str, Any]:
         """List indexed maps (id, folder, title, mapper, error counts); filter is a substring."""
-        needle = filter.strip().lower()
-        rows = [
-            m
-            for m in api.maps()
-            if not needle or needle in f"{m['folder']} {m['title']} {m['mapper']}".lower()
-        ]
-        return {"total": len(rows), "maps": rows[:MAX_MAPS]}
+        page = api.maps_page({"q": filter[:200], "limit": str(MAX_MAPS)}, MAX_MAPS)
+        return {"total": page["total"], "maps": page["items"]}
 
     @mcp.tool(annotations=READ)
     def get_proposals(map_id: str) -> dict[str, Any]:

@@ -41,10 +41,12 @@ def test_import_does_not_touch_levels():
 
 
 def test_list_maps_has_ui_fields(client):
-    rows = client.get("/api/maps").json()
-    assert len(rows) == 1
+    page = client.get("/api/maps").json()
+    rows = page["items"]
+    assert (page["total"], page["offset"], page["limit"]) == (1, 0, 40) and len(rows) == 1
     assert set(rows[0]) == {
         "id", "folder", "title", "mapper", "environment", "parse_error", "errors", "warnings",
+        "scanned_at", "status", "cover_url", "difficulties", "approved", "pending",
     }  # fmt: skip
     assert rows[0]["id"] == MID and rows[0]["folder"] == NAME
 
@@ -55,7 +57,7 @@ def test_scan_job_and_proposals(client):
     job = _wait(client, started.json()["job"])
     assert job["status"] == "done" and job["kind"] == "scan"
     assert set(job["result"]) == {"map_id", "proposals", "analysis"}
-    assert client.get("/api/maps").json()[0]["errors"] >= 0
+    assert client.get("/api/maps").json()["items"][0]["errors"] >= 0
     assert isinstance(client.get(f"/api/maps/{MID}/proposals").json(), list)
 
 
@@ -272,11 +274,11 @@ def test_origin_scheme_or_port_mismatch_is_403(client, origin):
 
 
 def test_maps_refresh_when_levels_listing_changes(client, svc):
-    assert len(client.get("/api/maps").json()) == 1
+    assert client.get("/api/maps").json()["total"] == 1
     shutil.copytree(svc.levels / NAME, svc.levels / "Second")
-    assert {m["folder"] for m in client.get("/api/maps").json()} == {NAME, "Second"}
+    assert {m["folder"] for m in client.get("/api/maps").json()["items"]} == {NAME, "Second"}
     shutil.rmtree(svc.levels / "Second")
-    assert [m["folder"] for m in client.get("/api/maps").json()] == [NAME]
+    assert [m["folder"] for m in client.get("/api/maps").json()["items"]] == [NAME]
 
 
 def test_upload_title_is_sanitised_filename_stem(svc):
