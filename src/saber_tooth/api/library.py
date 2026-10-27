@@ -197,12 +197,34 @@ class Extras:
 
     def __init__(self) -> None:
         self._cache: dict[str, tuple[tuple[int, int], Extra]] = {}
+        self._media: dict[str, tuple[tuple[int, int, int], bool, bool]] = {}
+
+    def media(self, folder: Path, extra: Extra) -> tuple[bool, bool]:
+        """Whether the folder has a usable cover and song, cached until its listing changes."""
+        try:
+            stamp = (folder.stat().st_mtime_ns, *self._stamp(folder))
+        except (MapParseError, OSError):
+            stamp = None
+        hit = self._media.get(str(folder))
+        if stamp is not None and hit and hit[0] == stamp:
+            return hit[1], hit[2]
+        cover = cover_path(folder, extra.cover) is not None
+        audio = audio_path(folder, extra.song) is not None
+        if stamp is not None:
+            if len(self._media) >= _CACHE_SIZE:
+                self._media.clear()
+            self._media[str(folder)] = (stamp, cover, audio)
+        return cover, audio
+
+    @staticmethod
+    def _stamp(folder: Path) -> tuple[int, int]:
+        st = find_info(folder).stat()
+        return st.st_mtime_ns, st.st_size
 
     def get(self, folder: Path) -> Extra:
         empty = Extra("", [], "", None)
         try:
-            st = find_info(folder).stat()
-            stamp = (st.st_mtime_ns, st.st_size)
+            stamp = self._stamp(folder)
         except (MapParseError, OSError):
             return empty
         hit = self._cache.get(str(folder))
@@ -230,9 +252,10 @@ def shape_item(row: dict, levels: Path, extras: Extras) -> dict:
     if folder is not None and not row["parse_error"]:
         extra = extras.get(folder)
         item["difficulties"] = extra.difficulties
-        if cover_path(folder, extra.cover) is not None:
+        has_cover, has_audio = extras.media(folder, extra)
+        if has_cover:
             item["cover_url"] = f"/api/maps/{row['id']}/cover"
-        if audio_path(folder, extra.song) is not None:
+        if has_audio:
             item["audio_url"] = f"/api/maps/{row['id']}/audio"
             item["preview_start"] = extra.preview_start
     return item
