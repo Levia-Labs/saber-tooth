@@ -38,4 +38,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
 # nosemgrep: dockerfile.security.missing-user-entrypoint.missing-user-entrypoint -- container starts as root only so the entrypoint can apply PUID/PGID, then setpriv drops privileges (docs/adr/0009)
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 # nosemgrep: dockerfile.security.missing-user.missing-user -- container starts as root only so the entrypoint can apply PUID/PGID, then setpriv drops privileges (docs/adr/0009)
-CMD ["uv", "run", "--no-sync", "uvicorn", "saber_tooth.api:app", "--host", "0.0.0.0", "--port", "8100"]
+CMD ["/app/.venv/bin/uvicorn", "saber_tooth.api:app", "--host", "0.0.0.0", "--port", "8100"]
