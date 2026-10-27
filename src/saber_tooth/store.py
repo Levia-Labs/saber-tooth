@@ -16,7 +16,7 @@ CLAIMED = "applying"  # internal: approved rows an apply has claimed; the API sh
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS maps(
     id TEXT PRIMARY KEY, folder TEXT, title TEXT, mapper TEXT,
-    environment TEXT, parse_error TEXT, scanned_at TEXT, bpm REAL, duration_s REAL);
+    environment TEXT, parse_error TEXT, scanned_at TEXT, bpm REAL, duration_s REAL, levels INTEGER);
 CREATE TABLE IF NOT EXISTS jobs(
     id TEXT PRIMARY KEY, kind TEXT, status TEXT, error TEXT,
     result_json TEXT, created_at TEXT, updated_at TEXT, map_id TEXT);
@@ -32,6 +32,7 @@ _INDEXES = "CREATE INDEX IF NOT EXISTS jobs_map ON jobs(map_id, status);"
 _MIGRATIONS = (
     ("maps", "bpm", "ALTER TABLE maps ADD COLUMN bpm REAL"),
     ("maps", "duration_s", "ALTER TABLE maps ADD COLUMN duration_s REAL"),
+    ("maps", "levels", "ALTER TABLE maps ADD COLUMN levels INTEGER"),
     ("jobs", "map_id", "ALTER TABLE jobs ADD COLUMN map_id TEXT"),
 )
 
@@ -81,15 +82,17 @@ class Store(MapQueries):
         parse_error: str | None,
         bpm: float | None = None,
         duration_s: float | None = None,
+        levels: int | None = None,
     ) -> None:
         self._exec(
             "INSERT INTO maps(id, folder, title, mapper, environment, parse_error,"
-            " scanned_at, bpm, duration_s) VALUES(?,?,?,?,?,?,?,?,?)"
+            " scanned_at, bpm, duration_s, levels) VALUES(?,?,?,?,?,?,?,?,?,?)"
             " ON CONFLICT(id) DO UPDATE SET"
             " folder=excluded.folder, title=excluded.title, mapper=excluded.mapper,"
             " environment=excluded.environment, parse_error=excluded.parse_error,"
-            " scanned_at=excluded.scanned_at, bpm=excluded.bpm, duration_s=excluded.duration_s",
-            (id, folder, title, mapper, environment, parse_error, _now(), bpm, duration_s),
+            " scanned_at=excluded.scanned_at, bpm=excluded.bpm, duration_s=excluded.duration_s,"
+            " levels=excluded.levels",
+            (id, folder, title, mapper, environment, parse_error, _now(), bpm, duration_s, levels),
         )
 
     def list_maps(self) -> list[dict]:

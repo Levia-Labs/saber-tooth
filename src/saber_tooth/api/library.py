@@ -5,7 +5,15 @@ from pathlib import Path
 
 from saber_tooth.mapio import MapParseError
 from saber_tooth.mapio.discover import _entries_v2, _entries_v4, _opt_name, _read_json, find_info
-from saber_tooth.store_maps import MAX_ENVS, Q_FIELDS, SORT_KEYS, STATUS_FILTERS
+from saber_tooth.store_maps import (
+    LEVEL_MODES,
+    LEVEL_NAMES,
+    MAX_ENVS,
+    MAX_MAPPERS,
+    Q_FIELDS,
+    SORT_KEYS,
+    STATUS_FILTERS,
+)
 
 MAX_LIMIT = 100
 MAX_QUERY = 200
@@ -15,6 +23,8 @@ ITEM_FIELDS = (
     "id", "folder", "title", "mapper", "environment", "parse_error", "scanned_at", "bpm",
 )  # fmt: skip
 MAX_ENV_LEN = 200
+MAX_MAPPER_LEN = 200
+MAPPER_SEP = ""  # joins repeated mapper values; names may contain commas
 _CACHE_SIZE = 4096
 
 
@@ -28,6 +38,9 @@ class MapQuery:
     status: tuple[str, ...] = ()
     env: tuple[str, ...] = ()
     q_fields: str = "all"
+    mapper: tuple[str, ...] = ()
+    level: tuple[str, ...] = ()
+    level_mode: str = "any"
 
 
 def _split(raw: str) -> tuple[str, ...]:
@@ -43,6 +56,9 @@ def parse_query(params: dict[str, str], max_limit: int = MAX_LIMIT) -> MapQuery:
     statuses = _split(params.get("status", "all"))
     envs = _split(params.get("env", ""))
     fields = _split(params.get("q_fields", ""))
+    mappers = tuple(dict.fromkeys(m for m in params.get("mapper", "").split(MAPPER_SEP) if m))
+    levels = _split(params.get("level", ""))
+    level_mode = params.get("level_mode", "any")
     q = params.get("q", "")
     if sort not in SORT_KEYS:
         raise ValueError(f"sort must be one of {', '.join(SORT_KEYS)}")
@@ -54,10 +70,17 @@ def parse_query(params: dict[str, str], max_limit: int = MAX_LIMIT) -> MapQuery:
         raise ValueError(f"env takes at most {MAX_ENVS} names of {MAX_ENV_LEN} characters")
     if not set(fields) <= Q_FIELDS:
         raise ValueError(f"q_fields must be a list of {', '.join(sorted(Q_FIELDS))}")
+    if len(mappers) > MAX_MAPPERS or any(len(m) > MAX_MAPPER_LEN for m in mappers):
+        raise ValueError(f"mapper takes at most {MAX_MAPPERS} names of {MAX_MAPPER_LEN} characters")
+    if not set(levels) <= set(LEVEL_NAMES):
+        raise ValueError(f"level must be one of {', '.join(LEVEL_NAMES)}")
+    if level_mode not in LEVEL_MODES:
+        raise ValueError("level_mode must be any or all")
     if len(q) > MAX_QUERY:
         raise ValueError(f"q is longer than {MAX_QUERY} characters")
     status = () if "all" in statuses else statuses
-    return MapQuery(offset, limit, sort, order, q, status, envs, "name" if fields else "all")
+    scope = "name" if len(fields) > 1 else fields[0] if fields else "all"
+    return MapQuery(offset, limit, sort, order, q, status, envs, scope, mappers, levels, level_mode)
 
 
 def _int(raw: str, name: str, low: int, high: int) -> int:

@@ -107,6 +107,9 @@ class Api:
             query.status,
             query.env,
             query.q_fields,
+            query.mapper,
+            query.level,
+            query.level_mode,
         )
         items = [shape_item(r, self.service.levels, self.extras) for r in rows]
         return {"items": items, "total": total, "offset": query.offset, "limit": query.limit}

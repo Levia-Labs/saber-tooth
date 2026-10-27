@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import FileResponse
 
 from saber_tooth.api.core import Api, ApiError, _error
-from saber_tooth.api.library import MAX_COVER_BYTES
+from saber_tooth.api.library import MAPPER_SEP, MAX_COVER_BYTES
 from saber_tooth.api.static import SHELL_CACHE
 
 COVER_CACHE = "private, max-age=86400"
@@ -43,6 +43,10 @@ def register(app: FastAPI, api: Api, web: Path) -> None:
         for key in ("status", "env"):  # repeatable as well as comma-separated
             if key in qp:
                 params[key] = ",".join(qp.getlist(key))
+        if "mapper" in qp:  # exact names may contain commas: join on a separator, not a comma
+            params["mapper"] = MAPPER_SEP.join(qp.getlist("mapper"))
+        if "level" in qp:
+            params["level"] = ",".join(qp.getlist("level"))
         return api.maps_page(params)
 
     @app.get("/api/maps/facets")
