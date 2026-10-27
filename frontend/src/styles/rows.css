@@ -122,7 +122,10 @@
 
 @media (max-width: 1279px) {
   .lib-grid {
-    grid-template-columns: 56px minmax(0, 1fr) 120px 150px 60px 84px 130px 140px;
+    grid-template-columns: var(--cols-mid);
+  }
+  .lib-table {
+    min-width: var(--min-mid, 0);
   }
   .col-env {
     display: none;
@@ -130,8 +133,11 @@
 }
 
 @media (max-width: 1099px) {
+  .lib-table {
+    min-width: var(--min-compact, 0);
+  }
   .lib-grid {
-    grid-template-columns: 64px minmax(0, 1fr) 76px 88px 150px 156px;
+    grid-template-columns: var(--cols-compact);
     grid-template-areas:
       "cover title length bpm status actions"
       "cover sub length bpm status actions";
@@ -175,6 +181,9 @@
 }
 
 @media (max-width: 719px) {
+  .lib-table {
+    min-width: 0;
+  }
   .lib-head,
   .col-length,
   .col-bpm {

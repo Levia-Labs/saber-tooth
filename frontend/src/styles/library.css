@@ -45,11 +45,11 @@
 }
 .lib-table {
   position: relative;
-  min-width: 0;
+  min-width: var(--min-wide, 0);
 }
 .lib-grid {
   display: grid;
-  grid-template-columns: 56px minmax(0, 1fr) 120px 150px 60px 84px 130px 130px 140px;
+  grid-template-columns: var(--cols-wide);
   column-gap: 12px;
   align-items: center;
   padding: 0 12px;
@@ -67,6 +67,7 @@
   font-variation-settings: "wdth" 75;
 }
 .th {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -154,4 +155,38 @@
   gap: 0.6rem;
   padding: 2rem 1rem;
   color: var(--muted);
+}
+.th-quiet {
+  font-size: 0.75rem;
+  opacity: 0.6;
+}
+.th-reset {
+  margin-left: auto;
+  padding: 0.1rem 0.4rem;
+  font: inherit;
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.th-reset:hover {
+  color: var(--ink);
+  border-color: var(--line);
+}
+.col-resize {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  right: -9px;
+  width: 6px;
+  border-radius: 3px;
+  cursor: col-resize;
+  touch-action: none;
+  background: transparent;
+}
+.col-resize:hover,
+.col-resize:focus-visible {
+  background: var(--blue);
 }
