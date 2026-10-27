@@ -13,3 +13,4 @@ Shared UI.
 9. `beatsaver/`: the BeatSaver view: table, row, header, filter bodies, presets bar, selection bar, download hooks and playlist list.
 10. `Alert.tsx`: danger, warning, info and success alerts; [alerts.ts](../lib/alerts.ts) maps jobs and errors to them.
 11. `Skeletons.tsx`: layout-matching loading placeholders for the map page and route fallback.
+12. `FixButton.tsx`, `FixOutcomes.tsx`: the primary Fix action and the alerts under finished fixes.

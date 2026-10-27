@@ -19,6 +19,7 @@ export interface AlertSpec {
 const FAILED_TITLE: Record<JobKind, string> = {
   scan: "Scan failed",
   apply: "Apply failed",
+  fix: "Fix failed",
   generate: "Generation failed",
   learn: "Learning failed",
 };
@@ -26,6 +27,7 @@ const FAILED_TITLE: Record<JobKind, string> = {
 const DONE_TITLE: Record<JobKind, string> = {
   scan: "Scan finished",
   apply: "Applied",
+  fix: "Fixed",
   generate: "Map generated",
   learn: "Lightshows learned",
 };
@@ -149,6 +151,8 @@ function success(job: Job, result: Record<string, unknown>): AlertSpec {
         title: DONE_TITLE.apply,
         message: where || "The approved fixes were applied.",
       };
+    case "fix":
+      return { variant: "success", title: DONE_TITLE.fix, message: where || "The map was fixed." };
     case "generate":
       return {
         variant: "success",

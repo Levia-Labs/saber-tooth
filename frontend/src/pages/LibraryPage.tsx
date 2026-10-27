@@ -3,6 +3,7 @@ import { SpecAlert } from "../components/Alert";
 import { errorToAlert } from "../lib/alerts";
 import { useFacets, useLibrary, useLiveRows } from "../api/queries";
 import { useJobRunner } from "../api/jobs";
+import { FixOutcomes } from "../components/FixOutcomes";
 import { JobOutcome } from "../components/JobOutcome";
 import { LibraryTable } from "../components/LibraryTable";
 import { LibraryMobileBar } from "../components/LibraryMobileBar";
@@ -44,6 +45,7 @@ export function LibraryPage() {
         <LibraryTools learn={learn} onResetColumns={columns.api.resetAll} />
       </div>
       <JobOutcome job={learn.job} error={learn.error} />
+      <FixOutcomes />
       {narrow && (
         <LibraryMobileBar
           state={state}

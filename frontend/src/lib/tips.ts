@@ -1,6 +1,7 @@
 // Tooltip copy, one place so every button explains itself the same way.
 export const TIPS = {
   scan: "Check this map for impossible patterns, empty sections and missing difficulties. Creates fix proposals for you to review. Nothing is written yet.",
+  fix: "Fix this map: adds missing difficulties and fixes every error, then writes a new '<map> [saber-tooth]' folder. The original is never changed.",
   review: "Open this map's page to see what was found and approve or reject each proposed fix.",
   apply:
     "Write the fixes you approved into a new folder named '<map> [saber-tooth]'. The original map is never changed.",

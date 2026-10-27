@@ -11,6 +11,7 @@ export const STATUS_META: Record<StatusKey, { label: string; icon: IconName }> =
   unreadable: { label: "Unreadable", icon: "unreadable" },
   scanning: { label: "Scanning", icon: "sweep" },
   applying: { label: "Applying", icon: "sweep" },
+  fixing: { label: "Fixing", icon: "sweep" },
   queued: { label: "Queued", icon: "sweep" },
 };
 
@@ -23,10 +24,11 @@ export const STATUS_ORDER: readonly StatusKey[] = [
   "unreadable",
   "scanning",
   "applying",
+  "fixing",
   "queued",
 ];
 
-const RUNNING: readonly StatusKey[] = ["scanning", "applying", "queued"];
+const RUNNING: readonly StatusKey[] = ["scanning", "applying", "fixing", "queued"];
 
 export function isRunning(status: StatusKey): boolean {
   return RUNNING.includes(status);
@@ -60,6 +62,8 @@ export function statusLabel(item: StatusFields): string {
       return "Scanning";
     case "applying":
       return "Applying";
+    case "fixing":
+      return "Fixing";
     case "queued":
       return "Queued";
     case "unreadable":

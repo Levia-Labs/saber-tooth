@@ -7,3 +7,4 @@ Everything that talks to the HTTP API; field names live here only.
 3. `queries.ts`: TanStack Query hooks, cache patching and live polling of running rows.
 4. `jobs.ts`: start a job and poll it to the end, with backoff and retry rules.
 5. `beatsaver.ts`: BeatSaver response types, request functions and query hooks (the /api/beatsaver contract).
+6. `fix.ts`: the one-click Fix: starts the job, follows it and keeps its outcomes for the alerts.

@@ -38,6 +38,7 @@ export const FACETS: Facets = {
     unreadable: 0,
     scanning: 1,
     applying: 0,
+    fixing: 0,
     queued: 0,
   },
   environments: [

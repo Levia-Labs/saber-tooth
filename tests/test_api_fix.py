@@ -4,6 +4,7 @@
 from fastapi.testclient import TestClient
 
 from saber_tooth.api import create_app
+from saber_tooth.service import map_id_for
 from tests.test_api import MID, NAME, _wait, client, svc  # noqa: F401
 from tests.test_fix_map import CLASH
 from tests.test_service import _hashes, _make
@@ -19,6 +20,7 @@ def test_fix_job_writes_new_folder_and_reports(tmp_path):
         assert job["status"] == "done" and job["kind"] == "fix"
         report = job["result"]
         assert report["folder"] == f"{NAME} [saber-tooth]"
+        assert report["fixed_id"] == map_id_for(report["folder"])
         assert report["errors"] == 0 and report["unfixed"] == []
         assert len(report["difficulties"]) == 5 and report["analysed"] is False
         assert set(report) >= {"before", "after", "rounds", "applied"}

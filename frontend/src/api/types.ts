@@ -7,6 +7,7 @@ export const STATUS_KEYS = [
   "unreadable",
   "scanning",
   "applying",
+  "fixing",
   "queued",
 ] as const;
 export type StatusKey = (typeof STATUS_KEYS)[number];
@@ -15,7 +16,7 @@ export const LEVEL_KEYS = ["Easy", "Normal", "Hard", "Expert", "ExpertPlus"] as 
 export type LevelKey = (typeof LEVEL_KEYS)[number];
 
 export type JobState = "queued" | "running" | "done" | "failed";
-export type JobKind = "scan" | "apply" | "generate" | "learn";
+export type JobKind = "scan" | "apply" | "fix" | "generate" | "learn";
 
 export interface ActiveJob {
   id: string;

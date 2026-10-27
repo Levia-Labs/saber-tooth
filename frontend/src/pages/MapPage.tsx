@@ -6,6 +6,8 @@ import { ApiError, applyMap, approveAll, scanMap } from "../api/client";
 import { Alert, SpecAlert } from "../components/Alert";
 import { FixesSkeleton, MapHeadSkeleton } from "../components/Skeletons";
 import { errorToAlert } from "../lib/alerts";
+import { FixButton } from "../components/FixButton";
+import { FixOutcomes } from "../components/FixOutcomes";
 import { useJobRunner } from "../api/jobs";
 import { keys, useLiveRows, useMap, useProposals } from "../api/queries";
 import { ActionButton } from "../components/Buttons";
@@ -85,6 +87,7 @@ export function MapPage() {
           </div>
         </div>
       )}
+      <FixOutcomes mapId={id} />
       <JobOutcome
         job={apply.job}
         error={apply.error}
@@ -124,6 +127,7 @@ export function MapPage() {
           mapId={id}
           actions={
             <>
+              {map.data && <FixButton item={map.data} text />}
               <ActionButton
                 icon="scan"
                 label="Scan"

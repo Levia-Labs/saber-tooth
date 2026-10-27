@@ -171,6 +171,14 @@ button.btn {
   border-color: var(--blue);
   box-shadow: inset 0 -2px 0 var(--blue);
 }
+.btn.accent {
+  border-color: var(--blue);
+  background: rgba(46, 155, 230, 0.16);
+  color: var(--ink);
+}
+.btn.accent .ic {
+  color: var(--blue);
+}
 .btn.approve {
   border-color: var(--green);
 }

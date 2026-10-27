@@ -11,3 +11,4 @@ Pure helpers and small hooks.
 7. `timeline.ts`: canvas geometry and drawing for the before and after note grids.
 8. `bsfilters.ts`, `useBsState.ts`: BeatSaver filter state in the URL, API parameters and presets.
 9. `bscolumns.ts`, `bstips.ts`, `preview.ts`: BeatSaver column set, tooltip copy and the single audio preview.
+10. `fixreport.ts`: reads the structured report of a finished fix job.

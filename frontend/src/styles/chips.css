@@ -38,6 +38,7 @@
 }
 .chip-scanning,
 .chip-applying,
+.chip-fixing,
 .chip-queued {
   --tone: var(--blue);
   background: rgba(46, 155, 230, 0.1);
@@ -70,6 +71,7 @@
 }
 .chip-scanning .ic,
 .chip-applying .ic,
+.chip-fixing .ic,
 .chip-queued .ic {
   color: var(--blue);
 }
@@ -78,7 +80,8 @@
 }
 @media (prefers-reduced-motion: no-preference) {
   .chip-scanning .sweep-arm,
-  .chip-applying .sweep-arm {
+  .chip-applying .sweep-arm,
+  .chip-fixing .sweep-arm {
     animation: sweep 1.2s linear infinite;
   }
 }

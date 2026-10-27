@@ -70,7 +70,7 @@ export function patchMap(client: QueryClient, item: MapItem): void {
 export function markRunning(
   client: QueryClient,
   item: MapItem,
-  kind: "scan" | "apply",
+  kind: "scan" | "apply" | "fix",
   id: string,
 ) {
   patchMap(client, {

@@ -8,6 +8,7 @@ from saber_tooth.checks import Finding, run_checks
 from saber_tooth.fixer import Proposal, apply_ops, propose_with_reason
 from saber_tooth.lightshow import Templates
 from saber_tooth.model import DIFFICULTIES, Beatmap
+from saber_tooth.service.util import map_id_for
 from saber_tooth.service.writeout import write_fixed
 
 MAX_ROUNDS = 6
@@ -100,6 +101,7 @@ def fix_map(svc, map_id: str, max_rounds: int = MAX_ROUNDS) -> dict:
     report: dict = {
         "map_id": map_id,
         "folder": None,
+        "fixed_id": None,
         "analysed": analysis is not None,
         "rounds": run.rounds,
         "applied": len(run.steps),
@@ -123,6 +125,7 @@ def fix_map(svc, map_id: str, max_rounds: int = MAX_ROUNDS) -> dict:
     after = run_checks(written, analysis)
     report.update(
         folder=target.name,
+        fixed_id=map_id_for(target.name),
         after=counts(after),
         difficulties=sorted(written.difficulties),
         complete=complete(written),

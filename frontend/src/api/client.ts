@@ -78,6 +78,8 @@ export const scanMap = (id: string): Promise<Started> =>
 export const applyMap = (id: string): Promise<Started> =>
   request("POST", `/api/maps/${seg(id)}/apply`);
 
+export const fixMap = (id: string): Promise<Started> => request("POST", `/api/maps/${seg(id)}/fix`);
+
 export const approveAll = (id: string): Promise<{ approved: number }> =>
   request("POST", `/api/maps/${seg(id)}/approve-all`);
 

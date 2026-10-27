@@ -10,6 +10,7 @@ import { mapName } from "../lib/status";
 import { ActionButton, ActionLink } from "./Buttons";
 import { useAnnounce } from "./Announcer";
 import { Cover, LevelChips, StatusChip } from "./Chips";
+import { FixButton } from "./FixButton";
 import { PreviewButton } from "./PreviewButton";
 
 export function LibraryRow({ item, index }: { item: MapItem; index: number }) {
@@ -71,6 +72,7 @@ export function LibraryRow({ item, index }: { item: MapItem; index: number }) {
       </div>
       <div className="col-actions" role="cell">
         <div className="actions">
+          <FixButton item={item} />
           <ActionLink icon="review" label={reviewLabel} tip={TIPS.review} to={href}>
             {pending > 0 && (
               <span className="badge-count" aria-hidden="true">
