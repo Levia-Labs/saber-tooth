@@ -107,6 +107,7 @@
 .level.missing {
   color: var(--muted);
   font-weight: 400;
+  opacity: 0.5;
 }
 .level-sep {
   color: var(--muted);
