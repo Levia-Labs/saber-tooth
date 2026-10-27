@@ -31,9 +31,21 @@
   margin-top: 0.5rem;
 }
 .tempo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
   color: var(--muted);
   font-size: 0.9rem;
   font-variant-numeric: tabular-nums;
+}
+.tempo-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.tempo-item .ic {
+  width: 1.1em;
+  height: 1.1em;
 }
 .map-actions,
 .row {
@@ -137,4 +149,75 @@
 }
 .modal .row {
   justify-content: flex-end;
+}
+.card-controls {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin: 0.5rem 0;
+}
+.card-sum {
+  flex-wrap: nowrap;
+}
+.card-toggle {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0;
+  overflow: hidden;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.card-toggle > span {
+  flex: none;
+}
+.card-toggle .sum-rule {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+}
+.card-toggle .sum-diff,
+.card-toggle .sum-range,
+.card-toggle .sum-ops {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+.chev {
+  transition: transform 0.15s;
+}
+.chev.open {
+  transform: rotate(180deg);
+}
+.card-body {
+  max-height: 40vh;
+  margin-top: 0.7rem;
+  overflow: auto;
+}
+.card-body[hidden] {
+  display: none;
+}
+.card-summary {
+  margin: 0 0 0.4rem;
+}
+.card-body .timeline {
+  margin-top: 0;
+}
+@media (max-width: 719px) {
+  .card-sum {
+    flex-wrap: wrap;
+  }
+  .card-toggle {
+    flex-basis: 100%;
+  }
 }

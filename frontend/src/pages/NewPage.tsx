@@ -38,7 +38,7 @@ function Preview({ mapId }: { mapId: string }) {
         ))}
       </ul>
       {expert.map((p) => (
-        <ProposalCard key={p.id} proposal={p} mapId={mapId} notesFilter={firstBars} />
+        <ProposalCard key={p.id} proposal={p} mapId={mapId} notesFilter={firstBars} defaultOpen />
       ))}
       <ActionButton
         icon="apply"

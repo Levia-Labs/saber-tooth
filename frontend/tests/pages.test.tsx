@@ -65,7 +65,7 @@ describe("routes", () => {
     expect(await screen.findByRole("heading", { name: "Song 1" })).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "2 errors" })).toBeInTheDocument();
     expect(screen.getByText(/3:21/)).toBeInTheDocument();
-    expect(screen.getByText("Expert+")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Expert+" })).toBeInTheDocument();
     expect(await screen.findByText("Fix 1")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Hard" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Expert" })).toBeInTheDocument();
