@@ -5,7 +5,18 @@
       "name": "Chill Electronic",
       "owner": { "id": 5, "name": "curator" },
       "playlistImage512": "https://cdn.beatsaver.com/playlist/77.png",
-      "stats": { "totalMaps": 2, "minNps": 0.9, "maxNps": 3.1 }
+      "createdAt": "2024-03-01T10:00:00Z",
+      "curatedAt": "2024-04-01T10:00:00Z",
+      "stats": {
+        "totalMaps": 2,
+        "mapperCount": 2,
+        "totalDuration": 400,
+        "minNps": 0.9,
+        "maxNps": 3.1,
+        "upVotes": 9,
+        "downVotes": 1,
+        "avgScore": 0.85
+      }
     }
   ]
 }

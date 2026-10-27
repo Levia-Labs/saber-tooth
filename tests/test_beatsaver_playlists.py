@@ -59,3 +59,14 @@ def test_reserved_title_gets_prefix(tmp_path, title):
     path = export_bplist(title, maps(), tmp_path)
     assert path.name == f"playlist-{title}.bplist"
     assert path.is_file()
+
+
+def test_playlist_rating_falls_back_to_vote_ratio():
+    from saber_tooth.beatsaver.models import BsPlaylist
+
+    def make(stats):
+        return BsPlaylist.from_json({"playlistId": 1, "stats": stats})
+
+    assert make({"avgScore": 0.7, "upVotes": 1, "downVotes": 1}).rating == 0.7
+    assert make({"upVotes": 3, "downVotes": 1}).rating == 0.75
+    assert make({}).rating == 0.0

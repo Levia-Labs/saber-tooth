@@ -53,7 +53,8 @@ class Upstream:
             docs = {d["id"]: d for d in fixture("search_page0.json")["docs"] if d["id"] in wanted}
             return httpx.Response(200, json=docs)
         if path.startswith("/playlists/search/"):
-            return httpx.Response(200, json=fixture("playlist_search.json"))
+            body = fixture("playlist_search.json") if path.endswith("/0") else {"docs": []}
+            return httpx.Response(200, json=body)
         if path.startswith("/playlists/id/77/"):
             body = fixture("playlist_page0.json") if path.endswith("/0") else {"maps": []}
             return httpx.Response(200, json=body)
@@ -178,9 +179,12 @@ def test_playlists(bs):
         {
             "id": "77", "name": "Chill Electronic", "owner": "curator",
             "cover_url": "https://cdn.beatsaver.com/playlist/77.png", "map_count": 2,
+            "mapper_count": 2, "duration": 400, "upvotes": 9, "downvotes": 1, "rating": 0.85,
+            "min_nps": 0.9, "max_nps": 3.1, "created_at": "2024-03-01T10:00:00Z",
+            "curated": True,
         }
     ]  # fmt: skip
-    assert found["cursor"] == "1"
+    assert found["cursor"] is None  # page 1 is empty
     page = bs.get(f"/api/beatsaver/playlists/77?{HITS}").json()
     assert page["playlist"]["name"] == "Chill Electronic"
     assert (
@@ -250,4 +254,24 @@ def test_playlist_cursor_advances_when_page_is_all_empty(svc):
 
     with TestClient(make_app(svc, upstream), base_url="http://localhost") as client:
         body = client.get("/api/beatsaver/playlists/search?q=x").json()
-    assert body == {"items": [], "cursor": "1"}
+    assert body == {"items": [], "cursor": "5"}  # scan stops after five empty pages
+
+
+def test_playlist_filters_and_params(svc):
+    seen = []
+
+    def upstream(request):
+        seen.append(dict(request.url.params))
+        body = fixture("playlist_search.json") if request.url.path.endswith("/0") else {"docs": []}
+        return httpx.Response(200, json=body)
+
+    with TestClient(make_app(svc, upstream), base_url="http://localhost") as client:
+        url = "/api/beatsaver/playlists/search"
+        hit = client.get(f"{url}?order=Curated&curated=true&min_nps=1&maps_min=2&min_rating=0.8")
+        assert len(hit.json()["items"]) == 1
+        assert seen[0]["order"] == "Curated" and seen[0]["curated"] == "true"
+        assert seen[0]["minNps"] == "1" and seen[0]["includeEmpty"] == "false"
+        for miss in ("maps_min=3", "min_rating=0.9", "min_upvotes=10", "duration_max=300"):
+            assert client.get(f"{url}?{miss}").json()["items"] == []
+        assert client.get(f"{url}?order=Nope").status_code == 400
+        assert client.get(f"{url}?min_rating=2").status_code == 400

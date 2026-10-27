@@ -10,7 +10,8 @@ from saber_tooth.beatsaver.cache import BsCache
 from saber_tooth.beatsaver.client import BeatSaverClient, BeatSaverError, download_url_ok
 from saber_tooth.beatsaver.download import install
 from saber_tooth.beatsaver.models import BsMap, BsPlaylist
-from saber_tooth.beatsaver.params import MAX_Q, parse_search
+from saber_tooth.beatsaver.params import parse_search
+from saber_tooth.beatsaver.playlist_query import parse_playlist_query
 from saber_tooth.beatsaver.playlists import PlaylistsDisabled, export_bplist
 from saber_tooth.beatsaver.presets import PresetConflict, PresetError, Presets
 from saber_tooth.beatsaver.search import SearchResult, search
@@ -22,9 +23,10 @@ RATE_SKIP = "skipped: BeatSaver rate limit, try again later"
 MAX_EXPORT = 500
 BS_ID = re.compile(r"[0-9a-fA-F]{1,12}")
 PLAYLIST_ID = re.compile(r"[0-9]{1,9}")
-PAGE = re.compile(r"[0-9]{1,6}")
 KEY_PREFIX = re.compile(r"([0-9a-fA-F]{1,12}) \(")
 MAX_META = 200
+PLAYLIST_SCAN_PAGES = 5
+PLAYLIST_WANTED = 20
 
 
 class BsHttpError(ApiError):
@@ -52,6 +54,10 @@ def playlist_view(p: BsPlaylist) -> dict:
     return {
         "id": str(p.id), "name": p.name, "owner": p.owner,
         "cover_url": _url(p.cover_url), "map_count": p.maps_count,
+        "mapper_count": p.mapper_count, "duration": p.duration,
+        "upvotes": p.upvotes, "downvotes": p.downvotes, "rating": p.rating,
+        "min_nps": p.min_nps, "max_nps": p.max_nps,
+        "created_at": p.created_at, "curated": p.curated,
     }  # fmt: skip
 
 
@@ -151,19 +157,21 @@ class BeatSaverApi:
         return self.view(next(iter(found.values())), self._installed())
 
     def playlists_search(self, params: dict[str, str]) -> dict:
-        q = params.get("q", "").strip()
-        cursor = params.get("cursor") or "0"
-        if len(q) > MAX_Q or not PAGE.fullmatch(cursor):
-            raise ApiError(400, "invalid q or cursor")
-        page = int(cursor)
         try:
-            raw, docs = self.client.playlist_search_page({"q": q} if q else {}, page)
+            pq = parse_playlist_query(params)
+        except ValueError as exc:
+            raise ApiError(400, str(exc)) from None
+        page, items = pq.cursor, []
+        try:
+            for _ in range(PLAYLIST_SCAN_PAGES):
+                raw, docs = self.client.playlist_search_page(pq.server, page)
+                page += 1
+                items += [p for p in docs if pq.local.matches(p)]
+                if not raw or len(items) >= PLAYLIST_WANTED:
+                    break
         except BeatSaverError as exc:
             raise bs_error(exc) from None
-        return {
-            "items": [playlist_view(p) for p in docs],
-            "cursor": str(page + 1) if raw else None,
-        }
+        return {"items": [playlist_view(p) for p in items], "cursor": str(page) if raw else None}
 
     def playlist(self, raw: str, params: dict[str, str]) -> dict:
         if not PLAYLIST_ID.fullmatch(raw):
