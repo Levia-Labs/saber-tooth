@@ -12,6 +12,9 @@ const MapPage = lazy(() => import("./pages/MapPage").then((m) => ({ default: m.M
 const BeatSaverPage = lazy(() =>
   import("./pages/BeatSaverPage").then((m) => ({ default: m.BeatSaverPage })),
 );
+const BeatSaverPlaylistsPage = lazy(() =>
+  import("./pages/BeatSaverPlaylistsPage").then((m) => ({ default: m.BeatSaverPlaylistsPage })),
+);
 const NewPage = lazy(() => import("./pages/NewPage").then((m) => ({ default: m.NewPage })));
 
 export function makeQueryClient(): QueryClient {
@@ -89,6 +92,8 @@ export const routes: RouteObject[] = [
       { path: "/maps/:id", element: <MapPage /> },
       { path: "/new", element: <NewPage /> },
       { path: "/beatsaver", element: <BeatSaverPage /> },
+      { path: "/beatsaver/playlists", element: <BeatSaverPlaylistsPage /> },
+      { path: "/beatsaver/playlists/:id", element: <BeatSaverPlaylistsPage /> },
       { path: "*", element: <NotFoundPage /> },
     ],
   },
