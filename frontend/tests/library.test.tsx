@@ -29,7 +29,7 @@ describe("sort and filter placement", () => {
   test("mobile layout shows a toolbar with sort, direction and Filters", async () => {
     window.matchMedia = ((query: string) => ({
       ...real(query),
-      matches: query === "(max-width: 719px)",
+      matches: query === "(max-width: 1099px)",
     })) as typeof window.matchMedia;
     api();
     const { container } = renderApp("/");
@@ -75,7 +75,7 @@ describe("library page", () => {
     expect(row.getByRole("img", { name: "3 errors" })).toBeInTheDocument();
     expect(row.getAllByText("3:21").length).toBeGreaterThan(0);
     expect(row.getAllByText("128 BPM").length).toBeGreaterThan(0);
-    expect(row.getAllByText("Expert+").length).toBeGreaterThan(0);
+    expect(row.getAllByRole("img", { name: "Expert+" }).length).toBeGreaterThan(0);
     expect(row.getByRole("link", { name: /Review Song 1, 2 fixes/ })).toHaveAttribute(
       "href",
       "/maps/id0000000001",
@@ -95,7 +95,7 @@ describe("library page", () => {
     expect(title.textContent).not.toContain("Mapper 1");
     const levels = cells("col-levels");
     expect(levels.querySelectorAll("li.level")).toHaveLength(3);
-    expect(levels.textContent).toBe("EasyExpertExpert+");
+    expect(levels.textContent).toBe("EaExEx+");
     expect(levels.querySelector(".chip")).toBeNull();
     expect(cells("col-author").textContent).toBe("Mapper 1");
     expect(cells("col-env").textContent).toBe("Origins");
@@ -199,9 +199,9 @@ describe("column filters", () => {
     renderApp("/");
     const user = userEvent.setup();
     await screen.findByRole("link", { name: "Song 1" });
-    const button = screen.getByRole("button", { name: "Filter Environment" });
+    const button = screen.getByRole("button", { name: "Filter Env" });
     await user.click(button);
-    expect(await screen.findByRole("dialog", { name: "Environment filter" })).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "Env filter" })).toBeInTheDocument();
     await user.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(button).toHaveFocus();

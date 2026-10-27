@@ -5,7 +5,7 @@ export const TIPS = {
   apply:
     "Write the fixes you approved into a new folder named '<map> [saber-tooth]'. The original map is never changed.",
   learn:
-    "Study the lighting in the maps you have installed. saber-tooth reuses those patterns to light maps that still use the default environment. Run it once, and again after adding new maps.",
+    "Add the lighting styles of the maps you have installed to the built-in set. Optional: saber-tooth already lights maps with its bundled set.",
   generate:
     "Create a new map with all five difficulties from a YouTube link or an audio file. You review it before anything is written.",
   resetColumns: "Reset column widths to their defaults.",

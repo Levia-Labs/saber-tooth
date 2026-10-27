@@ -24,7 +24,7 @@ export function MobileFilters({ state, facets, update, clear }: Props) {
   const total = totalFilters(counts);
   return (
     <Dialog.Root>
-      <Tip text="Filter the library by title, author, levels, status and environment.">
+      <Tip text="Filter the library by title, author, levels, environment and status.">
         <Dialog.Trigger className="btn plain filters-btn">
           <Icon name="filter" filled={total > 0} />
           <span>Filters</span>
@@ -71,19 +71,19 @@ export function MobileFilters({ state, facets, update, clear }: Props) {
             />
           </section>
           <section>
+            <h3>Env</h3>
+            <EnvFilterBody
+              selected={state.env}
+              facets={facets}
+              onChange={(env) => update({ env })}
+            />
+          </section>
+          <section>
             <h3>Status</h3>
             <StatusFilterBody
               selected={state.status}
               facets={facets}
               onChange={(status) => update({ status })}
-            />
-          </section>
-          <section>
-            <h3>Environment</h3>
-            <EnvFilterBody
-              selected={state.env}
-              facets={facets}
-              onChange={(env) => update({ env })}
             />
           </section>
           <Dialog.Close className="btn primary">Show maps</Dialog.Close>

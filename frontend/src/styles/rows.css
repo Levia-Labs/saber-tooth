@@ -44,6 +44,7 @@
 }
 .col-levels .levels {
   flex-wrap: wrap;
+  row-gap: 3px;
 }
 .num {
   font-variant-numeric: tabular-nums;
@@ -174,6 +175,20 @@
   .col-levels,
   .col-env {
     display: none;
+  }
+}
+
+@media (max-width: 1099px) {
+  .lib-bar {
+    flex-wrap: nowrap;
+  }
+  .lib-title {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .lib-tools {
+    flex: none;
+    flex-wrap: nowrap;
   }
 }
 

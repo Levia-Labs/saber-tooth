@@ -222,3 +222,36 @@ export function drawTimeline(
   ctx.lineTo(half + 0.5, height);
   ctx.stroke();
 }
+
+const BEATS_PER_BAR = 4;
+
+function bar(beat: number): string {
+  const b = Math.max(0, beat);
+  return `${Math.floor(b / BEATS_PER_BAR) + 1}:${Math.floor(b % BEATS_PER_BAR) + 1}`;
+}
+
+/** "bars:beats" range (1-based, 4 beats to a bar) covering everything a proposal touches. */
+export function beatRange(...lists: Beat[][]): string {
+  if (!lists.some((l) => l.length)) return "no notes";
+  const { start, end } = beatWindow(...lists);
+  const last = end - 1;
+  return start === last ? bar(start) : `${bar(start)} - ${bar(last)}`;
+}
+
+type Placed = Partial<Note> & Partial<Wall> & { beat: number };
+
+function keyOf(item: Placed): string {
+  return [item.beat, item.x, item.y, item.color, item.cut, item.duration, item.width, item.height]
+    .map((v) => v ?? "")
+    .join("/");
+}
+
+/** Operations a proposal performs: items only in the before side plus items only in the after. */
+export function countOperations(before: Placed[], after: Placed[]): number {
+  const a = new Set(before.map(keyOf));
+  const b = new Set(after.map(keyOf));
+  let n = 0;
+  for (const k of a) if (!b.has(k)) n += 1;
+  for (const k of b) if (!a.has(k)) n += 1;
+  return n;
+}

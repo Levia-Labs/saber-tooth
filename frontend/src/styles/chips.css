@@ -91,16 +91,25 @@
 .levels {
   display: flex;
   flex-wrap: nowrap;
-  gap: 4px;
+  gap: 3px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 .level {
-  padding: 1px 7px;
+  box-sizing: border-box;
+  width: 28px;
+  padding: 0;
+  border: 1.5px solid;
   border-radius: 999px;
-  font-size: 0.72rem;
+  background: transparent;
+  font-size: 0.68rem;
   font-weight: 700;
-  line-height: 18px;
+  line-height: 15px;
+  text-align: center;
   white-space: nowrap;
+}
+.level-text {
+  display: block;
+  border-radius: 999px;
 }

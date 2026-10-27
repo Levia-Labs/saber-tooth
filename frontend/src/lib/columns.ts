@@ -38,7 +38,7 @@ export const LABELS: Record<ColumnKey, string> = {
   levels: "Levels",
   length: "Length",
   bpm: "BPM",
-  env: "Environment",
+  env: "Env",
   status: "Status",
   actions: "Actions",
 };
@@ -46,43 +46,64 @@ export const LABELS: Record<ColumnKey, string> = {
 export const LIMITS: Partial<Record<ColumnKey, { min: number; max: number }>> = {
   title: { min: 100, max: 800 },
   author: { min: 100, max: 400 },
-  levels: { min: 120, max: 400 },
+  levels: { min: 72, max: 400 },
   length: { min: 56, max: 200 },
   bpm: { min: 56, max: 200 },
-  env: { min: 100, max: 400 },
-  status: { min: 120, max: 300 },
+  env: { min: 72, max: 400 },
+  status: { min: 84, max: 300 },
 };
 
+/**
+ * Default widths, sized for the compact chips (Levels: five 28px chips and four 3px gaps; Status:
+ * icon-only chip) so that Title, the flexible track, gets the rest at every viewport width.
+ */
 export const DEFAULTS: Record<Breakpoint, Record<string, number>> = {
   wide: {
     cover: 56,
-    title: 160,
+    title: 200,
     author: 120,
-    levels: 150,
-    length: 60,
+    levels: 152,
+    length: 68,
     bpm: 84,
-    env: 130,
-    status: 130,
+    env: 120,
+    status: 96,
     actions: 140,
   },
   mid: {
     cover: 56,
-    title: 160,
+    title: 200,
     author: 120,
-    levels: 150,
-    length: 60,
+    levels: 152,
+    length: 68,
     bpm: 84,
-    status: 130,
+    status: 96,
     actions: 140,
   },
-  compact: { cover: 64, title: 100, length: 76, bpm: 88, status: 150, actions: 156 },
+  compact: { cover: 64, title: 100, length: 64, bpm: 80, status: 100, actions: 140 },
 };
 
 const GAP = 12;
 const PAD = 24;
-const STORE_PREFIX = "saber-tooth.columns.v1.";
+/** Bumped when the default widths change, so widths saved against older defaults are dropped. */
+const STORE_PREFIX = "saber-tooth.columns.v2.";
+const LEGACY_PREFIXES = ["saber-tooth.columns.v1."];
+const MAIN_PAD = 40;
+const MAIN_MAX = 1480;
+const SCROLL_BORDER = 2;
+const SCROLLBAR = 17;
 export const STEP = 16;
 export const BIG_STEP = 64;
+
+/** Width of the list's scroll content at a viewport width: page padding, border and scrollbar off. */
+export function availableWidth(viewport: number): number {
+  return Math.min(viewport, MAIN_MAX) - MAIN_PAD - SCROLL_BORDER - SCROLLBAR;
+}
+
+/** Rendered Title width at a viewport width: whatever the fixed tracks leave over. */
+export function titleWidthAt(bp: Breakpoint, widths: Widths, viewport: number): number {
+  const rest = tableMinWidth(bp, widths) - width(bp, widths, "title");
+  return Math.max(width(bp, widths, "title"), availableWidth(viewport) - rest);
+}
 
 export function isResizable(key: ColumnKey): boolean {
   return LIMITS[key] !== undefined;
@@ -155,6 +176,7 @@ export function getStorage(): Storage | null {
 export function loadWidths(bp: Breakpoint, storage: Storage | null = getStorage()): Widths {
   const widths = defaultWidths(bp);
   try {
+    for (const old of LEGACY_PREFIXES) storage?.removeItem(old + bp);
     const raw = storage?.getItem(STORE_PREFIX + bp);
     if (!raw) return widths;
     const saved: unknown = JSON.parse(raw);

@@ -47,7 +47,7 @@ function throwingStorage(): Storage {
   return { length: 0, clear: boom, getItem: boom, key: boom, removeItem: boom, setItem: boom };
 }
 
-const STORE_WIDE = "saber-tooth.columns.v1.wide";
+const STORE_WIDE = "saber-tooth.columns.v2.wide";
 
 afterEach(() => localStorage.clear());
 
@@ -125,8 +125,8 @@ describe("width math", () => {
 
   test("grid template and table minimum follow the widths", () => {
     const w = { ...defaultWidths("compact"), title: 200 };
-    expect(gridTemplate("compact", w)).toBe("64px minmax(200px, 1fr) 76px 88px 150px 156px");
-    expect(tableMinWidth("compact", w)).toBe(64 + 200 + 76 + 88 + 150 + 156 + 5 * 12 + 24);
+    expect(gridTemplate("compact", w)).toBe("64px minmax(200px, 1fr) 64px 80px 100px 140px");
+    expect(tableMinWidth("compact", w)).toBe(64 + 200 + 64 + 80 + 100 + 140 + 5 * 12 + 24);
   });
 });
 
@@ -167,9 +167,17 @@ describe("header cells", () => {
     for (const col of ["title", "author", "levels", "env", "status"]) {
       const row = head.querySelector(`.col-${col} > .th-row`) as HTMLElement;
       expect(row).not.toBeNull();
+      const order = [...row.children].map((el) =>
+        el.classList.contains("th-sort")
+          ? "label"
+          : el.classList.contains("filter-btn")
+            ? "filter"
+            : el.classList.contains("th-slot")
+              ? "slot"
+              : "other",
+      );
+      expect(order).toEqual(["label", "filter", "slot"]);
       expect(row.querySelector(".th-sort .th-label")).not.toBeNull();
-      expect(row.querySelector(".th-sort .th-slot")).not.toBeNull();
-      expect(row.querySelector(".filter-btn")).not.toBeNull();
     }
     const css = readFileSync(resolve(__dirname, "../src/styles/library.css"), "utf8");
     expect(css).toMatch(/\.th-row\s*\{[^}]*flex-flow:\s*row nowrap/);
@@ -197,7 +205,7 @@ describe("resize handles", () => {
     await screen.findByRole("link", { name: "Song 1" });
     const names = screen.getAllByRole("separator").map((s) => s.getAttribute("aria-label"));
     expect(names).toEqual(
-      ["Title", "Author", "Levels", "Length", "BPM", "Environment", "Status"].map(
+      ["Title", "Author", "Levels", "Length", "BPM", "Env", "Status"].map(
         (n) => `Resize ${n} column`,
       ),
     );

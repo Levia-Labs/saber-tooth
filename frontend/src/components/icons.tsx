@@ -44,10 +44,29 @@ const ICONS = {
       <path d="M8 12l-2 8.5M12 11v9.5M16 12l2 8.5" />
     </>
   ),
-  "columns-reset": (
+  reset: (
     <>
-      <path d="M4 5v10M9 5v6M14 5v4" />
-      <path d="M20 14a5 5 0 1 1-1.8-3.8M20 6.5v4h-4" />
+      <path d="M4.5 12a7.5 7.5 0 1 0 2.3-5.4L4 9.2" />
+      <path d="M4 4.5v5h5" />
+    </>
+  ),
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5.2l3.2 2" />
+    </>
+  ),
+  bpm: (
+    <>
+      <path d="M8.5 21h7l-2-17h-3z" />
+      <path d="M12 16l4-8M10.5 12h3" />
+    </>
+  ),
+  more: (
+    <>
+      <circle cx="12" cy="5.5" r="1" />
+      <circle cx="12" cy="12" r="1" />
+      <circle cx="12" cy="18.5" r="1" />
     </>
   ),
   generate: (

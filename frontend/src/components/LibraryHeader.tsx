@@ -46,14 +46,16 @@ function HeaderCell({ col, columns, sort, state, update, filter }: CellProps) {
             aria-label={`Sort by ${label}`}
           >
             <span className="th-label">{label}</span>
-            <span className="th-slot">
-              {sorted && <Icon name={state.order === "asc" ? "sort-asc" : "sort-desc"} />}
-            </span>
           </button>
         ) : (
           <span className="th-label">{label}</span>
         )}
         {filter}
+        {sort && (
+          <span className="th-slot" aria-hidden="true">
+            {sorted && <Icon name={state.order === "asc" ? "sort-asc" : "sort-desc"} />}
+          </span>
+        )}
       </div>
       {isResizable(col) && <ResizeHandle colKey={col} columns={columns} />}
     </div>
@@ -122,7 +124,7 @@ export function LibraryHeader({ state, facets, update, columns }: Props) {
         sort="environment"
         {...cell}
         filter={
-          <FilterPopover label="Environment" tip="Filter by environment." count={counts.env}>
+          <FilterPopover label="Env" tip="Filter by environment." count={counts.env}>
             <EnvFilterBody
               selected={state.env}
               facets={facets}

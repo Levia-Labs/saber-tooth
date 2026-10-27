@@ -2,19 +2,24 @@
 export interface Level {
   key: string;
   label: string;
+  /** Short chip text. */
+  abbr: string;
   bg: string;
 }
 
 export const LEVELS: readonly Level[] = [
-  { key: "Easy", label: "Easy", bg: "#3CB371" },
-  { key: "Normal", label: "Normal", bg: "#59B0F4" },
-  { key: "Hard", label: "Hard", bg: "#FF6347" },
-  { key: "Expert", label: "Expert", bg: "#BF2A42" },
-  { key: "ExpertPlus", label: "Expert+", bg: "#8F48DB" },
+  { key: "Easy", label: "Easy", abbr: "Ea", bg: "#3CB371" },
+  { key: "Normal", label: "Normal", abbr: "N", bg: "#59B0F4" },
+  { key: "Hard", label: "Hard", abbr: "H", bg: "#FF6347" },
+  { key: "Expert", label: "Expert", abbr: "Ex", bg: "#BF2A42" },
+  { key: "ExpertPlus", label: "Expert+", abbr: "Ex+", bg: "#8F48DB" },
 ];
 
 const DARK = "#0d0a1a";
 const LIGHT = "#ffffff";
+/** The dark surface level chips sit on (the list panel). */
+export const SURFACE = "#1a1630";
+const AA = 4.5;
 
 function channel(v: number): number {
   const s = v / 255;
@@ -42,4 +47,24 @@ export function textColor(bg: string): string {
 /** Levels present in the given Info difficulty names, in game order; unknown names are dropped. */
 export function levelsFor(names: readonly string[]): Level[] {
   return LEVELS.filter((l) => names.includes(l.key));
+}
+
+function mix(hex: string, amount: number): string {
+  const n = Number.parseInt(hex.slice(1), 16);
+  const ch = (shift: number) => {
+    const v = (n >> shift) & 255;
+    return Math.round(v + (255 - v) * amount);
+  };
+  return `#${[16, 8, 0].map((s) => ch(s).toString(16).padStart(2, "0")).join("")}`;
+}
+
+/** The level colour lightened just enough to reach AA contrast as text on the dark surface. */
+export function ringText(bg: string, surface: string = SURFACE): string {
+  let amount = 0;
+  let out = bg;
+  while (contrast(out, surface) < AA && amount < 1) {
+    amount = Math.min(1, amount + 0.05);
+    out = mix(bg, amount);
+  }
+  return out;
 }

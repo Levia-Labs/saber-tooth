@@ -1,30 +1,14 @@
 import { useCallback, useMemo, useRef } from "react";
-import { errorMessage, learnLightshows } from "../api/client";
+import { errorMessage } from "../api/client";
 import { useFacets, useLibrary, useLiveRows } from "../api/queries";
 import { useJobRunner } from "../api/jobs";
-import type { SortKey } from "../api/types";
-import { ActionButton, ActionLink } from "../components/Buttons";
 import { JobOutcome } from "../components/JobOutcome";
 import { LibraryTable } from "../components/LibraryTable";
-import { MobileFilters } from "../components/MobileFilters";
-import { Icon } from "../components/icons";
+import { LibraryMobileBar } from "../components/LibraryMobileBar";
+import { LibraryTools } from "../components/LibraryTools";
 import { useDocumentTitle, useLibraryState, useMediaQuery } from "../lib/hooks";
-import { TIPS } from "../lib/tips";
 import { useColumns } from "../lib/useColumns";
 import { filterCounts, totalFilters } from "../lib/urlstate";
-
-const SORT_OPTIONS: [SortKey, string][] = [
-  ["title", "Title"],
-  ["mapper", "Author"],
-  ["levels", "Levels"],
-  ["environment", "Environment"],
-  ["status", "Status"],
-  ["errors", "Errors"],
-  ["warnings", "Warnings"],
-  ["scanned_at", "Last scanned"],
-  ["duration", "Length"],
-  ["bpm", "BPM"],
-];
 
 export function LibraryPage() {
   useDocumentTitle("Library");
@@ -33,7 +17,7 @@ export function LibraryPage() {
   const facets = useFacets();
   const table = useRef<HTMLDivElement>(null);
   const columns = useColumns(table);
-  const mobile = useMediaQuery("(max-width: 719px)");
+  const narrow = useMediaQuery("(max-width: 1099px)");
   const learn = useJobRunner("Learn lightshows");
   const { fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError } = library;
 
@@ -56,59 +40,11 @@ export function LibraryPage() {
             {library.isPending ? "" : `${total} ${total === 1 ? "map" : "maps"}`}
           </span>
         </div>
-        <div className="lib-tools">
-          <ActionLink
-            icon="generate"
-            label="Generate map"
-            tip={TIPS.generate}
-            to="/new"
-            text
-            variant="primary"
-          />
-          <ActionButton
-            icon="learn"
-            label="Learn lightshows"
-            tip={TIPS.learn}
-            text
-            disabled={learn.busy}
-            onClick={() => void learn.run(learnLightshows)}
-          />
-          <ActionButton
-            icon="columns-reset"
-            label="Reset column widths"
-            tip={TIPS.resetColumns}
-            onClick={columns.api.resetAll}
-          />
-        </div>
+        <LibraryTools learn={learn} onResetColumns={columns.api.resetAll} />
       </div>
       <JobOutcome job={learn.job} error={learn.error} />
-      {mobile && (
-        <div className="lib-mobile-bar">
-          <div className="sort-group">
-            <label className="sort-select">
-              <span className="sr">Sort by</span>
-              <select
-                value={state.sort}
-                onChange={(e) => update({ sort: e.target.value as SortKey })}
-              >
-                {SORT_OPTIONS.map(([key, label]) => (
-                  <option key={key} value={key}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              type="button"
-              className="order-toggle"
-              onClick={() => update({ order: state.order === "asc" ? "desc" : "asc" })}
-            >
-              <Icon name={state.order === "asc" ? "sort-asc" : "sort-desc"} />
-              <span className="sr">{state.order === "asc" ? "Ascending" : "Descending"}</span>
-            </button>
-          </div>
-          <MobileFilters state={state} facets={facets.data} update={update} clear={clearFilters} />
-        </div>
+      {narrow && (
+        <LibraryMobileBar state={state} facets={facets.data} update={update} clear={clearFilters} />
       )}
       {library.isError && !library.data ? (
         <div className="lib-empty">
