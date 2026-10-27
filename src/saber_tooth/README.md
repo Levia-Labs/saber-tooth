@@ -22,5 +22,6 @@ Top-level modules:
 6. `store.py`, `store_maps.py`, `store_claims.py`, `jobs.py`: SQLite storage, map queries, proposal claims and background jobs.
 7. `safe_fs.py`: path safety helpers.
 8. `cli.py`: the `saber-tooth` command line.
+9. `autofix.py`: offline scan, approve-all, apply and re-check loop behind `saber-tooth autofix`.
 
 Test with `task st:test`.

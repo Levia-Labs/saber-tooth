@@ -109,6 +109,22 @@ def _cmd_learn(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_autofix(args: argparse.Namespace) -> int:
+    from saber_tooth.autofix import format_report, run_autofix
+
+    try:
+        report = run_autofix(
+            Path(args.map_folder), Path(args.levels), Path(args.data), args.max_rounds
+        )
+        out = Path(args.data) / "autofix-report.json"
+        out.write_text(json.dumps(report, indent=1), encoding="utf-8")
+    except (MapParseError, OSError, KeyError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    _emit(format_report(report), [f"report {out}"])
+    return 0
+
+
 def gen_url(url: str, api: str, transport: httpx.BaseTransport | None = None) -> str:
     """Post a song URL to the generate endpoint and return the job id."""
     with httpx.Client(transport=transport, timeout=30) as client:
@@ -177,6 +193,12 @@ def _parser() -> argparse.ArgumentParser:
     sa.add_argument("map_id")
     sa.add_argument("--api", default=DEFAULT_API)
     sa.set_defaults(func=_cmd_scan_api)
+    af = sub.add_parser("autofix", help="scan, approve all, apply and re-check one map offline")
+    af.add_argument("map_folder")
+    af.add_argument("--levels", required=True)
+    af.add_argument("--data", required=True)
+    af.add_argument("--max-rounds", type=int, default=6)
+    af.set_defaults(func=_cmd_autofix)
     return p
 
 

@@ -32,6 +32,9 @@ tasks:
   inspect:
     desc: "Summarise one map folder. Usage: task st:inspect -- <folder>"
     cmds: ["uv run saber-tooth inspect {{.CLI_ARGS}}"]
+  autofix:
+    desc: "Fix one map offline. Usage: task st:autofix -- <map_folder> --levels <dir> --data <dir> [--max-rounds N]"
+    cmds: ["uv run saber-tooth autofix {{.CLI_ARGS}}"]
   survey:
     desc: "Read-only finding counts across a levels dir. Usage: task st:survey -- <levels_dir>"
     cmds: ["uv run saber-tooth survey {{.CLI_ARGS}}"]
