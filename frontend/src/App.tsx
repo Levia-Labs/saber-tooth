@@ -77,7 +77,9 @@ export function Shell() {
         <Link className="brand" to="/" aria-label="saber-tooth, library">
           <Logo />
           <span className="wordmark">
-            <span className="red">saber</span>-<span className="blue">tooth</span>
+            <span className="red">saber</span>
+            <span className="dash">-</span>
+            <span className="blue">tooth</span>
           </span>
         </Link>
         <ModeSwitch />
