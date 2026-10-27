@@ -19,3 +19,4 @@ Directives, agents and hooks come from the crepidoma plugin (github.com/Levia-La
 
 1. `task --list`; `claude:` and `lint:` come from the Crepidoma submodule.
 2. `task st:test` runs the suite.
+3. `task st:gate` runs every gate; lanes, commits and review diffs: [docs/workflow.md](docs/workflow.md).

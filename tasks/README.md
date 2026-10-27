@@ -12,5 +12,12 @@ Tasks:
 6. `st:up`, `st:stop`, `st:start`, `st:down`, `st:logs`: manage the docker compose stack; only `st:down` removes containers.
 7. `st:readme-check`: folder README coverage, see [scripts](../scripts/README.md).
 8. `st:compose-check`: validate `docker-compose.yml`.
+9. `st:gate`, `st:review-diff`, `st:sync`: validation, review diffs and worktree state.
+10. `st:lane`, `st:lane-list`, `st:lane-done`: parallel work lanes as git worktrees.
+11. `st:commit`: format, stage and commit exactly the given paths.
+12. `st:smoke`, `st:docker-health`: read-only checks of the running stack.
+13. `st:crepidoma-bump`: update the `.crepidoma` submodule and stage it.
+
+The workflow tools are described in [workflow](../docs/workflow.md).
 
 Run `task --list` for the current set. See [architecture](../docs/architecture.md).

@@ -65,3 +65,36 @@ tasks:
   compose-check:
     desc: "Validate docker-compose.yml. Usage: task st:compose-check"
     cmds: ["LEVELS_DIR=${LEVELS_DIR:-./data/levels} docker compose config -q"]
+  gate:
+    desc: "Run every validation gate, one line each. Usage: task st:gate [-- --only a,b --skip a,b --deep --list]"
+    cmds: ["uv run python scripts/gate.py {{.CLI_ARGS}}"]
+  review-diff:
+    desc: "Write a lockfile-free diff to .cache/reviews. Usage: task st:review-diff -- <range> [--out DIR]"
+    cmds: ["uv run python scripts/review_diff.py {{.CLI_ARGS}}"]
+  sync:
+    desc: "One-line state of every worktree, read-only. Usage: task st:sync [-- --fetch]"
+    cmds: ["uv run python scripts/sync.py {{.CLI_ARGS}}"]
+  smoke:
+    desc: "Smoke-check the running stack, read-only. Usage: task st:smoke [-- --base URL --timeout S]"
+    cmds: ["uv run python scripts/smoke.py {{.CLI_ARGS}}"]
+  lane:
+    desc: "Create a work lane worktree. Usage: task st:lane -- <name> [--base main]"
+    cmds: ["uv run python scripts/lane.py new {{.CLI_ARGS}}"]
+  lane-list:
+    desc: "List work lanes. Usage: task st:lane-list"
+    cmds: ["uv run python scripts/lane.py list"]
+  lane-done:
+    desc: "Remove a clean, merged lane. Usage: task st:lane-done CONFIRM=yes -- <name>"
+    preconditions:
+      - sh: test "{{.CONFIRM}}" = "yes"
+        msg: "lane-done deletes a worktree and branch; rerun with CONFIRM=yes"
+    cmds: ["CONFIRM=yes uv run python scripts/lane.py done {{.CLI_ARGS}}"]
+  commit:
+    desc: 'Format, stage and commit exactly the given paths. Usage: task st:commit -- -m "<message>" <paths...>'
+    cmds: ["uv run python scripts/commit.py {{.CLI_ARGS}}"]
+  crepidoma-bump:
+    desc: "Bump the .crepidoma submodule and stage it. Usage: task st:crepidoma-bump [-- <ref>]"
+    cmds: ["uv run python scripts/crepidoma_bump.py {{.CLI_ARGS}}"]
+  docker-health:
+    desc: "State, health and recent logs per compose service. Usage: task st:docker-health"
+    cmds: ["uv run python scripts/docker_health.py {{.CLI_ARGS}}"]
