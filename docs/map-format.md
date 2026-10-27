@@ -31,6 +31,15 @@ saber-tooth reads Info v2.0.0, v2.1.0 and v4, and difficulty v2, v3 and v4. It w
 1. v2: `_difficultyBeatmapSets[{_beatmapCharacteristicName:"Standard", _difficultyBeatmaps[{_difficulty,_difficultyRank,_beatmapFilename,_noteJumpMovementSpeed,_noteJumpStartBeatOffset}]}]`.
 2. v4: `song{title,subTitle,author}`, `audio{songFilename,bpm,previewStartTime,previewDuration}`, `coverImageFilename`, `environmentNames[]`, `colorSchemes[]`, and `difficultyBeatmaps[{characteristic,difficulty,beatmapAuthors{mappers},environmentNameIdx,beatmapColorSchemeIdx,noteJumpMovementSpeed,noteJumpStartBeatOffset,beatmapDataFilename,lightshowDataFilename}]`.
 
+## Tempo regions
+
+1. v4 keeps tempo in the audio-data file named by Info `audio.audioDataFilename` (commonly `AudioData.dat`): `songFrequency` and `bpmData[{si,ei,sb,eb}]` (start and end sample index, start and end beat).
+2. Legacy v2 and v3 maps may have `BPMInfo.dat`: `_songFrequency` and `_regions[{_startSampleIndex,_endSampleIndex,_startBeat,_endBeat}]`. It is used only for a difficulty with no tempo events of its own.
+3. Each region becomes a tempo event at beat `sb` with `bpm = (eb - sb) / ((ei - si) / songFrequency) * 60`. Zero-length regions are skipped. A region within 0.01% of the previous tempo (the Info bpm for the first) is dropped.
+4. For v4, region events merge into every difficulty; a difficulty event at the same beat wins.
+5. A missing file gives no events. The filename goes through the plain-filename check. Bad numbers, reversed ranges or a non-positive frequency raise `MapParseError`.
+6. The writer emits the events as v3 `bpmEvents`.
+
 ## Writer output
 
 1. Info `_version` is `"2.1.0"`.

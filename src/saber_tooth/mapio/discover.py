@@ -5,6 +5,7 @@ from saber_tooth.mapio.errors import MapParseError, safe_name
 from saber_tooth.mapio.read_v2 import read_v2
 from saber_tooth.mapio.read_v3 import read_v3
 from saber_tooth.mapio.read_v4 import read_v4
+from saber_tooth.mapio.tempo_regions import V2_KEYS, V4_KEYS, merge_events, regions_to_events
 from saber_tooth.model import DIFFICULTIES, Beatmap, ColorScheme, Difficulty, MapInfo
 from saber_tooth.timing import Timing
 
@@ -52,6 +53,13 @@ def _read_json(path: Path) -> dict:
     if not isinstance(data, dict):
         raise MapParseError(f"{path.name} is not a JSON object")
     return data
+
+
+def _region_events(folder: Path, filename: str, keys: tuple[str, ...], bpm: float) -> list:
+    path = _find_ci(folder, safe_name(filename))
+    if path is None:
+        return []
+    return regions_to_events(_read_json(path), keys, bpm)
 
 
 def _hex_color(text: str) -> dict[str, float]:
@@ -176,7 +184,14 @@ def load_map(folder: Path) -> Beatmap:
                 diffs[e["name"]] = _load_diff_file(path, e, folder)
         idx = next((e["scheme"] for e in entries if e["scheme"] is not None), None)
         meta = _mapinfo_v4(info, idx) if v4 else _mapinfo_v2(info, idx)
+        if v4:
+            name = info.get("audio", {}).get("audioDataFilename")
+            extra = _region_events(folder, name, V4_KEYS, meta.bpm) if name else []
+        else:
+            extra = _region_events(folder, "BPMInfo.dat", V2_KEYS, meta.bpm)
         for d in diffs.values():
+            if extra and (v4 or not d.bpm_events):
+                d.bpm_events = merge_events(d.bpm_events, extra)
             Timing(meta.bpm, d.bpm_events)
     except MapParseError:
         raise
