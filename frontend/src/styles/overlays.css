@@ -21,9 +21,20 @@
   border-radius: var(--radius);
   box-shadow: 0 10px 32px rgba(0, 0, 0, 0.55);
 }
-.popover-close {
-  width: 100%;
-  margin-top: 0.6rem;
+.popover-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+.popover-title {
+  margin: 0;
+  font-size: 0.95rem;
+}
+.popover-x {
+  flex: none;
+  margin-left: auto;
 }
 .filter-body {
   display: grid;

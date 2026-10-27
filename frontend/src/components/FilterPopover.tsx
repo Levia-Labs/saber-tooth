@@ -11,6 +11,20 @@ interface Props {
   children: ReactNode;
 }
 
+/** Shared header of every filter panel: title left, icon-only close button top right. */
+export function PanelHeader({ title }: { title: string }) {
+  return (
+    <header className="popover-head">
+      <h3 className="popover-title">{title}</h3>
+      <Tip text="Close">
+        <Popover.Close className="btn icon plain popover-x" aria-label="Close filter">
+          <Icon name="reject" />
+        </Popover.Close>
+      </Tip>
+    </header>
+  );
+}
+
 /** Filter button for a column header; opens an anchored, focus-trapped popover. */
 export function FilterPopover({ label, tip, count, children }: Props) {
   const active = count > 0;
@@ -36,9 +50,18 @@ export function FilterPopover({ label, tip, count, children }: Props) {
           sideOffset={6}
           collisionPadding={8}
           aria-label={`${label} filter`}
+          onOpenAutoFocus={(e) => {
+            // Land on the first field, not the close button, so its tooltip stays shut and Escape closes the panel.
+            const target = e.currentTarget as HTMLElement;
+            const field = target.querySelector<HTMLElement>(
+              "input, button:not(.popover-x), [tabindex]:not([tabindex='-1'])",
+            );
+            e.preventDefault();
+            (field ?? target).focus();
+          }}
         >
+          <PanelHeader title={label} />
           {children}
-          <Popover.Close className="btn plain popover-close">Close</Popover.Close>
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
