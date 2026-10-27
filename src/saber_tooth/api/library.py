@@ -1,7 +1,9 @@
 """Library listing helpers: query validation, item shaping and cover lookup."""
 
+import math
 from dataclasses import dataclass
 from pathlib import Path
+from typing import NamedTuple
 
 from saber_tooth.mapio import MapParseError
 from saber_tooth.mapio.discover import _entries_v2, _entries_v4, _opt_name, _read_json, find_info
@@ -21,6 +23,7 @@ MAX_LIMIT = 100
 MAX_QUERY = 200
 MAX_COVER_BYTES = 5 * 1024 * 1024
 COVER_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
+AUDIO_TYPES = {".egg": "audio/ogg", ".ogg": "audio/ogg", ".wav": "audio/wav", ".mp3": "audio/mpeg"}
 ITEM_FIELDS = (
     "id", "folder", "title", "mapper", "environment", "parse_error", "scanned_at", "bpm",
 )  # fmt: skip
@@ -143,33 +146,72 @@ def cover_path(folder: Path, cover_file: str) -> Path | None:
     return found
 
 
-def _read_extras(folder: Path) -> tuple[str, list[str]]:
+class Extra(NamedTuple):
+    cover: str
+    difficulties: list[str]
+    song: str
+    preview_start: float | None
+
+
+def _preview(raw: object) -> float | None:
+    if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+        return None
+    return float(raw) if math.isfinite(raw) and raw >= 0 else None
+
+
+def _read_extras(folder: Path) -> Extra:
     info = _read_json(find_info(folder))
     v4 = str(info.get("version", "")).startswith("4.")
     entries = _entries_v4(info) if v4 else _entries_v2(info)
     key = "coverImageFilename" if v4 else "_coverImageFilename"
-    return _opt_name(info.get(key, "")), [str(e["name"]) for e in entries]
+    audio = info.get("audio") if v4 else info
+    audio = audio if isinstance(audio, dict) else {}
+    song_key = "songFilename" if v4 else "_songFilename"
+    start_key = "previewStartTime" if v4 else "_previewStartTime"
+    try:
+        song = _opt_name(audio.get(song_key, ""))
+    except MapParseError:
+        song = ""
+    names = [str(e["name"]) for e in entries]
+    return Extra(_opt_name(info.get(key, "")), names, song, _preview(audio.get(start_key)))
+
+
+def audio_path(folder: Path, song_file: str) -> Path | None:
+    """The song file inside folder, or None; never a path outside it or of another type."""
+    if not song_file or Path(song_file).suffix.lower() not in AUDIO_TYPES:
+        return None
+    if Path(song_file).name != song_file or any(c in song_file for c in "/\\:\x00"):
+        return None
+    try:
+        root = folder.resolve()
+        found = next((p for p in folder.iterdir() if p.name.lower() == song_file.lower()), None)
+        if found is None or found.is_symlink() or found.resolve().parent != root:
+            return None
+        return found if found.is_file() else None
+    except OSError:
+        return None
 
 
 class Extras:
-    """Cover filename and difficulty names per folder, cached until Info.dat changes."""
+    """Cover, difficulties and song per folder, cached until Info.dat changes."""
 
     def __init__(self) -> None:
-        self._cache: dict[str, tuple[tuple[int, int], tuple[str, list[str]]]] = {}
+        self._cache: dict[str, tuple[tuple[int, int], Extra]] = {}
 
-    def get(self, folder: Path) -> tuple[str, list[str]]:
+    def get(self, folder: Path) -> Extra:
+        empty = Extra("", [], "", None)
         try:
             st = find_info(folder).stat()
             stamp = (st.st_mtime_ns, st.st_size)
         except (MapParseError, OSError):
-            return "", []
+            return empty
         hit = self._cache.get(str(folder))
         if hit and hit[0] == stamp:
             return hit[1]
         try:
             value = _read_extras(folder)
         except (MapParseError, OSError, KeyError, TypeError, ValueError):
-            value = ("", [])
+            value = empty
         if len(self._cache) >= _CACHE_SIZE:
             self._cache.clear()
         self._cache[str(folder)] = (stamp, value)
@@ -183,11 +225,14 @@ def shape_item(row: dict, levels: Path, extras: Extras) -> dict:
     item["duration_s"] = row["duration_s"]
     job = {"id": row["job_id"], "kind": row["job_kind"], "status": row["job_status"]}
     item["job"] = job if row["job_id"] else None
-    item.update(cover_url=None, difficulties=[])
+    item.update(cover_url=None, difficulties=[], audio_url=None, preview_start=None)
     folder = folder_path(levels, row["folder"])
     if folder is not None and not row["parse_error"]:
-        cover, difficulties = extras.get(folder)
-        item["difficulties"] = difficulties
-        if cover_path(folder, cover) is not None:
+        extra = extras.get(folder)
+        item["difficulties"] = extra.difficulties
+        if cover_path(folder, extra.cover) is not None:
             item["cover_url"] = f"/api/maps/{row['id']}/cover"
+        if audio_path(folder, extra.song) is not None:
+            item["audio_url"] = f"/api/maps/{row['id']}/audio"
+            item["preview_start"] = extra.preview_start
     return item

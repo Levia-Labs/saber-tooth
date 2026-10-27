@@ -1,6 +1,8 @@
 # ruff: noqa: F811
 import pytest
 from fastapi.testclient import TestClient
+from hypothesis import given
+from hypothesis import strategies as st
 
 from saber_tooth.api import create_app
 from saber_tooth.api.library import MAX_COVER_BYTES, parse_query
@@ -125,6 +127,120 @@ def test_cover_is_case_insensitive_match_inside_folder(client, svc):
     assert client.get(f"/api/maps/{MID}/cover").status_code == 200
 
 
+AUDIO = bytes(range(256)) * 4
+
+
+def _song(svc, data: bytes = AUDIO):
+    song = svc.levels / NAME / "song.ogg"
+    song.write_bytes(data)
+    return song
+
+
+def test_audio_full_with_headers_and_item_fields(client, svc):
+    _song(svc)
+    resp = client.get(f"/api/maps/{MID}/audio")
+    assert resp.status_code == 200 and resp.content == AUDIO
+    assert resp.headers["content-type"] == "audio/ogg"
+    assert resp.headers["cache-control"] == "private, max-age=86400"
+    assert resp.headers["accept-ranges"] == "bytes" and resp.headers["etag"]
+    item = client.get(f"/api/maps/{MID}").json()
+    assert item["audio_url"] == f"/api/maps/{MID}/audio"
+    assert item["preview_start"] is None or item["preview_start"] >= 0
+    assert client.get("/api/maps").json()["items"][0] == item
+
+
+def test_audio_preview_start_from_info(client, svc):
+    _song(svc)
+    info = svc.levels / NAME / "info.dat"
+    text = info.read_text(encoding="utf-8")
+    import re
+
+    info.write_text(
+        re.sub(r'"_previewStartTime"\s*:\s*[-\d.eE+]+', '"_previewStartTime": 12.5', text),
+        encoding="utf-8",
+    )
+    assert client.get(f"/api/maps/{MID}").json()["preview_start"] == 12.5
+
+
+def test_audio_range_206_and_416(client, svc):
+    _song(svc)
+    part = client.get(f"/api/maps/{MID}/audio", headers={"range": "bytes=10-19"})
+    assert part.status_code == 206 and part.content == AUDIO[10:20]
+    assert part.headers["content-range"] == f"bytes 10-19/{len(AUDIO)}"
+    tail = client.get(f"/api/maps/{MID}/audio", headers={"range": "bytes=-5"})
+    assert tail.status_code == 206 and tail.content == AUDIO[-5:]
+    bad = client.get(f"/api/maps/{MID}/audio", headers={"range": f"bytes={len(AUDIO) + 5}-"})
+    assert bad.status_code == 416
+    assert client.get(f"/api/maps/{MID}/audio", headers={"range": "bytes=9-2"}).status_code == 416
+
+
+@given(st.text(max_size=40))
+def test_range_ok_never_raises(header):
+    from saber_tooth.api.web_routes import _range_ok
+
+    assert isinstance(_range_ok(header), bool)
+
+
+@given(st.integers(0, 10**6), st.integers(0, 10**6))
+def test_range_ok_rejects_exactly_inverted_pairs(a, b):
+    from saber_tooth.api.web_routes import _range_ok
+
+    assert _range_ok(f"bytes={a}-{b}") == (a <= b)
+
+
+def test_audio_etag_304(client, svc):
+    _song(svc)
+    etag = client.get(f"/api/maps/{MID}/audio").headers["etag"]
+    again = client.get(f"/api/maps/{MID}/audio", headers={"if-none-match": etag})
+    assert again.status_code == 304 and again.content == b"" and again.headers["etag"] == etag
+
+
+def test_audio_missing_is_404_and_null_url(client, svc):
+    (svc.levels / NAME / "song.ogg").unlink()
+    assert client.get(f"/api/maps/{MID}/audio").status_code == 404
+    item = client.get(f"/api/maps/{MID}").json()
+    assert item["audio_url"] is None and item["preview_start"] is None
+    assert client.get("/api/maps/" + "f" * 12 + "/audio").status_code == 404
+
+
+@pytest.mark.parametrize(
+    "name",
+    ["../secret.ogg", "..\\secret.ogg", "sub/s.ogg", "C:s.ogg", "song.txt", "song.dat", ".."],
+)
+def test_audio_name_escape_or_bad_extension_is_404(client, svc, name):
+    (svc.levels.parent / "secret.ogg").write_bytes(b"secret")
+    info = svc.levels / NAME / "info.dat"
+    info.write_text(
+        info.read_text(encoding="utf-8").replace('"song.ogg"', f'"{name}"'), encoding="utf-8"
+    )
+    assert client.get(f"/api/maps/{MID}/audio").status_code == 404
+    assert client.get(f"/api/maps/{MID}").json()["audio_url"] is None
+
+
+def test_audio_symlink_out_of_folder_is_404(client, svc):
+    outside = svc.levels.parent / "secret.ogg"
+    outside.write_bytes(b"secret")
+    song = svc.levels / NAME / "song.ogg"
+    song.unlink()
+    try:
+        song.symlink_to(outside)
+    except OSError:
+        pytest.skip("symlinks unavailable")
+    assert client.get(f"/api/maps/{MID}/audio").status_code == 404
+
+
+@pytest.mark.parametrize(
+    ("ext", "ctype"), [("egg", "audio/ogg"), ("wav", "audio/wav"), ("mp3", "audio/mpeg")]
+)
+def test_audio_content_types(client, svc, ext, ctype):
+    (svc.levels / NAME / f"s.{ext}").write_bytes(AUDIO)
+    info = svc.levels / NAME / "info.dat"
+    info.write_text(
+        info.read_text(encoding="utf-8").replace('"song.ogg"', f'"s.{ext}"'), encoding="utf-8"
+    )
+    assert client.get(f"/api/maps/{MID}/audio").headers["content-type"] == ctype
+
+
 def test_spa_routes_serve_index(web_client):
     client = web_client
     index = (client.web / "index.html").read_bytes()
@@ -152,7 +268,13 @@ def test_static_paths_cannot_leave_web_dir(client, path):
 
 
 def test_host_middleware_still_covers_new_routes(client):
-    for path in ("/api/maps", f"/maps/{MID}", "/new", f"/api/maps/{MID}/cover"):
+    for path in (
+        "/api/maps",
+        f"/maps/{MID}",
+        "/new",
+        f"/api/maps/{MID}/cover",
+        f"/api/maps/{MID}/audio",
+    ):
         assert client.get(path, headers={"host": "evil.example"}).status_code == 403
 
 

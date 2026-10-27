@@ -1,6 +1,7 @@
 """Library, cover and single-page-app routes."""
 
 import os
+import re
 from pathlib import Path
 
 from fastapi import FastAPI, Request, Response
@@ -18,6 +19,23 @@ def _etag_matches(header: str | None, etag: str) -> bool:
         return False
     wanted = [t.strip().removeprefix("W/") for t in header.split(",")]
     return "*" in wanted or etag in wanted
+
+
+_RANGE = re.compile(r"(\d*)-(\d*)")
+
+
+def _range_ok(header: str | None) -> bool:
+    """False for a Range header that is malformed or has an inverted or empty spec."""
+    if not header:
+        return True
+    unit, _, specs = header.partition("=")
+    if unit.strip().lower() != "bytes":
+        return True  # unknown unit: ignored, full body
+    for spec in specs.split(","):
+        m = _RANGE.fullmatch(spec.strip())
+        if m is None or not (m[1] or m[2]) or (m[1] and m[2] and int(m[1]) > int(m[2])):
+            return False
+    return True
 
 
 def read_cover(path: Path) -> tuple[bytes, str] | None:
@@ -68,6 +86,23 @@ def register(app: FastAPI, api: Api, web: Path) -> None:
         if _etag_matches(request.headers.get("if-none-match"), etag):
             return Response(status_code=304, headers=headers)
         return Response(data, media_type=ctype, headers=headers)
+
+    @app.get("/api/maps/{map_id}/audio")
+    def audio(map_id: str, request: Request):
+        path, ctype = api.audio(map_id)
+        try:
+            st = path.stat()
+        except OSError:
+            raise ApiError(404, f"no audio for map: {map_id}") from None
+        etag = f'"{st.st_mtime_ns:x}-{st.st_size:x}"'
+        headers = {"ETag": etag, "Cache-Control": COVER_CACHE, "Accept-Ranges": "bytes"}
+        if not _range_ok(request.headers.get("range")):
+            return Response(
+                status_code=416, headers={**headers, "Content-Range": f"bytes */{st.st_size}"}
+            )
+        if _etag_matches(request.headers.get("if-none-match"), etag):
+            return Response(status_code=304, headers=headers)
+        return FileResponse(path, media_type=ctype, headers=headers, stat_result=st)
 
     @app.api_route("/api/{rest:path}", methods=["GET", "HEAD"], include_in_schema=False)
     def unknown_api(rest: str):

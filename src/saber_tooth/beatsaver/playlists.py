@@ -6,6 +6,7 @@ from pathlib import Path
 
 from saber_tooth.beatsaver.models import BsMap
 from saber_tooth.beatsaver.naming import clean_text
+from saber_tooth.safe_fs import windows_safe_component
 
 MAX_TRIES = 1000
 
@@ -34,6 +35,10 @@ def export_bplist(
         doc["image"] = "base64," + base64.b64encode(cover).decode("ascii")
     text = json.dumps(doc, indent=2, ensure_ascii=False)
     stem = clean_text(shown, 100) or "Playlist"
+    if not windows_safe_component(f"{stem}.bplist") or not windows_safe_component(
+        f"{stem} (99).bplist"
+    ):
+        stem = f"playlist-{stem}"
     for n in range(1, MAX_TRIES + 1):
         path = Path(dest_dir) / (f"{stem}.bplist" if n == 1 else f"{stem} ({n}).bplist")
         try:
