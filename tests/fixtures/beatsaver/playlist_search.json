@@ -1,0 +1,11 @@
+{
+  "docs": [
+    {
+      "playlistId": 77,
+      "name": "Chill Electronic",
+      "owner": { "id": 5, "name": "curator" },
+      "playlistImage512": "https://cdn.beatsaver.com/playlist/77.png",
+      "stats": { "totalMaps": 2, "minNps": 0.9, "maxNps": 3.1 }
+    }
+  ]
+}

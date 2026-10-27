@@ -1,0 +1,60 @@
+{
+  "playlist": {
+    "playlistId": 77,
+    "name": "Chill Electronic",
+    "owner": { "id": 5, "name": "curator" },
+    "stats": {
+      "totalMaps": 2,
+      "mapperCount": 2,
+      "totalDuration": 400,
+      "minNps": 0.9,
+      "maxNps": 3.1,
+      "upVotes": 9,
+      "downVotes": 0,
+      "avgScore": 0.9
+    }
+  },
+  "maps": [
+    {
+      "order": 1.0,
+      "map": {
+        "id": "3a1f4",
+        "name": "Neon Pulse",
+        "metadata": {
+          "bpm": 128.0,
+          "duration": 214,
+          "songName": "Neon Pulse",
+          "songAuthorName": "Lumen",
+          "levelAuthorName": "pulsewright"
+        },
+        "stats": { "upvotes": 480, "downvotes": 8, "score": 0.9712 },
+        "tags": ["electronic"],
+        "versions": [
+          {
+            "hash": "aabbccddeeff00112233445566778899aabbccdd",
+            "state": "Published",
+            "downloadURL": "https://r2cdn.beatsaver.com/x.zip",
+            "diffs": []
+          }
+        ]
+      }
+    },
+    {
+      "order": 2.0,
+      "map": {
+        "id": "3a1f5",
+        "name": "Bare Minimum",
+        "metadata": { "bpm": 90.0, "duration": 100 },
+        "stats": { "upvotes": 1, "downvotes": 0, "score": 0.5 },
+        "versions": [
+          {
+            "hash": "0011223344556677889900112233445566778899",
+            "state": "Published",
+            "downloadURL": "https://r2cdn.beatsaver.com/y.zip",
+            "diffs": []
+          }
+        ]
+      }
+    }
+  ]
+}

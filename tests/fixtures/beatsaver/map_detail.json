@@ -1,0 +1,38 @@
+{
+  "3a1f4": {
+    "id": "3a1f4",
+    "name": "Neon Pulse",
+    "uploader": { "id": 1001, "name": "pulsewright" },
+    "metadata": {
+      "bpm": 128.0,
+      "duration": 214,
+      "songName": "Neon Pulse",
+      "songSubName": "Radio Edit",
+      "songAuthorName": "Lumen",
+      "levelAuthorName": "pulsewright"
+    },
+    "stats": { "downloads": 5120, "upvotes": 480, "downvotes": 8, "score": 0.9712 },
+    "uploaded": "2025-03-02T10:15:00.000Z",
+    "ranked": true,
+    "tags": ["electronic"],
+    "versions": [
+      {
+        "hash": "aabbccddeeff00112233445566778899aabbccdd",
+        "state": "Published",
+        "downloadURL": "https://r2cdn.beatsaver.com/aabbccddeeff00112233445566778899aabbccdd.zip",
+        "coverURL": "https://eu.cdn.beatsaver.com/aabbccddeeff00112233445566778899aabbccdd.jpg",
+        "previewURL": "https://eu.cdn.beatsaver.com/aabbccddeeff00112233445566778899aabbccdd.mp3",
+        "diffs": [
+          {
+            "njs": 10.0,
+            "notes": 120,
+            "nps": 0.9,
+            "characteristic": "Standard",
+            "difficulty": "Easy",
+            "seconds": 130.0
+          }
+        ]
+      }
+    ]
+  }
+}
