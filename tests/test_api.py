@@ -44,7 +44,7 @@ def test_list_maps_has_ui_fields(client):
     page = client.get("/api/maps").json()
     rows = page["items"]
     assert (page["total"], page["offset"], page["limit"]) == (1, 0, 40) and len(rows) == 1
-    assert set(rows[0]) == {
+    assert set(rows[0]) - {"fixed_copy_id", "fixed_copy_folder"} == {
         "id", "folder", "title", "mapper", "environment", "parse_error", "errors", "warnings",
         "scanned_at", "status", "cover_url", "difficulties", "approved", "pending",
     } | {"bpm", "duration_s", "job", "audio_url", "preview_start"}  # fmt: skip

@@ -123,9 +123,14 @@ def fix_map(svc, map_id: str, max_rounds: int = MAX_ROUNDS) -> dict:
             log.exception("library refresh failed after fixing %s", map_id)
     written = svc._load(target)
     after = run_checks(written, analysis)
+    fixed_id = map_id_for(target.name)
+    project = analysis.audio.parent.name if analysis and analysis.audio else None
+    scan = {"findings": [f.to_dict() for f in after], "analysis": project}
+    with svc._lock:
+        svc.store.replace_open_proposals(fixed_id, [], scan)
     report.update(
         folder=target.name,
-        fixed_id=map_id_for(target.name),
+        fixed_id=fixed_id,
         after=counts(after),
         difficulties=sorted(written.difficulties),
         complete=complete(written),

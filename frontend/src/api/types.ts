@@ -46,6 +46,9 @@ export interface MapItem {
   /** Second where the preview starts. */
   preview_start?: number | null;
   job: ActiveJob | null;
+  /** Id and folder of the "[saber-tooth]" copy written by Fix, when one exists. */
+  fixed_copy_id?: string | null;
+  fixed_copy_folder?: string | null;
 }
 
 export interface MapPage {

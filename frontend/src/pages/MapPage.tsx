@@ -8,6 +8,7 @@ import { FixesSkeleton, MapHeadSkeleton } from "../components/Skeletons";
 import { errorToAlert } from "../lib/alerts";
 import { FixButton } from "../components/FixButton";
 import { FixOutcomes } from "../components/FixOutcomes";
+import { FixedCopyLink } from "../components/FixedCopyLink";
 import { useJobRunner } from "../api/jobs";
 import { keys, useLiveRows, useMap, useProposals } from "../api/queries";
 import { ActionButton } from "../components/Buttons";
@@ -84,6 +85,7 @@ export function MapPage() {
               <LevelChips names={map.data.difficulties} />
               <Tempo item={map.data} />
             </div>
+            <FixedCopyLink item={map.data} />
           </div>
         </div>
       )}

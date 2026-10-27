@@ -63,6 +63,8 @@ SELECT m.id, m.folder, m.title, m.mapper, m.environment, m.parse_error, s.scanne
   (SELECT count(*) FROM proposals p WHERE p.map_id = m.id
    AND p.status IN ('approved', 'applying')) AS approved,
   (SELECT count(*) FROM proposals p WHERE p.map_id = m.id AND p.status = 'pending') AS pending,
+  (SELECT f.id FROM maps f WHERE f.folder = m.folder || ' [saber-tooth]') AS fixed_copy_id,
+  (SELECT f.folder FROM maps f WHERE f.folder = m.folder || ' [saber-tooth]') AS fixed_copy_folder,
   j.id AS job_id, j.kind AS job_kind, j.status AS job_status,
   CASE WHEN m.parse_error IS NOT NULL AND m.parse_error != '' THEN 'unreadable'
        WHEN j.status = 'running' AND j.kind = 'scan' THEN 'scanning'
