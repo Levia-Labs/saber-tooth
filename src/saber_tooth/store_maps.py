@@ -5,7 +5,7 @@ import sqlite3
 import threading
 
 STATUS_VALUES = (
-    "unreadable", "error", "warn", "scanning", "applying", "queued", "unscanned", "ok",
+    "unreadable", "error", "warn", "scanning", "applying", "fixing", "queued", "unscanned", "ok",
 )  # fmt: skip
 STATUS_FILTERS = {"all", *STATUS_VALUES}
 MAX_ENVS = 50
@@ -66,6 +66,7 @@ SELECT m.id, m.folder, m.title, m.mapper, m.environment, m.parse_error, s.scanne
   j.id AS job_id, j.kind AS job_kind, j.status AS job_status,
   CASE WHEN m.parse_error IS NOT NULL AND m.parse_error != '' THEN 'unreadable'
        WHEN j.status = 'running' AND j.kind = 'scan' THEN 'scanning'
+       WHEN j.status = 'running' AND j.kind = 'fix' THEN 'fixing'
        WHEN j.status = 'running' THEN 'applying'
        WHEN j.status = 'queued' THEN 'queued'
        WHEN s.map_id IS NULL THEN 'unscanned'
@@ -75,7 +76,7 @@ SELECT m.id, m.folder, m.title, m.mapper, m.environment, m.parse_error, s.scanne
        ELSE 'ok' END AS status
 FROM maps m LEFT JOIN scans s ON s.map_id = m.id
 LEFT JOIN jobs j ON j.id = (
-  SELECT a.id FROM jobs a WHERE a.map_id = m.id AND a.kind IN ('scan', 'apply')
+  SELECT a.id FROM jobs a WHERE a.map_id = m.id AND a.kind IN ('scan', 'apply', 'fix')
   AND a.status IN ('queued', 'running')
   ORDER BY (a.status = 'running') DESC, a.created_at DESC, a.id LIMIT 1)
 """

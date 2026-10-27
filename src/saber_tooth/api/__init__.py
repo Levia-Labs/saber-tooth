@@ -128,6 +128,10 @@ def create_app(
     def approve_all(map_id: str):
         return api.approve_all(map_id)
 
+    @app.post("/api/maps/{map_id}/fix")
+    def fix(map_id: str):
+        return api.fix(map_id)
+
     @app.post("/api/maps/{map_id}/apply")
     def apply(map_id: str):
         return api.apply(map_id)

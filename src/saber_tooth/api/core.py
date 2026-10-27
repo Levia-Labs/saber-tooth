@@ -244,6 +244,12 @@ class Api:
         self.map_id(map_id, True)
         return {"job": self.jobs.submit("apply", self.service.run_apply, map_id, map_id=map_id)}
 
+    def fix(self, map_id: str) -> dict:
+        row = next(m for m in self.store.list_maps() if m["id"] == self.map_id(map_id))
+        if row["parse_error"]:
+            raise MapUnreadable(f"map {row['folder']} cannot be read: {row['parse_error']}")
+        return {"job": self.jobs.submit("fix", self.service.fix_map, map_id, map_id=map_id)}
+
     def lightshow(self) -> dict:
         return self.service.lightshow_info()
 

@@ -115,6 +115,12 @@ def test_job_makes_status_and_job_field(svc, client):
     ajid = svc.store.create_job("apply", MID)
     svc.store.update_job(ajid, "running")
     assert client.get(f"/api/maps/{MID}").json()["status"] == "applying"
+    svc.store.update_job(ajid, "done")
+    fjid = svc.store.create_job("fix", MID)
+    svc.store.update_job(fjid, "running")
+    assert client.get(f"/api/maps/{MID}").json()["status"] == "fixing"
+    assert client.get("/api/maps?status=fixing").json()["total"] == 1
+    assert client.get("/api/maps/facets").json()["status"]["fixing"] == 1
 
 
 def test_scan_and_apply_jobs_record_map_id(client, svc):

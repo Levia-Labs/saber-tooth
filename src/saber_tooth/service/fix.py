@@ -100,6 +100,7 @@ def fix_map(svc, map_id: str, max_rounds: int = MAX_ROUNDS) -> dict:
     report: dict = {
         "map_id": map_id,
         "folder": None,
+        "analysed": analysis is not None,
         "rounds": run.rounds,
         "applied": len(run.steps),
         "before": counts(before),

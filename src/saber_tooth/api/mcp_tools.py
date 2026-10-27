@@ -58,6 +58,13 @@ def build_mcp(api: Api, bs: BeatSaverApi | None = None) -> MCPServer:
         CustomLevels, and only as a new folder: the original map is never edited."""
         return api.apply(map_id)
 
+    @mcp.tool(annotations=JOB)
+    def fix_map(map_id: str) -> dict[str, Any]:
+        """One-click fix: adds missing difficulties and fixes every error, writing a new
+        '<map> [saber-tooth]' folder; the original is never changed. Returns a job id whose
+        result is the before/after report."""
+        return api.fix(map_id)
+
     @mcp.tool(annotations=WEB)
     def generate_from_youtube(url: str) -> dict[str, Any]:
         """Generate a new map from a YouTube URL (youtube.com or youtu.be); returns a job id."""
