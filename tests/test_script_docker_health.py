@@ -57,3 +57,18 @@ def test_report_all_healthy():
 def test_report_docker_down():
     lines, rc = dh.report(lambda *a: None)
     assert rc == 1 and "failed" in lines[0]
+
+
+def test_report_waits_while_starting():
+    starting = json.dumps({"Service": "s", "State": "running", "Health": "starting"})
+    healthy = json.dumps({"Service": "s", "State": "running", "Health": "healthy"})
+    outs = iter([starting, starting, healthy])
+    sleeps = []
+    lines, rc = dh.report(lambda *a: next(outs), wait=100, sleep=sleeps.append)
+    assert rc == 0 and lines == ["s state=running health=healthy"] and len(sleeps) == 2
+
+
+def test_report_starting_after_wait_is_not_ready():
+    starting = json.dumps({"Service": "s", "State": "running", "Health": "starting"})
+    lines, rc = dh.report(lambda *a: starting, wait=0, sleep=lambda s: None)
+    assert rc == 1 and any("not ready" in ln for ln in lines)

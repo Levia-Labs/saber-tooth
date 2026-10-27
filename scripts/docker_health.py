@@ -9,6 +9,7 @@ import argparse
 import json
 import subprocess  # nosec B404 - fixed docker argv, no shell
 import sys
+import time
 from collections.abc import Callable
 
 Run = Callable[..., str | None]
@@ -51,16 +52,28 @@ def probe_output(inspect_json: str | None, count: int = 3) -> list[str]:
     return [str(e.get("Output", "")).strip()[:200] for e in log[-count:] if e.get("Output")]
 
 
-def report(run: Run = docker, lines: int = 5) -> tuple[list[str], int]:
-    out = run("compose", "ps", "-a", "--format", "json")
-    if out is None:
-        return ["docker compose ps failed (docker down or LEVELS_DIR unset)"], 1
-    rows = parse_ps(out)
+def report(
+    run: Run = docker, lines: int = 5, wait: float = 0, sleep=time.sleep
+) -> tuple[list[str], int]:
+    """Report services; while any is `starting`, poll up to `wait` seconds before judging."""
+    deadline = time.monotonic() + wait
+    while True:
+        out = run("compose", "ps", "-a", "--format", "json")
+        if out is None:
+            return ["docker compose ps failed (docker down or LEVELS_DIR unset)"], 1
+        rows = parse_ps(out)
+        if not any(r.get("Health") == "starting" for r in rows) or time.monotonic() >= deadline:
+            break
+        sleep(3)
     result: list[str] = []
     bad = 0
     for row in rows:
         name = row.get("Service") or row.get("Name", "?")
         result.append(f"{name} state={row.get('State', '?')} health={row.get('Health') or 'n/a'}")
+        if row.get("Health") == "starting":
+            result.append("  not ready: health check still starting")
+            bad += 1
+            continue
         if not is_bad(row):
             continue
         bad += 1
@@ -77,8 +90,9 @@ def report(run: Run = docker, lines: int = 5) -> tuple[list[str], int]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--lines", type=int, default=5, help="log lines for unhealthy services")
+    parser.add_argument("--wait", type=float, default=90, help="seconds to wait while starting")
     args = parser.parse_args(argv)
-    lines, rc = report(lines=args.lines)
+    lines, rc = report(lines=args.lines, wait=args.wait)
     print("\n".join(lines))
     return rc
 

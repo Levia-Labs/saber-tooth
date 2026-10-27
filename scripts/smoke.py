@@ -126,7 +126,23 @@ def compose_health() -> tuple[bool, str]:
     rows = [json.loads(ln) for ln in res.stdout.splitlines() if ln.strip().startswith("{")]
     bad = [r.get("Service", "?") for r in rows if r.get("State") != "running"]
     bad += [r.get("Service", "?") for r in rows if r.get("Health") == "unhealthy"]
-    return bool(rows) and not bad, f"services={len(rows)} bad={','.join(bad) or 'none'}"
+    starting = [r.get("Service", "?") for r in rows if r.get("Health") == "starting"]
+    detail = f"services={len(rows)} bad={','.join(bad) or 'none'}"
+    if starting:
+        detail += f" starting={','.join(starting)}"
+    return bool(rows) and not bad and not starting, detail
+
+
+def wait_health(
+    timeout: float, check: Callable[[], tuple[bool, str]] = compose_health, sleep=time.sleep
+) -> tuple[bool, str]:
+    """Poll compose health while a service is still `starting`; other failures return at once."""
+    deadline = time.monotonic() + timeout
+    while True:
+        ok, detail = check()
+        if ok or "starting=" not in detail or time.monotonic() >= deadline:
+            return ok, detail
+        sleep(3)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -139,7 +155,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"FAIL wait {base}/api/maps not ready after {args.timeout:.0f}s")
         return 1
     results = run_checks(base)
-    ok, detail = compose_health()
+    ok, detail = wait_health(args.timeout)
     results.append(("compose health", ok, detail))
     for name, passed, info in results:
         print(f"{'ok  ' if passed else 'FAIL'} {name} {info}".rstrip())

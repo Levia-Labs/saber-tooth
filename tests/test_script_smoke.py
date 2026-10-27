@@ -79,3 +79,33 @@ def test_default_base_reads_env(tmp_path):
     env.write_text("LEVELS_DIR=x\nSABER_PORT=9000\n", encoding="utf-8")
     assert smoke.default_base(env) == "http://127.0.0.1:9000"
     assert smoke.default_base(tmp_path / "missing") == "http://127.0.0.1:8100"
+
+
+def test_compose_health_starting_is_not_ready(monkeypatch):
+    rows = '{"Service": "s", "State": "running", "Health": "starting"}\n'
+
+    class Res:
+        returncode = 0
+        stdout = rows
+
+    monkeypatch.setattr(smoke.subprocess, "run", lambda *a, **k: Res())
+    ok, detail = smoke.compose_health()
+    assert not ok and "starting=s" in detail
+
+
+def test_wait_health_polls_until_healthy():
+    seq = iter([(False, "bad=none starting=s"), (False, "bad=none starting=s"), (True, "ok")])
+    sleeps = []
+    assert smoke.wait_health(100, lambda: next(seq), sleeps.append) == (True, "ok")
+    assert len(sleeps) == 2
+
+
+def test_wait_health_fails_fast_on_unhealthy_and_times_out():
+    calls = []
+
+    def bad():
+        calls.append(1)
+        return False, "bad=s"
+
+    assert not smoke.wait_health(100, bad, lambda s: None)[0] and len(calls) == 1
+    assert not smoke.wait_health(0, lambda: (False, "starting=s"), lambda s: None)[0]

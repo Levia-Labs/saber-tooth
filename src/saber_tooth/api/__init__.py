@@ -1,6 +1,8 @@
 """HTTP API: JSON routes for the review UI, plus the static frontend at /."""
 
+import logging
 import os
+import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -24,10 +26,12 @@ from saber_tooth.audio import encode_egg
 from saber_tooth.service import ApplyConflict, MapNotFound, MapUnreadable, Service
 from saber_tooth.store import Store
 
+log = logging.getLogger(__name__)
 WEB = Path(__file__).resolve().parents[1] / "web"
 
 
-def create_app(service: Service, web: Path = WEB) -> FastAPI:
+def create_app(service: Service, web: Path = WEB, warm: bool = False) -> FastAPI:
+    """Build the app; `warm` runs the first library refresh in a background thread."""
     api = Api(service)
     # The SDK's own Host check is off: same_origin below already covers /mcp, and honours
     # SABER_ALLOWED_HOSTS and trusted proxies, which the SDK list cannot.
@@ -39,6 +43,10 @@ def create_app(service: Service, web: Path = WEB) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
+        if warm:
+            threading.Thread(
+                target=_warm, args=(service,), name="library-warm", daemon=True
+            ).start()
         async with mcp_app.router.lifespan_context(mcp_app):
             yield
 
@@ -75,6 +83,10 @@ def create_app(service: Service, web: Path = WEB) -> FastAPI:
     @app.exception_handler(ApiError)
     async def _api_error(_: Request, exc: ApiError):
         return _error(exc.status, str(exc))
+
+    @app.get("/api/health")
+    def health():
+        return {"status": "ok"}
 
     # The library, cover and SPA routes are registered after the JSON routes below so the
     # catch-all /api/* 404 never shadows them.
@@ -129,7 +141,7 @@ def create_app(service: Service, web: Path = WEB) -> FastAPI:
 
 
 def build_service() -> Service:
-    """Build the production service from the environment and index the library."""
+    """Build the production service from the environment; the library is indexed by `warm`."""
     data = Path(os.environ.get("DATA_DIR", "/data"))
     data.mkdir(parents=True, exist_ok=True)
     client = AnalyserClient(
@@ -143,8 +155,14 @@ def build_service() -> Service:
         client,
         encode_egg,
     )
-    service.refresh_library()
     return service
+
+
+def _warm(service: Service) -> None:
+    try:
+        service.refresh_if_changed()
+    except Exception:  # a failed warm-up must not kill the server; /api/maps retries
+        log.exception("initial library refresh failed")
 
 
 _app: FastAPI | None = None
@@ -156,5 +174,5 @@ def __getattr__(name: str) -> FastAPI:
     if name != "app":
         raise AttributeError(name)
     if _app is None:
-        _app = create_app(build_service())
+        _app = create_app(build_service(), warm=True)
     return _app

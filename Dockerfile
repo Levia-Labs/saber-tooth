@@ -43,8 +43,8 @@ COPY --from=web /build/src/saber_tooth/web/ /app/src/saber_tooth/web/
 ENV PUID=1000 PGID=1000
 EXPOSE 8100
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8100/api/maps', timeout=4)"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8100/api/health', timeout=3)"]
 
 # nosemgrep: dockerfile.security.missing-user-entrypoint.missing-user-entrypoint -- container starts as root only so the entrypoint can apply PUID/PGID, then setpriv drops privileges (docs/adr/0009)
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
