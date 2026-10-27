@@ -21,7 +21,7 @@ def build_mcp(api: Api) -> MCPServer:
 
     @mcp.tool(annotations=READ)
     def list_maps(filter: str = "") -> dict[str, Any]:
-        """List indexed maps (id, folder, title, mapper, error counts); filter is a substring."""
+        """List indexed maps (id, title, mapper, bpm, status, job); filter is a substring."""
         page = api.maps_page({"q": filter[:200], "limit": str(MAX_MAPS)}, MAX_MAPS)
         return {"total": page["total"], "maps": page["items"]}
 

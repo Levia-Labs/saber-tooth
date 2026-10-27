@@ -16,8 +16,10 @@ from saber_tooth.fixer import propose
 from saber_tooth.lightshow import Templates
 from saber_tooth.lightshow import learn as learn_templates
 from saber_tooth.mapio import MapParseError, load_map
+from saber_tooth.mapio.discover import _read_json, find_info
 from saber_tooth.mapio.errors import safe_name
 from saber_tooth.model import Beatmap
+from saber_tooth.service.duration import map_duration
 from saber_tooth.service.errors import ApplyConflict, MapNotFound, MapUnreadable
 from saber_tooth.service.util import map_id_for
 from saber_tooth.service.verify import fixed_map, verify
@@ -30,6 +32,14 @@ SUFFIX = " [saber-tooth]"
 STAGING_PREFIX = "staging:"
 CREATE_MAP = "create-map"
 APPLY_RETRIES = 3
+
+
+def _duration(folder: Path, beatmap: Beatmap) -> float | None:
+    try:
+        raw = _read_json(find_info(folder))
+    except (MapParseError, OSError):
+        raw = None
+    return map_duration(folder, beatmap, raw)
 
 
 class _Stale(Exception):
@@ -84,8 +94,12 @@ class Service:
             mid = map_id_for(folder.name)
             seen.add(mid)
             try:
-                i = load_map(folder).info
-                self.store.upsert_map(mid, folder.name, i.song_name, i.mapper, i.environment, None)
+                beatmap = load_map(folder)
+                i = beatmap.info
+                self.store.upsert_map(
+                    mid, folder.name, i.song_name, i.mapper, i.environment, None,
+                    i.bpm, _duration(folder, beatmap),
+                )  # fmt: skip
             except (MapParseError, OSError) as exc:
                 self.store.upsert_map(mid, folder.name, folder.name, "", "", str(exc))
         self.store.prune_maps(seen)
