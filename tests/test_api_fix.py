@@ -15,7 +15,7 @@ def test_fix_job_writes_new_folder_and_reports(tmp_path):
     before = _hashes(original)
     with TestClient(create_app(svc), base_url="http://localhost") as http:
         jid = http.post(f"/api/maps/{MID}/fix").json()["job"]
-        job = _wait(client, jid)
+        job = _wait(http, jid)
         assert job["status"] == "done" and job["kind"] == "fix"
         report = job["result"]
         assert report["folder"] == f"{NAME} [saber-tooth]"
