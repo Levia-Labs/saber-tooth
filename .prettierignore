@@ -7,3 +7,4 @@ data/
 .worktrees/
 src/saber_tooth/web/assets/
 src/saber_tooth/web/index.html
+frontend/.vitest/
