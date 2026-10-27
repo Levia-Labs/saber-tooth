@@ -10,23 +10,29 @@ import {
 } from "./FilterBodies";
 import { FilterPopover } from "./FilterPopover";
 import { Icon } from "./icons";
+import { ResizeHandle } from "./ResizeHandle";
+import { isResizable, LABELS, type ColumnKey } from "../lib/columns";
+import type { ColumnsApi } from "../lib/useColumns";
 
 interface Props {
   state: LibraryState;
   facets: Facets | undefined;
   update: (patch: Partial<LibraryState>, replace?: boolean) => void;
+  columns: ColumnsApi;
 }
 
 interface CellProps {
-  label: string;
+  col: ColumnKey;
+  columns: ColumnsApi;
   sort?: SortKey;
-  className: string;
   state: LibraryState;
   update: Props["update"];
   filter?: ReactNode;
 }
 
-function HeaderCell({ label, sort, className, state, update, filter }: CellProps) {
+function HeaderCell({ col, columns, sort, state, update, filter }: CellProps) {
+  const label = LABELS[col];
+  const className = `col-${col}${col === "cover" ? " th-quiet" : ""}`;
   const sorted = sort !== undefined && state.sort === sort;
   const aria = sorted ? (state.order === "asc" ? "ascending" : "descending") : "none";
   return (
@@ -47,21 +53,21 @@ function HeaderCell({ label, sort, className, state, update, filter }: CellProps
         <span className="th-label">{label}</span>
       )}
       {filter}
+      {isResizable(col) && <ResizeHandle colKey={col} columns={columns} />}
     </div>
   );
 }
 
 /** Sticky column header row: sort buttons and the Title, Status and Environment filters. */
-export function LibraryHeader({ state, facets, update }: Props) {
+export function LibraryHeader({ state, facets, update, columns }: Props) {
   const counts = filterCounts(state);
-  const cell = { state, update };
+  const cell = { state, update, columns };
   return (
     <div className="lib-head lib-grid" role="row" aria-rowindex={1}>
-      <HeaderCell label="Image" className="col-cover sr" {...cell} />
+      <HeaderCell col="cover" {...cell} />
       <HeaderCell
-        label="Title"
+        col="title"
         sort="title"
-        className="col-title"
         {...cell}
         filter={
           <FilterPopover label="Title" tip="Filter by title." count={counts.title}>
@@ -74,9 +80,8 @@ export function LibraryHeader({ state, facets, update }: Props) {
         }
       />
       <HeaderCell
-        label="Author"
+        col="author"
         sort="mapper"
-        className="col-author"
         {...cell}
         filter={
           <FilterPopover label="Author" tip="Filter by mapper." count={counts.author}>
@@ -94,9 +99,8 @@ export function LibraryHeader({ state, facets, update }: Props) {
         }
       />
       <HeaderCell
-        label="Levels"
+        col="levels"
         sort="levels"
-        className="col-levels"
         {...cell}
         filter={
           <FilterPopover label="Levels" tip="Filter by difficulty level." count={counts.levels}>
@@ -109,12 +113,11 @@ export function LibraryHeader({ state, facets, update }: Props) {
           </FilterPopover>
         }
       />
-      <HeaderCell label="Length" sort="duration" className="col-length" {...cell} />
-      <HeaderCell label="BPM" sort="bpm" className="col-bpm" {...cell} />
+      <HeaderCell col="length" sort="duration" {...cell} />
+      <HeaderCell col="bpm" sort="bpm" {...cell} />
       <HeaderCell
-        label="Environment"
+        col="env"
         sort="environment"
-        className="col-env"
         {...cell}
         filter={
           <FilterPopover label="Environment" tip="Filter by environment." count={counts.env}>
@@ -127,9 +130,8 @@ export function LibraryHeader({ state, facets, update }: Props) {
         }
       />
       <HeaderCell
-        label="Status"
+        col="status"
         sort="status"
-        className="col-status"
         {...cell}
         filter={
           <FilterPopover label="Status" tip="Filter by status." count={counts.status}>
@@ -141,7 +143,21 @@ export function LibraryHeader({ state, facets, update }: Props) {
           </FilterPopover>
         }
       />
-      <HeaderCell label="Actions" className="col-actions" {...cell} />
+      <HeaderCell
+        col="actions"
+        {...cell}
+        filter={
+          <button
+            type="button"
+            className="th-reset"
+            title="Reset columns to their default widths"
+            aria-label="Reset columns"
+            onClick={columns.resetAll}
+          >
+            Reset
+          </button>
+        }
+      />
     </div>
   );
 }

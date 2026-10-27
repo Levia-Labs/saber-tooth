@@ -2,6 +2,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useRef, useState } from "react";
 import type { Facets, MapItem } from "../api/types";
 import { useMediaQuery } from "../lib/hooks";
+import { useColumns } from "../lib/useColumns";
 import type { LibraryState } from "../lib/urlstate";
 import { LibraryHeader } from "./LibraryHeader";
 import { LibraryRow } from "./LibraryRow";
@@ -39,6 +40,8 @@ export function LibraryTable(props: Props) {
   const { items, loading, hasNext, fetchingNext, nextFailed, onLoadMore } = props;
   const scroller = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLDivElement>(null);
+  const table = useRef<HTMLDivElement>(null);
+  const columns = useColumns(table);
   const [margin, setMargin] = useState(0);
   const estimate = useRowEstimate();
   const skeletons = loading ? FIRST_SKELETONS : fetchingNext ? NEXT_SKELETONS : 0;
@@ -67,8 +70,20 @@ export function LibraryTable(props: Props) {
   const empty = !loading && items.length === 0;
   return (
     <div className="lib-scroll" ref={scroller} tabIndex={-1}>
-      <div role="table" aria-label="Maps" aria-rowcount={props.total + 1} className="lib-table">
-        <LibraryHeader state={props.state} facets={props.facets} update={props.update} />
+      <div
+        role="table"
+        aria-label="Maps"
+        aria-rowcount={props.total + 1}
+        className="lib-table"
+        ref={table}
+        style={columns.style}
+      >
+        <LibraryHeader
+          state={props.state}
+          facets={props.facets}
+          update={props.update}
+          columns={columns.api}
+        />
         <div
           role="rowgroup"
           className="lib-body"
