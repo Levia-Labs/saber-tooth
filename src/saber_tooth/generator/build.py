@@ -8,7 +8,8 @@ from saber_tooth.generator.motifs import Step, motif_steps, phrase_picks
 from saber_tooth.generator.placer import GenerationError, Placer
 from saber_tooth.generator.plan import BAR_BEATS, Event, plan_events
 from saber_tooth.generator.walls import place_walls
-from saber_tooth.model import BpmEvent, Color, Difficulty
+from saber_tooth.generator.window_walls import window_walls
+from saber_tooth.model import BpmEvent, Color, Difficulty, Wall
 from saber_tooth.profiles import Profile
 from saber_tooth.swings import Swing
 from saber_tooth.timing import Timing
@@ -118,6 +119,7 @@ def generate_with_stats(
     window: tuple[float, float] | None = None,
     entry: dict[Color, Swing] | None = None,
     exit: dict[Color, Swing] | None = None,
+    walls: list[Wall] | None = None,
 ) -> tuple[Difficulty, GenerationStats]:
     phase = phase_of(a, timing)
     cands, bars = build_candidates(a, timing, profile, phase)
@@ -156,12 +158,18 @@ def generate_with_stats(
         raise GenerationError(f"{profile.name}: findings remain after repair: {findings[:3]}")
     if window is None and findings:
         raise GenerationError(f"{profile.name}: findings remain: {findings[:3]}")
+    notes = placer.all_notes()
+    if window is None:
+        made = place_walls(notes, bars, phase, profile, seed)
+    else:
+        near = placer.all_notes(with_context=True)
+        made = window_walls(near, walls or [], bars, phase, profile, seed, (lo, hi), timing)
     d = Difficulty(
         profile.name,
         profile.njs,
         profile.offset,
-        notes=placer.all_notes(),
-        walls=place_walls(placer.all_notes(), bars, phase, profile, seed) if window is None else [],
+        notes=notes,
+        walls=made,
         bpm_events=timing_events(timing),
     )
     stats.final = len(d.notes)
@@ -170,5 +178,6 @@ def generate_with_stats(
 
 def generate_difficulty(*args, **kwargs) -> Difficulty:
     """Generate one difficulty. `window` is (start_s, end_s); `entry` and `exit` are the swings
-    just before and after the window, modelled so the seams stay finding-free."""
+    just before and after the window, modelled so the seams stay finding-free. `walls` are the
+    map's existing walls; a window result carries them merged with the new ones."""
     return generate_with_stats(*args, **kwargs)[0]

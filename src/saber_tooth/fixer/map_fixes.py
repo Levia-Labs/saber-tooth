@@ -55,6 +55,7 @@ def empty_gap(ctx: Context) -> Iterator[list[Op]]:
             window=window,
             entry={h: s[0] for h, s in entry.items() if s},
             exit={h: s[0] for h, s in after.items() if s},
+            walls=d.walls,
         )
     except GenerationError:
         return
@@ -66,12 +67,16 @@ def empty_gap(ctx: Context) -> Iterator[list[Op]]:
     ]
     if not new:
         return
+    removed = tuple(w for w in d.walls if w not in made.walls)
+    added = tuple(w for w in made.walls if w not in d.walls)
     density = _neighbour_density(ctx, start, end)
     if density is not None:
         cap = max(1, math.ceil(density * (end - start)))
         if len(new) > cap * CAP_SLACK:
-            yield [Fill(d.name, start, end, tuple(_spread(new, cap)))]
-    yield [Fill(d.name, start, end, tuple(new))]
+            yield [Fill(d.name, start, end, tuple(_spread(new, cap)), added, removed)]
+    yield [Fill(d.name, start, end, tuple(new), added, removed)]
+    if added or removed:
+        yield [Fill(d.name, start, end, tuple(new))]
 
 
 def _denser(ctx: Context):

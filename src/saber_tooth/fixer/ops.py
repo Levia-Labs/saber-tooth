@@ -5,6 +5,7 @@ from dataclasses import dataclass, replace
 from typing import ClassVar
 
 from saber_tooth.fixer import codec
+from saber_tooth.fixer.fill_op import Fill
 from saber_tooth.fixer.sliders import retarget
 from saber_tooth.mapio.write import BOX_KEYS, FX_KEY
 from saber_tooth.model import RANKS, Beatmap, Color, ColorScheme, Cut, Difficulty, Note, Wall
@@ -102,29 +103,6 @@ class DeleteWall:
 
 
 @dataclass(frozen=True)
-class Fill:
-    KIND: ClassVar[str] = "fill"
-    difficulty: str
-    beat_start: float
-    beat_end: float
-    notes: tuple[Note, ...]
-
-    def to_dict(self) -> dict:
-        return {
-            "op": self.KIND,
-            "difficulty": self.difficulty,
-            "beat_start": self.beat_start,
-            "beat_end": self.beat_end,
-            "notes": [codec.note_to_dict(n) for n in self.notes],
-        }
-
-    @classmethod
-    def from_dict(cls, d: dict) -> "Fill":
-        notes = tuple(codec.note_from_dict(n) for n in d["notes"])
-        return cls(d["difficulty"], float(d["beat_start"]), float(d["beat_end"]), notes)
-
-
-@dataclass(frozen=True)
 class AddDifficulty:
     KIND: ClassVar[str] = "add-difficulty"
     difficulty: Difficulty
@@ -196,6 +174,15 @@ def _put(d: Difficulty, note: Note, what: str) -> None:
     d.notes.append(note)
 
 
+def _fill_walls(d: Difficulty, op: Fill) -> None:
+    for w in op.walls_removed:
+        if w not in d.walls:
+            raise OpConflict(f"fill: wall at beat {w.beat:g} not found in {d.name}")
+        d.walls.remove(w)
+    d.walls.extend(op.walls_added)
+    d.walls.sort()
+
+
 def _apply_lightshow(beatmap: Beatmap, op: ApplyLightshow) -> None:
     beatmap.info.environment = op.environment
     beatmap.info.color_scheme = op.color_scheme
@@ -243,6 +230,7 @@ def _apply_one(beatmap: Beatmap, op: Op) -> None:
                 if not op.beat_start - EPS <= n.beat <= op.beat_end + EPS:
                     raise OpConflict(f"fill: note at beat {n.beat:g} is outside the range")
                 _put(d, n, "fill")
+            _fill_walls(d, op)
         case Move():
             d = _diff(beatmap, op.difficulty)
             _take(d, op.note, "move")

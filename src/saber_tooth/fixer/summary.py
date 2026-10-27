@@ -35,7 +35,8 @@ def describe(op: Op) -> str:
             return f"Delete wall at beat {op.wall.beat:g} lasting {op.wall.duration:g} beats"
         case Fill():
             span = f"{op.beat_start:g}-{op.beat_end:g}"
-            return f"Fill beats {span} with {len(op.notes)} notes"
+            walls = f" and {len(op.walls_added)} walls" if op.walls_added else ""
+            return f"Fill beats {span} with {len(op.notes)} notes{walls}"
         case AddDifficulty():
             return f"Add {op.difficulty.name} difficulty with {len(op.difficulty.notes)} notes"
         case ApplyLightshow():
