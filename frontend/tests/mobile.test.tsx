@@ -144,7 +144,7 @@ describe("table control bar", () => {
     const user = userEvent.setup();
     await user.click(filters);
     const sheet = await screen.findByRole("dialog", { name: "Filters" });
-    expect([...sheet.querySelectorAll("h3")].map((h) => h.textContent)).toEqual([
+    expect([...sheet.querySelectorAll(".acc-title")].map((h) => h.textContent)).toEqual([
       "Title",
       "Author",
       "Levels",

@@ -9,6 +9,12 @@ const ICONS = {
     </>
   ),
   filter: <path d="M4 6h16M7 12h10M10 18h4" />,
+  "filter-x": (
+    <>
+      <path d="M4 6h10M7 12h5M10 18h2" />
+      <path d="M15 12l6 6M21 12l-6 6" />
+    </>
+  ),
   "sort-asc": <path d="M12 19V5M6 11l6-6 6 6" />,
   "sort-desc": <path d="M12 5v14M6 13l6 6 6-6" />,
   scan: (

@@ -77,6 +77,7 @@ export function LibraryHeader({ state, facets, update, columns }: Props) {
           <FilterPopover label="Title" tip="Filter by title." count={counts.title}>
             <TextFilterBody
               label="Title contains"
+              placeholder="Title"
               q={state.qField === "title" ? state.q : ""}
               onChange={(q, replace) => update({ q, qField: "title" }, replace)}
             />
@@ -91,6 +92,7 @@ export function LibraryHeader({ state, facets, update, columns }: Props) {
           <FilterPopover label="Author" tip="Filter by mapper." count={counts.author}>
             <TextFilterBody
               label="Name contains"
+              placeholder="Mapper"
               q={state.qField === "mapper" ? state.q : ""}
               onChange={(q, replace) => update({ q, qField: "mapper" }, replace)}
             />

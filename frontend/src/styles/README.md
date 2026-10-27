@@ -7,4 +7,4 @@ Plain CSS with custom properties; no framework.
 3. `library.css`: library bar, scroll region, sticky header and filter buttons.
 4. `rows.css`: library rows, cover, skeletons and the responsive and mobile card layouts.
 5. `chips.css`: status and level chips.
-6. `overlays.css`: tooltip, popovers, checkboxes and the bottom sheet.
+6. `overlays.css`: tooltip, popovers, checkboxes and the fullscreen filter sheet.

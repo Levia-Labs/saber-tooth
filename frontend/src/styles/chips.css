@@ -113,3 +113,8 @@
   display: block;
   border-radius: 999px;
 }
+
+.chip {
+  max-width: 100%;
+  white-space: nowrap;
+}

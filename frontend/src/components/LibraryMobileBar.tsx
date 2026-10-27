@@ -21,10 +21,12 @@ interface Props {
   facets: Facets | undefined;
   update: (patch: Partial<LibraryState>, replace?: boolean) => void;
   clear: () => void;
+  /** Live number of maps matching the filters, shown on the sheet's Show button. */
+  matchCount?: number;
 }
 
 /** Table controls above the list below 1100px: sort and direction, Filters and clear filters. */
-export function LibraryMobileBar({ state, facets, update, clear }: Props) {
+export function LibraryMobileBar({ state, facets, update, clear, matchCount }: Props) {
   const active = totalFilters(filterCounts(state)) > 0;
   const options = SORT_OPTIONS.some(([key]) => key === state.sort)
     ? SORT_OPTIONS
@@ -52,7 +54,13 @@ export function LibraryMobileBar({ state, facets, update, clear }: Props) {
         </button>
       </div>
       <div className="mobile-filters">
-        <MobileFilters state={state} facets={facets} update={update} clear={clear} />
+        <MobileFilters
+          state={state}
+          facets={facets}
+          update={update}
+          clear={clear}
+          matchCount={matchCount}
+        />
         {active && (
           <Tip text="Remove every filter.">
             <button type="button" className="btn icon tap" onClick={clear}>

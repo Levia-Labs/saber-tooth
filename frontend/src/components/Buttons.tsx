@@ -7,24 +7,17 @@ interface Common {
   icon: IconName;
   label: string;
   tip: string;
-  /** Show the label next to the icon; otherwise it is read by screen readers only. */
+  /** Show the label next to the icon (hidden below 720px); otherwise screen readers only. */
   text?: boolean;
   variant?: "primary" | "approve" | "reject" | "icon" | "plain";
-  /** Short visible label shown only in the mobile card layout. */
-  short?: string;
   children?: ReactNode;
 }
 
-function content({ icon, label, text, short, children }: Common) {
+function content({ icon, label, text, children }: Common) {
   return (
     <>
       <Icon name={icon} />
-      <span className={text ? "" : "sr"}>{label}</span>
-      {short && !text && (
-        <span className="short" aria-hidden="true">
-          {short}
-        </span>
-      )}
+      <span className={text ? "label-hide-mobile" : "sr"}>{label}</span>
       {children}
     </>
   );
@@ -38,8 +31,8 @@ function classes(c: Common, extra?: string): string {
 type ButtonProps = Common & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children">;
 
 export function ActionButton(props: ButtonProps) {
-  const { icon, label, tip, text, variant, short, children, className, ...rest } = props;
-  const common = { icon, label, tip, text, variant, short, children };
+  const { icon, label, tip, text, variant, children, className, ...rest } = props;
+  const common = { icon, label, tip, text, variant, children };
   return (
     <Tip text={tip} info={text}>
       <button type="button" {...rest} className={classes(common, className)}>
@@ -52,8 +45,8 @@ export function ActionButton(props: ButtonProps) {
 type LinkButtonProps = Common & Omit<LinkProps, "children">;
 
 export function ActionLink(props: LinkButtonProps) {
-  const { icon, label, tip, text, variant, short, children, className, ...rest } = props;
-  const common = { icon, label, tip, text, variant, short, children };
+  const { icon, label, tip, text, variant, children, className, ...rest } = props;
+  const common = { icon, label, tip, text, variant, children };
   return (
     <Tip text={tip} info={text}>
       <Link {...rest} className={classes(common, className)}>

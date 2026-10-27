@@ -246,3 +246,17 @@
     padding-bottom: 0.5rem;
   }
 }
+
+.sub-unreadable {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+@media (max-width: 719px) {
+  .sub-unreadable {
+    display: none;
+  }
+}

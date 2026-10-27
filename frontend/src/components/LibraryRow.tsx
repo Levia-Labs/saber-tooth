@@ -37,7 +37,7 @@ export function LibraryRow({ item, index }: { item: MapItem; index: number }) {
       <div className="col-sub" role="cell">
         <div className="sub">
           {item.parse_error ? (
-            "Unreadable Info file"
+            <span className="sub-unreadable">Unreadable Info file</span>
           ) : (
             <span>{item.mapper || "Unknown mapper"}</span>
           )}
@@ -69,7 +69,7 @@ export function LibraryRow({ item, index }: { item: MapItem; index: number }) {
       </div>
       <div className="col-actions" role="cell">
         <div className="actions">
-          <ActionLink icon="review" label={reviewLabel} short="Review" tip={TIPS.review} to={href}>
+          <ActionLink icon="review" label={reviewLabel} tip={TIPS.review} to={href}>
             {pending > 0 && (
               <span className="badge-count" aria-hidden="true">
                 {pending}
@@ -79,7 +79,6 @@ export function LibraryRow({ item, index }: { item: MapItem; index: number }) {
           <ActionButton
             icon="scan"
             label={`Scan ${name}`}
-            short="Scan"
             tip={TIPS.scan}
             disabled={busy || scan.isPending}
             onClick={() => scan.mutate()}
@@ -88,7 +87,6 @@ export function LibraryRow({ item, index }: { item: MapItem; index: number }) {
             <ActionButton
               icon="apply"
               label={`Apply approved fixes for ${name}`}
-              short="Apply"
               tip={applyTip(name)}
               disabled={busy || apply.isPending}
               onClick={() => apply.mutate()}

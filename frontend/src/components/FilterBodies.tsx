@@ -1,5 +1,5 @@
 import * as Checkbox from "@radix-ui/react-checkbox";
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import { LEVEL_KEYS, type Facets, type LevelKey, type StatusKey } from "../api/types";
 import { formatEnvironment } from "../lib/environment";
 import { LEVELS } from "../lib/levels";
@@ -7,85 +7,9 @@ import { STATUS_META, STATUS_ORDER } from "../lib/status";
 import { toggle, type LevelMode } from "../lib/urlstate";
 import { Icon } from "./icons";
 
-export const SEARCH_DEBOUNCE_MS = 250;
+export { SEARCH_DEBOUNCE_MS, TextFilterBody } from "./TextFilterBody";
+
 const ENV_SEARCH_MIN = 10;
-
-interface TextProps {
-  q: string;
-  /** Visible label of the text box, e.g. "Title contains". */
-  label: string;
-  onChange: (q: string, replace: boolean) => void;
-}
-
-/** Debounced "contains" text box shared by the Title and Author filters. */
-export function TextFilterBody({ q, label, onChange }: TextProps) {
-  const [text, setText] = useState(q);
-  const [emitted, setEmitted] = useState(q);
-  const [seen, setSeen] = useState(q);
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  // An outside change (clear all, back button) replaces the text; our own debounced echo does not.
-  if (q !== seen) {
-    setSeen(q);
-    if (q !== emitted) {
-      setEmitted(q);
-      setText(q);
-    }
-  }
-  const pending = useRef<string | null>(null);
-  const emit = useRef(onChange);
-  useEffect(() => {
-    emit.current = onChange;
-  }, [onChange]);
-  // Closing the popover unmounts this body: send a search typed in the last 250 ms before it goes.
-  useEffect(
-    () => () => {
-      clearTimeout(timer.current);
-      if (pending.current !== null) emit.current(pending.current, true);
-    },
-    [],
-  );
-  const change = (value: string) => {
-    setText(value);
-    clearTimeout(timer.current);
-    pending.current = value;
-    timer.current = setTimeout(() => {
-      pending.current = null;
-      setEmitted(value);
-      onChange(value, true);
-    }, SEARCH_DEBOUNCE_MS);
-  };
-  const id = useId();
-  return (
-    <div className="filter-body">
-      <label htmlFor={id}>{label}</label>
-      <div className="field">
-        <Icon name="search" />
-        <input
-          id={id}
-          type="search"
-          value={text}
-          maxLength={200}
-          autoComplete="off"
-          onChange={(e) => change(e.target.value)}
-        />
-      </div>
-      <button
-        type="button"
-        className="btn plain"
-        disabled={!text}
-        onClick={() => {
-          clearTimeout(timer.current);
-          pending.current = null;
-          setText("");
-          setEmitted("");
-          onChange("", true);
-        }}
-      >
-        Clear
-      </button>
-    </div>
-  );
-}
 
 interface StatusProps {
   selected: StatusKey[];
@@ -116,11 +40,23 @@ export function StatusFilterBody({ selected, facets, onChange }: StatusProps) {
   return (
     <div className="filter-body">
       <div className="filter-actions">
-        <button type="button" className="btn plain" onClick={() => onChange([...STATUS_ORDER])}>
-          Select all
+        <button
+          type="button"
+          className="btn icon"
+          aria-label="Select all"
+          title="Select all"
+          onClick={() => onChange([...STATUS_ORDER])}
+        >
+          <Icon name="approve" />
         </button>
-        <button type="button" className="btn plain" onClick={() => onChange([])}>
-          Clear
+        <button
+          type="button"
+          className="btn icon"
+          aria-label="Clear"
+          title="Clear"
+          onClick={() => onChange([])}
+        >
+          <Icon name="filter-x" />
         </button>
       </div>
       <div role="group" aria-label="Status" className="checks">
@@ -172,8 +108,14 @@ export function EnvFilterBody({ selected, facets, onChange }: EnvProps) {
         </div>
       )}
       <div className="filter-actions">
-        <button type="button" className="btn plain" onClick={() => onChange([])}>
-          Clear
+        <button
+          type="button"
+          className="btn icon"
+          aria-label="Clear"
+          title="Clear"
+          onClick={() => onChange([])}
+        >
+          <Icon name="filter-x" />
         </button>
       </div>
       <div role="group" aria-label="Environment" className="checks">
@@ -223,8 +165,14 @@ export function MapperListBody({ selected, facets, onChange }: MapperProps) {
         />
       </div>
       <div className="filter-actions">
-        <button type="button" className="btn plain" onClick={() => onChange([])}>
-          Clear
+        <button
+          type="button"
+          className="btn icon"
+          aria-label="Clear"
+          title="Clear"
+          onClick={() => onChange([])}
+        >
+          <Icon name="filter-x" />
         </button>
       </div>
       <div role="group" aria-label="Mapper" className="checks">
@@ -271,8 +219,14 @@ export function LevelsFilterBody({ selected, mode, facets, onChange }: LevelsPro
         ))}
       </div>
       <div className="filter-actions">
-        <button type="button" className="btn plain" onClick={() => onChange({ level: [] })}>
-          Clear
+        <button
+          type="button"
+          className="btn icon"
+          aria-label="Clear"
+          title="Clear"
+          onClick={() => onChange({ level: [] })}
+        >
+          <Icon name="filter-x" />
         </button>
       </div>
       <div role="group" aria-label="Levels" className="checks">

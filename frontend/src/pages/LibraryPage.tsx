@@ -44,7 +44,13 @@ export function LibraryPage() {
       </div>
       <JobOutcome job={learn.job} error={learn.error} />
       {narrow && (
-        <LibraryMobileBar state={state} facets={facets.data} update={update} clear={clearFilters} />
+        <LibraryMobileBar
+          state={state}
+          facets={facets.data}
+          update={update}
+          clear={clearFilters}
+          matchCount={library.isPending ? undefined : total}
+        />
       )}
       {library.isError && !library.data ? (
         <div className="lib-empty">
