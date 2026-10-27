@@ -67,7 +67,7 @@ def test_approve_reject_and_approve_all(client, svc):
     assert rows[a]["status"] == "approved" and "ops" not in rows[a]
     assert set(rows[a]) == {
         "id", "rule", "difficulty", "severity", "summary", "status", "before", "after",
-        "walls_before", "walls_after",
+        "walls_before", "walls_after", "walls_context",
     }  # fmt: skip
     assert client.post(f"/api/proposals/{a}/reject").json()["status"] == "rejected"
     assert client.post(f"/api/maps/{MID}/approve-all").json() == {"approved": 1}

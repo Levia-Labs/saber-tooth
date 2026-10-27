@@ -4,6 +4,7 @@ const ARROW_ANGLE = { 0: -90, 1: 90, 2: 180, 3: 0, 4: -135, 5: -45, 6: 135, 7: 4
 const BG = "#12131a";
 const GRID = "#2a2d3a";
 const WALL = "rgba(150, 130, 200, 0.35)";
+const WALL_CONTEXT = "rgba(150, 130, 200, 0.14)";
 
 /** Beat window [start, end] covering all notes, padded to whole beats. */
 export function beatWindow(...noteLists) {
@@ -46,6 +47,17 @@ export function wallRects(walls, window, geometry) {
   return rects;
 }
 
+/**
+ * Wall layers in paint order: surrounding context walls (fainter) under the changed walls.
+ * Context walls never add slices of their own; they only show in slices that exist anyway.
+ */
+export function wallLayers(walls, context) {
+  return [
+    { walls: context || [], fill: WALL_CONTEXT },
+    { walls: walls || [], fill: WALL },
+  ];
+}
+
 function drawArrow(ctx, cx, cy, r, cut) {
   ctx.fillStyle = "#fff";
   if (cut === 8 || !(cut in ARROW_ANGLE)) {
@@ -66,10 +78,13 @@ function drawArrow(ctx, cx, cy, r, cut) {
   ctx.restore();
 }
 
-function drawSlice(ctx, notes, walls, x0, y0, cell, label) {
-  ctx.fillStyle = WALL;
-  for (const r of wallRects(walls, { start: label.beat, end: label.beat }, { x0, y0, cell })) {
-    ctx.fillRect(r.x, r.y, r.w, r.h);
+function drawSlice(ctx, notes, layers, x0, y0, cell, label) {
+  for (const layer of layers) {
+    ctx.fillStyle = layer.fill;
+    const window = { start: label.beat, end: label.beat };
+    for (const r of wallRects(layer.walls, window, { x0, y0, cell })) {
+      ctx.fillRect(r.x, r.y, r.w, r.h);
+    }
   }
   ctx.strokeStyle = GRID;
   ctx.lineWidth = 1;
@@ -100,7 +115,8 @@ export function layout(sliceCount, width, cell) {
   return { slicePitch, perRow, rows, rowHeight: cell * 3 + 24 };
 }
 
-function drawPanel(ctx, notes, walls, x, width, title, cell) {
+function drawPanel(ctx, notes, layers, x, width, title, cell) {
+  const walls = layers[1].walls;
   const beats = sliceBeats([...notes, ...walls]);
   ctx.fillStyle = "#e8eaf3";
   ctx.font = "600 12px system-ui, sans-serif";
@@ -112,7 +128,7 @@ function drawPanel(ctx, notes, walls, x, width, title, cell) {
     const row = Math.floor(i / perRow);
     const at = notes.filter((n) => n.beat === beat);
     const at0 = x + 4 + col * slicePitch;
-    drawSlice(ctx, at, walls, at0, 24 + row * (cell * 3 + 24), cell, { beat });
+    drawSlice(ctx, at, layers, at0, 24 + row * (cell * 3 + 24), cell, { beat });
   });
   if (!beats.length) {
     ctx.fillStyle = "#6b7089";
@@ -137,6 +153,7 @@ export function drawTimeline(canvas, before, after, opts = {}) {
   const width = opts.width || canvas.clientWidth || 640;
   const wb = opts.wallsBefore || [];
   const wa = opts.wallsAfter || [];
+  const context = opts.wallsContext || [];
   const height = timelineHeight([...before, ...wb], [...after, ...wa], width, cell);
   canvas.width = Math.round(width * dpr);
   canvas.height = Math.round(height * dpr);
@@ -146,8 +163,8 @@ export function drawTimeline(canvas, before, after, opts = {}) {
   ctx.fillStyle = BG;
   ctx.fillRect(0, 0, width, height);
   const half = width / 2;
-  drawPanel(ctx, before, wb, 0, half, "Before", cell);
-  drawPanel(ctx, after, wa, half, half, "After", cell);
+  drawPanel(ctx, before, wallLayers(wb, context), 0, half, "Before", cell);
+  drawPanel(ctx, after, wallLayers(wa, context), half, half, "After", cell);
   ctx.strokeStyle = GRID;
   ctx.beginPath();
   ctx.moveTo(half + 0.5, 0);

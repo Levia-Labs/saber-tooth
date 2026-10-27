@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 
 from fastapi.responses import JSONResponse
 
+from saber_tooth.api.wall_context import changed_walls, stored_walls, walls_context
 from saber_tooth.fixer.codec import note_to_dict
 from saber_tooth.jobs import Jobs
 from saber_tooth.mapio import MapParseError, load_map
@@ -108,14 +109,21 @@ class Api:
             return []
         return [note_to_dict(n) for n in notes]
 
-    @staticmethod
-    def _deleted_walls(proposal: dict) -> list[dict]:
-        ops = proposal.get("ops") or []
-        return [dict(op["wall"]) for op in ops if op.get("op") == "delete-wall"]
+    def _stored_walls(self, map_id: str) -> dict[str, list[dict]]:
+        row = next((m for m in self.store.list_maps() if m["id"] == map_id), None)
+        if row is None or row["parse_error"]:
+            return {}
+        name = row["folder"]
+        folder = self.service.levels / name
+        if Path(name).name != name or folder.is_symlink() or not folder.is_dir():
+            return {}
+        return stored_walls(folder)
 
-    def _view(self, proposal: dict) -> dict:
+    def _view(self, proposal: dict, stored: dict[str, list[dict]]) -> dict:
         view = {k: proposal[k] for k in PROPOSAL_FIELDS}
-        view.update(walls_before=self._deleted_walls(proposal), walls_after=[])
+        before, after = changed_walls(proposal)
+        context = walls_context(proposal, stored, before + after)
+        view.update(walls_before=before, walls_after=after, walls_context=context)
         if view["status"] == "applying":
             view["status"] = "approved"
         if proposal["rule"] == CREATE_MAP:  # the UI shows the Expert notes, not a path
@@ -123,7 +131,9 @@ class Api:
         return view
 
     def proposals(self, map_id: str) -> list[dict]:
-        return [self._view(p) for p in self.store.proposals(self.map_id(map_id, True))]
+        found = self.store.proposals(self.map_id(map_id, True))
+        stored = self._stored_walls(map_id)
+        return [self._view(p, stored) for p in found]
 
     def set_status(self, raw: str, status: str) -> dict:
         pid = self.proposal_id(raw)

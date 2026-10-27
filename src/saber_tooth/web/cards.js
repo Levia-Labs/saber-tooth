@@ -32,7 +32,11 @@ export function proposalCard(p, onChange, notesFilter) {
     role: "img",
     "aria-label": `Before and after note grids for ${p.summary}`,
   });
-  const opts = { wallsBefore: p.walls_before || [], wallsAfter: p.walls_after || [] };
+  const opts = {
+    wallsBefore: p.walls_before || [],
+    wallsAfter: p.walls_after || [],
+    wallsContext: p.walls_context || [],
+  };
   const textOnly = isNotesless(before, after, [...opts.wallsBefore, ...opts.wallsAfter]);
   const body = textOnly ? el("p", { class: "muted" }, p.summary) : canvas;
   const approve = el(

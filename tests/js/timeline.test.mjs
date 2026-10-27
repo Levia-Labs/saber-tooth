@@ -4,9 +4,8 @@ import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
 
 const url = pathToFileURL(resolve("src/saber_tooth/web/timeline.js")).href;
-const { isNotesless, beatWindow, sliceBeats, layout, timelineHeight, wallRects } = await import(
-  url
-);
+const { isNotesless, beatWindow, sliceBeats, layout, timelineHeight, wallRects, wallLayers } =
+  await import(url);
 
 test("beatWindow pads to whole beats", () => {
   assert.deepEqual(beatWindow([{ beat: 2.5 }], [{ beat: 4.2 }]), { start: 2, end: 5 });
@@ -61,4 +60,17 @@ test("wallRects skips walls outside the window", () => {
   const wall = { beat: 4, x: 0, y: 0, duration: 2, width: 1, height: 5 };
   assert.deepEqual(wallRects([wall], { start: 7, end: 8 }, g), []);
   assert.deepEqual(wallRects([], { start: 0, end: 1 }, g), []);
+});
+
+test("wallLayers paints context walls first and fainter than the changed walls", () => {
+  const changed = { beat: 4, x: 0, y: 0, duration: 2, width: 1, height: 5 };
+  const around = { beat: 5, x: 3, y: 0, duration: 2, width: 1, height: 5 };
+  const [under, over] = wallLayers([changed], [around]);
+  assert.deepEqual(under.walls, [around]);
+  assert.deepEqual(over.walls, [changed]);
+  assert.notEqual(under.fill, over.fill);
+  assert.deepEqual(
+    wallLayers().map((l) => l.walls),
+    [[], []],
+  );
 });
