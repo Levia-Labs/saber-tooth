@@ -19,6 +19,8 @@ export interface BsState {
   tags: string[];
   /** Minimum rating as a fraction, 0 to 1. */
   minRating: number | null;
+  /** Minimum upvote count. */
+  minUpvotes: number | null;
   npsMin: number | null;
   npsMax: number | null;
   npsScope: Scope;
@@ -40,6 +42,7 @@ export const DEFAULT_BS_STATE: BsState = {
   q: "",
   tags: [],
   minRating: null,
+  minUpvotes: null,
   npsMin: null,
   npsMax: null,
   npsScope: "any",
@@ -63,11 +66,19 @@ const MAX_TAG = 40;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 type NumKey =
-  "minRating" | "npsMin" | "npsMax" | "bpmMin" | "bpmMax" | "durationMin" | "durationMax";
+  | "minRating"
+  | "minUpvotes"
+  | "npsMin"
+  | "npsMax"
+  | "bpmMin"
+  | "bpmMax"
+  | "durationMin"
+  | "durationMax";
 
 /** URL and API key, and the inclusive bounds, of every numeric filter. */
 export const NUMBERS: Record<NumKey, { key: string; min: number; max: number }> = {
   minRating: { key: "min_rating", min: 0, max: 1 },
+  minUpvotes: { key: "min_upvotes", min: 0, max: 1_000_000 },
   npsMin: { key: "nps_min", min: 0, max: 30 },
   npsMax: { key: "nps_max", min: 0, max: 30 },
   bpmMin: { key: "bpm_min", min: 0, max: 1000 },
@@ -155,6 +166,17 @@ export function encodeBsState(state: BsState): URLSearchParams {
   return p;
 }
 
+/** beatsaver.com search address for the filters that map cleanly: text, tags and order. */
+export function bsSiteUrl(state: BsState): string {
+  const p = new URLSearchParams();
+  const q = state.q.trim();
+  if (q) p.set("q", q);
+  if (state.tags.length) p.set("tags", state.tags.join(","));
+  if (state.order !== DEFAULT_BS_STATE.order) p.set("order", state.order);
+  const qs = p.toString();
+  return qs ? `https://beatsaver.com/search?${qs}` : "https://beatsaver.com";
+}
+
 /** Query parameters for GET /api/beatsaver/search and the playlist routes. */
 export function bsApiParams(state: BsState, cursor: string | null, limit: number): URLSearchParams {
   const p = encodeBsState(state);
@@ -188,7 +210,7 @@ export function bsCounts(s: BsState): BsCounts {
   return {
     title: n(s.q.trim()),
     levels: s.diffs.length + n(s.npsMin, s.npsMax),
-    rating: n(s.minRating),
+    rating: n(s.minRating, s.minUpvotes),
     tags: s.tags.length,
     tempo: n(s.bpmMin, s.bpmMax, s.durationMin, s.durationMax),
     more: n(s.ranked, s.from, s.to),

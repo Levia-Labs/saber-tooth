@@ -37,7 +37,7 @@ function MoreFilters({ state, update, clear }: Omit<Props, "set" | "narrow">) {
       <Tip text={BS_TIPS.moreFilters}>
         <Dialog.Trigger className="btn plain filters-btn">
           <Icon name="filter" filled={total > 0} />
-          <span>More filters</span>
+          <span className="label-hide-mobile">More filters</span>
           {total > 0 && <span className="filter-badge static">{total}</span>}
         </Dialog.Trigger>
       </Tip>
@@ -47,7 +47,8 @@ function MoreFilters({ state, update, clear }: Omit<Props, "set" | "narrow">) {
           <div className="sheet-head">
             <Dialog.Title>Filters</Dialog.Title>
             <button type="button" className="btn plain" disabled={!total} onClick={clear}>
-              Clear all
+              <Icon name="filter-x" />
+              <span className="label-hide-mobile">Clear all</span>
             </button>
           </div>
           {section(
@@ -63,7 +64,10 @@ function MoreFilters({ state, update, clear }: Omit<Props, "set" | "narrow">) {
           {section("Tags", <TagsBody state={state} update={update} />)}
           {section("Length and BPM", <TempoBody state={state} update={update} />)}
           {section("More", <MoreBody state={state} update={update} />)}
-          <Dialog.Close className="btn primary">Show maps</Dialog.Close>
+          <Dialog.Close className="btn primary">
+            <Icon name="approve" />
+            <span>Show maps</span>
+          </Dialog.Close>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
@@ -82,7 +86,7 @@ export function BsToolbar({ state, update, set, clear, narrow }: Props) {
         {active && (
           <Tip text="Remove every filter.">
             <button type="button" className="btn icon tap" onClick={clear}>
-              <Icon name="reject" />
+              <Icon name="filter-x" />
               <span className="sr">Clear filters</span>
             </button>
           </Tip>

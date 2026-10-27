@@ -5,6 +5,7 @@ import { errorMessage } from "../../api/client";
 import { BS_TIPS } from "../../lib/bstips";
 import { plural } from "../../lib/format";
 import { Cover } from "../Chips";
+import { Icon } from "../icons";
 import { Tip } from "../Tip";
 
 type Query = UseInfiniteQueryResult<InfiniteData<BsPlaylistPage>, unknown>;
@@ -17,7 +18,8 @@ function Row({ playlist }: { playlist: BsPlaylist }) {
       <div className="playlist-main">
         <Tip text={BS_TIPS.playlistOpen}>
           <Link className="title-link" to={to}>
-            {playlist.name}
+            <Icon name="playlist" />
+            <span>{playlist.name}</span>
           </Link>
         </Tip>
         <span className="sub">
@@ -38,7 +40,8 @@ export function PlaylistList({ query }: { query: Query }) {
       <div className="lib-empty">
         <p className="err">Could not reach BeatSaver: {errorMessage(query.error)}</p>
         <button type="button" className="btn plain" onClick={() => void query.refetch()}>
-          Try again
+          <Icon name="reset" />
+          <span className="label-hide-mobile">Try again</span>
         </button>
       </div>
     );
@@ -67,7 +70,8 @@ export function PlaylistList({ query }: { query: Query }) {
             disabled={query.isFetchingNextPage}
             onClick={() => void query.fetchNextPage()}
           >
-            Load more playlists
+            <Icon name="expand" />
+            <span className="label-hide-mobile">Load more playlists</span>
           </button>
         </div>
       )}

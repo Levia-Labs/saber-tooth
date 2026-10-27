@@ -7,8 +7,10 @@ import { BS_TIPS } from "../../lib/bstips";
 import { isBsDefault } from "../../lib/bsfilters";
 import { plural } from "../../lib/format";
 import { useMediaQuery } from "../../lib/hooks";
+import { sortByUpvotes } from "../../lib/bsrating";
 import { useColumns } from "../../lib/useColumns";
 import type { BsControls } from "../../lib/useBsState";
+import { Icon } from "../icons";
 import { Tip } from "../Tip";
 import { BsTable } from "./BsTable";
 import { BsToolbar } from "./BsToolbar";
@@ -68,7 +70,12 @@ export function BsResults({ query, controls, extra }: Props) {
   const { fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError, refetch } = query;
 
   const pages = query.data?.pages;
-  const items = useMemo(() => pages?.flatMap((p) => p.items) ?? [], [pages]);
+  const order = state.order;
+  const ascending = state.ascending;
+  const items = useMemo(() => {
+    const all = pages?.flatMap((p) => p.items) ?? [];
+    return order === "Rating" ? sortByUpvotes(all, ascending) : all;
+  }, [pages, order, ascending]);
   const scanned = pages?.reduce((n, p) => n + p.scanned, 0) ?? 0;
   const matched = pages?.reduce((n, p) => n + p.matched, 0) ?? 0;
   const lastPage = pages?.at(-1);
@@ -100,7 +107,8 @@ export function BsResults({ query, controls, extra }: Props) {
           <p className="err">Could not reach BeatSaver: {errorMessage(query.error)}</p>
           <Tip text={BS_TIPS.retry}>
             <button type="button" className="btn plain" onClick={retry}>
-              Try again
+              <Icon name="reset" />
+              <span className="label-hide-mobile">Try again</span>
             </button>
           </Tip>
         </div>
@@ -114,7 +122,8 @@ export function BsResults({ query, controls, extra }: Props) {
               </p>
               <Tip text={BS_TIPS.retry}>
                 <button type="button" className="btn plain" onClick={retry}>
-                  Retry
+                  <Icon name="reset" />
+                  <span className="label-hide-mobile">Retry</span>
                 </button>
               </Tip>
             </div>
@@ -140,7 +149,8 @@ export function BsResults({ query, controls, extra }: Props) {
                 <p>{filtered ? "No BeatSaver maps match these filters." : "No maps found."}</p>
                 {filtered && (
                   <button type="button" className="btn plain" onClick={clearFilters}>
-                    Clear filters
+                    <Icon name="filter-x" />
+                    <span className="label-hide-mobile">Clear filters</span>
                   </button>
                 )}
               </div>
@@ -150,7 +160,8 @@ export function BsResults({ query, controls, extra }: Props) {
             <div className="lib-more">
               <p className="err">Could not load more maps: {errorMessage(query.error)}</p>
               <button type="button" className="btn plain" onClick={retry}>
-                Load more
+                <Icon name="expand" />
+                <span className="label-hide-mobile">Load more</span>
               </button>
             </div>
           )}

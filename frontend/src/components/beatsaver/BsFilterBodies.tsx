@@ -10,6 +10,8 @@ import {
 } from "../../lib/bsfilters";
 import { LEVELS } from "../../lib/levels";
 import { toggle } from "../../lib/urlstate";
+import { Icon } from "../icons";
+import { Tip } from "../Tip";
 import { Box } from "./Box";
 
 export type Patch = (patch: Partial<BsState>, replace?: boolean) => void;
@@ -99,13 +101,16 @@ function ScopeButtons(props: {
 
 export function RatingBody({ state, update }: Props) {
   return (
-    <NumberField
-      label="Minimum rating (%)"
-      field="minRating"
-      state={state}
-      update={update}
-      scale={100}
-    />
+    <>
+      <NumberField
+        label="Minimum rating (%)"
+        field="minRating"
+        state={state}
+        update={update}
+        scale={100}
+      />
+      <NumberField label="Min upvotes" field="minUpvotes" state={state} update={update} />
+    </>
   );
 }
 
@@ -169,7 +174,8 @@ export function TagsBody({ state, update }: Props) {
       <p className="muted">Maps with any of the ticked tags.</p>
       <div className="filter-actions">
         <button type="button" className="btn plain" onClick={() => update({ tags: [] })}>
-          Clear
+          <Icon name="filter-x" />
+          <span className="label-hide-mobile">Clear</span>
         </button>
       </div>
       <div role="group" aria-label="Tags" className="checks bs-tag-checks">
@@ -199,9 +205,17 @@ export function TagsBody({ state, update }: Props) {
             add();
           }}
         />
-        <button type="button" className="btn plain" disabled={!cleanTag(draft)} onClick={add}>
-          Add tag
-        </button>
+        <Tip text="Add this tag to the filter">
+          <button
+            type="button"
+            className="btn icon"
+            disabled={!cleanTag(draft)}
+            aria-label="Add tag"
+            onClick={add}
+          >
+            <Icon name="tag-plus" />
+          </button>
+        </Tip>
       </div>
     </div>
   );

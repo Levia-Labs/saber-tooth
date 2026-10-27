@@ -127,6 +127,17 @@ const ICONS = {
   play: <path d="M8 5l11 7-11 7z" />,
   stop: <rect x="6" y="6" width="12" height="12" rx="1.5" />,
   playlist: <path d="M4 6h12M4 11h12M4 16h7M17 14v6l5-3z" />,
+  "tag-plus": (
+    <>
+      <path d="M3.5 12.5V4.5a1 1 0 0 1 1-1h8l8 8-8.5 8.5z" />
+      <circle cx="8.5" cy="8.5" r="1.2" />
+      <path d="M14.5 17v5M12 19.5h5" />
+    </>
+  ),
+  maps: <path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" />,
+  "thumb-up": (
+    <path d="M7 11v9H4v-9zM7 11l4-7c1.7 0 2.5 1.2 2.2 2.8L12.8 9H19a2 2 0 0 1 2 2.3l-1 6.5A2 2 0 0 1 18 20H7" />
+  ),
   bookmark: <path d="M7 4h10v16l-5-4-5 4z" />,
 } satisfies Record<string, ReactNode>;
 

@@ -38,7 +38,7 @@ function SavePreset({ state }: { state: BsState }) {
       <Tip text={BS_TIPS.savePreset}>
         <Dialog.Trigger className="btn plain preset-save">
           <Icon name="bookmark" />
-          <span>Save current filters</span>
+          <span className="label-hide-mobile">Save current filters</span>
         </Dialog.Trigger>
       </Tip>
       <Dialog.Portal>
@@ -64,14 +64,16 @@ function SavePreset({ state }: { state: BsState }) {
             {save.isError && <p className="err">{errorMessage(save.error)}</p>}
             <div className="row">
               <Dialog.Close className="btn plain" type="button">
-                Cancel
+                <Icon name="reject" />
+                <span className="label-hide-mobile">Cancel</span>
               </Dialog.Close>
               <button
                 type="submit"
                 className="btn primary"
                 disabled={!name.trim() || save.isPending}
               >
-                Save
+                <Icon name="approve" />
+                <span className="label-hide-mobile">Save</span>
               </button>
             </div>
           </form>
@@ -103,6 +105,7 @@ export function PresetsBar({ state, onApply }: Props) {
                 aria-pressed={active}
                 onClick={() => onApply(stateFromPreset(p.filters))}
               >
+                <Icon name="bookmark" />
                 {p.name}
               </button>
             </Tip>

@@ -61,13 +61,17 @@ export function DownloadConfirm(props: {
             </>
           )}
           <div className="row">
-            <Dialog.Close className="btn plain">Cancel</Dialog.Close>
+            <Dialog.Close className="btn plain">
+              <Icon name="reject" />
+              <span className="label-hide-mobile">Cancel</span>
+            </Dialog.Close>
             <Dialog.Close
               className="btn primary"
               disabled={!batch.length}
               onClick={() => props.onConfirm(batch.map((m) => m.id))}
             >
-              {`Download ${batch.length} new`}
+              <Icon name="download" />
+              <span className="label-hide-mobile">{`Download ${batch.length} new`}</span>
             </Dialog.Close>
           </div>
         </Dialog.Content>
@@ -84,7 +88,7 @@ function ExportDialog({ ids }: { ids: string[] }) {
       <Tip text={BS_TIPS.export}>
         <Dialog.Trigger className="btn plain">
           <Icon name="playlist" />
-          <span>Export playlist</span>
+          <span className="label-hide-mobile">Export playlist</span>
         </Dialog.Trigger>
       </Tip>
       <Dialog.Portal>
@@ -104,14 +108,18 @@ function ExportDialog({ ids }: { ids: string[] }) {
             {out.data && <p className="ok">Written to: {out.data.path}</p>}
           </div>
           <div className="row">
-            <Dialog.Close className="btn plain">Close</Dialog.Close>
+            <Dialog.Close className="btn plain">
+              <Icon name="reject" />
+              <span className="label-hide-mobile">Close</span>
+            </Dialog.Close>
             <button
               type="button"
               className="btn primary"
               disabled={!title.trim() || out.isPending}
               onClick={() => out.mutate()}
             >
-              Export {plural(ids.length, "map")}
+              <Icon name="playlist" />
+              <span className="label-hide-mobile">Export {plural(ids.length, "map")}</span>
             </button>
           </div>
         </Dialog.Content>
@@ -144,7 +152,7 @@ export function SelectionBar({ selection, downloads, playlistsEnabled }: Props) 
           onClick={() => setOpen(true)}
         >
           <Icon name="download" />
-          <span>{`Download ${n}`}</span>
+          <span className="label-hide-mobile">{`Download ${n}`}</span>
         </button>
       </Tip>
       <DownloadConfirm
@@ -159,7 +167,8 @@ export function SelectionBar({ selection, downloads, playlistsEnabled }: Props) 
       {playlistsEnabled && <ExportDialog ids={selection.items.map((m) => m.id)} />}
       <Tip text={BS_TIPS.clearSelection}>
         <button type="button" className="btn plain" onClick={selection.clear}>
-          Clear selection
+          <Icon name="reject" />
+          <span className="label-hide-mobile">Clear selection</span>
         </button>
       </Tip>
     </div>
