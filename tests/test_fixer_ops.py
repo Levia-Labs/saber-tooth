@@ -155,3 +155,32 @@ def test_lightshow_replaces_the_fx_collection_with_the_group_set():
     m = bm([_n(4, 1, 0)])
     m.difficulties["Expert"].raw[FX_KEY] = {"_fl": [1.0], "_il": []}
     assert FX_KEY not in fx.apply_ops(m, [_show(1)]).difficulties["Expert"].raw
+
+
+def test_is_noop_detects_unchanged_ops():
+    n = Note(4.0, 1, 1, Color.RED, Cut.DOWN)
+    assert fo.is_noop(fo.Move("Expert", n, 1, 1, Cut.DOWN))
+    assert fo.is_noop(fo.Flip("Expert", n, Cut.DOWN))
+    assert not fo.is_noop(fo.Move("Expert", n, 1, 2, Cut.DOWN))
+    assert not fo.is_noop(fo.Move("Expert", n, 1, 1, Cut.UP))
+    assert not fo.is_noop(fo.Flip("Expert", n, Cut.UP))
+    assert not fo.is_noop(fo.Recolor("Expert", n))
+    assert not fo.is_noop(fo.Delete("Expert", n))
+
+
+def test_propose_drops_noop_ops_and_all_noop_plans(monkeypatch):
+    a = Note(166.3175048828125, 1, 1, Color.RED, Cut.DOWN)
+    b = Note(166.3175048828125, 2, 1, Color.RED, Cut.DOWN)
+    m = bm([a, b])
+    f = find(m, "stack-conflict")
+    plans = [
+        [fo.Move("Expert", a, 1, 1, Cut.DOWN)],  # only a no-op: the plan is skipped
+        [fo.Move("Expert", a, 1, 1, Cut.DOWN), fo.Move("Expert", b, 1, 2, Cut.DOWN)],
+    ]
+    monkeypatch.setitem(fx.STRATEGIES, "stack-conflict", lambda ctx: iter(plans))
+    p = fx.propose(m, f, None, None, 1)
+    assert p is not None
+    assert [op.to_dict() for op in p.ops] == [fo.Move("Expert", b, 1, 2, Cut.DOWN).to_dict()]
+    assert "(1,1) to (1,1)" not in p.summary
+    monkeypatch.setitem(fx.STRATEGIES, "stack-conflict", lambda ctx: iter(plans[:1]))
+    assert fx.propose(m, f, None, None, 1) is None
