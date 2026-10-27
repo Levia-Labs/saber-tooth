@@ -82,9 +82,27 @@ describe("urlstate", () => {
 
   test("filter counts drive the header badges", () => {
     const s = state({ q: "x", status: ["ok", "warn"], env: [] });
-    expect(filterCounts(s)).toEqual({ title: 1, author: 0, levels: 0, status: 2, env: 0 });
+    expect(filterCounts(s)).toEqual({
+      title: 1,
+      author: 0,
+      levels: 0,
+      status: 2,
+      env: 0,
+      length: 0,
+      bpm: 0,
+    });
     const a = state({ q: "x", qField: "mapper", mapper: ["A"], level: ["Easy"] });
-    expect(filterCounts(a)).toEqual({ title: 0, author: 2, levels: 1, status: 0, env: 0 });
+    expect(filterCounts(a)).toEqual({
+      title: 0,
+      author: 2,
+      levels: 1,
+      status: 0,
+      env: 0,
+      length: 0,
+      bpm: 0,
+    });
+    const r = state({ durationMin: 60, bpmMin: 100, bpmMax: 200 });
+    expect(filterCounts(r)).toMatchObject({ length: 1, bpm: 2 });
   });
 
   test("property: parse(encode(state)) is the identity for valid states", () => {
@@ -98,6 +116,10 @@ describe("urlstate", () => {
       env: fc.uniqueArray(
         fc.string({ minLength: 1, maxLength: 20 }).filter((t) => t.trim() !== ""),
       ),
+      durationMin: fc.option(fc.integer({ min: 0, max: 7200 }), { nil: null }),
+      durationMax: fc.option(fc.integer({ min: 0, max: 7200 }), { nil: null }),
+      bpmMin: fc.option(fc.integer({ min: 0, max: 1000 }), { nil: null }),
+      bpmMax: fc.option(fc.integer({ min: 0, max: 1000 }), { nil: null }),
       sort: fc.constantFrom(...SORT_KEYS),
       order: fc.constantFrom("asc" as const, "desc" as const),
     });

@@ -49,6 +49,11 @@ export function levelsFor(names: readonly string[]): Level[] {
   return LEVELS.filter((l) => names.includes(l.key));
 }
 
+/** All five slots in game order; `present` says whether the map has that level. */
+export function levelSlots(names: readonly string[]): { level: Level; present: boolean }[] {
+  return LEVELS.map((level) => ({ level, present: names.includes(level.key) }));
+}
+
 function mix(hex: string, amount: number): string {
   const n = Number.parseInt(hex.slice(1), 16);
   const ch = (shift: number) => {

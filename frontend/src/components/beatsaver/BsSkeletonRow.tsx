@@ -30,7 +30,13 @@ export function BsSkeletonRow({ index }: { index: number }) {
       <div className="col-rating" role="cell">
         <span className="sk sk-bar short" />
       </div>
-      <div className="col-tempo" role="cell">
+      <div className="col-upvotes" role="cell">
+        <span className="sk sk-bar short" />
+      </div>
+      <div className="col-length" role="cell">
+        <span className="sk sk-bar short" />
+      </div>
+      <div className="col-bpm" role="cell">
         <span className="sk sk-bar short" />
       </div>
       <div className="col-tags" role="cell">

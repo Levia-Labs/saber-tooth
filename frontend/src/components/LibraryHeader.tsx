@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { Facets, SortKey } from "../api/types";
-import { filterCounts, nextSort, type LibraryState } from "../lib/urlstate";
+import { filterCounts, nextSort, RANGES, type LibraryState } from "../lib/urlstate";
 import {
   EnvFilterBody,
   LevelsFilterBody,
@@ -10,6 +10,7 @@ import {
 } from "./FilterBodies";
 import { FilterPopover } from "./FilterPopover";
 import { Icon } from "./icons";
+import { RangeFilterBody } from "./RangeFilterBody";
 import { ResizeHandle } from "./ResizeHandle";
 import { isResizable, LABELS, type ColumnKey } from "../lib/columns";
 import type { ColumnsApi } from "../lib/useColumns";
@@ -139,8 +140,68 @@ export function LibraryHeader({ state, facets, update, columns }: Props) {
           </FilterPopover>
         }
       />
-      <HeaderCell col="length" sort="duration" {...cell} />
-      <HeaderCell col="bpm" sort="bpm" {...cell} />
+      <HeaderCell
+        col="length"
+        sort="duration"
+        {...cell}
+        filter={
+          <FilterPopover label="Length" tip="Filter by song length." count={counts.length}>
+            <RangeFilterBody
+              name="Length"
+              kind="duration"
+              min={state.durationMin}
+              max={state.durationMax}
+              bounds={facets?.duration}
+              limit={RANGES.durationMax.max}
+              onChange={(r, replace) =>
+                update(
+                  {
+                    ...("min" in r && { durationMin: r.min }),
+                    ...("max" in r && { durationMax: r.max }),
+                  },
+                  replace,
+                )
+              }
+              rowClear={{
+                column: "Length",
+                disabled: !counts.length,
+                onClear: () => update({ durationMin: null, durationMax: null }),
+              }}
+            />
+          </FilterPopover>
+        }
+      />
+      <HeaderCell
+        col="bpm"
+        sort="bpm"
+        {...cell}
+        filter={
+          <FilterPopover label="BPM" tip="Filter by beats per minute." count={counts.bpm}>
+            <RangeFilterBody
+              name="BPM"
+              kind="number"
+              min={state.bpmMin}
+              max={state.bpmMax}
+              bounds={facets?.bpm}
+              limit={RANGES.bpmMax.max}
+              onChange={(r, replace) =>
+                update(
+                  {
+                    ...("min" in r && { bpmMin: r.min }),
+                    ...("max" in r && { bpmMax: r.max }),
+                  },
+                  replace,
+                )
+              }
+              rowClear={{
+                column: "BPM",
+                disabled: !counts.bpm,
+                onClear: () => update({ bpmMin: null, bpmMax: null }),
+              }}
+            />
+          </FilterPopover>
+        }
+      />
       <HeaderCell
         col="env"
         sort="environment"

@@ -5,7 +5,15 @@ import { TipProvider } from "../src/components/Tip";
 import { describe, expect, test } from "vitest";
 import { LevelChips, StatusChip } from "../src/components/Chips";
 import { formatBpm, formatDuration } from "../src/lib/format";
-import { contrast, LEVELS, levelsFor, ringText, SURFACE, textColor } from "../src/lib/levels";
+import {
+  contrast,
+  LEVELS,
+  levelSlots,
+  levelsFor,
+  ringText,
+  SURFACE,
+  textColor,
+} from "../src/lib/levels";
 import { applyTip, TIPS } from "../src/lib/tips";
 
 describe("formatters", () => {
@@ -44,7 +52,7 @@ describe("level chips", () => {
       </TipProvider>,
     );
     const items = screen.getAllByRole("listitem").map((li) => li.textContent);
-    expect(items).toEqual(["Ea", "Ha", "Ex+"]);
+    expect(items).toEqual(["Ea", "No", "Ha", "Ex", "Ex+"]);
   });
 
   test("chips are abbreviated with the full name in the aria-label", () => {
@@ -71,7 +79,7 @@ describe("level chips", () => {
         <LevelChips names={["Expert"]} nps={{ Expert: 6.25 }} />
       </TipProvider>,
     );
-    const li = screen.getByRole("listitem");
+    const li = screen.getAllByRole("listitem")[3] as HTMLElement;
     expect(li.style.borderColor).toBe("rgb(191, 42, 66)");
     expect(li.style.background).toBe("");
     const chip = screen.getByRole("img", { name: "Expert, 6.3 NPS" });
@@ -83,10 +91,42 @@ describe("level chips", () => {
     for (const l of LEVELS) expect(contrast(ringText(l.bg), SURFACE)).toBeGreaterThanOrEqual(4.5);
   });
 
-  test("missing difficulties are not shown", () => {
+  test("missing difficulties are greyed out in their slot with a Missing Tip", async () => {
     expect(levelsFor(["Normal"]).map((l) => l.label)).toEqual(["Normal"]);
-    const { container } = render(<LevelChips names={[]} />);
-    expect(container).toBeEmptyDOMElement();
+    expect(levelSlots(["Normal"]).map((s) => s.present)).toEqual([
+      false,
+      true,
+      false,
+      false,
+      false,
+    ]);
+    render(
+      <TipProvider delayDuration={0}>
+        <LevelChips names={["Normal"]} />
+      </TipProvider>,
+    );
+    const items = screen.getAllByRole("listitem");
+    expect(items.map((li) => li.textContent)).toEqual(["Ea", "No", "Ha", "Ex", "Ex+"]);
+    expect(items.map((li) => li.classList.contains("missing"))).toEqual([
+      true,
+      false,
+      true,
+      true,
+      true,
+    ]);
+    expect(items[0]?.style.borderColor).toBe("");
+    const gone = screen.getByRole("img", { name: "Missing: Expert+" });
+    await userEvent.hover(gone);
+    expect((await screen.findAllByText("Missing: Expert+")).length).toBeGreaterThan(0);
+  });
+
+  test("no difficulties at all still shows five greyed slots", () => {
+    render(
+      <TipProvider>
+        <LevelChips names={[]} />
+      </TipProvider>,
+    );
+    expect(document.querySelectorAll("li.level.missing")).toHaveLength(5);
   });
 
   test("beatsaver colours are used", () => {

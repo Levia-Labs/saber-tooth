@@ -40,6 +40,10 @@ export function useLibraryState(): LibraryControls {
         mapper: [],
         level: [],
         levelMode: "any",
+        durationMin: null,
+        durationMax: null,
+        bpmMin: null,
+        bpmMax: null,
       }),
     [update],
   );

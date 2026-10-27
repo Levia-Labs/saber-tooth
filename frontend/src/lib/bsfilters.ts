@@ -12,6 +12,13 @@ export const BS_ORDERS = [
 ] as const;
 export type BsOrder = (typeof BS_ORDERS)[number];
 export type Scope = "any" | "all";
+/** Orders applied in the browser, among the maps loaded so far; the API has no such order. */
+export const LOCAL_SORTS = ["upvotes", "bpm"] as const;
+export type LocalSort = (typeof LOCAL_SORTS)[number];
+export const LOCAL_LABELS: Record<LocalSort, string> = {
+  upvotes: "Upvotes (loaded maps)",
+  bpm: "BPM (loaded maps)",
+};
 
 export interface BsState {
   q: string;
@@ -29,6 +36,8 @@ export interface BsState {
   diffsMode: Scope;
   ranked: boolean;
   order: BsOrder;
+  /** Client-side order that overrides `order` in the list; never sent to the API. */
+  localSort: LocalSort | null;
   ascending: boolean;
   from: string;
   to: string;
@@ -50,6 +59,7 @@ export const DEFAULT_BS_STATE: BsState = {
   diffsMode: "all",
   ranked: false,
   order: "Latest",
+  localSort: null,
   ascending: false,
   from: "",
   to: "",
@@ -92,6 +102,10 @@ function isLevel(value: string): value is LevelKey {
   return (LEVEL_KEYS as readonly string[]).includes(value);
 }
 
+function isLocalSort(value: string | null): value is LocalSort {
+  return value !== null && (LOCAL_SORTS as readonly string[]).includes(value);
+}
+
 function isOrder(value: string | null): value is BsOrder {
   return value !== null && (BS_ORDERS as readonly string[]).includes(value);
 }
@@ -114,6 +128,7 @@ export function cleanTag(tag: string): string {
 export function parseBsState(search: string): BsState {
   const p = new URLSearchParams(search);
   const order = p.get("order");
+  const local = p.get("lsort");
   const state: BsState = {
     ...DEFAULT_BS_STATE,
     q: (p.get("q") ?? "").slice(0, MAX_Q),
@@ -134,6 +149,7 @@ export function parseBsState(search: string): BsState {
     diffsMode: p.get("diffs_mode") === "any" ? "any" : "all",
     ranked: p.get("ranked") === "true",
     order: isOrder(order) ? order : DEFAULT_BS_STATE.order,
+    localSort: isLocalSort(local) ? local : null,
     ascending: p.get("ascending") === "true",
     from: DATE.test(p.get("from") ?? "") ? (p.get("from") as string) : "",
     to: DATE.test(p.get("to") ?? "") ? (p.get("to") as string) : "",
@@ -160,10 +176,21 @@ export function encodeBsState(state: BsState): URLSearchParams {
   if (state.diffs.length && state.diffsMode === "any") p.set("diffs_mode", "any");
   if (state.ranked) p.set("ranked", "true");
   if (state.order !== DEFAULT_BS_STATE.order) p.set("order", state.order);
+  if (state.localSort) p.set("lsort", state.localSort);
   if (state.ascending) p.set("ascending", "true");
   if (state.from) p.set("from", state.from);
   if (state.to) p.set("to", state.to);
   return p;
+}
+
+/** State patch for an order select value: a server order, or `local:<sort>` for a browser order. */
+export function orderPatch(
+  value: string,
+): Pick<BsState, "localSort"> & Partial<Pick<BsState, "order">> {
+  if (value.startsWith("local:") && isLocalSort(value.slice(6))) {
+    return { localSort: value.slice(6) as LocalSort };
+  }
+  return isOrder(value) ? { order: value, localSort: null } : { localSort: null };
 }
 
 /** beatsaver.com search address for the filters that map cleanly: text, tags and order. */
@@ -180,6 +207,18 @@ export function bsSiteUrl(state: BsState): string {
 /** Query parameters for GET /api/beatsaver/search and the playlist routes. */
 export function bsApiParams(state: BsState, cursor: string | null, limit: number): URLSearchParams {
   const p = encodeBsState(state);
+  p.delete("lsort");
+  // An inverted pair would be rejected; it is ignored until the user fixes it.
+  for (const [low, high] of [
+    ["duration_min", "duration_max"],
+    ["bpm_min", "bpm_max"],
+    ["nps_min", "nps_max"],
+  ] as const) {
+    if (Number(p.get(low) ?? "-1") > Number(p.get(high) ?? "Infinity")) {
+      p.delete(low);
+      p.delete(high);
+    }
+  }
   p.set("limit", String(limit));
   if (cursor) p.set("cursor", cursor);
   return p;
@@ -199,8 +238,10 @@ export interface BsCounts {
   title: number;
   levels: number;
   rating: number;
+  upvotes: number;
+  length: number;
+  bpm: number;
   tags: number;
-  tempo: number;
   more: number;
 }
 
@@ -210,15 +251,17 @@ export function bsCounts(s: BsState): BsCounts {
   return {
     title: n(s.q.trim()),
     levels: s.diffs.length + n(s.npsMin, s.npsMax),
-    rating: n(s.minRating, s.minUpvotes),
+    rating: n(s.minRating),
+    upvotes: n(s.minUpvotes),
+    length: n(s.durationMin, s.durationMax),
+    bpm: n(s.bpmMin, s.bpmMax),
     tags: s.tags.length,
-    tempo: n(s.bpmMin, s.bpmMax, s.durationMin, s.durationMax),
     more: n(s.ranked, s.from, s.to),
   };
 }
 
 export function bsTotal(c: BsCounts): number {
-  return c.title + c.levels + c.rating + c.tags + c.tempo + c.more;
+  return c.title + c.levels + c.rating + c.upvotes + c.length + c.bpm + c.tags + c.more;
 }
 
 /** True when the state has no filter set (order and direction do not count). */
@@ -228,5 +271,10 @@ export function isBsDefault(state: BsState): boolean {
 
 /** Keep the sort, drop every filter. */
 export function clearBsFilters(state: BsState): BsState {
-  return { ...DEFAULT_BS_STATE, order: state.order, ascending: state.ascending };
+  return {
+    ...DEFAULT_BS_STATE,
+    order: state.order,
+    localSort: state.localSort,
+    ascending: state.ascending,
+  };
 }

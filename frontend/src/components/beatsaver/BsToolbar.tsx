@@ -1,18 +1,20 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import type { ReactNode } from "react";
-import { BS_ORDERS, bsCounts, bsTotal, type BsState } from "../../lib/bsfilters";
+import {
+  BS_ORDERS,
+  bsCounts,
+  bsTotal,
+  LOCAL_LABELS,
+  LOCAL_SORTS,
+  orderPatch,
+  type BsState,
+} from "../../lib/bsfilters";
 import { BS_TIPS } from "../../lib/bstips";
 import { TextFilterBody } from "../FilterBodies";
 import { Icon } from "../icons";
 import { Tip } from "../Tip";
-import {
-  LevelsBody,
-  MoreBody,
-  RatingBody,
-  TagsBody,
-  TempoBody,
-  type Patch,
-} from "./BsFilterBodies";
+import { LevelsBody, MoreBody, TagsBody, type Patch } from "./BsFilterBodies";
+import { BpmBody, LengthBody, RatingBody, UpvotesBody } from "./BsNumberBodies";
 import { PresetsBar } from "./PresetsBar";
 
 interface Props {
@@ -61,8 +63,10 @@ function MoreFilters({ state, update, clear }: Omit<Props, "set" | "narrow">) {
           )}
           {section("Levels", <LevelsBody state={state} update={update} />)}
           {section("Rating", <RatingBody state={state} update={update} />)}
+          {section("Upvotes", <UpvotesBody state={state} update={update} />)}
+          {section("Length", <LengthBody state={state} update={update} />)}
+          {section("BPM", <BpmBody state={state} update={update} />)}
           {section("Tags", <TagsBody state={state} update={update} />)}
-          {section("Length and BPM", <TempoBody state={state} update={update} />)}
           {section("More", <MoreBody state={state} update={update} />)}
           <Dialog.Close className="btn primary">
             <Icon name="approve" />
@@ -102,12 +106,17 @@ function OrderControls({ state, update }: { state: BsState; update: Patch }) {
       <label className="sort-select">
         <span className="sr">Order by</span>
         <select
-          value={state.order}
-          onChange={(e) => update({ order: e.target.value as BsState["order"] })}
+          value={state.localSort ? `local:${state.localSort}` : state.order}
+          onChange={(e) => update(orderPatch(e.target.value))}
         >
           {BS_ORDERS.map((o) => (
             <option key={o} value={o}>
               {o}
+            </option>
+          ))}
+          {LOCAL_SORTS.map((o) => (
+            <option key={o} value={`local:${o}`}>
+              {LOCAL_LABELS[o]}
             </option>
           ))}
         </select>

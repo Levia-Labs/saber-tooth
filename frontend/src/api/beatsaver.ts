@@ -145,11 +145,16 @@ export function outcomes(result: Record<string, unknown> | null | undefined): Bs
   );
 }
 
+/** The state without the browser-side order, which does not change what the API returns. */
+function fetched(state: BsState): BsState {
+  return { ...state, localSort: null };
+}
+
 export const bsKeys = {
   all: ["beatsaver"] as const,
-  search: (state: BsState) => ["beatsaver", "search", state] as const,
+  search: (state: BsState) => ["beatsaver", "search", fetched(state)] as const,
   playlists: (q: string) => ["beatsaver", "playlists", q] as const,
-  playlist: (id: string, state: BsState) => ["beatsaver", "playlist", id, state] as const,
+  playlist: (id: string, state: BsState) => ["beatsaver", "playlist", id, fetched(state)] as const,
   presets: ["beatsaver", "presets"] as const,
   config: ["beatsaver", "config"] as const,
 };

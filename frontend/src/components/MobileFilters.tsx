@@ -4,7 +4,8 @@ import type { Facets } from "../api/types";
 import { formatEnvironment } from "../lib/environment";
 import { LEVELS } from "../lib/levels";
 import { STATUS_META } from "../lib/status";
-import { filterCounts, totalFilters, type LibraryState } from "../lib/urlstate";
+import { durationInput } from "../lib/range";
+import { filterCounts, RANGES, totalFilters, type LibraryState } from "../lib/urlstate";
 import {
   EnvFilterBody,
   LevelsFilterBody,
@@ -13,6 +14,7 @@ import {
   TextFilterBody,
 } from "./FilterBodies";
 import { Icon } from "./icons";
+import { RangeFilterBody } from "./RangeFilterBody";
 import { Tip } from "./Tip";
 
 interface Props {
@@ -28,6 +30,17 @@ interface Props {
 export function summarize(names: string[]): string {
   if (!names.length) return "";
   return names.length <= 2 ? names.map((n) => n.slice(0, 2)).join(", ") : String(names.length);
+}
+
+/** "1:30-3:00", "1:30+" or "-3:00"; nothing when no bound is set. */
+export function rangeSummary(
+  low: number | null,
+  high: number | null,
+  fmt: (n: number) => string,
+): string {
+  if (low === null && high === null) return "";
+  if (high === null) return `${fmt(low as number)}+`;
+  return low === null ? `-${fmt(high)}` : `${fmt(low)}-${fmt(high)}`;
 }
 
 interface GroupProps {
@@ -79,7 +92,7 @@ export function MobileFilters({ state, facets, update, clear, matchCount }: Prop
   );
   return (
     <Dialog.Root>
-      <Tip text="Filter the library by title, author, levels, environment and status.">
+      <Tip text="Filter the library by title, author, levels, length, BPM, environment and status.">
         <Dialog.Trigger className="btn plain filters-btn">
           <Icon name="filter" filled={total > 0} />
           <span className="label-hide-mobile">Filters</span>
@@ -156,6 +169,50 @@ export function MobileFilters({ state, facets, update, clear, matchCount }: Prop
                 mode={state.levelMode}
                 facets={facets}
                 onChange={(patch) => update(patch)}
+              />,
+            )}
+            {group(
+              "length",
+              "Length",
+              rangeSummary(state.durationMin, state.durationMax, durationInput),
+              <RangeFilterBody
+                name="Length"
+                kind="duration"
+                min={state.durationMin}
+                max={state.durationMax}
+                bounds={facets?.duration}
+                limit={RANGES.durationMax.max}
+                onChange={(r, replace) =>
+                  update(
+                    {
+                      ...("min" in r && { durationMin: r.min }),
+                      ...("max" in r && { durationMax: r.max }),
+                    },
+                    replace,
+                  )
+                }
+              />,
+            )}
+            {group(
+              "bpm",
+              "BPM",
+              rangeSummary(state.bpmMin, state.bpmMax, String),
+              <RangeFilterBody
+                name="BPM"
+                kind="number"
+                min={state.bpmMin}
+                max={state.bpmMax}
+                bounds={facets?.bpm}
+                limit={RANGES.bpmMax.max}
+                onChange={(r, replace) =>
+                  update(
+                    {
+                      ...("min" in r && { bpmMin: r.min }),
+                      ...("max" in r && { bpmMax: r.max }),
+                    },
+                    replace,
+                  )
+                }
               />,
             )}
             {group(

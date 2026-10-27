@@ -94,8 +94,9 @@ describe("library page", () => {
     expect(title.querySelector(".level, .chip")).toBeNull();
     expect(title.textContent).not.toContain("Mapper 1");
     const levels = cells("col-levels");
-    expect(levels.querySelectorAll("li.level")).toHaveLength(3);
-    expect(levels.textContent).toBe("EaExEx+");
+    expect(levels.querySelectorAll("li.level")).toHaveLength(5);
+    expect(levels.querySelectorAll("li.level.missing")).toHaveLength(2);
+    expect(levels.textContent).toBe("EaNoHaExEx+");
     expect(levels.querySelector(".chip")).toBeNull();
     expect(cells("col-author").textContent).toBe("Mapper 1");
     expect(cells("col-env").textContent).toBe("Origins");

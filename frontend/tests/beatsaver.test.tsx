@@ -193,7 +193,10 @@ describe("BeatSaver view", () => {
     await screen.findByText("Song 1");
     await userEvent.click(screen.getByRole("button", { name: "Download Song 1" }));
     const row = document.querySelector('[data-map="k1"]') as HTMLElement;
-    await waitFor(() => expect(within(row).getByText("Downloading")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(within(row).getByRole("img", { name: /^Downloading\./ })).toBeInTheDocument(),
+    );
+    expect(within(row).queryByText("Downloading")).toBeNull();
     expect(screen.getByText("Downloading 1 map")).toBeInTheDocument();
     expect(within(row).getByRole("button", { name: "Download Song 1" })).toBeDisabled();
   });
@@ -203,7 +206,9 @@ describe("BeatSaver view", () => {
     renderApp("/beatsaver");
     await screen.findByText("Song 1");
     const row = document.querySelector('[data-map="k1"]') as HTMLElement;
-    expect(within(row).getByText("Installed")).toBeInTheDocument();
+    const chip = within(row).getByRole("img", { name: /^Installed\./ });
+    expect(chip.textContent).toBe("");
+    expect(within(row).queryByText("Installed")).toBeNull();
     expect(within(row).getByRole("button", { name: "Download Song 1" })).toBeDisabled();
   });
 

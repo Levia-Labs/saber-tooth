@@ -61,14 +61,12 @@ export function BsStatusChip({ status }: { status: RowStatus }) {
     failed: { cls: "error", icon: "error", text: "Failed", tip: "" },
   } as const;
   const m = meta[status.kind];
-  const tip = status.kind === "failed" ? `${BS_TIPS.failed} ${status.reason}` : m.tip;
+  const detail = status.kind === "failed" ? `${BS_TIPS.failed} ${status.reason}` : m.tip;
+  const tip = `${m.text}. ${detail}`;
   return (
     <Tip text={tip}>
       <span className={`chip chip-${m.cls}`} data-status={status.kind} role="img" aria-label={tip}>
         <Icon name={m.icon} />
-        <span className="chip-text" aria-hidden="true">
-          {m.text}
-        </span>
       </span>
     </Tip>
   );
@@ -121,18 +119,22 @@ export function BsRow({ item, index, selected, status, onSelect, onDownload }: P
       </div>
       <div className="col-rating num" role="cell">
         <Tip text={`Rated ${Math.round(item.rating * 100)} percent: ${votes}.`}>
-          <span className="bs-rating">
-            <strong className="bs-ups">
-              <Icon name="thumb-up" />
-              <span>{formatCount(item.upvotes)}</span>
-            </strong>
-            <span className="bs-votes">{Math.round(item.rating * 100)}%</span>
+          <span className="bs-rating">{Math.round(item.rating * 100)}%</span>
+        </Tip>
+      </div>
+      <div className="col-upvotes num" role="cell">
+        <Tip text={votes}>
+          <span className="bs-ups">
+            <Icon name="thumb-up" />
+            <span>{formatCount(item.upvotes)}</span>
           </span>
         </Tip>
       </div>
-      <div className="col-tempo num" role="cell">
-        <span>{formatDuration(item.duration)}</span>
-        <span className="bs-votes">{formatBpm(item.bpm)}</span>
+      <div className="col-length num" role="cell">
+        {formatDuration(item.duration)}
+      </div>
+      <div className="col-bpm num" role="cell">
+        {formatBpm(item.bpm)}
       </div>
       <div className="col-tags" role="cell">
         <Tags tags={item.tags} />

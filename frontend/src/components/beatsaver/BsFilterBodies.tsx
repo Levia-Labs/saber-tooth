@@ -3,8 +3,9 @@ import { LEVEL_KEYS } from "../../api/types";
 import {
   BS_ORDERS,
   cleanTag,
-  NUMBERS,
-  type BsOrder,
+  LOCAL_LABELS,
+  LOCAL_SORTS,
+  orderPatch,
   type BsState,
   type Scope,
 } from "../../lib/bsfilters";
@@ -13,6 +14,7 @@ import { toggle } from "../../lib/urlstate";
 import { Icon } from "../icons";
 import { Tip } from "../Tip";
 import { Box } from "./Box";
+import { NumberField } from "./BsNumberBodies";
 
 export type Patch = (patch: Partial<BsState>, replace?: boolean) => void;
 interface Props {
@@ -39,43 +41,6 @@ export const SUGGESTED_TAGS = [
   "country",
 ] as const;
 
-type NumKey = keyof typeof NUMBERS;
-
-function NumberField(props: {
-  label: string;
-  field: NumKey;
-  state: BsState;
-  update: Patch;
-  /** Multiply for display, e.g. 100 turns a 0-1 fraction into a percentage. */
-  scale?: number;
-  step?: number;
-}) {
-  const { label, field, state, update, scale = 1, step = 1 } = props;
-  const id = useId();
-  const { min, max } = NUMBERS[field];
-  const value = state[field];
-  return (
-    <div className="filter-body">
-      <label htmlFor={id}>{label}</label>
-      <input
-        id={id}
-        type="number"
-        inputMode="decimal"
-        min={min * scale}
-        max={max * scale}
-        step={step}
-        value={value === null ? "" : Number((value * scale).toFixed(2))}
-        onChange={(e) => {
-          const raw = e.target.value;
-          if (raw === "") return update({ [field]: null }, true);
-          const n = Number(raw) / scale;
-          if (Number.isFinite(n)) update({ [field]: Math.min(max, Math.max(min, n)) }, true);
-        }}
-      />
-    </div>
-  );
-}
-
 function ScopeButtons(props: {
   label: string;
   value: Scope;
@@ -96,21 +61,6 @@ function ScopeButtons(props: {
         </button>
       ))}
     </div>
-  );
-}
-
-export function RatingBody({ state, update }: Props) {
-  return (
-    <>
-      <NumberField
-        label="Minimum rating (%)"
-        field="minRating"
-        state={state}
-        update={update}
-        scale={100}
-      />
-      <NumberField label="Min upvotes" field="minUpvotes" state={state} update={update} />
-    </>
   );
 }
 
@@ -221,17 +171,6 @@ export function TagsBody({ state, update }: Props) {
   );
 }
 
-export function TempoBody({ state, update }: Props) {
-  return (
-    <div className="filter-body">
-      <NumberField label="Length, at least (seconds)" field="durationMin" {...{ state, update }} />
-      <NumberField label="Length, at most (seconds)" field="durationMax" {...{ state, update }} />
-      <NumberField label="BPM, at least" field="bpmMin" {...{ state, update }} />
-      <NumberField label="BPM, at most" field="bpmMax" {...{ state, update }} />
-    </div>
-  );
-}
-
 export function MoreBody({ state, update }: Props) {
   const id = useId();
   return (
@@ -270,12 +209,17 @@ export function OrderSelect({ state, update }: Props) {
       <label htmlFor={id}>Order by</label>
       <select
         id={id}
-        value={state.order}
-        onChange={(e) => update({ order: e.target.value as BsOrder })}
+        value={state.localSort ? `local:${state.localSort}` : state.order}
+        onChange={(e) => update(orderPatch(e.target.value))}
       >
         {BS_ORDERS.map((o) => (
           <option key={o} value={o}>
             {o}
+          </option>
+        ))}
+        {LOCAL_SORTS.map((o) => (
+          <option key={o} value={`local:${o}`}>
+            {LOCAL_LABELS[o]}
           </option>
         ))}
       </select>

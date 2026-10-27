@@ -107,26 +107,6 @@ describe("rating order", () => {
     );
   });
 
-  test("view orders the Rating sort by upvotes and shows the header tip", async () => {
-    bsApi({
-      search: () => page([m("k1", 5, 0.99), m("k2", 500, 0.8), m("k3", 1200, 0.7)]),
-    });
-    renderApp("/beatsaver?order=Rating");
-    await screen.findByText("k1");
-    const rows = [...document.querySelectorAll("[data-map]")].map((r) =>
-      r.getAttribute("data-map"),
-    );
-    expect(rows).toEqual(["k3", "k2", "k1"]);
-    const row = document.querySelector('[data-map="k3"]') as HTMLElement;
-    expect(within(row).getByText("1.2k")).toBeInTheDocument();
-    expect(within(row).getByText("70%")).toBeInTheDocument();
-    await userEvent.hover(screen.getByRole("button", { name: "Sort by Rating" }));
-    expect(
-      (await screen.findAllByText("Sorted by upvotes, then rating, among the maps loaded so far."))
-        .length,
-    ).toBeGreaterThan(0);
-  });
-
   test("formatCount is compact", () => {
     expect(formatCount(950)).toBe("950");
     expect(formatCount(1200)).toBe("1.2k");
@@ -143,7 +123,7 @@ describe("min upvotes filter", () => {
     expect(parseBsState("min_upvotes=-3").minUpvotes).toBeNull();
   });
 
-  test("reaches the API and the rating popover offers the input", async () => {
+  test("reaches the API and the Upvotes popover offers the input", async () => {
     const urls: URL[] = [];
     bsApi({
       search: (u) => {
@@ -154,7 +134,7 @@ describe("min upvotes filter", () => {
     renderApp("/beatsaver?min_upvotes=100");
     await screen.findByText("Song 1");
     expect(urls[0]?.searchParams.get("min_upvotes")).toBe("100");
-    await userEvent.click(screen.getByRole("button", { name: /^Filter Rating/ }));
+    await userEvent.click(screen.getByRole("button", { name: /^Filter Upvotes/ }));
     expect(await screen.findByLabelText("Min upvotes")).toHaveValue(100);
   });
 });

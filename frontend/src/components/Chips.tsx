@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { MapItem } from "../api/types";
 import { formatBpm, formatDuration } from "../lib/format";
-import { levelsFor, ringText } from "../lib/levels";
+import { levelSlots, ringText } from "../lib/levels";
 import { STATUS_META, statusLabel, statusText } from "../lib/status";
 import { Icon } from "./icons";
 import { Tip } from "./Tip";
@@ -41,11 +41,21 @@ export function LevelChips({
   /** Notes per second by level key, when known. */
   nps?: Readonly<Record<string, number>>;
 }) {
-  const levels = levelsFor(names);
-  if (!levels.length) return null;
   return (
     <ul className={`levels ${className ?? ""}`.trim()} aria-label="Difficulties">
-      {levels.map((l) => {
+      {levelSlots(names).map(({ level: l, present }) => {
+        if (!present) {
+          const gone = `Missing: ${l.label}`;
+          return (
+            <li key={l.key} className="level missing">
+              <Tip text={gone}>
+                <span className="level-text" role="img" aria-label={gone}>
+                  <span aria-hidden="true">{l.abbr}</span>
+                </span>
+              </Tip>
+            </li>
+          );
+        }
         const rate = nps?.[l.key];
         const full = rate === undefined ? l.label : `${l.label}, ${rate.toFixed(1)} NPS`;
         return (

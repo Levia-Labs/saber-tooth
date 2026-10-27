@@ -148,6 +148,8 @@ describe("table control bar", () => {
       "Title",
       "Author",
       "Levels",
+      "Length",
+      "BPM",
       "Env",
       "Status",
     ]);

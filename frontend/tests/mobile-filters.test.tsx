@@ -134,13 +134,15 @@ describe("text inputs", () => {
 });
 
 describe("accordion groups", () => {
-  test("five groups, collapsed by default, many can be open", async () => {
+  test("seven groups, collapsed by default, many can be open", async () => {
     const { user, sheet } = await openSheet();
     const heads = [...sheet.querySelectorAll<HTMLButtonElement>(".acc-head")];
     expect(heads.map((h) => h.querySelector(".acc-title")?.textContent)).toEqual([
       "Title",
       "Author",
       "Levels",
+      "Length",
+      "BPM",
       "Env",
       "Status",
     ]);

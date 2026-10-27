@@ -40,6 +40,10 @@ export interface MapItem {
   pending: number;
   bpm: number | null;
   duration_s: number | null;
+  /** Address of the map's song for the preview button; absent until the API provides it. */
+  audio_url?: string | null;
+  /** Second where the preview starts. */
+  preview_start?: number | null;
   job: ActiveJob | null;
 }
 
@@ -55,6 +59,9 @@ export interface Facets {
   environments: { name: string; count: number }[];
   mappers: { name: string; count: number }[];
   levels: Record<LevelKey, number>;
+  /** Smallest and largest known length (seconds) and tempo; absent on older servers. */
+  duration?: { min: number | null; max: number | null };
+  bpm?: { min: number | null; max: number | null };
   total: number;
 }
 

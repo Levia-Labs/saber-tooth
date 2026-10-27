@@ -7,6 +7,7 @@ import {
   type SortOrder,
   type StatusKey,
 } from "../api/types";
+import { inverted } from "./range";
 
 export const SORT_KEYS: readonly SortKey[] = [
   "title",
@@ -33,6 +34,11 @@ export interface LibraryState {
   mapper: string[];
   level: LevelKey[];
   levelMode: LevelMode;
+  /** Length bounds in seconds. */
+  durationMin: number | null;
+  durationMax: number | null;
+  bpmMin: number | null;
+  bpmMax: number | null;
   sort: SortKey;
   order: SortOrder;
 }
@@ -45,6 +51,10 @@ export const DEFAULT_STATE: LibraryState = {
   mapper: [],
   level: [],
   levelMode: "any",
+  durationMin: null,
+  durationMax: null,
+  bpmMin: null,
+  bpmMax: null,
   sort: "title",
   order: "asc",
 };
@@ -61,6 +71,22 @@ const MAX_Q = 200;
 const MAX_ENV = 50;
 const MAX_MAPPER = 50;
 const MAX_NAME = 200;
+
+/** URL and API key and the inclusive bounds of the numeric library filters. */
+export const RANGES = {
+  durationMin: { key: "duration_min", min: 0, max: 7200 },
+  durationMax: { key: "duration_max", min: 0, max: 7200 },
+  bpmMin: { key: "bpm_min", min: 0, max: 1000 },
+  bpmMax: { key: "bpm_max", min: 0, max: 1000 },
+} as const;
+type RangeName = keyof typeof RANGES;
+const RANGE_NAMES = Object.keys(RANGES) as RangeName[];
+
+function bounded(raw: string | null, min: number, max: number): number | null {
+  if (raw === null || raw.trim() === "") return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= min && n <= max ? n : null;
+}
 
 function isStatus(value: string): value is StatusKey {
   return (STATUS_KEYS as readonly string[]).includes(value);
@@ -88,7 +114,14 @@ export function parseState(search: string): LibraryState {
   const mappers = params.getAll("mapper").filter((v) => v !== "" && v.length <= MAX_NAME);
   const levels = params.getAll("level").flatMap((v) => v.split(","));
   const q = (params.get("q") ?? "").slice(0, MAX_Q);
+  const ranges = Object.fromEntries(
+    RANGE_NAMES.map((name) => {
+      const { key, min, max } = RANGES[name];
+      return [name, bounded(params.get(key), min, max)];
+    }),
+  ) as Pick<LibraryState, RangeName>;
   return {
+    ...ranges,
     q,
     qField: q && params.get("qf") === "mapper" ? "mapper" : "title",
     status: unique(statuses.filter(isStatus)),
@@ -112,6 +145,9 @@ export function encodeState(state: LibraryState): URLSearchParams {
   for (const name of state.mapper) params.append("mapper", name);
   for (const key of state.level) params.append("level", key);
   if (state.level.length && state.levelMode === "all") params.set("lmode", "all");
+  for (const name of RANGE_NAMES) {
+    if (state[name] !== null) params.set(RANGES[name].key, String(state[name]));
+  }
   if (state.sort !== DEFAULT_STATE.sort) params.set("sort", state.sort);
   if (state.order !== DEFAULT_STATE.order) params.set("order", state.order);
   return params;
@@ -137,6 +173,13 @@ export function apiParams(state: LibraryState, offset: number, limit: number): U
     for (const key of state.level) params.append("level", key);
     if (state.levelMode === "all") params.set("level_mode", "all");
   }
+  // An inverted pair would answer 400; it is ignored until the user fixes it.
+  const skip = new Set<RangeName>();
+  if (inverted(state.durationMin, state.durationMax)) skip.add("durationMin").add("durationMax");
+  if (inverted(state.bpmMin, state.bpmMax)) skip.add("bpmMin").add("bpmMax");
+  for (const name of RANGE_NAMES) {
+    if (state[name] !== null && !skip.has(name)) params.set(RANGES[name].key, String(state[name]));
+  }
   return params;
 }
 
@@ -152,6 +195,8 @@ export interface FilterCounts {
   levels: number;
   status: number;
   env: number;
+  length: number;
+  bpm: number;
 }
 
 /** Number of active filters per header filter, for the badge. */
@@ -163,11 +208,21 @@ export function filterCounts(state: LibraryState): FilterCounts {
     levels: state.level.length,
     status: state.status.length,
     env: state.env.length,
+    length: [state.durationMin, state.durationMax].filter((v) => v !== null).length,
+    bpm: [state.bpmMin, state.bpmMax].filter((v) => v !== null).length,
   };
 }
 
 export function totalFilters(counts: FilterCounts): number {
-  return counts.title + counts.author + counts.levels + counts.status + counts.env;
+  return (
+    counts.title +
+    counts.author +
+    counts.levels +
+    counts.status +
+    counts.env +
+    counts.length +
+    counts.bpm
+  );
 }
 
 export function toggle<T>(list: T[], value: T): T[] {

@@ -132,24 +132,15 @@
   place-items: center;
 }
 .col-rating,
-.col-tempo {
+.col-upvotes {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
   color: var(--muted);
   font-size: 0.9rem;
 }
 .bs-rating {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.bs-rating strong {
   color: var(--ink);
-}
-.bs-votes {
-  color: var(--muted);
-  font-size: 0.8rem;
+  font-weight: 700;
 }
 .bs-tags {
   display: flex;
@@ -222,14 +213,21 @@
 }
 
 @media (max-width: 1099px) {
-  .col-tempo,
-  .col-tags {
+  .col-tags,
+  .bs-table .col-length,
+  .bs-table .col-bpm {
     display: none;
+  }
+  .bs-table .sub-tempo {
+    display: inline;
   }
   .bs-table .lib-grid {
     grid-template-areas:
-      "select cover title rating status actions"
-      "select cover sub rating status actions";
+      "select cover title rating upvotes status actions"
+      "select cover sub rating upvotes status actions";
+  }
+  .bs-table .col-upvotes {
+    grid-area: upvotes;
   }
   .bs-table .col-select {
     grid-area: select;
@@ -250,18 +248,8 @@
     grid-template-areas:
       "select cover title title"
       "select cover sub sub"
-      "rating rating status status"
+      "rating upvotes status status"
       "actions actions actions actions";
-  }
-  .bs-table .col-rating {
-    flex-direction: row;
-    align-items: baseline;
-    gap: 0.5rem;
-  }
-  .bs-table .bs-rating {
-    flex-direction: row;
-    align-items: baseline;
-    gap: 0.5rem;
   }
 }
 .col-title:has(> .bs-title) {

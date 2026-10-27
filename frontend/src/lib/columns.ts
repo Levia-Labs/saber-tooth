@@ -16,7 +16,7 @@ export type ColumnKey =
   | "actions"
   | "select"
   | "rating"
-  | "tempo"
+  | "upvotes"
   | "tags";
 export type Widths = Partial<Record<ColumnKey, number>>;
 
@@ -55,7 +55,7 @@ export const LABELS: Record<ColumnKey, string> = {
   actions: "Actions",
   select: "Select",
   rating: "Rating",
-  tempo: "Length / BPM",
+  upvotes: "Upvotes",
   tags: "Tags",
 };
 
@@ -63,12 +63,12 @@ export const LIMITS: Partial<Record<ColumnKey, { min: number; max: number }>> = 
   title: { min: 100, max: 800 },
   author: { min: 100, max: 400 },
   levels: { min: 72, max: 400 },
-  length: { min: 56, max: 200 },
-  bpm: { min: 56, max: 200 },
+  length: { min: 64, max: 200 },
+  bpm: { min: 64, max: 200 },
   env: { min: 72, max: 400 },
   status: { min: 84, max: 300 },
   rating: { min: 72, max: 200 },
-  tempo: { min: 84, max: 240 },
+  upvotes: { min: 72, max: 200 },
   tags: { min: 96, max: 500 },
 };
 
@@ -82,8 +82,8 @@ export const DEFAULTS: Record<Breakpoint, Record<string, number>> = {
     title: 200,
     author: 120,
     levels: 152,
-    length: 68,
-    bpm: 84,
+    length: 88,
+    bpm: 80,
     env: 120,
     status: 96,
     actions: 140,
@@ -93,17 +93,17 @@ export const DEFAULTS: Record<Breakpoint, Record<string, number>> = {
     title: 200,
     author: 120,
     levels: 152,
-    length: 68,
-    bpm: 84,
+    length: 88,
+    bpm: 80,
     status: 96,
     actions: 140,
   },
-  compact: { cover: 64, title: 100, length: 64, bpm: 80, status: 100, actions: 140 },
+  compact: { cover: 64, title: 100, length: 88, bpm: 80, status: 100, actions: 140 },
 };
 
 /** Bumped when the default widths change, so widths saved against older defaults are dropped. */
-const STORE_PREFIX = "saber-tooth.columns.v2.";
-const LEGACY_PREFIXES = ["saber-tooth.columns.v1."];
+const STORE_PREFIX = "saber-tooth.columns.v3.";
+const LEGACY_PREFIXES = ["saber-tooth.columns.v1.", "saber-tooth.columns.v2."];
 
 /** Tracks, default widths and storage key of one list; the library is the default. */
 export interface ColumnSet {

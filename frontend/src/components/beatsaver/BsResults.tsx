@@ -7,7 +7,7 @@ import { BS_TIPS } from "../../lib/bstips";
 import { isBsDefault } from "../../lib/bsfilters";
 import { plural } from "../../lib/format";
 import { useMediaQuery } from "../../lib/hooks";
-import { sortByUpvotes } from "../../lib/bsrating";
+import { sortLoaded } from "../../lib/bsrating";
 import { useColumns } from "../../lib/useColumns";
 import type { BsControls } from "../../lib/useBsState";
 import { Icon } from "../icons";
@@ -74,8 +74,8 @@ export function BsResults({ query, controls, extra }: Props) {
   const ascending = state.ascending;
   const items = useMemo(() => {
     const all = pages?.flatMap((p) => p.items) ?? [];
-    return order === "Rating" ? sortByUpvotes(all, ascending) : all;
-  }, [pages, order, ascending]);
+    return sortLoaded(all, order, state.localSort, ascending);
+  }, [pages, order, state.localSort, ascending]);
   const scanned = pages?.reduce((n, p) => n + p.scanned, 0) ?? 0;
   const matched = pages?.reduce((n, p) => n + p.matched, 0) ?? 0;
   const lastPage = pages?.at(-1);

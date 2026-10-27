@@ -10,6 +10,16 @@ import { mapName } from "../lib/status";
 import { ActionButton, ActionLink } from "./Buttons";
 import { useAnnounce } from "./Announcer";
 import { Cover, LevelChips, StatusChip } from "./Chips";
+import { PreviewButton } from "./PreviewButton";
+
+/** The song address with the preview's start second as a media fragment; null without a song. */
+export function previewSrc(item: Pick<MapItem, "audio_url" | "preview_start">): string | null {
+  if (!item.audio_url) return null;
+  const start = item.preview_start;
+  return start && Number.isFinite(start) && start > 0
+    ? `${item.audio_url}#t=${start}`
+    : item.audio_url;
+}
 
 export function LibraryRow({ item, index }: { item: MapItem; index: number }) {
   const client = useQueryClient();
@@ -29,10 +39,11 @@ export function LibraryRow({ item, index }: { item: MapItem; index: number }) {
       <div className="col-cover" role="cell">
         <Cover url={item.cover_url} />
       </div>
-      <div className="col-title" role="cell">
+      <div className={`col-title${item.audio_url ? " with-preview" : ""}`} role="cell">
         <Link className="title-link" to={href} title={name}>
           {name}
         </Link>
+        <PreviewButton src={previewSrc(item)} title={name} />
       </div>
       <div className="col-sub" role="cell">
         <div className="sub">
