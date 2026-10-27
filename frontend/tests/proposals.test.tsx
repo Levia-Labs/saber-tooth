@@ -98,6 +98,33 @@ describe("proposal cards", () => {
     expect(document.querySelectorAll(".card-toggle[aria-expanded=false]")).toHaveLength(2);
   });
 
+  test("a superseded card shows a muted chip and cannot be decided", async () => {
+    mapApi([proposal(1, { status: "superseded" }), proposal(2)]);
+    renderApp("/maps/id0000000001");
+    const card = (await screen.findAllByText("Fix 1"))[0]?.closest("article") as HTMLElement;
+    expect(card).toHaveClass("st-superseded");
+    expect(within(card).getByText("Superseded")).toHaveClass("badge-muted");
+    expect(within(card).getByRole("button", { name: "Approve" })).toBeDisabled();
+    expect(within(card).getByRole("button", { name: "Reject" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Approve all" })).toBeEnabled();
+  });
+
+  test("only superseded proposals leave Approve all disabled", async () => {
+    mapApi([proposal(1, { status: "superseded" })]);
+    renderApp("/maps/id0000000001");
+    await screen.findAllByText("Fix 1");
+    expect(screen.getByRole("button", { name: "Approve all" })).toBeDisabled();
+  });
+
+  test("overlapping proposals show an Overlaps chip with the ids", async () => {
+    mapApi([proposal(1, { conflicts_with: [2, 5] }), proposal(2)]);
+    renderApp("/maps/id0000000001");
+    const card = (await screen.findAllByText("Fix 1"))[0]?.closest("article") as HTMLElement;
+    expect(within(card).getByText("Overlaps #2, #5")).toBeInTheDocument();
+    const other = (await screen.findAllByText("Fix 2"))[0]?.closest("article") as HTMLElement;
+    expect(within(other).queryByText(/Overlaps/)).toBeNull();
+  });
+
   test("the expanded body has a capped, scrolling height", () => {
     expect(css("page.css")).toMatch(/\.card-body\s*\{[^}]*max-height:\s*40vh[^}]*overflow:\s*auto/);
   });

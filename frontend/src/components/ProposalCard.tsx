@@ -9,6 +9,7 @@ import { TIPS } from "../lib/tips";
 import { useAnnounce } from "./Announcer";
 import { ActionButton } from "./Buttons";
 import { Icon } from "./icons";
+import { Tip } from "./Tip";
 import { TimelineCanvas } from "./TimelineCanvas";
 
 interface Props {
@@ -60,6 +61,7 @@ export function ProposalCard({
 
   const before = useMemo(() => (notesFilter ? notesFilter(p.before) : p.before), [p, notesFilter]);
   const after = useMemo(() => (notesFilter ? notesFilter(p.after) : p.after), [p, notesFilter]);
+  const overlaps = p.conflicts_with ?? [];
   const range = beatRange(before, after, p.walls_before, p.walls_after);
   const ops = countOperations(before, after) + countOperations(p.walls_before, p.walls_after);
   const textOnly = isNotesless(before, after, [...p.walls_before, ...p.walls_after]);
@@ -88,16 +90,27 @@ export function ProposalCard({
           <span className="sum-range">{range}</span>
           <span className="sum-ops">{plural(ops, "operation")}</span>
           <span className="badge sum-sev">{p.severity}</span>
-          {p.status !== "pending" && <span className="badge">{p.status}</span>}
+          {p.status === "superseded" ? (
+            <span className="badge badge-muted">Superseded</span>
+          ) : (
+            p.status !== "pending" && <span className="badge">{p.status}</span>
+          )}
         </button>
         <div className="row">
+          {overlaps.length > 0 && (
+            <Tip text={TIPS.overlaps}>
+              <button type="button" className="badge badge-overlap">
+                Overlaps {overlaps.map((id) => `#${id}`).join(", ")}
+              </button>
+            </Tip>
+          )}
           <ActionButton
             icon="approve"
             label="Approve"
             tip={TIPS.approve}
             text
             variant="approve"
-            disabled={p.status === "approved" || decide.isPending}
+            disabled={p.status === "approved" || p.status === "superseded" || decide.isPending}
             onClick={() => decide.mutate("approve")}
           />
           <ActionButton
@@ -106,7 +119,7 @@ export function ProposalCard({
             tip={TIPS.reject}
             text
             variant="reject"
-            disabled={p.status === "rejected" || decide.isPending}
+            disabled={p.status === "rejected" || p.status === "superseded" || decide.isPending}
             onClick={() => decide.mutate("reject")}
           />
         </div>

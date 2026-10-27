@@ -89,7 +89,11 @@ export interface Proposal {
   difficulty: string;
   severity: string;
   summary: string;
-  status: "pending" | "approved" | "rejected" | "applied";
+  status: "pending" | "approved" | "rejected" | "applied" | "superseded";
+  /** Id of the proposal this one replaced during an apply. */
+  replaces?: number | null;
+  /** Ids of open proposals that touch the same notes. */
+  conflicts_with?: number[];
   before: Note[];
   after: Note[];
   walls_before: Wall[];

@@ -14,7 +14,7 @@ The service listens on `127.0.0.1:${SABER_PORT:-8100}`. There is no authenticati
 1. `GET /api/maps/{id}`: one item with the fields above, or 404.
 1. `GET /api/maps/{id}/cover`: the cover image. The filename comes from Info.dat, must be a plain name ending `.png`, `.jpg` or `.jpeg`, must resolve to a regular file inside the map folder (no symlink out) and be at most 5 MB, else 404. Sends `Content-Type`, `Cache-Control: private, max-age=86400` and an `ETag` from modification time and size; `If-None-Match` answers 304.
 1. `POST /api/maps/{id}/scan`: starts a `scan` job. Answers 409 if the map has a parse error.
-1. `GET /api/maps/{id}/proposals`: proposals for a map or for a staged new map, with before and after excerpts. For a `create-map` proposal the excerpt shows the Expert notes of the staged map.
+1. `GET /api/maps/{id}/proposals`: proposals for a map or for a staged new map, with before and after excerpts. Each proposal also carries `replaces` (the superseded proposal it replaced, else null) and `conflicts_with` (ids of other open proposals of the same difficulty that touch the same notes, by beat, position and colour, or lie inside a fill range). Approving overlapping proposals is fine: apply runs them in id order and re-checks the later one. For a `create-map` proposal the excerpt shows the Expert notes of the staged map.
 1. `POST /api/proposals/{id}/approve`: approve one proposal. Answers 409 for an applied or superseded proposal.
 1. `POST /api/proposals/{id}/reject`: reject one proposal. Answers 409 for an applied or superseded proposal.
 1. `POST /api/maps/{id}/approve-all`: approve every pending proposal for one map. Answers `{"approved": N}`.
