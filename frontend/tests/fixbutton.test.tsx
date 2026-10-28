@@ -126,6 +126,7 @@ describe("fix button", () => {
     renderApp("/maps/id0000000001");
     const user = userEvent.setup();
     const toolbar = await screen.findByRole("toolbar", { name: "Fix actions" });
+    await within(toolbar).findByRole("button", { name: "Fix" });
     const first = within(toolbar).getAllByRole("button")[0] as HTMLElement;
     expect(first).toHaveTextContent("Fix");
     await user.click(first);

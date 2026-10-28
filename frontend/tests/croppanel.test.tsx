@@ -1,7 +1,8 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useState } from "react";
 import { describe, expect, test } from "vitest";
-import { CropPanel } from "../src/components/CropPanel";
+import { CropPanel, CropToggle } from "../src/components/CropPanel";
 import { TIMELINE, cropApi, renderPanel } from "./crophelpers";
 
 const P120 = TIMELINE.lengths["120"];
@@ -11,9 +12,19 @@ async function openPanel(user: ReturnType<typeof userEvent.setup>) {
   await screen.findByRole("slider", { name: "Crop end" });
 }
 
+function Harness({ busy }: { busy: boolean }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <CropToggle open={open} onToggle={() => setOpen((o) => !o)} />
+      <CropPanel mapId="id0000000001" busy={busy} open={open} />
+    </>
+  );
+}
+
 function setup(options = {}, busy = false) {
   const api = cropApi(options);
-  renderPanel(<CropPanel mapId="id0000000001" busy={busy} />);
+  renderPanel(<Harness busy={busy} />);
   return { ...api, user: userEvent.setup() };
 }
 

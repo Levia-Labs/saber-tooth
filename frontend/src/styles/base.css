@@ -90,11 +90,17 @@ h3 {
 }
 
 .masthead {
+  padding: 0.7rem 0 0.4rem;
+}
+.masthead-inner {
   position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 0.7rem 1rem 0.4rem;
+  width: 100%;
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 0 1.25rem;
 }
 .brand {
   display: flex;
@@ -252,6 +258,9 @@ select {
 @media (max-width: 719px) {
   main {
     padding: 0 0.75rem 0.5rem;
+  }
+  .masthead-inner {
+    padding: 0 0.75rem;
   }
   .wordmark {
     font-size: 1.4rem;

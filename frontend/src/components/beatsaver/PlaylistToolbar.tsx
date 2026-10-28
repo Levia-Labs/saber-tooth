@@ -14,6 +14,7 @@ import { PL_TIPS } from "../../lib/pltips";
 import { TextFilterBody } from "../FilterBodies";
 import { Icon } from "../icons";
 import { Tip } from "../Tip";
+import { BsSectionTabs } from "./BsSectionTabs";
 import {
   PlCreatedBody,
   PlLengthBody,
@@ -145,6 +146,7 @@ export function PlaylistToolbar({ state, update, clear, narrow }: Props) {
           </Tip>
         )}
       </div>
+      <BsSectionTabs tab="playlists" />
     </div>
   );
 }

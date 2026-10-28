@@ -1,7 +1,5 @@
-import { useState, type ReactNode } from "react";
 import type { Proposal } from "../api/types";
 import { Alert } from "./Alert";
-import { ActionButton } from "./Buttons";
 import { ProposalCard } from "./ProposalCard";
 
 function groupBy<T>(list: T[], key: (item: T) => string): Map<string, T[]> {
@@ -13,54 +11,24 @@ function groupBy<T>(list: T[], key: (item: T) => string): Map<string, T[]> {
   return out;
 }
 
-/** Proposals grouped by difficulty, then by rule. */
+/** Proposals grouped by difficulty, then by rule. The toolbar lives on the map page. */
 export function ProposalGroups({
   proposals,
   mapId,
-  actions,
+  open,
+  onToggle,
   clean = false,
 }: {
   proposals: Proposal[];
   mapId: string;
-  actions?: ReactNode;
-  /** A clean fixed copy: no expand/collapse and no "No fixes yet" prompt. */
+  open: ReadonlySet<string>;
+  onToggle: (id: string, on: boolean) => void;
+  /** A clean fixed copy: no "No fixes yet" prompt. */
   clean?: boolean;
 }) {
-  const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
-  const setOne = (id: string, on: boolean) =>
-    setOpen((prev) => {
-      const next = new Set(prev);
-      if (on) next.add(id);
-      else next.delete(id);
-      return next;
-    });
   const none = proposals.length === 0;
   return (
     <>
-      <div className="map-toolbar" role="toolbar" aria-label="Fix actions">
-        {actions}
-        <span className="spacer" />
-        {!clean && (
-          <>
-            <ActionButton
-              icon="expand"
-              label="Expand all"
-              tip="Open every fix."
-              text
-              disabled={none}
-              onClick={() => setOpen(new Set(proposals.map((p) => String(p.id))))}
-            />
-            <ActionButton
-              icon="collapse"
-              label="Collapse all"
-              tip="Close every fix."
-              text
-              disabled={none}
-              onClick={() => setOpen(new Set())}
-            />
-          </>
-        )}
-      </div>
       <div className="fixes-scroll">
         {none && !clean && (
           <Alert
@@ -83,7 +51,7 @@ export function ProposalGroups({
                     proposal={p}
                     mapId={mapId}
                     open={open.has(String(p.id))}
-                    onToggle={(on) => setOne(String(p.id), on)}
+                    onToggle={(on) => onToggle(String(p.id), on)}
                   />
                 ))}
               </div>

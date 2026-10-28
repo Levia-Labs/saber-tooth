@@ -22,7 +22,6 @@ import {
 } from "../lib/crop";
 import { Alert, SpecAlert } from "./Alert";
 import { ActionButton } from "./Buttons";
-import { Icon } from "./icons";
 import { NpsChart, type Edge } from "./NpsChart";
 
 const LENGTHS: { key: CropLength; label: string }[] = [
@@ -197,26 +196,30 @@ function CropBody({ mapId, busy }: { mapId: string; busy: boolean }) {
   return <CropEditor mapId={mapId} data={timeline.data} busy={busy} />;
 }
 
-/** Crop to a 1 or 2 minute highlight: a disclosure that loads the timeline when opened. */
-export function CropPanel({ mapId, busy }: { mapId: string; busy: boolean }) {
-  const [open, setOpen] = useState(false);
+/** The toolbar button that opens and closes the crop panel; styled like Fix and Scan. */
+export function CropToggle({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  return (
+    <ActionButton
+      icon="crop"
+      label="Crop"
+      aria-label="Crop to 1 or 2 minutes"
+      tip={CROP_TIPS.toggle}
+      text
+      aria-expanded={open}
+      aria-controls="crop-body"
+      onClick={onToggle}
+    />
+  );
+}
+
+/** Crop to a 1 or 2 minute highlight: the panel under the toolbar; loads the timeline when open. */
+export function CropPanel({ mapId, busy, open }: { mapId: string; busy: boolean; open: boolean }) {
+  if (!open) return null;
   return (
     <section className="crop-panel" aria-label="Crop to a highlight">
-      <button
-        type="button"
-        className="btn plain crop-toggle"
-        aria-expanded={open}
-        aria-controls="crop-body"
-        onClick={() => setOpen((o) => !o)}
-      >
-        <Icon name={open ? "collapse" : "expand"} />
-        <span>Crop to 1 or 2 minutes</span>
-      </button>
-      {open && (
-        <div id="crop-body">
-          <CropBody key={mapId} mapId={mapId} busy={busy} />
-        </div>
-      )}
+      <div id="crop-body">
+        <CropBody key={mapId} mapId={mapId} busy={busy} />
+      </div>
     </section>
   );
 }

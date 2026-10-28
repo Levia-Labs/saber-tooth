@@ -15,6 +15,7 @@ import { Icon } from "../icons";
 import { Tip } from "../Tip";
 import { LevelsBody, MoreBody, TagsBody, type Patch } from "./BsFilterBodies";
 import { BpmBody, LengthBody, RatingBody, UpvotesBody } from "./BsNumberBodies";
+import { BsSectionTabs, type BsTab } from "./BsSectionTabs";
 import { PresetsBar } from "./PresetsBar";
 
 interface Props {
@@ -24,9 +25,10 @@ interface Props {
   clear: () => void;
   /** Narrow screens: the column headers have no filters, so the bar also offers order. */
   narrow: boolean;
+  tab?: BsTab;
 }
 
-function MoreFilters({ state, update, clear }: Omit<Props, "set" | "narrow">) {
+function MoreFilters({ state, update, clear }: Omit<Props, "set" | "narrow" | "tab">) {
   const total = bsTotal(bsCounts(state));
   const section = (title: string, body: ReactNode) => (
     <section>
@@ -79,7 +81,7 @@ function MoreFilters({ state, update, clear }: Omit<Props, "set" | "narrow">) {
 }
 
 /** Presets, the full filter sheet and clear; on narrow screens also order and direction. */
-export function BsToolbar({ state, update, set, clear, narrow }: Props) {
+export function BsToolbar({ state, update, set, clear, narrow, tab = "maps" }: Props) {
   const active = bsTotal(bsCounts(state)) > 0;
   return (
     <div className={narrow ? "lib-mobile-bar bs-toolbar" : "bs-toolbar"}>
@@ -96,6 +98,7 @@ export function BsToolbar({ state, update, set, clear, narrow }: Props) {
           </Tip>
         )}
       </div>
+      <BsSectionTabs tab={tab} />
     </div>
   );
 }

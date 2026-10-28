@@ -294,3 +294,6 @@ button.bs-tag[aria-pressed="true"] {
   width: 0.95em;
   height: 0.95em;
 }
+.bs-toolbar .bs-tabs {
+  margin-left: auto;
+}

@@ -124,6 +124,7 @@ const ICONS = {
       <path d="M9.5 12l5 5M14.5 12l-5 5" />
     </>
   ),
+  crop: <path d="M7 3v14h14M3 7h14v14" />,
   spinner: <path d="M12 3a9 9 0 1 0 9 9" />,
   chevron: <path d="M6 9l6 6 6-6" />,
   upload: <path d="M12 16V4M7 9l5-5 5 5M4 17v3h16v-3" />,

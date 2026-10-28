@@ -17,6 +17,7 @@ export const CROP_TIPS = {
   create:
     "Write the chosen stretch of the song as a new folder beside this map. The original is never changed.",
   reset: "Go back to the suggested window.",
+  toggle: "Show or hide the crop panel: cut a 1 or 2 minute highlight.",
 } as const;
 
 /** A chosen window, in beats. */

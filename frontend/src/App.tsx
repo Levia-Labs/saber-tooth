@@ -53,25 +53,27 @@ export function Shell() {
         Skip to content
       </a>
       <header className="masthead">
-        <Link className="brand" to="/" aria-label="saber-tooth, library">
-          <Logo />
-          <span className="wordmark">
-            <span className="red">saber</span>
-            <span className="dash">-</span>
-            <span className="blue">tooth</span>
-          </span>
-        </Link>
-        <Tip text="What saber-tooth is">
-          <Link
-            className="about-link"
-            to="/about"
-            aria-label="About"
-            aria-current={pathname === "/about" ? "page" : undefined}
-          >
-            <Icon name="info" />
-            <span className="about-label">About</span>
+        <div className="masthead-inner">
+          <Link className="brand" to="/" aria-label="saber-tooth, library">
+            <Logo />
+            <span className="wordmark">
+              <span className="red">saber</span>
+              <span className="dash">-</span>
+              <span className="blue">tooth</span>
+            </span>
           </Link>
-        </Tip>
+          <Tip text="What saber-tooth is">
+            <Link
+              className="about-link"
+              to="/about"
+              aria-label="About"
+              aria-current={pathname === "/about" ? "page" : undefined}
+            >
+              <Icon name="info" />
+              <span className="about-label">About</span>
+            </Link>
+          </Tip>
+        </div>
       </header>
       <AnnouncerProvider>
         <main id="main" tabIndex={-1}>

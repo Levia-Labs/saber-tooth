@@ -108,6 +108,6 @@ describe("clean copy page", () => {
     serve(copy("unscanned"));
     renderApp("/maps/id0000000099");
     expect(await screen.findByRole("button", { name: /Apply approved/ })).toBeInTheDocument();
-    expect(screen.getByText("No fixes yet")).toBeInTheDocument();
+    expect(await screen.findByText("No fixes yet")).toBeInTheDocument();
   });
 });

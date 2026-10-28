@@ -10,7 +10,7 @@ import { errorToAlert } from "../lib/alerts";
 import { FixButton } from "../components/FixButton";
 import { FixOutcomes } from "../components/FixOutcomes";
 import { FixedCopyLink, FixedCopyOf } from "../components/FixedCopyLink";
-import { CropPanel } from "../components/CropPanel";
+import { CropPanel, CropToggle } from "../components/CropPanel";
 import { useJobRunner } from "../api/jobs";
 import { keys, useLiveRows, useMap, useProposals } from "../api/queries";
 import { ActionButton } from "../components/Buttons";
@@ -32,6 +32,15 @@ export function MapPage() {
   const map = useMap(id);
   const proposals = useProposals(id);
   const [approveError, setApproveError] = useState<unknown>(null);
+  const [cropOpen, setCropOpen] = useState(false);
+  const [openIds, setOpenIds] = useState<ReadonlySet<string>>(new Set());
+  const toggleOne = (pid: string, on: boolean) =>
+    setOpenIds((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(pid);
+      else next.delete(pid);
+      return next;
+    });
   const scan = useJobRunner("Scan");
   const apply = useJobRunner("Apply");
   useLiveRows(map.data ? [map.data] : []);
@@ -75,6 +84,7 @@ export function MapPage() {
   };
   const approved = list.filter((p) => p.status === "approved").length;
   const clean = map.data ? isCleanCopy(map.data) : false;
+  const canCrop = map.data != null && map.data.status !== "unreadable";
   const running = map.data?.job != null || scan.busy || apply.busy;
 
   return (
@@ -123,9 +133,6 @@ export function MapPage() {
         error={scan.error}
         onRetry={() => void scan.run(() => scanMap(id)).then(refresh)}
       />
-      {map.data && map.data.status !== "unreadable" && (
-        <CropPanel key={id} mapId={id} busy={running} />
-      )}
       {approveError !== null && (
         <SpecAlert
           spec={errorToAlert(approveError, "Approve all failed")}
@@ -141,6 +148,87 @@ export function MapPage() {
         />
       )}
       <span id="fixes-top" />
+      {map.data && (
+        <div className="map-toolbar" role="toolbar" aria-label="Fix actions">
+          {!clean && map.data && <FixButton item={map.data} text />}
+          {!clean && (
+            <ActionButton
+              icon="scan"
+              label="Scan"
+              tip={TIPS.scan}
+              text
+              disabled={running || map.data?.status === "unreadable"}
+              onClick={() => void scan.run(() => scanMap(id)).then(refresh)}
+            />
+          )}
+          {canCrop && <CropToggle open={cropOpen} onToggle={() => setCropOpen((o) => !o)} />}
+          {!clean && (
+            <ConfirmDialog
+              title="Approve all fixes"
+              description={`Approve every pending proposal for "${name}"?`}
+              confirmLabel="Approve all"
+              onConfirm={() => void approveEverything()}
+            >
+              <ActionButton
+                icon="approve-all"
+                label="Approve all"
+                tip={TIPS.approveAll}
+                text
+                disabled={pendingCount === 0}
+              />
+            </ConfirmDialog>
+          )}
+          <ConfirmDialog
+            title="Delete permanently?"
+            description={`"${map.data?.folder ?? name}" is removed from disk and cannot be undone.`}
+            confirmLabel="Delete"
+            danger
+            onConfirm={() => void remove()}
+          >
+            <ActionButton
+              icon="trash"
+              label="Delete"
+              tip={TIPS.delete}
+              text
+              variant="danger"
+              disabled={running || !map.data}
+            />
+          </ConfirmDialog>
+          {!clean && (
+            <ActionButton
+              icon="apply"
+              label="Apply approved"
+              tip={applyTip(name)}
+              text
+              variant="primary"
+              disabled={running || approved === 0}
+              onClick={() => void apply.run(() => applyMap(id)).then(refresh)}
+            />
+          )}
+          <span className="spacer" />
+          {!clean && (
+            <>
+              <ActionButton
+                icon="expand"
+                label="Expand all"
+                tip="Open every fix."
+                text
+                disabled={list.length === 0}
+                onClick={() => setOpenIds(new Set(list.map((p) => String(p.id))))}
+              />
+              <ActionButton
+                icon="collapse"
+                label="Collapse all"
+                tip="Close every fix."
+                text
+                disabled={list.length === 0}
+                onClick={() => setOpenIds(new Set())}
+              />
+            </>
+          )}
+        </div>
+      )}
+      {canCrop && <CropPanel key={id} mapId={id} busy={running} open={cropOpen} />}
       {proposals.isPending ? (
         <FixesSkeleton />
       ) : proposals.isError ? (
@@ -152,64 +240,8 @@ export function MapPage() {
         <ProposalGroups
           proposals={list}
           mapId={id}
-          actions={
-            <>
-              {!clean && map.data && <FixButton item={map.data} text />}
-              {!clean && (
-                <ActionButton
-                  icon="scan"
-                  label="Scan"
-                  tip={TIPS.scan}
-                  text
-                  disabled={running || map.data?.status === "unreadable"}
-                  onClick={() => void scan.run(() => scanMap(id)).then(refresh)}
-                />
-              )}
-              {!clean && (
-                <ConfirmDialog
-                  title="Approve all fixes"
-                  description={`Approve every pending proposal for "${name}"?`}
-                  confirmLabel="Approve all"
-                  onConfirm={() => void approveEverything()}
-                >
-                  <ActionButton
-                    icon="approve-all"
-                    label="Approve all"
-                    tip={TIPS.approveAll}
-                    text
-                    disabled={pendingCount === 0}
-                  />
-                </ConfirmDialog>
-              )}
-              <ConfirmDialog
-                title="Delete permanently?"
-                description={`"${map.data?.folder ?? name}" is removed from disk and cannot be undone.`}
-                confirmLabel="Delete"
-                danger
-                onConfirm={() => void remove()}
-              >
-                <ActionButton
-                  icon="trash"
-                  label="Delete"
-                  tip={TIPS.delete}
-                  text
-                  variant="danger"
-                  disabled={running || !map.data}
-                />
-              </ConfirmDialog>
-              {!clean && (
-                <ActionButton
-                  icon="apply"
-                  label="Apply approved"
-                  tip={applyTip(name)}
-                  text
-                  variant="primary"
-                  disabled={running || approved === 0}
-                  onClick={() => void apply.run(() => applyMap(id)).then(refresh)}
-                />
-              )}
-            </>
-          }
+          open={openIds}
+          onToggle={toggleOne}
           clean={clean}
         />
       )}

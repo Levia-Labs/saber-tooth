@@ -33,8 +33,9 @@
 }
 .masthead .about-link {
   position: absolute;
-  top: 0.7rem;
-  right: 1rem;
+  top: 50%;
+  right: 1.25rem;
+  transform: translateY(-50%);
 }
 .about-link {
   display: inline-flex;
@@ -51,6 +52,9 @@
   color: var(--ink);
 }
 @media (max-width: 719px) {
+  .masthead .about-link {
+    right: 0.75rem;
+  }
   .about-label {
     display: none;
   }

@@ -11,12 +11,7 @@ export function BeatSaverPage() {
   const query = useBsSearch(controls.state);
   return (
     <section className="library" aria-labelledby="bs-heading">
-      <BsTabs
-        tab="maps"
-        heading="BeatSaver"
-        headingId="bs-heading"
-        siteUrl={bsSiteUrl(controls.state)}
-      />
+      <BsTabs heading="BeatSaver" headingId="bs-heading" siteUrl={bsSiteUrl(controls.state)} />
       <BsResults query={query} controls={controls} />
     </section>
   );
