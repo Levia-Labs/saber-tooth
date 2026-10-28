@@ -1,7 +1,7 @@
 """One-click fix engine: verified fixes folded one at a time into an evolving map."""
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from saber_tooth.analysis import Analysis
 from saber_tooth.checks import Finding, run_checks
@@ -112,7 +112,7 @@ def fix_map(svc, map_id: str, max_rounds: int = MAX_ROUNDS) -> dict:
         report["after"] = report["before"]
         report["difficulties"] = sorted(original.difficulties)
         return report
-    run.fixed.info.song_name += SUFFIX
+    run.fixed.info = replace(run.fixed.info, song_name=run.fixed.info.song_name + SUFFIX)
     target = write_fixed(svc.levels, folder, run.fixed, folder.name + SUFFIX)
     with svc._lock:  # short store mutations only; the slow re-index runs outside it
         ids = svc.store.add_proposals(map_id, [p.to_dict() for p in run.steps])

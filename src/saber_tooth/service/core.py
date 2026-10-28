@@ -3,6 +3,7 @@
 import logging
 import threading
 from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
 
 from saber_tooth.analyser_client import AnalyserClient, AnalyserError
@@ -232,7 +233,7 @@ class Service(DeleteMixin):
             msg = "every approved proposal was superseded; review the new proposals"
             raise ApplyConflict(msg, outcome.superseded)
         verify(self.store, self.uploads, map_id, original, fixed, kept)
-        fixed.info.song_name += SUFFIX
+        fixed.info = replace(fixed.info, song_name=fixed.info.song_name + SUFFIX)
         unchanged(outcome.applied)
         target = write_fixed(self.levels, folder, fixed, folder.name + SUFFIX)
         return target, outcome

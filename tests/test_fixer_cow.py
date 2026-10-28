@@ -23,7 +23,7 @@ def synth():
     arc = {"b": n0.beat, "x": n0.x, "y": n0.y, "c": 0, "d": 1, "tb": n2.beat, "tx": n2.x}
     d.raw = {"sliders": [dict(arc, ty=n2.y, tc=1)], "burstSliders": [], "other": [{"k": 1}]}
     d.raw[FX_KEY] = {"_fl": [1.0]}
-    m.difficulties["Hard"] = Difficulty("Hard", 12, 0, notes=list(NOTES[:3]), events=[])
+    m.difficulties["Hard"] = Difficulty("Hard", 12, 0, notes=NOTES[2::-1], events=[])
     m.difficulties["Hard"].raw = {"sliders": [{"b": 1}]}
     return m
 
@@ -59,9 +59,23 @@ def op_strategy():
     )
 
 
-def run(m, ops):
+def reference(m, ops):
+    """The old algorithm: deep-copy the whole map, mutate it in place, sort every difficulty."""
+    out = copy.deepcopy(m)
+    draft = fo.Draft(out)
+    for op in ops:
+        fo._apply_one(draft, op)
+    shows = [op for op in ops if isinstance(op, fo.ApplyLightshow)]
+    if shows:
+        fo._light_absent(draft, shows[-1])
+    for d in draft.map.difficulties.values():
+        d.notes.sort()
+    return draft.map
+
+
+def run(fn, m, ops):
     try:
-        return fx.apply_ops(m, ops)
+        return fn(m, ops)
     except fo.OpConflict as e:
         return str(e)
 
@@ -71,9 +85,9 @@ def run(m, ops):
 def test_apply_ops_equals_deepcopy_reference_and_leaves_input_alone(ops):
     m = synth()
     snapshot = copy.deepcopy(m)
-    got = run(m, ops)
+    got = run(fx.apply_ops, m, ops)
     assert m == snapshot
-    assert got == run(copy.deepcopy(m), ops)
+    assert got == run(reference, m, ops)
 
 
 FILL = fo.Fill("Expert", 0.0, 20.0, (_n(9, 3, 0),), (NEW_WALL,), (WALL,))
@@ -122,7 +136,9 @@ def test_mutating_the_output_never_reaches_the_input(op):
 def test_untouched_parts_stay_shared():
     m = synth()
     out = fx.apply_ops(m, [ALL_OPS[3]])
-    assert out.difficulties["Hard"] is m.difficulties["Hard"] and out.info is m.info
+    hard = out.difficulties["Hard"]  # unsorted in the fixture: copied and sorted, input kept
+    assert hard.notes == sorted(NOTES[:3]) and m.difficulties["Hard"].notes == NOTES[2::-1]
+    assert hard.events is m.difficulties["Hard"].events and out.info is m.info
     assert out.difficulties["Expert"].events is m.difficulties["Expert"].events
     assert out.difficulties["Expert"].raw["other"] is m.difficulties["Expert"].raw["other"]
 
