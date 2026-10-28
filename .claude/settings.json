@@ -80,10 +80,12 @@
       "Bash(git show *--no-index*)",
       "Bash(git show * -O*)",
       "Bash(git show -O*)",
-      "Bash(task st:hub:publish)",
-      "Bash(task st:hub:publish *)",
-      "Bash(rtk task st:hub:publish)",
-      "Bash(rtk task st:hub:publish *)"
+      "Bash(*st:hub:publish*)",
+      "Bash(*hub.py*--apply*)",
+      "Bash(*st:release*--apply*)",
+      "Bash(*release.py*--apply*)",
+      "Bash(*docker push*)",
+      "Bash(*docker image push*)"
     ]
   },
   "extraKnownMarketplaces": {

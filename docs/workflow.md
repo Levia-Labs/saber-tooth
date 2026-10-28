@@ -37,6 +37,11 @@ How agents and humans work on this repo in parallel without overwriting each oth
 1. `task st:smoke` waits for `/api/maps`, then checks the SPA routes and their assets, the maps API, facets, one cover, the MCP `tools/list` and compose health. Read-only.
 2. `task st:docker-health` prints state and health per compose service, plus probe output and recent logs for any unhealthy or exited one.
 
+## Release
+
+1. `task st:release` is a dry run: it checks the tree is clean, on main and equal to origin/main, the docker daemon is up and the version from `pyproject.toml` is free on Docker Hub and in git, then builds `levialabs/sabertooth:<version>` and `latest` with OCI labels and runs the smoke check.
+2. The apply form of `task st:release` is run by a person. It pushes both tags, confirms equal digests, pushes the git tag `v<version>` and checks the Docker Hub page; if it drifted, run `task st:hub:publish`. A published version tag is never overwritten.
+
 ## Crepidoma updates
 
 1. `task st:crepidoma-bump [-- <ref>]` fetches the submodule, checks out the ref (default `origin/main`), prints the new commits, runs the lint and quality gates and stages the gitlink. Commit it with `task st:commit`.

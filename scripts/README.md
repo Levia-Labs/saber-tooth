@@ -15,6 +15,7 @@ Standalone helper scripts run through the task runner.
 10. `learn_bundle.py`: regenerates the bundled lightshow set from a levels directory with a fixed gzip header, so equal input gives equal bytes; prints environments, units and size. `task st:learn-bundle -- <levels_dir> [--out PATH]`.
 11. `browser_check.mjs`: opens the Library, a map, BeatSaver, playlists and About in headless Chrome (Edge) or Firefox through puppeteer-core (a frontend dev dependency) and fails on any console or page error. GET-only: other requests are aborted. `task st:browser-check -- [chrome|firefox] [--base URL] [--path EXE]`.
 12. `hub.py`: compares the Docker Hub page of `levialabs/sabertooth` with `docs/dockerhub.md`; `--apply` publishes it. `task st:hub:check`, `task st:hub:publish` (run by a person). Tested by `tests/test_script_hub.py`.
+13. `release.py`: preflight (clean tree, main equals origin/main, daemon up, version tag free on Docker Hub and in git), build with OCI labels, verify with compose and `smoke.py`. `--apply` pushes `<version>` and `latest`, checks equal digests, pushes git tag `v<version>`, then checks the Hub page. `task st:release [-- --apply]`; `--apply` is run by a person. Tested by `tests/test_script_release.py`.
 
 Each script has `-h`. Tests are `tests/test_script_*.py`; they use fakes or temporary git repositories and never touch Docker or the network. See [workflow](../docs/workflow.md).
 
