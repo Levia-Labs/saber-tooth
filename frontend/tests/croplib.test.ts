@@ -1,22 +1,19 @@
+import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { cropMap, getTimeline } from "../src/api/client";
 import type { CropStart } from "../src/api/types";
 import { toAlert } from "../src/lib/alerts";
 import {
-  canStep,
   clampStart,
-  sectionAt,
   clock,
-  endFor,
-  endKeepingLength,
   keepStart,
+  moveEdge,
+  nudgeEdge,
   pickEnd,
+  sameSpan,
+  sectionAt,
   secondsAt,
-  snapEnd,
-  snapStart,
-  startAtOrAfter,
-  stepEnd,
-  stepStart,
+  shiftWindow,
   suggestion,
 } from "../src/lib/crop";
 import { TIMELINE } from "./crophelpers";
@@ -43,59 +40,81 @@ describe("clock and pointer mapping", () => {
   });
 });
 
-describe("snapping", () => {
-  test("the start snaps to the nearest section boundary", () => {
-    expect(snapStart(P60, 10).beat).toBe(0);
-    expect(snapStart(P60, 70).beat).toBe(128);
-  });
-
-  test("the end snaps to the nearest allowed end of that start", () => {
-    expect(snapEnd(S0, 59).beat).toBe(116);
-    expect(snapEnd(S0, 200).beat).toBe(132);
-  });
-
+describe("choosing an end", () => {
   test("pickEnd prefers the strongest kind, then the length closest to the band middle", () => {
     expect(pickEnd(S0, [54, 66]).beat).toBe(128);
     expect(pickEnd(S128, [54, 66]).beat).toBe(256); // phrase beats bar4
   });
-
-  test("endFor keeps a still-allowed end and re-picks otherwise", () => {
-    expect(endFor(S0, 116, [54, 66]).beat).toBe(116);
-    expect(endFor(S128, 128, [54, 66]).beat).toBe(256);
-    expect(endFor(S0, null, [54, 66]).beat).toBe(128);
-  });
 });
 
-describe("stepping", () => {
-  test("arrows step to the next or previous start and stay at the ends", () => {
-    expect(stepStart(P60, 0, 1).beat).toBe(128);
-    expect(stepStart(P60, 128, 1).beat).toBe(128);
-    expect(stepStart(P60, 128, -1).beat).toBe(0);
-    expect(stepStart(P60, 0, -1).beat).toBe(0);
+describe("free edges", () => {
+  const span = { start_s: 10, end_s: 70 };
+
+  test("an edge moves to any second, not to a section or phrase point", () => {
+    expect(moveEdge(span, "start", 12.34, 1, 140)).toEqual({ start_s: 12.34, end_s: 70 });
+    expect(moveEdge(span, "end", 99.9, 1, 140)).toEqual({ start_s: 10, end_s: 99.9 });
   });
 
-  test("arrows step through every allowed end", () => {
-    expect(stepEnd(S0, 128, -1, false).beat).toBe(116);
-    expect(stepEnd(S0, 128, 1, false).beat).toBe(132);
-    expect(stepEnd(S0, 132, 1, false).beat).toBe(132);
+  test("the song edges and the minimum length clamp an edge", () => {
+    expect(moveEdge(span, "start", -5, 1, 140).start_s).toBe(0);
+    expect(moveEdge(span, "start", 200, 1, 140).start_s).toBe(69);
+    expect(moveEdge(span, "end", 500, 1, 140).end_s).toBe(140);
+    expect(moveEdge(span, "end", 0, 1, 140).end_s).toBe(11);
+    expect(moveEdge(span, "end", 0, 2.5, 140).end_s).toBe(12.5);
   });
 
-  test("shift jumps to the next or previous section end only", () => {
-    expect(stepEnd(S0, 116, 1, true).beat).toBe(128);
-    expect(stepEnd(S0, 132, -1, true).beat).toBe(128);
-    expect(stepEnd(S0, 128, -1, true).beat).toBe(128); // no earlier section end
+  test("nudges are 0.1 s, or 1 s with Shift, and do not drift", () => {
+    expect(nudgeEdge(span, "end", 1, false, 1, 140).end_s).toBe(70.1);
+    expect(nudgeEdge(span, "end", -1, true, 1, 140).end_s).toBe(69);
+    let at = span;
+    for (let i = 0; i < 30; i++) at = nudgeEdge(at, "start", 1, false, 1, 140);
+    expect(at.start_s).toBe(13);
+  });
+
+  test("the whole window keeps its length and stays inside the song", () => {
+    expect(shiftWindow(span, 33.3, 140)).toEqual({ start_s: 33.3, end_s: 93.3 });
+    expect(shiftWindow(span, -4, 140)).toEqual({ start_s: 0, end_s: 60 });
+    expect(shiftWindow(span, 500, 140)).toEqual({ start_s: 80, end_s: 140 });
+  });
+
+  test("any edge move or nudge ends inside the song and at least the minimum long", () => {
+    const edge = fc.constantFrom("start" as const, "end" as const);
+    fc.assert(
+      fc.property(
+        fc.double({ min: 0, max: 100, noNaN: true }),
+        fc.double({ min: 1, max: 100, noNaN: true }),
+        edge,
+        fc.double({ min: -500, max: 500, noNaN: true }),
+        (a, len, which, to) => {
+          const start = { start_s: a, end_s: a + len };
+          const moved = moveEdge(start, which, to, 1, 200);
+          expect(moved.start_s).toBeGreaterThanOrEqual(0);
+          expect(moved.end_s).toBeLessThanOrEqual(200);
+          expect(moved.end_s - moved.start_s).toBeGreaterThanOrEqual(1 - 1e-9);
+          const nudged = nudgeEdge(moved, which, 1, true, 1, 200);
+          expect(nudged.end_s - nudged.start_s).toBeGreaterThanOrEqual(1 - 1e-9);
+          expect(nudged.end_s).toBeLessThanOrEqual(200);
+        },
+      ),
+    );
+  });
+
+  test("sameSpan compares to the millisecond", () => {
+    expect(sameSpan(span, { start_s: 10.0001, end_s: 70 })).toBe(true);
+    expect(sameSpan(span, { start_s: 10.01, end_s: 70 })).toBe(false);
   });
 });
 
 describe("selection", () => {
   test("suggestion is the best window, or null when the length is off", () => {
-    expect(suggestion(P60)).toEqual({ start: 0, end: 128 });
+    expect(suggestion(P60)).toEqual({ start_s: 0, end_s: 64 });
     expect(suggestion({ ...P60, enabled: false })).toBeNull();
   });
 
   test("switching length keeps the start when the new plan has it", () => {
-    expect(keepStart(P120, { start: 0, end: 128 })).toEqual({ start: 0, end: 224 });
-    expect(keepStart(P120, { start: 128, end: 256 })).toBeNull();
+    expect(keepStart(P120, { start_s: 0, end_s: 64 })).toEqual({ start_s: 0, end_s: 112 });
+    expect(keepStart(P120, { start_s: 64, end_s: 128 })).toBeNull();
+    expect(keepStart(P120, { start_s: 12.3, end_s: 64 })).toBeNull();
     expect(keepStart(P60, null)).toBeNull();
   });
 });
@@ -137,32 +156,6 @@ describe("client and alerts", () => {
       title: "Cropped",
       message: "Written to Song [1 min].",
     });
-  });
-});
-
-describe("moving the whole window", () => {
-  test("startAtOrAfter picks the first start from the given second, else the last", () => {
-    expect(startAtOrAfter(P60, 0).beat).toBe(0);
-    expect(startAtOrAfter(P60, 1).beat).toBe(128);
-    expect(startAtOrAfter(P60, 64).beat).toBe(128);
-    expect(startAtOrAfter(P60, 100).beat).toBe(128);
-  });
-
-  test("canStep is false at the first and last start", () => {
-    expect(canStep(P60, 0, -1)).toBe(false);
-    expect(canStep(P60, 0, 1)).toBe(true);
-    expect(canStep(P60, 128, 1)).toBe(false);
-    expect(canStep(P60, 128, -1)).toBe(true);
-  });
-});
-
-describe("re-picking the end by length", () => {
-  test("picks the end whose length is closest to the wanted one, stronger kind on a tie", () => {
-    expect(endKeepingLength(S0, 64).beat).toBe(128);
-    expect(endKeepingLength(S0, 58.4).beat).toBe(116);
-    expect(endKeepingLength(S0, 57).beat).toBe(112);
-    expect(endKeepingLength(S0, 1).beat).toBe(112);
-    expect(endKeepingLength(S128, 64).beat).toBe(256);
   });
 });
 

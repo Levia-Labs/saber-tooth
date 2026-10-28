@@ -67,6 +67,8 @@ export interface CropSection {
 export interface Timeline {
   map_id: string;
   duration_s: number;
+  /** Shortest crop in seconds; 1 when absent. */
+  min_length_s?: number;
   bpm: number;
   hardest: string;
   /** True when the map has no audio analysis: sections come from the notes and lights only. */

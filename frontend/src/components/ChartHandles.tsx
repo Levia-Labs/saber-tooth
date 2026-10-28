@@ -1,7 +1,6 @@
 import type { KeyboardEvent, PointerEvent } from "react";
 import { clock } from "../lib/crop";
-import { Icon } from "./icons";
-import type { Edge, Span } from "./NpsChart";
+import type { Edge } from "./NpsChart";
 
 export const W = 1000;
 export const H = 160;
@@ -19,7 +18,12 @@ interface HandleProps {
   onBlur: () => void;
 }
 
-/** A draggable, keyboard-steppable edge of the window. */
+/** Route later pointer events to `el` so a drag keeps working outside it. */
+export function capture(el: Element | null, id: number): void {
+  if (el && "setPointerCapture" in el) el.setPointerCapture(id);
+}
+
+/** A draggable edge of the window; arrows nudge it 0.1 s, Shift and arrows 1 s. */
 export function Handle({ edge, seconds, duration, onDown, onStep, onFocus, onBlur }: HandleProps) {
   const onKey = (e: KeyboardEvent) => {
     const dir =
@@ -52,44 +56,5 @@ export function Handle({ edge, seconds, duration, onDown, onStep, onFocus, onBlu
       <line x1={x} x2={x} y1={0} y2={H} />
       <rect x={x - 6} y={H / 2 - 14} width={12} height={28} rx={3} />
     </g>
-  );
-}
-
-/** Left and right arrows under the selection that step the whole window one allowed start. */
-export function MoveButtons({
-  selection,
-  duration,
-  canShift,
-  onShiftStep,
-}: {
-  selection: Span;
-  duration: number;
-  canShift: { earlier: boolean; later: boolean };
-  onShiftStep: (dir: 1 | -1) => void;
-}) {
-  const centre = ((selection.start_s + selection.end_s) / 2 / duration) * 100;
-  return (
-    <div className="nps-move" style={{ left: `${centre}%` }}>
-      <button
-        type="button"
-        className="btn icon"
-        aria-label="Move selection earlier"
-        title="Move selection earlier"
-        disabled={!canShift.earlier}
-        onClick={() => onShiftStep(-1)}
-      >
-        <Icon name="back" />
-      </button>
-      <button
-        type="button"
-        className="btn icon"
-        aria-label="Move selection later"
-        title="Move selection later"
-        disabled={!canShift.later}
-        onClick={() => onShiftStep(1)}
-      >
-        <Icon name="forward" />
-      </button>
-    </div>
   );
 }

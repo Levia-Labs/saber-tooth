@@ -1,5 +1,6 @@
 import { useRef, type KeyboardEvent, type ReactNode } from "react";
 import { MAP_TABS, tabForKey, type MapTab } from "../lib/mapTabs";
+import { Icon } from "./icons";
 
 export const tabId = (k: MapTab) => `map-tab-${k}`;
 export const panelId = (k: MapTab) => `map-panel-${k}`;
@@ -21,7 +22,7 @@ export function MapTabList({ available, active, onSelect }: Props) {
     list.current?.querySelector<HTMLElement>(`#${tabId(next)}`)?.focus();
   };
   return (
-    <div ref={list} className="map-tabs" role="tablist" aria-label="Map">
+    <div ref={list} className="mode-switch map-tabs" role="tablist" aria-label="Map">
       {MAP_TABS.filter((t) => available.includes(t.key)).map((t) => (
         <button
           key={t.key}
@@ -35,6 +36,7 @@ export function MapTabList({ available, active, onSelect }: Props) {
           onClick={() => onSelect(t.key)}
           onKeyDown={onKey}
         >
+          <Icon name={t.icon} />
           {t.label}
         </button>
       ))}

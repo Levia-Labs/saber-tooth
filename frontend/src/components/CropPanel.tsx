@@ -4,32 +4,29 @@ import { Link } from "react-router";
 import { cropMap } from "../api/client";
 import { useJobRunner } from "../api/jobs";
 import { keys, useTimeline } from "../api/queries";
-import type { CropLength, CropResult, CropStart, Job, Timeline } from "../api/types";
+import type { CropLength, CropResult, Job, Timeline } from "../api/types";
 import { errorToAlert, toAlert } from "../lib/alerts";
 import {
   CROP_TIPS,
-  KIND_LABEL,
-  clock,
-  endFor,
-  endKeepingLength,
+  MIN_LENGTH_S,
   keepStart,
-  same,
-  snapEnd,
-  snapStart,
-  startAtOrAfter,
-  stepEnd,
-  stepStart,
-  canStep,
+  moveEdge,
+  nudgeEdge,
+  sameSpan,
+  shiftWindow,
   suggestion,
-  type Choice,
+  type Span,
 } from "../lib/crop";
 import { Alert, SpecAlert } from "./Alert";
 import { ActionButton } from "./Buttons";
 import { NpsChart, type Edge } from "./NpsChart";
 
-const LENGTHS: { key: CropLength; label: string }[] = [
+type Choice = CropLength | "unlimited";
+
+const LENGTHS: { key: Choice; label: string }[] = [
   { key: "60", label: "1 min" },
   { key: "120", label: "2 min" },
+  { key: "unlimited", label: "Unlimited" },
 ];
 
 function CropSkeleton() {
@@ -42,21 +39,16 @@ function CropSkeleton() {
   );
 }
 
-function LengthSwitch(props: {
-  value: CropLength;
-  data: Timeline;
-  onChange: (next: CropLength) => void;
-}) {
+function LengthSwitch(props: { value: Choice; data: Timeline; onChange: (next: Choice) => void }) {
   return (
-    <div className="crop-switch" role="radiogroup" aria-label="Crop length">
+    <div className="mode-switch crop-switch" role="radiogroup" aria-label="Crop length">
       {LENGTHS.map(({ key, label }) => (
         <button
           key={key}
           type="button"
           role="radio"
           aria-checked={props.value === key}
-          disabled={!props.data.lengths[key].enabled}
-          className={props.value === key ? "btn accent" : "btn plain"}
+          disabled={key !== "unlimited" && !props.data.lengths[key].enabled}
           onClick={() => props.onChange(key)}
         >
           {label}
@@ -94,46 +86,38 @@ interface EditorProps {
 function CropEditor({ mapId, data, busy, audioUrl }: EditorProps) {
   const client = useQueryClient();
   const crop = useJobRunner("Crop");
-  const [length, setLength] = useState<CropLength>(data.lengths["60"].enabled ? "60" : "120");
-  const [picked, setPicked] = useState<Choice | null>(null);
-  const plan = data.lengths[length];
-  const best = suggestion(plan);
+  const [length, setLength] = useState<Choice>(
+    data.lengths["60"].enabled ? "60" : data.lengths["120"].enabled ? "120" : "unlimited",
+  );
+  const [picked, setPicked] = useState<Span | null>(null);
+  const min = data.min_length_s ?? MIN_LENGTH_S;
+  const whole: Span = { start_s: 0, end_s: data.duration_s };
+  const plan = length === "unlimited" ? null : data.lengths[length];
+  const best = plan ? suggestion(plan) : whole;
   const selection = picked ?? best;
-  const start = selection ? plan.starts.find((s) => same(s.beat, selection.start)) : undefined;
-  const end = start && selection ? start.ends.find((e) => same(e.beat, selection.end)) : undefined;
-  const seconds = start && end ? end.seconds - start.seconds : null;
-  const amber = end !== undefined && end.kind !== "section";
-  const edited =
-    picked !== null && !(best && same(picked.start, best.start) && same(picked.end, best.end));
+  const edited = picked !== null && !(best && sameSpan(picked, best));
+  const beats = (seconds: number) => (seconds * data.bpm) / 60;
 
-  const moveStart = (next: CropStart) =>
-    setPicked({ start: next.beat, end: endFor(next, selection?.end ?? null, plan.band).beat });
-  /** Move the whole window to a start, keeping its length as close as the new start allows. */
-  const moveWindow = (next: CropStart) =>
-    setPicked({ start: next.beat, end: endKeepingLength(next, seconds ?? 0).beat });
-  const onShift = (at: number) => moveWindow(snapStart(plan, at));
-  const onJump = (at: number) => moveWindow(startAtOrAfter(plan, at));
-  const onShiftStep = (dir: 1 | -1) => {
-    if (start) moveWindow(stepStart(plan, start.beat, dir));
-  };
-  const onMove = (edge: Edge, at: number) => {
-    if (edge === "start") moveStart(snapStart(plan, at));
-    else if (start) setPicked({ start: start.beat, end: snapEnd(start, at).beat });
-  };
-  const onStep = (edge: Edge, dir: 1 | -1, jump: boolean) => {
-    if (!start || !end) return;
-    if (edge === "start") moveStart(stepStart(plan, start.beat, dir));
-    else setPicked({ start: start.beat, end: stepEnd(start, end.beat, dir, jump).beat });
-  };
-  const choose = (next: CropLength) => {
+  const onMove = (edge: Edge, at: number) =>
+    selection && setPicked(moveEdge(selection, edge, at, min, data.duration_s));
+  const onStep = (edge: Edge, dir: 1 | -1, big: boolean) =>
+    selection && setPicked(nudgeEdge(selection, edge, dir, big, min, data.duration_s));
+  /** Move the whole window to a start, keeping its length. */
+  const onShift = (at: number) =>
+    selection && setPicked(shiftWindow(selection, at, data.duration_s));
+  const choose = (next: Choice) => {
     if (next === length) return;
-    setPicked(keepStart(data.lengths[next], selection));
+    if (next === "unlimited") setPicked(selection ?? whole);
+    else setPicked(keepStart(data.lengths[next], selection));
     setLength(next);
   };
   const create = () => {
-    if (!start || !end) return;
+    if (!selection) return;
+    const exact = picked === null && plan?.suggestions[0];
+    const startBeat = exact ? exact.start_beat : beats(selection.start_s);
+    const endBeat = exact ? exact.end_beat : beats(selection.end_s);
     void crop
-      .run(() => cropMap(mapId, start.beat, end.beat))
+      .run(() => cropMap(mapId, startBeat, endBeat))
       .then(() => client.invalidateQueries({ queryKey: keys.maps }));
   };
 
@@ -146,63 +130,54 @@ function CropEditor({ mapId, data, busy, audioUrl }: EditorProps) {
           message="This song has no audio analysis, so section edges come from the notes and lights alone."
         />
       )}
-      {LENGTHS.filter(({ key }) => !data.lengths[key].enabled).map(({ key, label }) => (
-        <Alert
-          key={key}
-          variant="info"
-          title={`${label} crop unavailable`}
-          message={data.lengths[key].reason ?? ""}
-        />
-      ))}
-      <LengthSwitch value={length} data={data} onChange={choose} />
+      {LENGTHS.filter(({ key }) => key !== "unlimited" && !data.lengths[key].enabled).map(
+        ({ key, label }) => (
+          <Alert
+            key={key}
+            variant="info"
+            title={`${label} crop unavailable`}
+            message={data.lengths[key as CropLength].reason ?? ""}
+          />
+        ),
+      )}
+      <div className="crop-bar">
+        <LengthSwitch value={length} data={data} onChange={choose} />
+        <div className="crop-actions">
+          {edited && (
+            <ActionButton
+              icon="reset"
+              label="Reset to suggestion"
+              tip={CROP_TIPS.reset}
+              text
+              onClick={() => setPicked(null)}
+            />
+          )}
+          <ActionButton
+            icon="apply"
+            label="Save as new map"
+            tip={CROP_TIPS.create}
+            text
+            variant="accent"
+            disabled={!selection || busy || crop.busy}
+            onClick={create}
+          />
+        </div>
+      </div>
       <NpsChart
         nps={data.nps}
         hardest={data.hardest}
         sections={data.sections}
         duration={data.duration_s}
-        selection={start && end ? { start_s: start.seconds, end_s: end.seconds } : null}
-        faint={plan.suggestions.slice(1).map((w) => ({ start_s: w.start_s, end_s: w.end_s }))}
-        endMarks={start ? start.ends.map((e) => ({ seconds: e.seconds, kind: e.kind })) : []}
+        selection={selection}
+        faint={
+          plan ? plan.suggestions.slice(1).map((w) => ({ start_s: w.start_s, end_s: w.end_s })) : []
+        }
         onMove={onMove}
         onStep={onStep}
         onShift={onShift}
-        onJump={onJump}
-        onShiftStep={onShiftStep}
-        canShift={{
-          earlier: start !== undefined && canStep(plan, start.beat, -1),
-          later: start !== undefined && canStep(plan, start.beat, 1),
-        }}
+        onJump={onShift}
         audioUrl={audioUrl}
       />
-      {end && seconds !== null && (
-        <p className={amber ? "crop-readout crop-amber" : "crop-readout"} aria-live="polite">
-          {`Length ${clock(seconds)}. ${
-            amber
-              ? `Ends on a ${KIND_LABEL[end.kind]}, not a section boundary.`
-              : "Both cuts are on section boundaries."
-          }`}
-        </p>
-      )}
-      <div className="crop-actions">
-        <ActionButton
-          icon="apply"
-          label="Save as new map"
-          tip={CROP_TIPS.create}
-          text
-          variant="accent"
-          disabled={!start || !end || busy || crop.busy}
-          onClick={create}
-        />
-        {edited && (
-          <ActionButton
-            icon="reset"
-            label="Reset to suggestion"
-            tip={CROP_TIPS.reset}
-            text
-            onClick={() => setPicked(null)}
-          />
-        )}
-      </div>
       <CropOutcome job={crop.job} error={crop.error} />
     </div>
   );

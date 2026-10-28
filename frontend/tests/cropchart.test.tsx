@@ -4,19 +4,11 @@ import { describe, expect, test, vi } from "vitest";
 import { NpsChart } from "../src/components/NpsChart";
 import { TIMELINE } from "./crophelpers";
 
-const MARKS = [
-  { seconds: 56, kind: "bar4" as const },
-  { seconds: 58, kind: "bar" as const },
-  { seconds: 64, kind: "section" as const },
-  { seconds: 66, kind: "bar" as const },
-];
-
 function chart(patch: Partial<Parameters<typeof NpsChart>[0]> = {}) {
   const onMove = vi.fn();
   const onStep = vi.fn();
   const onShift = vi.fn();
   const onJump = vi.fn();
-  const onShiftStep = vi.fn();
   const view = render(
     <NpsChart
       nps={TIMELINE.nps}
@@ -25,13 +17,10 @@ function chart(patch: Partial<Parameters<typeof NpsChart>[0]> = {}) {
       duration={TIMELINE.duration_s}
       selection={{ start_s: 0, end_s: 64 }}
       faint={[{ start_s: 64, end_s: 128 }]}
-      endMarks={MARKS}
       onMove={onMove}
       onStep={onStep}
       onShift={onShift}
       onJump={onJump}
-      onShiftStep={onShiftStep}
-      canShift={{ earlier: true, later: true }}
       {...patch}
     />,
   );
@@ -47,11 +36,11 @@ function chart(patch: Partial<Parameters<typeof NpsChart>[0]> = {}) {
     y: 0,
     toJSON: () => ({}),
   });
-  return { ...view, svg, onMove, onStep, onShift, onJump, onShiftStep };
+  return { ...view, svg, onMove, onStep, onShift, onJump };
 }
 
 describe("NpsChart", () => {
-  test("draws section bands, the selection, faint windows, lines and end marks", () => {
+  test("draws section bands, the selection, faint windows and lines, with no allowed-point marks", () => {
     const { container } = chart();
     expect(container.querySelectorAll(".nps-section")).toHaveLength(3);
     expect(container.querySelectorAll(".nps-selection")).toHaveLength(1);
@@ -61,8 +50,7 @@ describe("NpsChart", () => {
       "data-difficulty",
       "ExpertPlus",
     );
-    expect(container.querySelectorAll('[data-kind="section"]')).toHaveLength(1);
-    expect(container.querySelectorAll('[data-kind="bar"]')).toHaveLength(2);
+    expect(container.querySelector("[data-kind]")).toBeNull();
   });
 
   test("the handles are sliders with the time as their value", () => {
@@ -75,11 +63,11 @@ describe("NpsChart", () => {
   });
 
   test("without a selection there are no handles", () => {
-    chart({ selection: null, endMarks: [] });
+    chart({ selection: null });
     expect(screen.queryByRole("slider")).toBeNull();
   });
 
-  test("arrow keys step, Shift jumps, other keys do nothing", async () => {
+  test("arrow keys nudge, Shift makes it big, other keys do nothing", async () => {
     const { onStep } = chart();
     const user = userEvent.setup();
     screen.getByRole("slider", { name: "Crop start" }).focus();
@@ -131,13 +119,10 @@ describe("NpsChart keyboard readout", () => {
         duration={TIMELINE.duration_s}
         selection={{ start_s: 70, end_s: 120 }}
         faint={[]}
-        endMarks={[]}
         onMove={vi.fn()}
         onStep={onStep}
         onShift={vi.fn()}
         onJump={vi.fn()}
-        onShiftStep={vi.fn()}
-        canShift={{ earlier: true, later: true }}
       />,
     );
     const readout = screen.getByText(/^1:10\.0, section 2 of 3, notes per second: /);

@@ -126,6 +126,13 @@ const ICONS = {
     </>
   ),
   crop: <path d="M7 3v14h14M3 7h14v14" />,
+  scissors: (
+    <>
+      <circle cx="6" cy="6.5" r="2.5" />
+      <circle cx="6" cy="17.5" r="2.5" />
+      <path d="M8 8l12 9M8 16l12-9" />
+    </>
+  ),
   spinner: <path d="M12 3a9 9 0 1 0 9 9" />,
   chevron: <path d="M6 9l6 6 6-6" />,
   upload: <path d="M12 16V4M7 9l5-5 5 5M4 17v3h16v-3" />,

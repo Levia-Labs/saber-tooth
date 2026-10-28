@@ -1,17 +1,8 @@
-// Pure helpers for the crop panel: snapping, stepping and re-picking the window edges.
+// Pure helpers for the crop panel: free window edges kept inside the song and above a minimum length.
 import type { CropEnd, CropPlan, CropStart, EndKind } from "../api/types";
-
-export const EPS = 1e-6;
 
 /** Strongest kind first: the order the server prefers an end in. */
 export const KIND_RANK: Record<EndKind, number> = { section: 0, phrase: 1, bar4: 2, bar: 3 };
-
-export const KIND_LABEL: Record<EndKind, string> = {
-  section: "section boundary",
-  phrase: "phrase line",
-  bar4: "4-bar line",
-  bar: "bar line",
-};
 
 export const CROP_TIPS = {
   create:
@@ -19,13 +10,17 @@ export const CROP_TIPS = {
   reset: "Go back to the suggested window.",
 } as const;
 
-/** A chosen window, in beats. */
-export interface Choice {
-  start: number;
-  end: number;
+/** A chosen window, in song seconds. */
+export interface Span {
+  start_s: number;
+  end_s: number;
 }
 
-export const same = (a: number, b: number): boolean => Math.abs(a - b) < EPS;
+/** The shortest crop the server accepts, in seconds, when the timeline does not say. */
+export const MIN_LENGTH_S = 1;
+/** Arrow-key nudge of a handle, and the larger one with Shift. */
+export const NUDGE_S = 0.1;
+export const NUDGE_BIG_S = 1;
 
 /** "m:ss.s" for a time in seconds. */
 export function clock(seconds: number): string {
@@ -40,19 +35,6 @@ export function secondsAt(clientX: number, left: number, width: number, duration
   return Math.min(duration, Math.max(0, ((clientX - left) / width) * duration));
 }
 
-export function nearest<T extends { seconds: number }>(points: readonly T[], seconds: number): T {
-  let best = points[0] as T;
-  for (const p of points) {
-    if (Math.abs(p.seconds - seconds) < Math.abs(best.seconds - seconds)) best = p;
-  }
-  return best;
-}
-
-export const snapStart = (plan: CropPlan, seconds: number): CropStart =>
-  nearest(plan.starts, seconds);
-
-export const snapEnd = (start: CropStart, seconds: number): CropEnd => nearest(start.ends, seconds);
-
 /** The strongest kind, then the length closest to the middle of the band, then the earlier end. */
 export function pickEnd(start: CropStart, band: [number, number]): CropEnd {
   const target = (band[0] + band[1]) / 2;
@@ -62,73 +44,69 @@ export function pickEnd(start: CropStart, band: [number, number]): CropEnd {
   )[0] as CropEnd;
 }
 
-/** The end to show after the start changed: the old one when still allowed, else a new pick. */
-export function endFor(start: CropStart, previous: number | null, band: [number, number]): CropEnd {
-  const kept = start.ends.find((e) => previous !== null && same(e.beat, previous));
-  return kept ?? pickEnd(start, band);
-}
-
-function stepIn<T extends { beat: number }>(
-  points: readonly T[],
-  current: number,
-  dir: 1 | -1,
-): T | undefined {
-  const sorted = [...points].sort((a, b) => a.beat - b.beat);
-  return dir === 1
-    ? sorted.find((p) => p.beat > current + EPS)
-    : sorted.reverse().find((p) => p.beat < current - EPS);
-}
-
-/** Next or previous start; every start is a section boundary, so Shift adds nothing here. */
-export function stepStart(plan: CropPlan, current: number, dir: 1 | -1): CropStart {
-  return (
-    stepIn(plan.starts, current, dir) ??
-    (plan.starts.find((s) => same(s.beat, current)) as CropStart)
-  );
-}
-
-/** Next or previous allowed end; `jump` considers section ends only. */
-export function stepEnd(start: CropStart, current: number, dir: 1 | -1, jump: boolean): CropEnd {
-  const pool = jump ? start.ends.filter((e) => e.kind === "section") : start.ends;
-  return (
-    stepIn(pool, current, dir) ??
-    start.ends.find((e) => same(e.beat, current)) ??
-    (start.ends[0] as CropEnd)
-  );
-}
-
-export function suggestion(plan: CropPlan): Choice | null {
+/** The plan's best window, or null when the length is off. */
+export function suggestion(plan: CropPlan): Span | null {
   const best = plan.suggestions[0];
-  return plan.enabled && best ? { start: best.start_beat, end: best.end_beat } : null;
+  return plan.enabled && best ? { start_s: best.start_s, end_s: best.end_s } : null;
 }
 
 /** Switching length: keep the start when the new plan has it and re-pick the end. */
-export function keepStart(plan: CropPlan, choice: Choice | null): Choice | null {
-  const start = choice ? plan.starts.find((s) => same(s.beat, choice.start)) : undefined;
-  return start ? { start: start.beat, end: pickEnd(start, plan.band).beat } : null;
+export function keepStart(plan: CropPlan, span: Span | null): Span | null {
+  const at = span?.start_s ?? -1;
+  const start = plan.starts.find((s) => Math.abs(s.seconds - at) < 1e-3);
+  return start ? { start_s: start.seconds, end_s: pickEnd(start, plan.band).seconds } : null;
 }
 
-/** The first start from `seconds` on; the last start when none follows. */
-export function startAtOrAfter(plan: CropPlan, seconds: number): CropStart {
-  const sorted = [...plan.starts].sort((a, b) => a.seconds - b.seconds);
-  return sorted.find((s) => s.seconds >= seconds - EPS) ?? (sorted.at(-1) as CropStart);
-}
-
-/** Whether another start lies in that direction. */
-export const canStep = (plan: CropPlan, beat: number, dir: 1 | -1): boolean =>
-  stepIn(plan.starts, beat, dir) !== undefined;
-
-/** The end whose length is closest to `length` seconds; a tie goes to the stronger kind. */
-export function endKeepingLength(start: CropStart, length: number): CropEnd {
-  const off = (e: CropEnd) => Math.abs(e.seconds - start.seconds - length);
-  return [...start.ends].sort(
-    (a, b) => off(a) - off(b) || KIND_RANK[a.kind] - KIND_RANK[b.kind] || a.beat - b.beat,
-  )[0] as CropEnd;
-}
+const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
+/** Milliseconds, so repeated 0.1 s nudges never drift. */
+const tidy = (v: number): number => Math.round(v * 1000) / 1000;
 
 /** A window start kept inside the song: from 0 to the last start that still fits `length`. */
 export const clampStart = (start: number, length: number, duration: number): number =>
   Math.max(0, Math.min(duration - length, start));
+
+/** Move one edge to `seconds`: inside the song, never closer to the other edge than `min`. */
+export function moveEdge(
+  span: Span,
+  edge: "start" | "end",
+  seconds: number,
+  min: number,
+  duration: number,
+): Span {
+  // Bounds round inward, so tidying the value can never cut the window below `min`.
+  if (edge === "start") {
+    return {
+      ...span,
+      start_s: clamp(tidy(seconds), 0, Math.floor((span.end_s - min) * 1000) / 1000),
+    };
+  }
+  const lo = Math.ceil((span.start_s + min) * 1000) / 1000;
+  return { ...span, end_s: clamp(tidy(seconds), lo, Math.floor(duration * 1000) / 1000) };
+}
+
+/** Nudge an edge by 0.1 s, or by 1 s with `big`. */
+export function nudgeEdge(
+  span: Span,
+  edge: "start" | "end",
+  dir: 1 | -1,
+  big: boolean,
+  min: number,
+  duration: number,
+): Span {
+  const at = edge === "start" ? span.start_s : span.end_s;
+  return moveEdge(span, edge, at + dir * (big ? NUDGE_BIG_S : NUDGE_S), min, duration);
+}
+
+/** Move the whole window so it starts at `start`, keeping its length, inside the song. */
+export function shiftWindow(span: Span, start: number, duration: number): Span {
+  const length = span.end_s - span.start_s;
+  const at = tidy(clampStart(start, length, duration));
+  return { start_s: at, end_s: tidy(at + length) };
+}
+
+/** Whether two windows are the same to the millisecond. */
+export const sameSpan = (a: Span, b: Span): boolean =>
+  Math.abs(a.start_s - b.start_s) < 1e-3 && Math.abs(a.end_s - b.end_s) < 1e-3;
 
 /** The section holding `seconds`, if any. */
 export function sectionAt<T extends { start_s: number; end_s: number }>(

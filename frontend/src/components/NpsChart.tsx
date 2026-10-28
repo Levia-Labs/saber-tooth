@@ -1,25 +1,14 @@
 import { useState, type MouseEvent, type PointerEvent } from "react";
-import type { CropSection, EndKind } from "../api/types";
+import type { CropSection } from "../api/types";
 import { npsTicks, yFrac } from "../lib/axis";
-import { KIND_LABEL, clampStart, clock, sectionAt, secondsAt } from "../lib/crop";
+import { clampStart, clock, sectionAt, secondsAt, type Span } from "../lib/crop";
 import { levelColor } from "../lib/levels";
 import { Legend, TimeAxis, YAxis } from "./ChartAxes";
-import { H, Handle, MoveButtons, W, px } from "./ChartHandles";
-import { PlayButton, Playhead } from "./ChartPlayback";
-
-const MARK_LEN: Record<EndKind, number> = { section: 30, phrase: 22, bar4: 14, bar: 7 };
+import { H, Handle, W, capture, px } from "./ChartHandles";
+import { CueHandle, PlayButton, Playhead, usePlayback } from "./ChartPlayback";
 
 export type Edge = "start" | "end";
-
-export interface Span {
-  start_s: number;
-  end_s: number;
-}
-
-export interface EndMark {
-  seconds: number;
-  kind: EndKind;
-}
+export type { Span };
 
 interface Props {
   nps: Record<string, number[]>;
@@ -28,17 +17,14 @@ interface Props {
   duration: number;
   selection: Span | null;
   faint: Span[];
-  endMarks: EndMark[];
   /** A handle moved to this second while being dragged. */
   onMove: (edge: Edge, seconds: number) => void;
-  onStep: (edge: Edge, dir: 1 | -1, jump: boolean) => void;
+  /** An arrow key on a handle: one nudge in `dir`; `big` when Shift is held. */
+  onStep: (edge: Edge, dir: 1 | -1, big: boolean) => void;
   /** The whole window was dragged and released with its start at this second. */
   onShift: (startSeconds: number) => void;
   /** A section other than the selection was double-clicked: move the selection to start there. */
   onJump: (sectionStartSeconds: number) => void;
-  /** Step the whole window to the previous or next allowed start. */
-  onShiftStep: (dir: 1 | -1) => void;
-  canShift: { earlier: boolean; later: boolean };
   /** Map audio; without it there is no play button. */
   audioUrl?: string | null;
 }
@@ -61,12 +47,9 @@ function hoverText(seconds: number, nps: Props["nps"], sections: CropSection[]):
   return `${clock(seconds)}, ${where}, notes per second: ${rates.join(", ")}`;
 }
 
-function capture(el: Element | null, id: number): void {
-  if (el && "setPointerCapture" in el) el.setPointerCapture(id);
-}
-
 /** Notes per second across the song: one coloured line per difficulty, sections as bands, axes, the
- * chosen window with two draggable, keyboard-steppable edges, and a body that drags as a whole. */
+ * chosen window with two freely draggable, keyboard-nudged edges, a body that drags as a whole, and
+ * a playhead with a draggable cue. */
 export function NpsChart({
   nps,
   hardest,
@@ -74,18 +57,16 @@ export function NpsChart({
   duration,
   selection,
   faint,
-  endMarks,
   onMove,
   onStep,
   onShift,
   onJump,
-  onShiftStep,
-  canShift,
   audioUrl,
 }: Props) {
   const [hover, setHover] = useState<number | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
   const [focus, setFocus] = useState<Edge | null>(null);
+  const playback = usePlayback(audioUrl, selection);
   const names = Object.keys(nps);
   const { ticks, top } = npsTicks(Math.max(0, ...Object.values(nps).flat()));
   const length = selection ? selection.end_s - selection.start_s : 0;
@@ -203,22 +184,7 @@ export function NpsChart({
                 />
               );
             })}
-            {endMarks.map((m) => (
-              <line
-                key={m.seconds}
-                className={`nps-end nps-end-${m.kind}`}
-                data-kind={m.kind}
-                x1={px(m.seconds, duration)}
-                x2={px(m.seconds, duration)}
-                y1={H}
-                y2={H - MARK_LEN[m.kind]}
-              >
-                <title>{KIND_LABEL[m.kind]}</title>
-              </line>
-            ))}
-            {audioUrl && selection && (
-              <Playhead src={audioUrl} selection={selection} duration={duration} height={H} />
-            )}
+            {audioUrl && selection && <Playhead at={playback.at} duration={duration} height={H} />}
             {live && (
               <>
                 <Handle
@@ -242,20 +208,25 @@ export function NpsChart({
               </>
             )}
           </svg>
+          {audioUrl && selection && live && (
+            <PlayButton
+              playing={playback.playing}
+              centre={((live.start_s + live.end_s) / 2 / duration) * 100}
+              onPress={playback.press}
+            />
+          )}
           {audioUrl && selection && (
-            <PlayButton src={audioUrl} selection={selection} duration={duration} />
+            <CueHandle
+              at={playback.at}
+              selection={selection}
+              duration={duration}
+              onPreview={playback.preview}
+              onSeek={playback.seek}
+            />
           )}
         </div>
         <div className="nps-under">
           <TimeAxis duration={duration} />
-          {selection && (
-            <MoveButtons
-              selection={live ?? selection}
-              duration={duration}
-              canShift={canShift}
-              onShiftStep={onShiftStep}
-            />
-          )}
         </div>
       </div>
       <Legend names={names} />

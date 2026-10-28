@@ -1,8 +1,8 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, test } from "vitest";
 import { CropPanel } from "../src/components/CropPanel";
-import { TIMELINE, cropApi, renderPanel } from "./crophelpers";
+import { TIMELINE, cropApi, endHandle, renderPanel, startHandle } from "./crophelpers";
 
 const P120 = TIMELINE.lengths["120"];
 
@@ -31,77 +31,112 @@ describe("CropPanel", () => {
     expect(document.querySelector("[data-skeleton]")).toBeNull();
   });
 
-  test("opens on the suggestion with its exact length", async () => {
+  test("opens on the suggestion without any length or boundary text", async () => {
     const { user } = setup();
     await openPanel(user);
-    const readout = screen.getByText(/^Length 1:04\.0/);
-    expect(readout).not.toHaveClass("crop-amber");
-    expect(readout).toHaveTextContent("Both cuts are on section boundaries.");
+    expect(startHandle()).toHaveAttribute("aria-valuenow", "0");
+    expect(endHandle()).toHaveAttribute("aria-valuenow", "64");
+    expect(screen.queryByText(/Length \d/)).toBeNull();
+    expect(screen.queryByText(/section boundar/)).toBeNull();
+    expect(document.querySelector(".crop-readout, .crop-amber")).toBeNull();
     expect(screen.getByRole("button", { name: "Save as new map" })).toBeEnabled();
   });
 
-  test("the end steps to allowed points and the readout turns amber off a section end", async () => {
+  test("the length switch has 1 min, 2 min and Unlimited in the section-tab pill style", async () => {
     const { user } = setup();
     await openPanel(user);
-    screen.getByRole("slider", { name: "Crop end" }).focus();
-    await user.keyboard("{ArrowLeft}");
-    const readout = screen.getByText(/^Length 0:58\.0/);
-    expect(readout).toHaveClass("crop-amber");
-    expect(readout).toHaveTextContent("Ends on a bar line, not a section boundary.");
-    await user.keyboard("{Shift>}{ArrowRight}{/Shift}");
-    expect(screen.getByText(/^Length 1:04\.0/)).not.toHaveClass("crop-amber");
+    const group = screen.getByRole("radiogroup", { name: "Crop length" });
+    expect(group).toHaveClass("mode-switch");
+    expect(
+      within(group)
+        .getAllByRole("radio")
+        .map((r) => r.textContent),
+    ).toEqual(["1 min", "2 min", "Unlimited"]);
+    expect(screen.getByRole("radio", { name: "1 min" })).toBeChecked();
   });
 
-  test("moving the start re-picks the end and Create posts the chosen beats", async () => {
-    const { user, posts } = setup();
+  test("Save as new map and Reset to suggestion sit on the length row, to its right", async () => {
+    const { user } = setup();
     await openPanel(user);
-    screen.getByRole("slider", { name: "Crop start" }).focus();
+    startHandle().focus();
     await user.keyboard("{ArrowRight}");
-    const readout = screen.getByText(/^Length 1:04\.0/);
-    expect(readout).toHaveTextContent("Ends on a phrase line, not a section boundary.");
-    await user.click(screen.getByRole("button", { name: "Save as new map" }));
-    await waitFor(() =>
-      expect(posts).toEqual([
-        { path: "/api/maps/id0000000001/crop", body: { start_beat: 128, end_beat: 256 } },
-      ]),
-    );
+    const group = screen.getByRole("radiogroup", { name: "Crop length" });
+    const save = screen.getByRole("button", { name: "Save as new map" });
+    const reset = screen.getByRole("button", { name: /Reset to suggestion/ });
+    const row = group.closest(".crop-bar") as HTMLElement;
+    expect(row).not.toBeNull();
+    for (const button of [save, reset]) {
+      expect(row).toContainElement(button);
+      expect(group.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
   });
 
-  test("the arrow buttons step the whole window and keep its length", async () => {
+  test("arrow keys nudge a handle 0.1 s and Shift 1 s, and the end is not re-picked", async () => {
     const { user, posts } = setup();
     await openPanel(user);
-    const earlier = screen.getByRole("button", { name: "Move selection earlier" });
-    const later = screen.getByRole("button", { name: "Move selection later" });
-    expect(earlier).toBeDisabled();
-    await user.click(later);
-    expect(screen.getByRole("slider", { name: "Crop start" })).toHaveAttribute(
-      "aria-valuenow",
-      "64",
-    );
-    expect(screen.getByText(/^Length 1:04.0/)).toHaveTextContent("Ends on a phrase line");
-    expect(later).toBeDisabled();
-    expect(earlier).toBeEnabled();
+    endHandle().focus();
+    await user.keyboard("{ArrowLeft}");
+    expect(endHandle()).toHaveAttribute("aria-valuetext", "1:03.9");
+    await user.keyboard("{Shift>}{ArrowRight}{/Shift}");
+    expect(endHandle()).toHaveAttribute("aria-valuetext", "1:04.9");
+    startHandle().focus();
+    await user.keyboard("{ArrowRight}");
+    expect(startHandle()).toHaveAttribute("aria-valuetext", "0:00.1");
+    expect(endHandle()).toHaveAttribute("aria-valuetext", "1:04.9");
     await user.click(screen.getByRole("button", { name: "Save as new map" }));
-    await waitFor(() => expect(posts[0]?.body).toEqual({ start_beat: 128, end_beat: 256 }));
-  });
-
-  test("a single allowed start leaves both arrows disabled", async () => {
-    const { user } = setup();
-    await openPanel(user);
-    await user.click(screen.getByRole("radio", { name: "2 min" }));
-    expect(screen.getByRole("button", { name: "Move selection earlier" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Move selection later" })).toBeDisabled();
+    await waitFor(() => expect(posts).toHaveLength(1));
+    const body = posts[0]?.body as { start_beat: number; end_beat: number };
+    expect(body.start_beat).toBeCloseTo(0.2, 6);
+    expect(body.end_beat).toBeCloseTo(129.8, 6);
   });
 
   test("Reset to suggestion appears after an edit and restores the suggestion", async () => {
     const { user } = setup();
     await openPanel(user);
     expect(screen.queryByRole("button", { name: /Reset to suggestion/ })).toBeNull();
-    screen.getByRole("slider", { name: "Crop end" }).focus();
+    endHandle().focus();
     await user.keyboard("{ArrowLeft}");
     await user.click(screen.getByRole("button", { name: /Reset to suggestion/ }));
-    expect(screen.getByText(/^Length 1:04\.0/)).toBeInTheDocument();
+    expect(endHandle()).toHaveAttribute("aria-valuenow", "64");
     expect(screen.queryByRole("button", { name: /Reset to suggestion/ })).toBeNull();
+  });
+
+  test("Unlimited keeps the current window", async () => {
+    const { user, posts } = setup();
+    await openPanel(user);
+    endHandle().focus();
+    await user.keyboard("{Shift>}{ArrowLeft}{/Shift}");
+    await user.click(screen.getByRole("radio", { name: "Unlimited" }));
+    expect(screen.getByRole("radio", { name: "Unlimited" })).toBeChecked();
+    expect(startHandle()).toHaveAttribute("aria-valuenow", "0");
+    expect(endHandle()).toHaveAttribute("aria-valuenow", "63");
+    endHandle().focus();
+    await user.keyboard("{Shift>}{ArrowRight}{ArrowRight}{/Shift}");
+    expect(endHandle()).toHaveAttribute("aria-valuenow", "65");
+    await user.click(screen.getByRole("button", { name: "Save as new map" }));
+    await waitFor(() => expect(posts[0]?.body).toEqual({ start_beat: 0, end_beat: 130 }));
+  });
+
+  test("Unlimited with no suggestion opens on the whole song and is the default then", async () => {
+    const off = (reason: string) => ({ ...P120, enabled: false, reason });
+    const none = { ...TIMELINE, lengths: { "60": off("short"), "120": off("short") } };
+    const { user, posts } = setup({ timeline: none });
+    await openPanel(user);
+    expect(screen.getByRole("radio", { name: "Unlimited" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Unlimited" })).toBeEnabled();
+    expect(startHandle()).toHaveAttribute("aria-valuenow", "0");
+    expect(endHandle()).toHaveAttribute("aria-valuenow", "140");
+    await user.click(screen.getByRole("button", { name: "Save as new map" }));
+    await waitFor(() => expect(posts[0]?.body).toEqual({ start_beat: 0, end_beat: 280 }));
+  });
+
+  test("going from Unlimited to a length picks that length's suggestion", async () => {
+    const { user } = setup();
+    await openPanel(user);
+    await user.click(screen.getByRole("radio", { name: "Unlimited" }));
+    await user.click(screen.getByRole("radio", { name: "2 min" }));
+    expect(startHandle()).toHaveAttribute("aria-valuenow", "0");
+    expect(endHandle()).toHaveAttribute("aria-valuenow", "112");
   });
 
   test("switching to 2 min keeps the start when it exists and re-picks the end", async () => {
@@ -109,17 +144,18 @@ describe("CropPanel", () => {
     await openPanel(user);
     await user.click(screen.getByRole("radio", { name: "2 min" }));
     expect(screen.getByRole("radio", { name: "2 min" })).toBeChecked();
-    expect(screen.getByText(/^Length 1:52\.0/)).toBeInTheDocument();
+    expect(endHandle()).toHaveAttribute("aria-valuenow", "112");
     expect(screen.queryByRole("button", { name: /Reset to suggestion/ })).toBeNull();
   });
 
   test("switching to a length without the chosen start falls back to its suggestion", async () => {
     const { user } = setup();
     await openPanel(user);
-    screen.getByRole("slider", { name: "Crop start" }).focus();
+    startHandle().focus();
     await user.keyboard("{ArrowRight}");
     await user.click(screen.getByRole("radio", { name: "2 min" }));
-    expect(screen.getByText(/^Length 1:52\.0/)).toBeInTheDocument();
+    expect(startHandle()).toHaveAttribute("aria-valuenow", "0");
+    expect(endHandle()).toHaveAttribute("aria-valuenow", "112");
   });
 
   test("a map without analysis says its sections come from the map only", async () => {

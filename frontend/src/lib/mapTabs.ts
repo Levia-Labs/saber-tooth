@@ -1,10 +1,12 @@
 // The map page tabs: which exist, which one the URL names, and where an arrow key moves.
+import type { IconName } from "../components/icons";
+
 export type MapTab = "status" | "crop" | "delete";
 
-export const MAP_TABS: readonly { key: MapTab; label: string }[] = [
-  { key: "status", label: "Status" },
-  { key: "crop", label: "Crop" },
-  { key: "delete", label: "Delete" },
+export const MAP_TABS: readonly { key: MapTab; label: string; icon: IconName }[] = [
+  { key: "status", label: "Status", icon: "info" },
+  { key: "crop", label: "Crop", icon: "scissors" },
+  { key: "delete", label: "Delete", icon: "trash" },
 ];
 
 /** The tabs on offer; Crop is left out when the map cannot be cropped. */

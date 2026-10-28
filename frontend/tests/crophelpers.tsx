@@ -1,8 +1,9 @@
 import type { CropEnd, CropPlan, CropWindow, EndKind, Timeline } from "../src/api/types";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { MemoryRouter } from "react-router";
+import { vi } from "vitest";
 import { makeQueryClient } from "../src/App";
 import { AnnouncerProvider } from "../src/components/Announcer";
 import { TipProvider } from "../src/components/Tip";
@@ -52,6 +53,7 @@ const PLAN_120: CropPlan = {
 export const TIMELINE: Timeline = {
   map_id: "id0000000001",
   duration_s: 140,
+  min_length_s: 1,
   bpm: 120,
   hardest: "ExpertPlus",
   map_only: false,
@@ -117,4 +119,24 @@ export function cropApi(options: ApiOptions = {}) {
     return { items: [item(1)], total: 1, offset: 0, limit: 40 };
   });
   return { ...mock, posts };
+}
+
+export const startHandle = () => screen.getByRole("slider", { name: "Crop start" });
+export const endHandle = () => screen.getByRole("slider", { name: "Crop end" });
+
+/** The chart svg, 1000 px wide in a 140 s song: one pixel is 0.14 s. */
+export function chartSvg(): SVGSVGElement {
+  const svg = document.querySelector(".nps-stage > svg") as SVGSVGElement;
+  vi.spyOn(svg, "getBoundingClientRect").mockReturnValue({
+    left: 0,
+    top: 0,
+    right: 1000,
+    bottom: 160,
+    width: 1000,
+    height: 160,
+    x: 0,
+    y: 0,
+    toJSON: () => ({}),
+  });
+  return svg;
 }
