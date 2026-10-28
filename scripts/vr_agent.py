@@ -12,6 +12,7 @@ import contextlib
 import json
 import sys
 import threading
+import time
 from collections.abc import Callable
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -23,6 +24,8 @@ from saber_tooth.vr.worn import WornMonitor, load_openvr, stderr_log
 DEFAULT_PORT = 8101
 DEFAULT_BIND = "127.0.0.1"
 SAMPLE_S = 2.0
+LOG_EVERY_S = 60.0
+STOP_JOIN_S = 5.0
 
 
 def build_status(os_name: str, readers: Readers, monitor: WornMonitor) -> dict:
@@ -34,10 +37,19 @@ def build_status(os_name: str, readers: Readers, monitor: WornMonitor) -> dict:
 class Sampler:
     """Probes on a timer so a request is answered from memory, never from a slow probe."""
 
-    def __init__(self, sample: Callable[[], dict], fallback: dict, interval: float = SAMPLE_S):
+    def __init__(
+        self,
+        sample: Callable[[], dict],
+        fallback: dict,
+        interval: float = SAMPLE_S,
+        clock: Callable[[], float] = time.monotonic,
+    ):
         self._sample = sample
         self._interval = interval
+        self._clock = clock
         self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+        self._logged: dict[str, float] = {}
         self._value = fallback
         self.refresh()
 
@@ -48,14 +60,25 @@ class Sampler:
         try:
             self._value = self._sample()
         except Exception as exc:
-            print(f"vr_agent: probe failed ({exc}); keeping the last answer", file=sys.stderr)
+            kind, now = type(exc).__name__, self._clock()
+            last = self._logged.get(kind)
+            if last is None or now - last >= LOG_EVERY_S:
+                self._logged[kind] = now
+                print(f"vr_agent: probe failed ({exc}); keeping the last answer", file=sys.stderr)
 
     def run(self) -> None:
         while not self._stop.wait(self._interval):
             self.refresh()
 
+    def start(self) -> None:
+        self._thread = threading.Thread(target=self.run, name="vr-sampler", daemon=True)
+        self._thread.start()
+
     def stop(self) -> None:
+        """Ends the loop and waits (bounded) for a refresh already running."""
         self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=STOP_JOIN_S)
 
 
 def make_handler(latest: Callable[[], dict]) -> type[BaseHTTPRequestHandler]:
@@ -66,13 +89,21 @@ def make_handler(latest: Callable[[], dict]) -> type[BaseHTTPRequestHandler]:
             else:
                 self._send(404, {"error": "not found"})
 
-        def _send(self, code: int, body: dict) -> None:
+        def _other(self) -> None:
+            self._send(405, {"error": "method not allowed"}, allow=True)
+
+        do_POST = do_PUT = do_DELETE = do_PATCH = do_OPTIONS = do_HEAD = _other
+
+        def _send(self, code: int, body: dict, allow: bool = False) -> None:
             data = json.dumps(body).encode("utf-8")
             self.send_response(code)
+            if allow:
+                self.send_header("Allow", "GET")
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(data)))
             self.end_headers()
-            self.wfile.write(data)
+            if self.command != "HEAD":
+                self.wfile.write(data)
 
         def log_message(self, format, *args):
             return  # no per-request access lines
@@ -119,7 +150,7 @@ def main(
         except OSError as exc:
             print(port_message(args.bind, args.port, exc), file=sys.stderr)
             return 1
-        threading.Thread(target=sampler.run, name="vr-sampler", daemon=True).start()
+        sampler.start()
         print(
             f"vr_agent: serving http://{args.bind}:{args.port}/status (os={os_name}); Ctrl+C stops"
         )

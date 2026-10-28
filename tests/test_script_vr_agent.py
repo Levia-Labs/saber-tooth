@@ -154,3 +154,56 @@ def test_a_taken_port_also_closes_the_worn_session(monkeypatch):
     code = agent.main(["--port", "1"], readers=fake_readers(["vrserver.exe"]), monitor=monitor)
     assert code == 1
     assert monitor.asked[-1] is False
+
+
+def test_a_persistent_probe_failure_logs_at_most_once_a_minute(capsys):
+    now = [0.0]
+
+    def sample():
+        raise RuntimeError("probe broke")
+
+    sampler = agent.Sampler(sample, fallback={"n": 0}, clock=lambda: now[0])
+    now[0] = 2.0
+    sampler.refresh()
+    now[0] = 59.0
+    sampler.refresh()
+    assert capsys.readouterr().err.count("probe failed") == 1
+    now[0] = 61.0
+    sampler.refresh()
+    assert capsys.readouterr().err.count("probe failed") == 1
+
+
+def test_stop_waits_for_a_refresh_already_running():
+    entered, release, done = threading.Event(), threading.Event(), []
+    calls = []
+
+    def sample():
+        calls.append(1)
+        if len(calls) > 1:
+            entered.set()
+            release.wait(5)
+            done.append(True)
+        return {"n": len(calls)}
+
+    sampler = agent.Sampler(sample, fallback={}, interval=0.001)
+    sampler.start()
+    assert entered.wait(5)
+    threading.Timer(0.1, release.set).start()
+    sampler.stop()
+    assert done == [True]
+
+
+def test_other_methods_get_a_fixed_405_json_body():
+    server = agent.make_server("127.0.0.1", 0, lambda: none_status("linux"))
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        conn = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
+        conn.request("POST", "/status", body=b"x")
+        res = conn.getresponse()
+        assert res.status == 405 and res.getheader("Content-Type") == "application/json"
+        assert json.loads(res.read()) == {"error": "method not allowed"}
+        conn.close()
+    finally:
+        server.shutdown()
+        server.server_close()
