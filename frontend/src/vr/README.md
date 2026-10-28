@@ -8,3 +8,4 @@ The VR layout: mode decision, headset status, screens and the CSS hooks they use
 4. `presets.ts`, `VrNav.tsx`, `useNearEnd.ts`, `VrCard.tsx`, `VrLibraryPage.tsx`: the `/vr` Library screen (presets map onto the library query, state in the address, more cards on scroll).
 5. `VrMapPage.tsx`: the `/vr/maps/:id` screen; it reuses `CropPanel` with `steps` (the large step buttons of `../components/CropSteps.tsx`).
 6. `VrBsCard.tsx`, `VrBsPlaylists.tsx`, `VrBeatSaverPage.tsx`: the `/vr/beatsaver` screen (preset toggles, sort, cursor paging on scroll, playlists, large Download per card, the shared download summary toast; no text search).
+7. Routes: `/vr`, `/vr/maps/:id` and `/vr/beatsaver` are lazy routes in `App.tsx`; the server answers them with `index.html` on reload.

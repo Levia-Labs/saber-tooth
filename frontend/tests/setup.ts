@@ -12,6 +12,9 @@ await Promise.all([
   import("../src/pages/BeatSaverPlaylistsPage"),
   import("../src/pages/AboutPage"),
   import("../src/pages/NewPage"),
+  import("../src/vr/VrLibraryPage"),
+  import("../src/vr/VrMapPage"),
+  import("../src/vr/VrBeatSaverPage"),
 ]);
 
 // jsdom has no layout: give scroll containers a size so the virtualiser renders rows.

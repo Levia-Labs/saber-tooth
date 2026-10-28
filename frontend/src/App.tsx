@@ -24,6 +24,13 @@ const AboutPage = lazyRoute(() =>
   import("./pages/AboutPage").then((m) => ({ default: m.AboutPage })),
 );
 const NewPage = lazyRoute(() => import("./pages/NewPage").then((m) => ({ default: m.NewPage })));
+const VrLibraryPage = lazyRoute(() =>
+  import("./vr/VrLibraryPage").then((m) => ({ default: m.VrLibraryPage })),
+);
+const VrMapPage = lazyRoute(() => import("./vr/VrMapPage").then((m) => ({ default: m.VrMapPage })));
+const VrBeatSaverPage = lazyRoute(() =>
+  import("./vr/VrBeatSaverPage").then((m) => ({ default: m.VrBeatSaverPage })),
+);
 
 export function makeQueryClient(): QueryClient {
   return new QueryClient({
@@ -108,6 +115,9 @@ export const routes: RouteObject[] = [
         element: <BeatSaverPlaylistsPage />,
         errorElement: <RouteError />,
       },
+      { path: "/vr", element: <VrLibraryPage />, errorElement: <RouteError /> },
+      { path: "/vr/maps/:id", element: <VrMapPage />, errorElement: <RouteError /> },
+      { path: "/vr/beatsaver", element: <VrBeatSaverPage />, errorElement: <RouteError /> },
       { path: "*", element: <NotFoundPage />, errorElement: <RouteError /> },
     ],
   },
