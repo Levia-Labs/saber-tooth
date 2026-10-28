@@ -10,6 +10,7 @@ import { errorToAlert } from "../lib/alerts";
 import { FixButton } from "../components/FixButton";
 import { FixOutcomes } from "../components/FixOutcomes";
 import { FixedCopyLink, FixedCopyOf } from "../components/FixedCopyLink";
+import { CropPanel } from "../components/CropPanel";
 import { useJobRunner } from "../api/jobs";
 import { keys, useLiveRows, useMap, useProposals } from "../api/queries";
 import { ActionButton } from "../components/Buttons";
@@ -122,6 +123,9 @@ export function MapPage() {
         error={scan.error}
         onRetry={() => void scan.run(() => scanMap(id)).then(refresh)}
       />
+      {map.data && map.data.status !== "unreadable" && (
+        <CropPanel key={id} mapId={id} busy={running} />
+      )}
       {approveError !== null && (
         <SpecAlert
           spec={errorToAlert(approveError, "Approve all failed")}
