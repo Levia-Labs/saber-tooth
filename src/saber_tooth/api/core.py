@@ -234,10 +234,16 @@ class Api:
 
     # jobs ----------------------------------------------------------------------
 
-    def scan(self, map_id: str) -> dict:
-        row = next(m for m in self.store.list_maps() if m["id"] == self.map_id(map_id))
+    def readable_map(self, raw: str) -> str:
+        """The map id: 404 when unknown, `MapUnreadable` when its parse failed."""
+        map_id = self.map_id(raw)
+        row = next(m for m in self.store.list_maps() if m["id"] == map_id)
         if row["parse_error"]:
             raise MapUnreadable(f"map {row['folder']} cannot be read: {row['parse_error']}")
+        return map_id
+
+    def scan(self, map_id: str) -> dict:
+        map_id = self.readable_map(map_id)
         return {"job": self.jobs.submit("scan", self.service.run_scan, map_id, map_id=map_id)}
 
     def apply(self, map_id: str) -> dict:
@@ -245,9 +251,7 @@ class Api:
         return {"job": self.jobs.submit("apply", self.service.run_apply, map_id, map_id=map_id)}
 
     def fix(self, map_id: str) -> dict:
-        row = next(m for m in self.store.list_maps() if m["id"] == self.map_id(map_id))
-        if row["parse_error"]:
-            raise MapUnreadable(f"map {row['folder']} cannot be read: {row['parse_error']}")
+        map_id = self.readable_map(map_id)
         return {"job": self.jobs.submit("fix", self.service.fix_map, map_id, map_id=map_id)}
 
     def lightshow(self) -> dict:

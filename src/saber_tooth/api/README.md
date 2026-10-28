@@ -10,5 +10,6 @@ The FastAPI app: JSON routes for the review UI, with the built frontend in [web]
 6. `static.py`: `WebFiles`, static files with `immutable` caching for `/assets/*` and `no-cache` otherwise.
 7. `upload.py`: streams multipart uploads to a temp file under `DATA_DIR/uploads`, enforcing `MAX_UPLOAD_MB`.
 8. `beatsaver.py`, `beatsaver_routes.py`: BeatSaver search, download, playlist and preset routes (see [api.md](../../../docs/api.md#beatsaver)); `mcp_tools.py` adds `beatsaver_search` and `beatsaver_download`.
+9. `crop_api.py`, `crop_routes.py`: `CropApi` (timeline and crop job, 409 before 422) and the `GET /timeline` and `POST /crop` routes (see [api.md](../../../docs/api.md#routes)).
 
 Tests: `task st:test -- tests/test_api.py` or `tests/test_api_library.py` or `tests/test_mcp.py`, `tests/test_web_cache.py`.

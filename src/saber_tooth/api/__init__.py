@@ -13,6 +13,8 @@ from saber_tooth.analyser_client import AnalyserClient
 from saber_tooth.api.beatsaver import BeatSaverApi
 from saber_tooth.api.beatsaver_routes import register as register_beatsaver
 from saber_tooth.api.core import Api, ApiError, _error
+from saber_tooth.api.crop_api import CropApi
+from saber_tooth.api.crop_routes import register as register_crop
 from saber_tooth.api.hosts import (
     allowed_hosts,
     effective_origin,
@@ -52,6 +54,7 @@ def create_app(
     )
     # The SDK's own Host check is off: same_origin below already covers /mcp, and honours
     # SABER_ALLOWED_HOSTS and trusted proxies, which the SDK list cannot.
+    crop_api = CropApi(api)
     mcp_app = build_mcp(api, bs).streamable_http_app(
         json_response=True,
         stateless_http=True,
@@ -107,6 +110,7 @@ def create_app(
         return {"status": "ok"}
 
     register_beatsaver(app, bs)
+    register_crop(app, crop_api)
 
     # The library, cover and SPA routes are registered after the JSON routes below so the
     # catch-all /api/* 404 never shadows them.
