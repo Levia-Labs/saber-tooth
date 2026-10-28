@@ -16,6 +16,10 @@ def make_fetch(overrides=None):
         "/": (200, "text/html", INDEX),
         "/maps/x": (200, "text/html", INDEX),
         "/new": (200, "text/html", INDEX),
+        "/vr": (200, "text/html", INDEX),
+        "/vr/maps/x": (200, "text/html", INDEX),
+        "/vr/beatsaver": (200, "text/html", INDEX),
+        "/api/vr/status": (200, "application/json", b'{"source": "none", "runtime": null}'),
         "/assets/app.js": (200, "text/javascript", b"x"),
         "/assets/app.css": (200, "text/css", b"x"),
         "/api/maps?limit=5": (200, "application/json", json.dumps(PAGE).encode()),
@@ -109,3 +113,16 @@ def test_wait_health_fails_fast_on_unhealthy_and_times_out():
 
     assert not smoke.wait_health(100, bad, lambda s: None)[0] and len(calls) == 1
     assert not smoke.wait_health(0, lambda: (False, "starting=s"), lambda s: None)[0]
+
+
+def test_vr_routes_and_status_are_checked():
+    names = {n for n, _, _ in smoke.run_checks("http://h", make_fetch())}
+    assert {"html /vr", "html /vr/maps/x", "html /vr/beatsaver", "api vr status"} <= names
+
+
+def test_a_missing_vr_route_or_status_fails_its_own_check():
+    fetch = make_fetch(
+        {"/vr/beatsaver": (404, "", b""), "/api/vr/status": (200, "application/json", b"{}")}
+    )
+    failed = {n for n, ok, _ in smoke.run_checks("http://h", fetch) if not ok}
+    assert failed == {"html /vr/beatsaver", "api vr status"}

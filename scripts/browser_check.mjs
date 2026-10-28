@@ -46,8 +46,8 @@ async function main() {
   const base = opt.base.replace(/\/$/, "");
   const first = await (await fetch(`${base}/api/maps?limit=1`)).json();
   const mapId = first.items?.[0]?.id;
-  const routes = ["/", "/beatsaver", "/beatsaver/playlists", "/about"];
-  if (mapId) routes.splice(1, 0, `/maps/${mapId}`);
+  const routes = ["/", "/beatsaver", "/beatsaver/playlists", "/about", "/vr", "/vr/beatsaver"];
+  if (mapId) routes.splice(1, 0, `/maps/${mapId}`, `/vr/maps/${mapId}`);
 
   const profile = mkdtempSync(join(tmpdir(), "st-browser-"));
   const browser = await puppeteer.launch({

@@ -82,7 +82,7 @@ def run_checks(base: str, fetch: Fetch = http) -> list[tuple[str, bool, str]]:
         results.append((name, ok, detail))
 
     html = ""
-    for route in ("/", "/maps/x", "/new"):
+    for route in ("/", "/maps/x", "/new", "/vr", "/vr/maps/x", "/vr/beatsaver"):
         status, ctype, body = fetch(base + route, None)
         add(f"html {route}", status == 200 and "html" in ctype, f"{status} {ctype}")
         if route == "/":
@@ -99,6 +99,8 @@ def run_checks(base: str, fetch: Fetch = http) -> list[tuple[str, bool, str]]:
         add("api maps", False, f"{status} bad shape")
     status, _, body = fetch(f"{base}/api/maps/facets", None)
     add("api facets", status == 200 and b'"total"' in body, str(status))
+    status, _, body = fetch(f"{base}/api/vr/status", None)
+    add("api vr status", status == 200 and b'"source"' in body, str(status))
     cover = next((i["cover_url"] for i in page["items"] if i.get("cover_url")), None)
     if cover:
         status, ctype, _ = fetch(base + cover, None)
