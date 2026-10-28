@@ -60,9 +60,11 @@ interface HandleProps {
   duration: number;
   onDown: (e: PointerEvent<SVGGElement>) => void;
   onStep: Props["onStep"];
+  onFocus: () => void;
+  onBlur: () => void;
 }
 
-function Handle({ edge, seconds, duration, onDown, onStep }: HandleProps) {
+function Handle({ edge, seconds, duration, onDown, onStep, onFocus, onBlur }: HandleProps) {
   const onKey = (e: KeyboardEvent) => {
     const dir =
       e.key === "ArrowRight" || e.key === "ArrowUp"
@@ -87,6 +89,8 @@ function Handle({ edge, seconds, duration, onDown, onStep }: HandleProps) {
       aria-valuenow={Math.round(seconds * 10) / 10}
       aria-valuetext={clock(seconds)}
       onKeyDown={onKey}
+      onFocus={onFocus}
+      onBlur={onBlur}
       onPointerDown={onDown}
     >
       <line x1={x} x2={x} y1={0} y2={H} />
@@ -110,6 +114,7 @@ export function NpsChart({
 }: Props) {
   const [hover, setHover] = useState<number | null>(null);
   const [drag, setDrag] = useState<Edge | null>(null);
+  const [focus, setFocus] = useState<Edge | null>(null);
   const top = Math.max(1, ...Object.values(nps).flat());
   const begin = (edge: Edge) => (e: PointerEvent<SVGGElement>) => {
     capture(e.currentTarget.ownerSVGElement, e.pointerId);
@@ -121,6 +126,8 @@ export function NpsChart({
     if (drag) onMove(drag, seconds);
     else setHover(seconds);
   };
+  const focused = focus && selection ? selection[focus === "start" ? "start_s" : "end_s"] : null;
+  const shown = hover ?? focused;
   const span = (s: Span) => ({
     x: px(s.start_s, duration),
     width: px(s.end_s - s.start_s, duration),
@@ -181,6 +188,8 @@ export function NpsChart({
               duration={duration}
               onDown={begin("start")}
               onStep={onStep}
+              onFocus={() => setFocus("start")}
+              onBlur={() => setFocus(null)}
             />
             <Handle
               edge="end"
@@ -188,14 +197,16 @@ export function NpsChart({
               duration={duration}
               onDown={begin("end")}
               onStep={onStep}
+              onFocus={() => setFocus("end")}
+              onBlur={() => setFocus(null)}
             />
           </>
         )}
       </svg>
-      <p className="nps-hover" aria-live="off">
-        {hover === null
+      <p className="nps-hover" aria-live="polite">
+        {shown === null
           ? "Hover the chart for time, section and notes per second."
-          : hoverText(hover, nps, sections)}
+          : hoverText(shown, nps, sections)}
       </p>
     </div>
   );

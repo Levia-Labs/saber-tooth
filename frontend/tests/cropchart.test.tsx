@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, test, vi } from "vitest";
 import { NpsChart } from "../src/components/NpsChart";
@@ -103,5 +103,34 @@ describe("NpsChart", () => {
     expect(screen.getByText(/^1:10\.0, section 2 of 3, notes per second: Expert/)).toBeVisible();
     fireEvent.pointerLeave(svg);
     expect(screen.getByText(/Hover the chart/)).toBeVisible();
+  });
+});
+
+describe("NpsChart keyboard readout", () => {
+  test("a focused handle shows time, section and each difficulty's notes per second", async () => {
+    const { onStep, rerender } = chart();
+    const user = userEvent.setup();
+    act(() => screen.getByRole("slider", { name: "Crop start" }).focus());
+    expect(
+      screen.getByText("0:00.0, section 1 of 3, notes per second: Expert 0, ExpertPlus 0"),
+    ).toBeVisible();
+    await user.keyboard("{ArrowRight}");
+    expect(onStep).toHaveBeenLastCalledWith("start", 1, false);
+    rerender(
+      <NpsChart
+        nps={TIMELINE.nps}
+        hardest="ExpertPlus"
+        sections={TIMELINE.sections}
+        duration={TIMELINE.duration_s}
+        selection={{ start_s: 70, end_s: 120 }}
+        faint={[]}
+        endMarks={[]}
+        onMove={vi.fn()}
+        onStep={onStep}
+      />,
+    );
+    const readout = screen.getByText(/^1:10\.0, section 2 of 3, notes per second: /);
+    expect(readout).toHaveTextContent("Expert 2, ExpertPlus 3");
+    expect(readout).toHaveAttribute("aria-live", "polite");
   });
 });
