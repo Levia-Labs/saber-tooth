@@ -17,7 +17,7 @@ export function BarSlotProvider({ children }: { children: ReactNode }) {
 /** The right end of the title row: the place the toolbar is portalled to. */
 export function BarSlot() {
   const { setEl } = useContext(SlotContext);
-  return <div className="bs-bar-slot" ref={setEl} />;
+  return <div className="bar-slot" ref={setEl} />;
 }
 
 /** Renders `children` in the title row's slot, or in place when there is none. */

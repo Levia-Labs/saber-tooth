@@ -1,6 +1,6 @@
 import { useBsSearch } from "../api/beatsaver";
 import { BsResults } from "../components/beatsaver/BsResults";
-import { BarSlotProvider } from "../components/beatsaver/BarSlot";
+import { BarSlotProvider } from "../components/BarSlot";
 import { BsTabs } from "../components/beatsaver/BsTabs";
 import { bsSiteUrl } from "../lib/bsfilters";
 import { useDocumentTitle } from "../lib/hooks";

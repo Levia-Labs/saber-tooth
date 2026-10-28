@@ -14,7 +14,7 @@ import { PL_TIPS } from "../../lib/pltips";
 import { TextFilterBody } from "../FilterBodies";
 import { Icon } from "../icons";
 import { Tip } from "../Tip";
-import { InBar } from "./BarSlot";
+import { InBar } from "../BarSlot";
 import { BsSectionTabs } from "./BsSectionTabs";
 import {
   PlCreatedBody,

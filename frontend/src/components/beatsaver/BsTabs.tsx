@@ -1,5 +1,5 @@
 import { Icon } from "../icons";
-import { BarSlot } from "./BarSlot";
+import { BarSlot } from "../BarSlot";
 import { SectionTabs } from "../SectionTabs";
 import { Tip } from "../Tip";
 

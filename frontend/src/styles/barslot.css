@@ -1,0 +1,24 @@
+/* Right end of the section-tabs row; the Library tools and the BeatSaver toolbar render here. */
+.lib-bar .btn,
+.lib-bar .btn.icon {
+  min-height: 42px;
+}
+.lib-bar .btn.icon {
+  width: 42px;
+  height: 42px;
+}
+.bar-slot {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+}
+.bar-slot .bs-toolbar {
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: 0;
+}
+.bar-slot .bs-tabs {
+  margin-left: 0;
+}

@@ -8,7 +8,7 @@ import {
   type BsPlaylistMaps,
 } from "../api/beatsaver";
 import { BsResults } from "../components/beatsaver/BsResults";
-import { BarSlotProvider } from "../components/beatsaver/BarSlot";
+import { BarSlotProvider } from "../components/BarSlot";
 import { BsTabs } from "../components/beatsaver/BsTabs";
 import type { Downloads } from "../components/beatsaver/downloads";
 import { PlaylistList } from "../components/beatsaver/PlaylistList";

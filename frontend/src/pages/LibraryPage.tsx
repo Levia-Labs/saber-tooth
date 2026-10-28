@@ -5,6 +5,7 @@ import { useFacets, useLibrary, useLiveRows } from "../api/queries";
 import { useJobRunner } from "../api/jobs";
 import { FixOutcomes } from "../components/FixOutcomes";
 import { JobOutcome } from "../components/JobOutcome";
+import { BarSlot, BarSlotProvider } from "../components/BarSlot";
 import { SectionTabs } from "../components/SectionTabs";
 import { LibraryTable } from "../components/LibraryTable";
 import { LibraryMobileBar } from "../components/LibraryMobileBar";
@@ -34,53 +35,56 @@ export function LibraryPage() {
 
   return (
     <section className="library" aria-labelledby="library-heading">
-      <div className="lib-bar">
-        <div className="lib-title">
-          <SectionTabs active="library" heading="Library" headingId="library-heading" />
-          <span className="count" aria-live="polite">
-            {library.isPending ? "" : `${total} ${total === 1 ? "map" : "maps"}`}
-          </span>
+      <BarSlotProvider>
+        <div className="lib-bar">
+          <div className="lib-title">
+            <SectionTabs active="library" heading="Library" headingId="library-heading" />
+            <span className="count" aria-live="polite">
+              {library.isPending ? "" : `${total} ${total === 1 ? "map" : "maps"}`}
+            </span>
+          </div>
+          <BarSlot />
         </div>
         <LibraryTools learn={learn} onResetColumns={columns.api.resetAll} />
-      </div>
-      <div className="lib-alerts">
-        <JobOutcome job={learn.job} error={learn.error} />
-        <FixOutcomes />
-      </div>
-      {narrow && (
-        <LibraryMobileBar
-          state={state}
-          facets={facets.data}
-          update={update}
-          clear={clearFilters}
-          matchCount={library.isPending ? undefined : total}
-        />
-      )}
-      {library.isError && !library.data ? (
-        <div className="lib-empty">
-          <SpecAlert
-            spec={errorToAlert(library.error, "Could not load the library")}
-            onRetry={() => void library.refetch()}
-          />
+        <div className="lib-alerts">
+          <JobOutcome job={learn.job} error={learn.error} />
+          <FixOutcomes />
         </div>
-      ) : (
-        <LibraryTable
-          items={items}
-          total={total}
-          loading={library.isPending}
-          hasNext={hasNextPage}
-          fetchingNext={isFetchingNextPage}
-          nextFailed={isFetchNextPageError}
-          onLoadMore={loadMore}
-          state={state}
-          facets={facets.data}
-          update={update}
-          onClear={clearFilters}
-          filtered={filtered}
-          table={table}
-          columns={columns}
-        />
-      )}
+        {narrow && (
+          <LibraryMobileBar
+            state={state}
+            facets={facets.data}
+            update={update}
+            clear={clearFilters}
+            matchCount={library.isPending ? undefined : total}
+          />
+        )}
+        {library.isError && !library.data ? (
+          <div className="lib-empty">
+            <SpecAlert
+              spec={errorToAlert(library.error, "Could not load the library")}
+              onRetry={() => void library.refetch()}
+            />
+          </div>
+        ) : (
+          <LibraryTable
+            items={items}
+            total={total}
+            loading={library.isPending}
+            hasNext={hasNextPage}
+            fetchingNext={isFetchingNextPage}
+            nextFailed={isFetchNextPageError}
+            onLoadMore={loadMore}
+            state={state}
+            facets={facets.data}
+            update={update}
+            onClear={clearFilters}
+            filtered={filtered}
+            table={table}
+            columns={columns}
+          />
+        )}
+      </BarSlotProvider>
     </section>
   );
 }

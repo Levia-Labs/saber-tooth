@@ -4,6 +4,7 @@ import { learnLightshows } from "../api/client";
 import type { JobRunner } from "../api/jobs";
 import { useMediaQuery } from "../lib/hooks";
 import { TIPS } from "../lib/tips";
+import { InBar } from "./BarSlot";
 import { ActionButton, ActionLink } from "./Buttons";
 import { Icon } from "./icons";
 import { Tip } from "./Tip";
@@ -17,7 +18,7 @@ interface Props {
  * Header actions. Wide: text buttons. Below 1100px: icon buttons with the same labels and Tips.
  * Below 480px: Generate stays and the rest move into a kebab menu with the same Tips.
  */
-export function LibraryTools({ learn, onResetColumns }: Props) {
+function ToolsBody({ learn, onResetColumns }: Props) {
   const iconOnly = useMediaQuery("(max-width: 1099px)");
   const tight = useMediaQuery("(max-width: 479px)");
   const [open, setOpen] = useState(false);
@@ -100,5 +101,13 @@ export function LibraryTools({ learn, onResetColumns }: Props) {
         onClick={onResetColumns}
       />
     </div>
+  );
+}
+
+export function LibraryTools(props: Props) {
+  return (
+    <InBar>
+      <ToolsBody {...props} />
+    </InBar>
   );
 }

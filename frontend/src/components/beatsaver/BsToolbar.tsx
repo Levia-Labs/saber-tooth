@@ -15,7 +15,7 @@ import { Icon } from "../icons";
 import { Tip } from "../Tip";
 import { LevelsBody, MoreBody, TagsBody, type Patch } from "./BsFilterBodies";
 import { BpmBody, LengthBody, RatingBody, UpvotesBody } from "./BsNumberBodies";
-import { InBar } from "./BarSlot";
+import { InBar } from "../BarSlot";
 import { BsSectionTabs, type BsTab } from "./BsSectionTabs";
 import { PresetsBar } from "./PresetsBar";
 
