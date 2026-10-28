@@ -1,10 +1,12 @@
 """Service side of the crop highlight: the timeline, the window check and the crop job."""
 
 import logging
+import shutil
 from pathlib import Path
 
 from saber_tooth.crop.errors import CropError
 from saber_tooth.crop.phrases import hardest
+from saber_tooth.crop.replace import replace_folder
 from saber_tooth.crop.shift import crop_beatmap
 from saber_tooth.crop.timeline import (
     Timeline,
@@ -13,7 +15,8 @@ from saber_tooth.crop.timeline import (
     timeline_dict,
     window_label,
 )
-from saber_tooth.crop.write import write_cropped
+from saber_tooth.crop.write import stage_cropped, write_cropped
+from saber_tooth.mapio import load_map
 from saber_tooth.model import Beatmap
 from saber_tooth.service.duration import audio_path, folder_duration
 from saber_tooth.service.util import map_id_for
@@ -43,8 +46,24 @@ def crop_check(svc, map_id: str, start_beat: float, end_beat: float) -> None:
     resolve_window(_timeline(svc, map_id)[2], start_beat, end_beat)
 
 
-def crop_map(svc, map_id: str, start_beat: float, end_beat: float) -> dict:
-    """Crop a map into a new `<map> [label]` folder; the original is never changed."""
+def _replace(svc, map_id: str, folder: Path, audio: Path, cropped, label: str) -> Path:
+    """Stage the crop, check it reads back, then swap it in for the original folder."""
+    partial, _ = stage_cropped(svc.levels, folder, audio, cropped, label)
+    try:
+        load_map(partial)
+    except BaseException:
+        shutil.rmtree(partial, ignore_errors=True)
+        raise
+    target = replace_folder(svc.levels, folder, partial)
+    svc.store.reset_map(map_id)
+    return target
+
+
+def crop_map(svc, map_id: str, start_beat: float, end_beat: float, replace: bool = False) -> dict:
+    """Crop a map into a new `<map> [label]` folder; the original is never changed.
+
+    With `replace` the cropped map takes the original folder's place instead and the map's store
+    rows are reset."""
     folder, beatmap, tl = _timeline(svc, map_id)
     win = resolve_window(tl, start_beat, end_beat)
     audio = audio_path(folder, beatmap.info.song_file)
@@ -52,13 +71,17 @@ def crop_map(svc, map_id: str, start_beat: float, end_beat: float) -> dict:
         raise CropError("the map has no readable song file")
     label = window_label(tl, win.length_s)
     cropped = crop_beatmap(beatmap, tl.timing, win.start_beat, win.end_beat)
-    target = write_cropped(svc.levels, folder, audio, cropped, label)
+    if replace:
+        target = _replace(svc, map_id, folder, audio, cropped, label)
+    else:
+        target = write_cropped(svc.levels, folder, audio, cropped, label)
     try:
         svc.refresh_library()
     except Exception:
         log.exception("library refresh failed after cropping %s", map_id)
     return {
         "map_id": map_id,
+        **({"replaced": True} if replace else {}),
         "folder": target.name,
         "cropped_id": map_id_for(target.name),
         "label": label,

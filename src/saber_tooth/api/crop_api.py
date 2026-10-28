@@ -33,7 +33,7 @@ class CropApi:
         except CropError as exc:
             raise ApiError(422, str(exc)) from None
 
-    def crop(self, raw: str, start: object, end: object) -> dict:
+    def crop(self, raw: str, start: object, end: object, replace: object = False) -> dict:
         map_id = self.api.readable_map(raw)
         if self.api.store.has_active_job(map_id):
             raise ApiError(409, "the map has a queued or running job")
@@ -42,6 +42,9 @@ class CropApi:
             self.service.crop_check(map_id, start_beat, end_beat)  # type: ignore[attr-defined]
         except CropError as exc:
             raise ApiError(422, str(exc)) from None
+        if not isinstance(replace, bool):
+            raise ApiError(422, "replace must be true or false")
         run = self.service.crop_map  # type: ignore[attr-defined]
-        job = self.api.jobs.submit("crop", run, map_id, start_beat, end_beat, map_id=map_id)
+        args = (map_id, start_beat, end_beat, *((True,) if replace else ()))
+        job = self.api.jobs.submit("crop", run, *args, map_id=map_id)
         return {"job": job}

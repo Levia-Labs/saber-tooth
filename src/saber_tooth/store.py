@@ -232,6 +232,21 @@ class Store(MapQueries, ProposalClaims):
             self._db.execute("DELETE FROM jobs WHERE map_id=?", (map_id,))
             self._db.commit()
 
+    def reset_map(self, map_id: str) -> None:
+        """Forget a map's scan, proposals and finished jobs so it reads as not scanned.
+
+        The map row goes too; the next library refresh adds it back. Queued and running jobs stay.
+        """
+        with self._lock:
+            self._db.execute("DELETE FROM maps WHERE id=?", (map_id,))
+            self._db.execute("DELETE FROM scans WHERE map_id=?", (map_id,))
+            self._db.execute("DELETE FROM proposals WHERE map_id=?", (map_id,))
+            self._db.execute(
+                "DELETE FROM jobs WHERE map_id=? AND status NOT IN ('queued','running')",
+                (map_id,),
+            )
+            self._db.commit()
+
     def approved(self, map_id: str) -> list[dict]:
         return [p for p in self.proposals(map_id) if p["status"] == "approved"]
 

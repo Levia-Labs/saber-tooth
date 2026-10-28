@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse
 
 from saber_tooth.api.core import Api, ApiError, _error
 from saber_tooth.api.library import MAPPER_SEP, MAX_COVER_BYTES
+from saber_tooth.api.neighbors import neighbors
 from saber_tooth.api.static import SHELL_CACHE
 
 COVER_CACHE = "private, max-age=86400"
@@ -53,19 +54,28 @@ def read_cover(path: Path) -> tuple[bytes, str] | None:
     return data, f'"{st.st_mtime_ns:x}-{st.st_size:x}"'
 
 
+def _list_params(request: Request) -> dict[str, str]:
+    """The library list query string as the flat dict `parse_query` takes."""
+    qp = request.query_params
+    params = {k: qp[k] for k in qp}
+    for key in ("status", "env"):  # repeatable as well as comma-separated
+        if key in qp:
+            params[key] = ",".join(qp.getlist(key))
+    if "mapper" in qp:  # exact names may contain commas: join on a separator, not a comma
+        params["mapper"] = MAPPER_SEP.join(qp.getlist("mapper"))
+    if "level" in qp:
+        params["level"] = ",".join(qp.getlist("level"))
+    return params
+
+
 def register(app: FastAPI, api: Api, web: Path) -> None:
     @app.get("/api/maps")
     def maps(request: Request):
-        qp = request.query_params
-        params = {k: qp[k] for k in qp}
-        for key in ("status", "env"):  # repeatable as well as comma-separated
-            if key in qp:
-                params[key] = ",".join(qp.getlist(key))
-        if "mapper" in qp:  # exact names may contain commas: join on a separator, not a comma
-            params["mapper"] = MAPPER_SEP.join(qp.getlist("mapper"))
-        if "level" in qp:
-            params["level"] = ",".join(qp.getlist("level"))
-        return api.maps_page(params)
+        return api.maps_page(_list_params(request))
+
+    @app.get("/api/maps/{map_id}/neighbors")
+    def map_neighbors(map_id: str, request: Request):
+        return neighbors(api, map_id, _list_params(request))
 
     @app.get("/api/maps/facets")
     def facets():

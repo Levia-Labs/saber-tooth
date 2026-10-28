@@ -129,3 +129,10 @@ Supersedes the snap and band rules for `POST /api/maps/{id}/crop`.
 3. `GET /timeline` is unchanged, plus `min_length_s: 1.0`; suggestions, sections and snap points stay as guidance.
 4. Label: `1 min` or `2 min` when the length is within the existing band, else `crop MmSSs` from the rounded length (`crop 3m00s`). The colon of `m:ss` is refused by the Windows-safe folder check, so `MmSSs` is used. Collisions are numbered by LevelsWriter.
 5. The fade-out over the last bar is clamped to the window length; the lead-in rule is unchanged.
+
+## Note 2026-10-28: replace mode
+
+1. `POST /api/maps/{id}/crop` takes an optional `"replace": true`. The window rules and the 409-first busy check are unchanged.
+2. The job stages the crop in a partial folder as before and reads it back with `load_map`. It then guards the original with `LevelsRoot.guard` (direct child of the levels folder, real directory, no symlink or junction), renames it to `.<name>.old.partial`, renames the partial to the original name and removes the old folder last. A failure before or during the swap restores the original and removes the partial.
+3. `Store.reset_map` clears the map's row, scan, proposals and finished jobs (the running crop job stays); the library refresh adds the map back as not scanned. The result is `{"replaced": true, "folder": <original name>, "cropped_id": <same id>, ...}`.
+4. MCP `crop_map` stays new-folder only.

@@ -20,5 +20,9 @@ def register(app: FastAPI, crop: CropApi) -> None:
             raise ApiError(400, 'send JSON {"start_beat", "end_beat"}') from None
         fields = body if isinstance(body, dict) else {}
         return await run_in_threadpool(
-            crop.crop, map_id, fields.get("start_beat"), fields.get("end_beat")
+            crop.crop,
+            map_id,
+            fields.get("start_beat"),
+            fields.get("end_beat"),
+            fields.get("replace", False),
         )
