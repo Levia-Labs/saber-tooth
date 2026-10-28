@@ -1,0 +1,2 @@
+Beat Saber map checker, one-click fixer, highlight cropper and generator from YouTube or audio. Web UI, VR, MCP.
+Topics: beat-saber, beatsaver, fastapi, docker, mcp, vr, music-analysis, map-generator

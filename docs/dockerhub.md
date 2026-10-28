@@ -16,6 +16,28 @@ folder so the original map is never touched.
 
 Source, issues and full documentation: <https://github.com/Levia-Labs/saber-tooth>
 
+## Features
+
+1. Library with status filters; once a map is fixed, its original is hidden.
+2. One-click Fix writes `<map> [saber-tooth]` with all five Standard difficulties.
+3. Scan, Approve and Apply proposals, each verified to reach zero findings.
+4. Map page with Status, Crop and Delete tabs and bottom toasts.
+5. Crop to a highlight (1 minute, 2 minutes or unlimited, free cutting down to 1 second) with an NPS chart, sections and playback; save as a new map or over the original.
+6. One-step generation from a YouTube link or a dropped audio file.
+7. BeatSaver search, presets, playlists and downloads.
+8. VR mode at `/vr`, with a host helper that detects the headset.
+9. MCP tools for agents.
+
+## Screenshots
+
+![The library with status filters](https://raw.githubusercontent.com/Levia-Labs/saber-tooth/main/docs/screenshots/library.png)
+
+![The crop view with the NPS chart, sections and playback](https://raw.githubusercontent.com/Levia-Labs/saber-tooth/main/docs/screenshots/map-crop.png)
+
+![BeatSaver search results](https://raw.githubusercontent.com/Levia-Labs/saber-tooth/main/docs/screenshots/beatsaver.png)
+
+![The VR library screen](https://raw.githubusercontent.com/Levia-Labs/saber-tooth/main/docs/screenshots/vr-library.png)
+
 ## How it works
 
 1. A song (YouTube URL or uploaded audio file) or an existing map goes in.
@@ -102,6 +124,10 @@ the Playlists folder.
 | `SABER_ALLOWED_HOSTS`     | empty                       | Extra `Host` names accepted besides `127.0.0.1`, `localhost` and `[::1]`       |
 | `SABER_TRUSTED_PROXY_IPS` | empty                       | Comma list of single proxy addresses whose `X-Forwarded-*` headers are trusted |
 | `PUID`, `PGID`            | `1000`                      | User and group the service runs as                                             |
+| `VR_AGENT_URL`            | unset                       | VR headset helper; compose default `http://host.docker.internal:8101/status`   |
+| `SABER_BIND`              | `127.0.0.1`                 | Host address of the published port (compose); `0.0.0.0` opens it to the LAN    |
+
+Warning: with `SABER_BIND=0.0.0.0` anyone on the network can fix, crop, download and permanently delete map folders, because the service has no login. Also set `SABER_ALLOWED_HOSTS` to the names the headset uses, and set `SABER_BIND` back to `127.0.0.1` when done. See [VR mode](https://github.com/Levia-Labs/saber-tooth/blob/main/docs/vr.md).
 
 `MAX_UPLOAD_MB` and `YT_MAX_MINUTES` (default `20`) also apply to the beat-analyser container.
 
@@ -132,8 +158,9 @@ Agents can connect over MCP (Streamable HTTP) at `/mcp`:
 claude mcp add --transport http saber-tooth http://127.0.0.1:8100/mcp
 ```
 
-Tools include `list_maps`, `scan_map`, `fix_map`, `generate_from_youtube`, `apply_map` and
-`beatsaver_search`. The full list is in the
+Tools: `list_maps`, `get_proposals`, `scan_map`, `job_status`, `approve_proposal`,
+`reject_proposal`, `apply_map`, `generate_from_youtube`, `learn_lightshows`, `map_timeline`,
+`crop_map`, `beatsaver_search` and `beatsaver_download`. Details are in the
 [MCP section](https://github.com/Levia-Labs/saber-tooth/blob/main/docs/api.md#mcp).
 
 ## Security
@@ -148,8 +175,9 @@ folder and the original map is never changed.
 
 | Tag      | What it is                |
 | -------- | ------------------------- |
-| `1.0.0`  | The 1.0.0 release         |
-| `latest` | The same build as `1.0.0` |
+| `1.1.0`  | The 1.1.0 release         |
+| `latest` | The same build as `1.1.0` |
+| `1.0.0`  | The 1.0.0 release, kept   |
 
 ## Limits
 

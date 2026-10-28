@@ -19,8 +19,9 @@ Tasks:
 13. `st:crepidoma-bump`: update the `.crepidoma` submodule and stage it.
 14. `st:hub:check`, `st:hub:publish`: compare or publish the Docker Hub page; publish is run by a person.
 15. `st:release`: preflight, build and verify the image; `-- --apply` pushes tags and the git tag, run by a person.
-16. `st:vr-agent`: run the host VR runtime helper on port 8101.
-17. `st:profile-fix`: cProfile the Fix pipeline on a temporary copy of a map folder (`MAP=<folder>`).
+16. `st:screenshots`: capture product screenshots of the running app into `docs/screenshots/`; read-only.
+17. `st:vr-agent`: run the host VR runtime helper on port 8101.
+18. `st:profile-fix`: cProfile the Fix pipeline on a temporary copy of a map folder (`MAP=<folder>`).
 
 The workflow tools are described in [workflow](../docs/workflow.md).
 

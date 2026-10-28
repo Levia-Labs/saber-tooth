@@ -95,6 +95,10 @@ tasks:
     desc: "Headless browser page check, read-only. Usage: task st:browser-check -- [chrome|firefox] [--base URL]"
     dir: "{{.ROOT_DIR}}"
     cmds: ["node scripts/browser_check.mjs {{.CLI_ARGS}}"]
+  screenshots:
+    desc: "Capture product screenshots of the running app. Usage: task st:screenshots -- [--base URL] [--out DIR]"
+    dir: "{{.ROOT_DIR}}"
+    cmds: ["node scripts/screenshots.mjs {{.CLI_ARGS}}"]
   lane:
     desc: "Create a work lane worktree. Usage: task st:lane -- <name> [--base main]"
     cmds: ["uv run python scripts/lane.py new {{.CLI_ARGS}}"]

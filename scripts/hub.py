@@ -28,7 +28,7 @@ API = "https://hub.docker.com/v2"
 HUB_SERVER = "https://index.docker.io/v1/"
 PAGE = Path(__file__).resolve().parents[1] / "docs" / "dockerhub.md"
 # Docker Hub caps the short description at 100 characters and the full one at 25,000.
-SHORT = "Beat Saber custom-level checker, fixer and map generator. FastAPI, React, MCP."
+SHORT = "Beat Saber map checker, one-click fixer, cropper and generator. Web UI, VR mode, MCP."
 SHORT_LIMIT, FULL_LIMIT = 100, 25_000
 
 

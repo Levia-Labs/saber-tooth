@@ -12,11 +12,23 @@ saber-tooth is a local Docker service with a browser interface. Give it a song o
 
 ## Features
 
-1. New maps from a YouTube URL or a dropped audio file in one step, already fixed, in Easy, Normal, Hard, Expert and ExpertPlus.
-2. Checks for impossible swings, broken parity and long empty stretches where the music has onsets.
-3. Fix and fill proposals that are verified to reach zero findings before they are offered.
-4. Lighting that follows the energy and structure of the song, built from a learned set that ships with the service, so lightshows work without any setup. "Learn lightshows" only adds the styles of your own installed maps and then replaces the bundled set.
-5. Review in the browser. Nothing is written until you approve it, and fixes go into a new sibling folder so the original map is never touched.
+1. Library with status filters; once a map is fixed, its original is hidden.
+2. One-click Fix writes `<map> [saber-tooth]` with all five Standard difficulties (Easy, Normal, Hard, Expert, ExpertPlus). The original map is never touched.
+3. Scan, Approve and Apply proposals: checks for impossible swings, broken parity and empty stretches, with fixes verified to reach zero findings before they are offered.
+4. Map page with Status, Crop and Delete tabs; results show as toasts at the bottom.
+5. Crop to a highlight of 1 minute, 2 minutes or unlimited length, with free cutting down to 1 second. An NPS chart with sections, playback, and saving as a new map or over the original.
+6. One-step map generation from a YouTube link or a dropped audio file, analysed by the beat-analyser sidecar.
+7. BeatSaver search, presets, playlists and downloads.
+8. VR mode with `/vr` screens and a headset detection helper (`task st:vr-agent`); see [VR mode](docs/vr.md).
+9. Lighting that follows the energy and structure of the song, from a bundled learned set; "Learn lightshows" adds the styles of your installed maps.
+10. MCP tools for agents, and a compose stack with beat-analyser. Vanilla features only: no Chroma, Noodle Extensions or Vivify.
+
+## Screenshots
+
+1. ![The library with status filters](docs/screenshots/library.png)
+2. ![The crop view with the NPS chart, sections and playback](docs/screenshots/map-crop.png)
+3. ![BeatSaver search results](docs/screenshots/beatsaver.png)
+4. ![The VR library screen](docs/screenshots/vr-library.png)
 
 ## How it works
 
@@ -64,11 +76,11 @@ The design goals are flawless, flowing and atmospheric maps. See the [design spe
 | `task st:docker-health`                    | Compose service health and recent logs              |
 | `task st:vr-agent`                         | Run the VR runtime helper on the host (port 8101)   |
 
-Run `task --list` for every task. Settings (`LEVELS_DIR`, `SABER_PORT`, `YT_MAX_MINUTES`, `MAX_UPLOAD_MB`) are documented in `.env.example`.
+Run `task --list` for every task. Settings (`LEVELS_DIR`, `SABER_PORT`, `SABER_BIND`, `VR_AGENT_URL`, `YT_MAX_MINUTES`, `MAX_UPLOAD_MB`) are documented in `.env.example`.
 
 ## Status
 
-Version 1 is feature-complete on the `feat/v1` branch and pending final review. Map reading, checks, the fixer, the generator, the lightshow learner, the HTTP API, the web frontend and the compose stack are committed. Open work is tracked in [TODO.md](TODO.md).
+Version 1.1.0. Open work is tracked in [TODO.md](TODO.md).
 
 ## Part of Levia Labs
 
@@ -82,7 +94,8 @@ Version 1 is feature-complete on the `feat/v1` branch and pending final review. 
 3. [Map format](docs/map-format.md)
 4. [Decision records](docs/adr/)
 5. [Workflow](docs/workflow.md)
-6. [TODO](TODO.md)
+6. [VR mode](docs/vr.md)
+7. [TODO](TODO.md)
 
 ## License
 
