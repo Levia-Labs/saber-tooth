@@ -100,9 +100,6 @@ export function PresetsBar({ state, onApply }: Props) {
   const current = presetFilters(state);
   return (
     <div className="presets" role="group" aria-label="Saved filters">
-      <Tip text={BS_TIPS.savedSearches}>
-        <span className="presets-label">Saved searches</span>
-      </Tip>
       {orderPresets(presets.data ?? []).map((p) => {
         const active = same(presetFilters(stateFromPreset(p.filters)), current);
         return (
@@ -131,7 +128,6 @@ export function PresetsBar({ state, onApply }: Props) {
           </span>
         );
       })}
-      {presets.isError && <span className="err">Could not load saved filters.</span>}
       <SavePreset state={state} />
     </div>
   );

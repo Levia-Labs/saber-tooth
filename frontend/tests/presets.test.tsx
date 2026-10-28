@@ -61,7 +61,9 @@ describe("presets bar", () => {
     const { router } = renderApp("/beatsaver");
     await screen.findByText("Song 1");
     const group = await screen.findByRole("group", { name: "Saved filters" });
-    expect(within(group).getByText("Saved searches")).toBeInTheDocument();
+    // The bar shows only chips and Save: no "Saved searches" label, no load-error text.
+    expect(within(group).queryByText("Saved searches")).toBeNull();
+    expect(within(group).queryByText(/Could not load saved filters/)).toBeNull();
     const chip = await within(group).findByRole("button", { name: "Easy-to-Hard gems" });
     expect(chip.querySelector("svg")).not.toBeNull();
     expect(chip.querySelector(".ic")).not.toBeNull();

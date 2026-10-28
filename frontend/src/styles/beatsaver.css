@@ -67,10 +67,6 @@
   font: inherit;
   cursor: pointer;
 }
-.presets-label {
-  color: var(--muted);
-  font-size: 0.85rem;
-}
 .preset-apply {
   display: inline-flex;
   align-items: center;
