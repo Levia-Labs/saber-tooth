@@ -2,7 +2,6 @@ import { useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router";
 import { useLibrary, useLiveRows } from "../api/queries";
 import { SpecAlert } from "../components/Alert";
-import { FixOutcomes } from "../components/FixOutcomes";
 import { errorToAlert } from "../lib/alerts";
 import { useDocumentTitle } from "../lib/hooks";
 import {
@@ -51,7 +50,6 @@ export function VrLibraryPage() {
       <p className="vr-help" aria-live="polite">
         {library.isPending ? "" : `${count} ${count === 1 ? "map" : "maps"}`}
       </p>
-      <FixOutcomes />
       <div className="vr-toggles" role="group" aria-label="Show">
         {VR_PRESETS.map((p) => (
           <div key={p.key} className="vr-toggle">

@@ -1,9 +1,12 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
+import type { ReactElement } from "react";
+import { MemoryRouter } from "react-router";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, test, vi } from "vitest";
 import { ApiError } from "../src/api/client";
 import type { Job, JobKind } from "../src/api/types";
 import { Alert, SpecAlert } from "../src/components/Alert";
+import { AnnouncerProvider } from "../src/components/Announcer";
 import { JobOutcome } from "../src/components/JobOutcome";
 import { errorToAlert, toAlert } from "../src/lib/alerts";
 
@@ -156,14 +159,38 @@ describe("Alert", () => {
 });
 
 describe("JobOutcome", () => {
-  test("apply failure renders a danger alert, not Apply: failed text", () => {
-    render(<JobOutcome job={null} error="database is locked" />);
-    expect(screen.getByRole("alert")).toHaveTextContent("Apply failed");
+  const shown = (ui: ReactElement) =>
+    render(
+      <MemoryRouter>
+        <AnnouncerProvider>{ui}</AnnouncerProvider>
+      </MemoryRouter>,
+    );
+
+  test("apply failure is a danger toast, not Apply: failed text", () => {
+    const { container } = shown(<JobOutcome label="Apply" job={null} error="database is locked" />);
+    const stack = container.querySelector(".toast-stack") as HTMLElement;
+    expect(within(stack).getByRole("alert")).toHaveTextContent("Apply failed");
     expect(screen.queryByText(/Apply: failed/)).toBeNull();
   });
 
-  test("renders nothing without job or error", () => {
-    const { container } = render(<JobOutcome job={null} error={null} />);
-    expect(container).toBeEmptyDOMElement();
+  test("its Try again action runs the retry handler from the toast", async () => {
+    const retry = vi.fn();
+    shown(<JobOutcome label="Scan" job={null} error="boom" onRetry={retry} />);
+    await userEvent.click(await screen.findByRole("button", { name: "Try again" }));
+    expect(retry).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+  });
+
+  test("a job that needs review offers Review in the toast", async () => {
+    const review = vi.fn();
+    const done = job("apply", { result: { needs_review: ["a1"] } });
+    shown(<JobOutcome label="Apply" job={done} error={null} onReview={review} />);
+    await userEvent.click(await screen.findByRole("button", { name: "Review" }));
+    expect(review).toHaveBeenCalledTimes(1);
+  });
+
+  test("shows nothing without job or error", () => {
+    const { container } = shown(<JobOutcome label="Apply" job={null} error={null} />);
+    expect(container.querySelector(".alert")).toBeNull();
   });
 });

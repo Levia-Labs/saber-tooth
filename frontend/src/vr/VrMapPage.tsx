@@ -10,7 +10,6 @@ import { Cover, LevelChips, StatusChip, Tempo } from "../components/Chips";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { CropPanel } from "../components/CropPanel";
 import { FixedCopyLink, FixedCopyOf } from "../components/FixedCopyLink";
-import { FixOutcomes } from "../components/FixOutcomes";
 import { Icon } from "../components/icons";
 import { MapHeadSkeleton } from "../components/Skeletons";
 import { errorToAlert } from "../lib/alerts";
@@ -66,7 +65,6 @@ function VrMapView({ item }: { item: MapItem }) {
       </div>
       <FixedCopyLink item={item} />
       <FixedCopyOf item={item} />
-      <FixOutcomes mapId={item.id} />
       <div className="vr-actions">
         {!isCleanCopy(item) && (
           <div className="vr-act">

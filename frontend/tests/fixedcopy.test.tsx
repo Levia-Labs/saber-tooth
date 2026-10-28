@@ -50,6 +50,7 @@ describe("fixed copy links", () => {
     renderApp("/maps/id0000000001");
     const banner = (await screen.findByText("Fixed copy ready")).closest(".alert") as HTMLElement;
     expect(banner).toHaveClass("alert-success");
+    expect(banner.closest(".toast-stack")).toBeNull();
     expect(within(banner).getByRole("link", { name: "Folder 1 [saber-tooth]" })).toHaveAttribute(
       "href",
       "/maps/id0000000099",
@@ -61,6 +62,7 @@ describe("fixed copy links", () => {
     renderApp("/maps/id0000000099");
     const banner = (await screen.findByText("Fixed copy of")).closest(".alert") as HTMLElement;
     expect(banner).toHaveClass("alert-info");
+    expect(banner.closest(".toast-stack")).toBeNull();
     expect(within(banner).getByRole("link", { name: "Folder 1" })).toHaveAttribute(
       "href",
       "/maps/id0000000001",

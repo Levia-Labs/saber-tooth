@@ -57,6 +57,7 @@ export function AnnouncerProvider({ children }: { children: ReactNode }) {
               progress={b.variant === "progress"}
               title={b.title}
               message={b.message}
+              {...(b.details ? { details: b.details } : {})}
               actions={
                 (b.link || b.actions) && (
                   <>

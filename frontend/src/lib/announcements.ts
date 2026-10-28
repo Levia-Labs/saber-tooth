@@ -1,5 +1,5 @@
 // Pure state for the announcement banners: reduce by key, cap, expiry.
-import type { AlertVariant } from "./alerts";
+import type { AlertSpec, AlertVariant } from "./alerts";
 
 export type AnnounceVariant = "progress" | AlertVariant;
 
@@ -13,6 +13,8 @@ export interface AnnounceInput {
   link?: BannerLink;
   /** Buttons shown under the message; pressing one runs it and closes the toast. */
   actions?: BannerAction[];
+  /** Folded-away extras: raw error text, ids, per-map results. */
+  details?: string[];
   /** Info and success stay until dismissed instead of fading after a few seconds. */
   sticky?: boolean;
   /** Runs when the toast's close button is pressed. */
@@ -36,6 +38,7 @@ export interface Banner {
   message?: string;
   link?: BannerLink;
   actions?: BannerAction[];
+  details?: string[];
   onDismiss?: () => void;
   /** Epoch ms at which the banner goes away, or null when it stays until dismissed. */
   expiresAt: number | null;
@@ -67,10 +70,31 @@ export function addBanner(list: Banner[], input: AnnounceInput, now: number): Ba
   if (input.message !== undefined) banner.message = input.message;
   if (input.link !== undefined) banner.link = input.link;
   if (input.actions !== undefined) banner.actions = input.actions;
+  if (input.details !== undefined) banner.details = input.details;
   if (input.onDismiss !== undefined) banner.onDismiss = input.onDismiss;
   const at = list.findIndex((b) => b.key === key);
   const next = at === -1 ? [...list, banner] : list.map((b, i) => (i === at ? banner : b));
   return next.slice(-MAX_BANNERS);
+}
+
+/** Turns an alert spec into a toast; its action button appears only when the page supplies the handler. */
+export function specToInput(
+  key: string,
+  spec: AlertSpec,
+  handlers: { onRetry?: (() => void) | undefined; onReview?: (() => void) | undefined } = {},
+): AnnounceInput {
+  const input: AnnounceInput = {
+    key,
+    variant: spec.variant,
+    title: spec.title,
+    message: spec.message,
+  };
+  if (spec.details) input.details = spec.details;
+  const handler = spec.action
+    ? handlers[spec.action.kind === "retry" ? "onRetry" : "onReview"]
+    : undefined;
+  if (spec.action && handler) input.actions = [{ label: spec.action.label, onClick: handler }];
+  return input;
 }
 
 export function dismissBanner(list: Banner[], key: string): Banner[] {

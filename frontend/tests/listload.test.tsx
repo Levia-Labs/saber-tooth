@@ -27,10 +27,9 @@ describe("library list with the real API payload", () => {
     expect(page.total).toBeGreaterThan(40);
   }, 20_000);
 
-  test("outcome alerts are capped so they cannot squeeze the list to nothing", () => {
+  test("outcomes are toasts, so nothing inline can squeeze the list to nothing", () => {
     const lib = css("library.css");
-    expect(rule(lib, ".lib-alerts")).toMatch(/max-height:\s*30vh/);
-    expect(rule(lib, ".lib-alerts")).toMatch(/overflow-y:\s*auto/);
+    expect(lib).not.toContain(".lib-alerts");
     expect(rule(lib, ".lib-scroll")).toMatch(/min-height:\s*12rem/);
   });
 });

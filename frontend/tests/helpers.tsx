@@ -1,5 +1,5 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import { render } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { vi } from "vitest";
 import { makeQueryClient, routes } from "../src/App";
@@ -83,4 +83,15 @@ export function renderApp(url: string) {
     </QueryClientProvider>,
   );
   return { router, ...view };
+}
+
+/** Queries scoped to the bottom toast stack. */
+export function toasts() {
+  return within(document.querySelector(".toast-stack") as HTMLElement);
+}
+
+/** True when the text shows up anywhere outside the toast stack. */
+export function inlineText(text: string | RegExp): boolean {
+  const stack = document.querySelector(".toast-stack");
+  return screen.queryAllByText(text).some((el) => !stack?.contains(el));
 }

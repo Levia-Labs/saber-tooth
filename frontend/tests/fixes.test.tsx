@@ -4,7 +4,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import type { Proposal } from "../src/api/types";
 import { TextFilterBody } from "../src/components/FilterBodies";
 import { LONG_PRESS_MS, Tip, TipProvider } from "../src/components/Tip";
-import { item, mockFetch, renderApp } from "./helpers";
+import { inlineText, item, mockFetch, renderApp, toasts } from "./helpers";
 
 const realMatchMedia = window.matchMedia;
 function touchDevice(on: boolean) {
@@ -104,8 +104,8 @@ const proposal = (status: Proposal["status"]): Proposal => ({
   walls_context: [],
 });
 
-function mapApi(status: Proposal["status"], failApprove = false) {
-  mockFetch((url, init) => {
+function mapApiCalls(status: Proposal["status"] = "pending", failApprove = true) {
+  return mockFetch((url, init) => {
     if (init?.method === "POST" && url.pathname.endsWith("/approve-all")) {
       return failApprove
         ? new Response(JSON.stringify({ error: "database is locked" }), { status: 409 })
@@ -117,6 +117,10 @@ function mapApi(status: Proposal["status"], failApprove = false) {
   });
 }
 
+function mapApi(status: Proposal["status"], failApprove = false) {
+  mapApiCalls(status, failApprove);
+}
+
 describe("approve all", () => {
   test("shows the error instead of failing silently", async () => {
     mapApi("pending", true);
@@ -126,9 +130,26 @@ describe("approve all", () => {
     await user.click(screen.getByRole("button", { name: "Approve all" }));
     const dialog = await screen.findByRole("dialog");
     await user.click(within(dialog).getByRole("button", { name: "Approve all" }));
-    expect(await screen.findByText("Approve all failed")).toBeInTheDocument();
-    expect(screen.getByText(/database is busy/)).toBeInTheDocument();
-    expect(screen.getByText("database is locked")).toBeInTheDocument();
+    expect(await toasts().findByText("Approve all failed")).toBeInTheDocument();
+    expect(toasts().getByText(/database is busy/)).toBeInTheDocument();
+    expect(toasts().getByText("database is locked")).toBeInTheDocument();
+    expect(inlineText("Approve all failed")).toBe(false);
+  });
+
+  test("its Try again button in the toast posts approve-all again", async () => {
+    const { fn } = mapApiCalls();
+    renderApp("/maps/id0000000001");
+    const user = userEvent.setup();
+    await screen.findAllByText("Fix 1");
+    await user.click(screen.getByRole("button", { name: "Approve all" }));
+    await user.click(
+      within(await screen.findByRole("dialog")).getByRole("button", { name: "Approve all" }),
+    );
+    await toasts().findByText("Approve all failed");
+    const posts = () => fn.mock.calls.filter(([u]) => String(u).endsWith("/approve-all")).length;
+    expect(posts()).toBe(1);
+    await user.click(toasts().getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(posts()).toBe(2));
   });
 
   test("is disabled when nothing is pending", async () => {

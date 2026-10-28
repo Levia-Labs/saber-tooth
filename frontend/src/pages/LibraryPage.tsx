@@ -3,7 +3,6 @@ import { SpecAlert } from "../components/Alert";
 import { errorToAlert } from "../lib/alerts";
 import { useFacets, useLibrary, useLiveRows } from "../api/queries";
 import { useJobRunner } from "../api/jobs";
-import { FixOutcomes } from "../components/FixOutcomes";
 import { JobOutcome } from "../components/JobOutcome";
 import { BarSlot, BarSlotProvider } from "../components/BarSlot";
 import { SectionTabs } from "../components/SectionTabs";
@@ -46,10 +45,7 @@ export function LibraryPage() {
           <BarSlot />
         </div>
         <LibraryTools learn={learn} onResetColumns={columns.api.resetAll} />
-        <div className="lib-alerts">
-          <JobOutcome job={learn.job} error={learn.error} />
-          <FixOutcomes />
-        </div>
+        <JobOutcome label="Learn lightshows" job={learn.job} error={learn.error} />
         {narrow && (
           <LibraryMobileBar
             state={state}

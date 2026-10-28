@@ -7,7 +7,7 @@ import { Alert, SpecAlert } from "../components/Alert";
 import { useAnnounce } from "../components/Announcer";
 import { FixesSkeleton, MapHeadSkeleton } from "../components/Skeletons";
 import { errorToAlert } from "../lib/alerts";
-import { FixOutcomes } from "../components/FixOutcomes";
+import { specToInput } from "../lib/announcements";
 import { FixedCopyLink, FixedCopyOf } from "../components/FixedCopyLink";
 import { CropPanel } from "../components/CropPanel";
 import { DeletePanel } from "../components/DeletePanel";
@@ -34,7 +34,6 @@ export function MapPage() {
   const announce = useAnnounce();
   const map = useMap(id);
   const proposals = useProposals(id);
-  const [approveError, setApproveError] = useState<unknown>(null);
   const [params, setParams] = useSearchParams();
   const [cropSeen, setCropSeen] = useState(false);
   const [openIds, setOpenIds] = useState<ReadonlySet<string>>(new Set());
@@ -62,12 +61,15 @@ export function MapPage() {
   const list = proposals.data ?? [];
   const pendingCount = list.filter((p) => p.status === "pending").length;
   const approveEverything = async () => {
-    setApproveError(null);
     try {
       await approveAll(id);
       await refresh();
     } catch (err) {
-      setApproveError(err);
+      announce(
+        specToInput("Approve all", errorToAlert(err, "Approve all failed"), {
+          onRetry: () => void approveEverything(),
+        }),
+      );
     }
   };
   const remove = async () => {
@@ -143,25 +145,19 @@ export function MapPage() {
         <MapTabPanel tab="status" active={tab === "status"}>
           {map.data && <FixedCopyLink item={map.data} />}
           {map.data && <FixedCopyOf item={map.data} />}
-          <FixOutcomes mapId={id} />
           <JobOutcome
+            label="Apply"
             job={apply.job}
             error={apply.error}
             onRetry={() => void apply.run(() => applyMap(id)).then(refresh)}
             onReview={() => document.getElementById("fixes-top")?.scrollIntoView?.()}
           />
           <JobOutcome
+            label="Scan"
             job={scan.job}
             error={scan.error}
             onRetry={() => void scan.run(() => scanMap(id)).then(refresh)}
           />
-          {approveError !== null && (
-            <SpecAlert
-              spec={errorToAlert(approveError, "Approve all failed")}
-              onRetry={() => void approveEverything()}
-              onDismiss={() => setApproveError(null)}
-            />
-          )}
           {approved === 0 && pendingCount > 0 && (
             <Alert
               variant="info"

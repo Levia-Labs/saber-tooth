@@ -1,11 +1,11 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { Link } from "react-router";
+import { useEffect, useState } from "react";
 import { cropMap } from "../api/client";
 import { useJobRunner } from "../api/jobs";
 import { keys, useTimeline } from "../api/queries";
 import type { CropLength, CropResult, Job, Timeline } from "../api/types";
 import { errorToAlert, toAlert } from "../lib/alerts";
+import { specToInput } from "../lib/announcements";
 import {
   CROP_TIPS,
   MIN_LENGTH_S,
@@ -63,22 +63,26 @@ function LengthSwitch(props: { value: Choice; data: Timeline; onChange: (next: C
   );
 }
 
+/** Reports a finished or failed crop as a toast; renders nothing. */
 function CropOutcome({ job, error }: { job: Job | null; error: string | null }) {
-  if (error !== null) return <SpecAlert spec={toAlert(job, error)} />;
-  const result = job?.result as Partial<CropResult> | null | undefined;
-  if (!result?.cropped_id || result.replaced) return null;
-  return (
-    <Alert
-      variant="success"
-      title="Cropped map written"
-      message={`Written to ${result.folder ?? "a new folder"}.`}
-      actions={
-        <Link className="btn plain" to={`/maps/${encodeURIComponent(result.cropped_id)}`}>
-          Open cropped map
-        </Link>
-      }
-    />
-  );
+  const announce = useAnnounce();
+  useEffect(() => {
+    if (error !== null) {
+      const spec = toAlert(job, error);
+      if (spec) announce(specToInput("Crop", spec));
+      return;
+    }
+    const result = job?.result as Partial<CropResult> | null | undefined;
+    if (!result?.cropped_id || result.replaced) return;
+    announce({
+      key: "Crop",
+      variant: "success",
+      title: "Cropped map written",
+      message: `Written to ${result.folder ?? "a new folder"}.`,
+      link: { to: `/maps/${encodeURIComponent(result.cropped_id)}`, label: "Open cropped map" },
+    });
+  }, [announce, job, error]);
+  return null;
 }
 
 interface EditorProps {

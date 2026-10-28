@@ -23,7 +23,7 @@ Gate run on 2026-10-28 failed once with DeadlineExceeded in test_round_trip (203
 
 ## 5 fixbutton danger-alert test flakes under full-suite load
 
-status: open
+status: done
 class: test
 
 frontend/tests/fixbutton.test.tsx 'a failed job shows a danger alert with the error' failed once in the full suite with 'Found multiple elements with the text: /Fix failed/' (job toast and inline alert both match) and passed in 3 isolated runs and a full-suite rerun. Scope the query to the toast stack or the alert region.

@@ -71,9 +71,9 @@ export function renderPanel(ui: ReactElement) {
   return render(
     <QueryClientProvider client={makeQueryClient()}>
       <TipProvider delayDuration={0}>
-        <AnnouncerProvider>
-          <MemoryRouter>{ui}</MemoryRouter>
-        </AnnouncerProvider>
+        <MemoryRouter>
+          <AnnouncerProvider>{ui}</AnnouncerProvider>
+        </MemoryRouter>
       </TipProvider>
     </QueryClientProvider>,
   );

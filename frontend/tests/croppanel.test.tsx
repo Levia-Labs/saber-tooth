@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, test } from "vitest";
 import { CropPanel } from "../src/components/CropPanel";
 import { TIMELINE, cropApi, endHandle, renderPanel, startHandle } from "./crophelpers";
+import { inlineText, toasts } from "./helpers";
 
 const P120 = TIMELINE.lengths["120"];
 
@@ -192,17 +193,19 @@ describe("CropPanel", () => {
     const { user } = setup();
     await openPanel(user);
     await user.click(screen.getByRole("button", { name: "Save as new map" }));
-    const link = await screen.findByRole("link", { name: "Open cropped map" });
+    const link = await toasts().findByRole("link", { name: "Open cropped map" });
     expect(link).toHaveAttribute("href", "/maps/id0000000099");
-    expect(screen.getByText(/Written to Folder 1 \[1 min\]/)).toBeInTheDocument();
+    expect(toasts().getByText(/Written to Folder 1 \[1 min\]/)).toBeInTheDocument();
+    expect(inlineText(/Written to Folder 1/)).toBe(false);
   });
 
   test("a failed job shows the reason", async () => {
     const { user } = setup({ jobStatus: "failed", jobError: "ffmpeg failed: bad input" });
     await openPanel(user);
     await user.click(screen.getByRole("button", { name: "Save as new map" }));
-    expect(await screen.findByText("Crop failed")).toBeInTheDocument();
-    expect(screen.getAllByText(/ffmpeg failed: bad input/).length).toBeGreaterThan(0);
+    expect(await toasts().findByText("Crop failed")).toBeInTheDocument();
+    expect(toasts().getAllByText(/ffmpeg failed: bad input/).length).toBeGreaterThan(0);
+    expect(inlineText("Crop failed")).toBe(false);
   });
 
   test("Create is disabled while a job runs on the map", async () => {
