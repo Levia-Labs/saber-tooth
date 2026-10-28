@@ -2,9 +2,9 @@ import json
 
 import pytest
 
-from saber_tooth.crop.errors import InvalidWindow
+from saber_tooth.crop.errors import InvalidWindow, NoNotes
 from saber_tooth.crop.timeline import build_timeline, resolve_window, timeline_dict
-from tests.crop_helpers import stepped_map
+from tests.crop_helpers import beatmap, stepped_map
 
 DURATION = 143.0  # stepped_map(72) at 120 bpm: last note at beat 285
 
@@ -70,3 +70,8 @@ def test_a_song_too_short_for_any_length_refuses_every_window():
     assert not any(p.enabled for p in short.plans.values())
     with pytest.raises(InvalidWindow, match="no crop length"):
         resolve_window(short, 0.0, 128.0)
+
+
+def test_a_map_without_notes_has_no_timeline():
+    with pytest.raises(NoNotes):
+        build_timeline(beatmap(), 100.0, None)
