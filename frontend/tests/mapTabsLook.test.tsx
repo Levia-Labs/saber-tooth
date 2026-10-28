@@ -39,18 +39,33 @@ describe("map page tabs look like the Library and BeatSaver tabs", () => {
     expect(MAP_TABS.map((t) => t.icon)).toEqual(["info", "scissors", "trash"]);
   });
 
-  test("the tab buttons repeat the pill's look: muted, ink and panel when selected, blue underline", () => {
-    const sheet = css("crop.css");
-    const section = css("beatsaver.css");
-    const selected = rule(sheet, '.mode-switch .map-tab[aria-selected="true"]');
-    expect(selected).toContain("color: var(--ink)");
-    expect(selected).toContain("background: var(--panel-2)");
-    expect(selected).toContain("inset 0 -2px 0 var(--blue)");
-    expect(rule(section, '.mode-switch a[aria-current="page"]')).toContain(
-      "inset 0 -2px 0 var(--blue)",
+  test("one shared pill rule styles the section tabs, map tabs and length switch", () => {
+    const section = css("pill.css");
+    const crop = css("crop.css");
+    const pill = rule(section, ".mode-switch .pill");
+    expect(pill).toContain("color: var(--muted)");
+    expect(pill).toContain("min-height: 40px");
+    for (const state of ['aria-current="page"', 'aria-selected="true"', 'aria-checked="true"']) {
+      const on = rule(section, `.mode-switch .pill[${state}]`);
+      expect(on).toContain("color: var(--ink)");
+      expect(on).toContain("background: var(--panel-2)");
+      expect(on).toContain("inset 0 -2px 0 var(--blue)");
+    }
+    expect(crop).not.toMatch(/\.mode-switch \.map-tab \{/);
+    expect(crop).not.toMatch(/\.crop-switch button/);
+  });
+
+  test("the section tabs, map tabs and length switch all carry the pill class", () => {
+    const { container } = render(
+      <MemoryRouter>
+        <TipProvider delayDuration={0}>
+          <SectionTabs active="library" heading="Library" headingId="h" />
+        </TipProvider>
+        <MapTabList available={tabsFor(true)} active="status" onSelect={() => undefined} />
+      </MemoryRouter>,
     );
-    expect(rule(sheet, ".mode-switch .map-tab")).toContain("color: var(--muted)");
-    expect(rule(sheet, ".mode-switch .map-tab")).toContain("min-height: 40px");
+    expect(container.querySelectorAll("nav.mode-switch a.pill")).toHaveLength(2);
+    expect(container.querySelectorAll("[role=tablist] button.pill")).toHaveLength(3);
   });
 });
 

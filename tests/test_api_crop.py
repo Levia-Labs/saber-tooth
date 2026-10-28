@@ -72,7 +72,7 @@ def test_crop_job_writes_a_new_folder(http, cuts):
         ({"start_beat": 5, "end_beat": 6.8}, "the window must be at least 1 second long"),
         ({"start_beat": 0, "end_beat": 9000}, "the window must lie inside the song"),
         ({"start_beat": 200, "end_beat": 400}, "the window must lie inside the song"),
-        ([], "start_beat must be a number"),
+        ([], "send either start_beat and end_beat or start_s and end_s"),
     ],
 )
 def test_crop_422_names_the_rule(http, body, rule):
@@ -113,3 +113,42 @@ def test_crop_accepts_a_free_mid_bar_window(http, cuts):
 def test_crop_rejects_a_window_under_a_second(http):
     resp = http.post(f"/api/maps/{MID}/crop", json={"start_beat": 5.0, "end_beat": 6.8})
     assert resp.status_code == 422 and "at least 1 second" in resp.json()["error"]
+
+
+def _tempo_change_http(tmp_path):
+    from saber_tooth.model import BpmEvent
+    from tests.crop_helpers import stepped_map
+
+    bm = stepped_map()
+    for d in bm.difficulties.values():
+        d.bpm_events = [BpmEvent(64.0, 60.0)]  # 120 bpm for 32 s, then 1 beat per second
+    return make_service(tmp_path, bm)
+
+
+def test_crop_by_seconds_converts_with_the_bpm_changes(tmp_path, cuts):
+    with TestClient(create_app(_tempo_change_http(tmp_path)), base_url="http://localhost") as c:
+        body = {"start_s": 40.0, "end_s": 50.0}
+        job = _wait(c, c.post(f"/api/maps/{MID}/crop", json=body).json()["job"])
+        assert job["status"] == "done"
+        assert job["result"]["start_beat"] == pytest.approx(72.0)
+        assert job["result"]["end_beat"] == pytest.approx(82.0)
+
+
+@pytest.mark.parametrize(
+    ("body", "rule"),
+    [
+        (
+            {"start_beat": 0, "end_beat": 128, "start_s": 0, "end_s": 60},
+            "send either start_beat and end_beat or start_s and end_s",
+        ),
+        ({}, "send either start_beat and end_beat or start_s and end_s"),
+        ({"start_s": 5}, "end_s must be a number"),
+        ({"start_beat": 5, "end_s": 9}, "send either start_beat and end_beat or start_s and end_s"),
+        ({"start_s": "x", "end_s": 9}, "start_s must be a number"),
+        ({"start_s": 3, "end_s": 3.5}, "the window must be at least 1 second long"),
+        ({"start_s": 0, "end_s": 99999}, "the window must lie inside the song"),
+    ],
+)
+def test_crop_seconds_pair_rules(http, body, rule):
+    resp = http.post(f"/api/maps/{MID}/crop", json=body)
+    assert resp.status_code == 422 and rule in resp.json()["error"]

@@ -12,6 +12,7 @@ import { FixedCopyLink, FixedCopyOf } from "../components/FixedCopyLink";
 import { CropPanel } from "../components/CropPanel";
 import { DeletePanel } from "../components/DeletePanel";
 import { FixToolbar } from "../components/FixToolbar";
+import { MapFooter } from "../components/MapFooter";
 import { MapTabList, MapTabPanel } from "../components/MapTabs";
 import { parseTab, tabsFor, type MapTab } from "../lib/mapTabs";
 import { stopPreview } from "../lib/previewPlayer";
@@ -203,7 +204,13 @@ export function MapPage() {
       {canCrop && (
         <MapTabPanel tab="crop" active={tab === "crop"}>
           {cropSeen && (
-            <CropPanel key={id} mapId={id} busy={running} audioUrl={map.data?.audio_url} />
+            <CropPanel
+              key={id}
+              mapId={id}
+              folder={map.data?.folder ?? name}
+              busy={running}
+              audioUrl={map.data?.audio_url}
+            />
           )}
         </MapTabPanel>
       )}
@@ -218,6 +225,7 @@ export function MapPage() {
           />
         </MapTabPanel>
       )}
+      <MapFooter id={id} />
     </section>
   );
 }

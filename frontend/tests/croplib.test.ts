@@ -126,13 +126,16 @@ describe("client and alerts", () => {
     expect(calls[0]?.pathname).toBe("/api/maps/id0000000001/timeline");
   });
 
-  test("cropMap posts the chosen beats", async () => {
+  test("cropMap posts the chosen seconds, with replace only when asked", async () => {
     const { fn } = mockFetch(() => ({ job: "j1" }));
     await expect(cropMap("id0000000001", 0, 128)).resolves.toEqual({ job: "j1" });
     const [path, init] = fn.mock.calls[0] as unknown as [string, RequestInit];
     expect(path).toBe("/api/maps/id0000000001/crop");
     expect(init.method).toBe("POST");
-    expect(JSON.parse(String(init.body))).toEqual({ start_beat: 0, end_beat: 128 });
+    expect(JSON.parse(String(init.body))).toEqual({ start_s: 0, end_s: 128 });
+    await cropMap("id0000000001", 1, 9, true);
+    const second = fn.mock.calls[1] as unknown as [string, RequestInit];
+    expect(JSON.parse(String(second[1].body))).toEqual({ start_s: 1, end_s: 9, replace: true });
   });
 
   test("a failed crop job reads as a danger alert and a done one names the folder", () => {

@@ -18,7 +18,9 @@ import {
   type Span,
 } from "../lib/crop";
 import { Alert, SpecAlert } from "./Alert";
+import { useAnnounce } from "./Announcer";
 import { ActionButton } from "./Buttons";
+import { CropSave } from "./CropSave";
 import { NpsChart, type Edge } from "./NpsChart";
 
 type Choice = CropLength | "unlimited";
@@ -47,6 +49,7 @@ function LengthSwitch(props: { value: Choice; data: Timeline; onChange: (next: C
           key={key}
           type="button"
           role="radio"
+          className="pill"
           aria-checked={props.value === key}
           disabled={key !== "unlimited" && !props.data.lengths[key].enabled}
           onClick={() => props.onChange(key)}
@@ -61,7 +64,7 @@ function LengthSwitch(props: { value: Choice; data: Timeline; onChange: (next: C
 function CropOutcome({ job, error }: { job: Job | null; error: string | null }) {
   if (error !== null) return <SpecAlert spec={toAlert(job, error)} />;
   const result = job?.result as Partial<CropResult> | null | undefined;
-  if (!result?.cropped_id) return null;
+  if (!result?.cropped_id || result.replaced) return null;
   return (
     <Alert
       variant="success"
@@ -79,12 +82,14 @@ function CropOutcome({ job, error }: { job: Job | null; error: string | null }) 
 interface EditorProps {
   mapId: string;
   data: Timeline;
+  folder: string;
   busy: boolean;
   audioUrl?: string | null;
 }
 
-function CropEditor({ mapId, data, busy, audioUrl }: EditorProps) {
+function CropEditor({ mapId, folder, data, busy, audioUrl }: EditorProps) {
   const client = useQueryClient();
+  const announce = useAnnounce();
   const crop = useJobRunner("Crop");
   const [length, setLength] = useState<Choice>(
     data.lengths["60"].enabled ? "60" : data.lengths["120"].enabled ? "120" : "unlimited",
@@ -96,7 +101,6 @@ function CropEditor({ mapId, data, busy, audioUrl }: EditorProps) {
   const best = plan ? suggestion(plan) : whole;
   const selection = picked ?? best;
   const edited = picked !== null && !(best && sameSpan(picked, best));
-  const beats = (seconds: number) => (seconds * data.bpm) / 60;
 
   const onMove = (edge: Edge, at: number) =>
     selection && setPicked(moveEdge(selection, edge, at, min, data.duration_s));
@@ -111,14 +115,19 @@ function CropEditor({ mapId, data, busy, audioUrl }: EditorProps) {
     else setPicked(keepStart(data.lengths[next], selection));
     setLength(next);
   };
-  const create = () => {
+  const save = (replace: boolean) => {
     if (!selection) return;
-    const exact = picked === null && plan?.suggestions[0];
-    const startBeat = exact ? exact.start_beat : beats(selection.start_s);
-    const endBeat = exact ? exact.end_beat : beats(selection.end_s);
     void crop
-      .run(() => cropMap(mapId, startBeat, endBeat))
-      .then(() => client.invalidateQueries({ queryKey: keys.maps }));
+      .run(() => cropMap(mapId, selection.start_s, selection.end_s, replace))
+      .then((job) => {
+        if (job && replace) {
+          announce({ variant: "success", title: "Map replaced", message: folder });
+          void client.invalidateQueries({ queryKey: keys.timeline(mapId) });
+          void client.invalidateQueries({ queryKey: keys.proposals(mapId) });
+          void client.invalidateQueries({ queryKey: keys.map(mapId) });
+        }
+        return client.invalidateQueries({ queryKey: keys.maps });
+      });
   };
 
   return (
@@ -152,14 +161,11 @@ function CropEditor({ mapId, data, busy, audioUrl }: EditorProps) {
               onClick={() => setPicked(null)}
             />
           )}
-          <ActionButton
-            icon="apply"
-            label="Save as new map"
-            tip={CROP_TIPS.create}
-            text
-            variant="accent"
+          <CropSave
+            folder={folder}
             disabled={!selection || busy || crop.busy}
-            onClick={create}
+            busy={busy || crop.busy}
+            onSave={save}
           />
         </div>
       </div>
@@ -185,10 +191,12 @@ function CropEditor({ mapId, data, busy, audioUrl }: EditorProps) {
 
 function CropBody({
   mapId,
+  folder,
   busy,
   audioUrl,
 }: {
   mapId: string;
+  folder: string;
   busy: boolean;
   audioUrl?: string | null;
 }) {
@@ -202,23 +210,33 @@ function CropBody({
       />
     );
   }
-  return <CropEditor mapId={mapId} data={timeline.data} busy={busy} audioUrl={audioUrl} />;
+  return (
+    <CropEditor
+      mapId={mapId}
+      folder={folder}
+      data={timeline.data}
+      busy={busy}
+      audioUrl={audioUrl}
+    />
+  );
 }
 
 /** Crop to a 1 or 2 minute highlight; mount it when the Crop tab first shows, it loads the timeline. */
 export function CropPanel({
   mapId,
+  folder,
   busy,
   audioUrl,
 }: {
   mapId: string;
+  folder: string;
   busy: boolean;
   audioUrl?: string | null;
 }) {
   return (
     <section className="crop-panel" aria-label="Crop to a highlight">
       <div id="crop-body">
-        <CropBody key={mapId} mapId={mapId} busy={busy} audioUrl={audioUrl} />
+        <CropBody key={mapId} mapId={mapId} folder={folder} busy={busy} audioUrl={audioUrl} />
       </div>
     </section>
   );

@@ -24,7 +24,7 @@ export function SectionTabs({ active, heading, headingId }: Props) {
       <nav className="mode-switch" aria-label="Section">
         {ITEMS.map((i) => (
           <Tip key={i.key} text={i.tip}>
-            <Link to={i.to} aria-current={i.key === active ? "page" : undefined}>
+            <Link className="pill" to={i.to} aria-current={i.key === active ? "page" : undefined}>
               {i.label}
             </Link>
           </Tip>

@@ -10,7 +10,7 @@ async function openPanel() {
 
 function setup(options = {}) {
   const api = cropApi(options);
-  renderPanel(<CropPanel mapId="id0000000001" busy={false} />);
+  renderPanel(<CropPanel mapId="id0000000001" folder="Folder 1" busy={false} />);
   return { ...api, user: userEvent.setup() };
 }
 
@@ -78,7 +78,7 @@ describe("free cutting", () => {
     expect(startHandle()).toHaveAttribute("aria-valuenow", "70");
     expect(endHandle()).toHaveAttribute("aria-valuenow", "134");
     await user.click(screen.getByRole("button", { name: "Save as new map" }));
-    await waitFor(() => expect(posts[0]?.body).toEqual({ start_beat: 140, end_beat: 268 }));
+    await waitFor(() => expect(posts[0]?.body).toEqual({ start_s: 70, end_s: 134 }));
   });
 
   test("double-clicking a section moves the window there, keeping its length", async () => {

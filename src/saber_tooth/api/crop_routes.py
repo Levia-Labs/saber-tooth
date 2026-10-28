@@ -6,6 +6,8 @@ from fastapi.concurrency import run_in_threadpool
 from saber_tooth.api.core import ApiError
 from saber_tooth.api.crop_api import CropApi
 
+_FIELDS = ("start_beat", "end_beat", "start_s", "end_s", "replace")
+
 
 def register(app: FastAPI, crop: CropApi) -> None:
     @app.get("/api/maps/{map_id}/timeline")
@@ -17,12 +19,9 @@ def register(app: FastAPI, crop: CropApi) -> None:
         try:
             body = await request.json()
         except ValueError:
-            raise ApiError(400, 'send JSON {"start_beat", "end_beat"}') from None
+            raise ApiError(
+                400, 'send JSON {"start_beat", "end_beat"} or {"start_s", "end_s"}'
+            ) from None
         fields = body if isinstance(body, dict) else {}
-        return await run_in_threadpool(
-            crop.crop,
-            map_id,
-            fields.get("start_beat"),
-            fields.get("end_beat"),
-            fields.get("replace", False),
-        )
+        named = {k: fields[k] for k in _FIELDS if k in fields}
+        return await run_in_threadpool(crop.crop, map_id, **named)

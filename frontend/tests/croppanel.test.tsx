@@ -12,7 +12,7 @@ async function openPanel(_user?: ReturnType<typeof userEvent.setup>) {
 
 function setup(options = {}, busy = false) {
   const api = cropApi(options);
-  renderPanel(<CropPanel mapId="id0000000001" busy={busy} />);
+  renderPanel(<CropPanel mapId="id0000000001" folder="Folder 1" busy={busy} />);
   return { ...api, user: userEvent.setup() };
 }
 
@@ -85,9 +85,10 @@ describe("CropPanel", () => {
     expect(endHandle()).toHaveAttribute("aria-valuetext", "1:04.9");
     await user.click(screen.getByRole("button", { name: "Save as new map" }));
     await waitFor(() => expect(posts).toHaveLength(1));
-    const body = posts[0]?.body as { start_beat: number; end_beat: number };
-    expect(body.start_beat).toBeCloseTo(0.2, 6);
-    expect(body.end_beat).toBeCloseTo(129.8, 6);
+    const body = posts[0]?.body as { start_s: number; end_s: number };
+    expect(Object.keys(body).sort()).toEqual(["end_s", "start_s"]);
+    expect(body.start_s).toBeCloseTo(0.1, 6);
+    expect(body.end_s).toBeCloseTo(64.9, 6);
   });
 
   test("Reset to suggestion appears after an edit and restores the suggestion", async () => {
@@ -114,7 +115,7 @@ describe("CropPanel", () => {
     await user.keyboard("{Shift>}{ArrowRight}{ArrowRight}{/Shift}");
     expect(endHandle()).toHaveAttribute("aria-valuenow", "65");
     await user.click(screen.getByRole("button", { name: "Save as new map" }));
-    await waitFor(() => expect(posts[0]?.body).toEqual({ start_beat: 0, end_beat: 130 }));
+    await waitFor(() => expect(posts[0]?.body).toEqual({ start_s: 0, end_s: 65 }));
   });
 
   test("Unlimited with no suggestion opens on the whole song and is the default then", async () => {
@@ -127,7 +128,7 @@ describe("CropPanel", () => {
     expect(startHandle()).toHaveAttribute("aria-valuenow", "0");
     expect(endHandle()).toHaveAttribute("aria-valuenow", "140");
     await user.click(screen.getByRole("button", { name: "Save as new map" }));
-    await waitFor(() => expect(posts[0]?.body).toEqual({ start_beat: 0, end_beat: 280 }));
+    await waitFor(() => expect(posts[0]?.body).toEqual({ start_s: 0, end_s: 140 }));
   });
 
   test("going from Unlimited to a length picks that length's suggestion", async () => {

@@ -29,7 +29,7 @@ export function MapTabList({ available, active, onSelect }: Props) {
           id={tabId(t.key)}
           type="button"
           role="tab"
-          className={t.key === "delete" ? "map-tab map-tab-danger" : "map-tab"}
+          className={t.key === "delete" ? "pill map-tab map-tab-danger" : "pill map-tab"}
           aria-selected={t.key === active}
           aria-controls={panelId(t.key)}
           tabIndex={t.key === active ? 0 : -1}

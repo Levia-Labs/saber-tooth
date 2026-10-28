@@ -4,6 +4,24 @@ import { useSearchParams } from "react-router";
 import { encodeState, parseState, type LibraryState } from "./urlstate";
 
 let lastLibrarySearch = "";
+const SEARCH_KEY = "saber-tooth.library-search";
+
+/** The library's last URL search params (no leading "?"), kept for the map page's footer. */
+export function storedLibrarySearch(): string {
+  try {
+    return sessionStorage.getItem(SEARCH_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function storeLibrarySearch(search: string): void {
+  try {
+    sessionStorage.setItem(SEARCH_KEY, search);
+  } catch {
+    // Storage can be blocked or full; the footer then uses the default order.
+  }
+}
 
 /** The library query string last shown, so the map page can link back to it. */
 export function libraryHref(): string {
@@ -23,6 +41,7 @@ export function useLibraryState(): LibraryControls {
   const state = useMemo(() => parseState(search), [search]);
   useEffect(() => {
     lastLibrarySearch = search;
+    storeLibrarySearch(search);
   }, [search]);
   const update = useCallback(
     (patch: Partial<LibraryState>, replace = false) => {

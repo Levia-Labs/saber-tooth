@@ -7,6 +7,7 @@ export const KIND_RANK: Record<EndKind, number> = { section: 0, phrase: 1, bar4:
 export const CROP_TIPS = {
   create:
     "Save the chosen stretch of the song as a new map in a folder beside this one. The original is never changed.",
+  replace: "Replace this map's files with the cropped version. The old version cannot be restored.",
   reset: "Go back to the suggested window.",
 } as const;
 

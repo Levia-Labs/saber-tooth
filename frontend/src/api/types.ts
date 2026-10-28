@@ -89,6 +89,8 @@ export interface CropResult {
   start_beat: number;
   end_beat: number;
   length_s: number;
+  /** Set when the crop replaced the original folder. */
+  replaced?: boolean;
 }
 
 export interface ActiveJob {

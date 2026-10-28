@@ -249,3 +249,40 @@
 .error-panel {
   max-width: 640px;
 }
+
+.map-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin: 1.5rem 0 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+}
+.map-footer .back {
+  margin: 0;
+  min-width: 0;
+}
+.map-footer-next {
+  justify-self: end;
+}
+.map-footer-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.map-footer-count {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 719px) {
+  .map-footer {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .map-footer-count {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: center;
+  }
+}

@@ -1,5 +1,5 @@
 from saber_tooth.service.core import Service
-from saber_tooth.service.crop import crop_check, crop_map, crop_timeline
+from saber_tooth.service.crop import crop_beats, crop_check, crop_map, crop_timeline
 from saber_tooth.service.errors import ApplyConflict, MapNotFound, MapUnreadable
 from saber_tooth.service.fix import fix_map
 from saber_tooth.service.util import map_id_for
@@ -7,6 +7,7 @@ from saber_tooth.service.util import map_id_for
 Service.fix_map = fix_map  # type: ignore[attr-defined]  # one-click fix, see fix.py
 Service.crop_timeline = crop_timeline  # type: ignore[attr-defined]  # crop highlight, see crop.py
 Service.crop_check = crop_check  # type: ignore[attr-defined]
+Service.crop_beats = crop_beats  # type: ignore[attr-defined]
 Service.crop_map = crop_map  # type: ignore[attr-defined]
 
 __all__ = ["ApplyConflict", "MapNotFound", "MapUnreadable", "Service", "map_id_for"]

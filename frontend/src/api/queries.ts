@@ -8,12 +8,14 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { useEffect } from "react";
-import type { LibraryState } from "../lib/urlstate";
+import { apiParams, parseState, type LibraryState } from "../lib/urlstate";
 import { isRunning } from "../lib/status";
 import {
+  ApiError,
   getFacets,
   getJob,
   getMap,
+  getNeighbors,
   getProposals,
   getTimeline,
   isRetryable,
@@ -29,6 +31,7 @@ export const keys = {
   proposals: (id: string) => ["proposals", id] as const,
   timeline: (id: string) => ["timeline", id] as const,
   job: (id: string) => ["job", id] as const,
+  neighbors: (id: string, search: string) => ["maps", "neighbors", id, search] as const,
 };
 
 export const JOB_POLL_MS = 2000;
@@ -134,4 +137,30 @@ export function useLiveRows(items: MapItem[]): void {
     }
     void client.invalidateQueries({ queryKey: keys.facets });
   }, [finished, client]);
+}
+
+/** Library query parameters for the neighbours call; paging is the server's to ignore. */
+function neighborQuery(search: string): string {
+  const params = apiParams(parseState(search), 0, 1);
+  params.delete("offset");
+  params.delete("limit");
+  return params.toString();
+}
+
+/** Previous and next map in the library's current list; one retry without filters on a 404. */
+export function useNeighbors(id: string, search: string) {
+  return useQuery({
+    queryKey: keys.neighbors(id, search),
+    queryFn: async ({ signal }) => {
+      try {
+        return await getNeighbors(id, search ? neighborQuery(search) : "", signal);
+      } catch (err) {
+        if (search && err instanceof ApiError && err.status === 404) {
+          return getNeighbors(id, "", signal);
+        }
+        throw err;
+      }
+    },
+    retry: false,
+  });
 }

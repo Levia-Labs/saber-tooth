@@ -8,6 +8,7 @@ import "./styles/rows.css";
 import "./styles/chips.css";
 import "./styles/overlays.css";
 import "./styles/page.css";
+import "./styles/pill.css";
 import "./styles/beatsaver.css";
 import "./styles/barslot.css";
 import "./styles/playlists.css";

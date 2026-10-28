@@ -46,6 +46,12 @@ def crop_check(svc, map_id: str, start_beat: float, end_beat: float) -> None:
     resolve_window(_timeline(svc, map_id)[2], start_beat, end_beat)
 
 
+def crop_beats(svc, map_id: str, start_s: float, end_s: float) -> tuple[float, float]:
+    """The beat pair for a seconds pair, converted with the map's own tempo changes."""
+    timing = _timeline(svc, map_id)[2].timing
+    return timing.to_beats(start_s), timing.to_beats(end_s)
+
+
 def _replace(svc, map_id: str, folder: Path, audio: Path, cropped, label: str) -> Path:
     """Stage the crop, check it reads back, then swap it in for the original folder."""
     partial, _ = stage_cropped(svc.levels, folder, audio, cropped, label)

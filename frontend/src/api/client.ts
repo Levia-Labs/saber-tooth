@@ -114,8 +114,34 @@ export const fixMap = (id: string): Promise<Started> => request("POST", `/api/ma
 export const getTimeline = (id: string, signal?: AbortSignal): Promise<Timeline> =>
   request("GET", `/api/maps/${seg(id)}/timeline`, undefined, signal);
 
-export const cropMap = (id: string, startBeat: number, endBeat: number): Promise<Started> =>
-  request("POST", `/api/maps/${seg(id)}/crop`, { start_beat: startBeat, end_beat: endBeat });
+/** Crop by song seconds; the server converts to beats with the map's own tempo changes. */
+export const cropMap = (
+  id: string,
+  startS: number,
+  endS: number,
+  replace = false,
+): Promise<Started> =>
+  request("POST", `/api/maps/${seg(id)}/crop`, {
+    start_s: startS,
+    end_s: endS,
+    ...(replace ? { replace: true } : {}),
+  });
+
+export interface Neighbor {
+  id: string;
+  title: string;
+  folder: string;
+}
+
+export interface Neighbors {
+  index: number;
+  total: number;
+  prev: Neighbor;
+  next: Neighbor;
+}
+
+export const getNeighbors = (id: string, query: string, signal?: AbortSignal): Promise<Neighbors> =>
+  request("GET", `/api/maps/${seg(id)}/neighbors${query ? `?${query}` : ""}`, undefined, signal);
 
 export const deleteMap = (id: string): Promise<{ deleted: string }> =>
   request("DELETE", `/api/maps/${seg(id)}`);

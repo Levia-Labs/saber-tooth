@@ -9,7 +9,7 @@ interface Common {
   tip: string;
   /** Show the label next to the icon (hidden below 720px); otherwise screen readers only. */
   text?: boolean;
-  variant?: "accent" | "primary" | "approve" | "reject" | "danger" | "icon" | "plain";
+  variant?: "accent" | "primary" | "approve" | "reject" | "danger" | "warning" | "icon" | "plain";
   children?: ReactNode;
 }
 
