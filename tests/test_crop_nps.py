@@ -50,3 +50,31 @@ def test_slope_is_the_least_squares_trend():
     assert slope([3.0, 3.0, 3.0], 0.0, 3.0) == pytest.approx(0.0)
     assert slope([4.0, 3.0, 2.0, 1.0], 0.0, 4.0) == pytest.approx(-1.0)
     assert slope([5.0], 0.0, 1.0) == 0.0
+
+
+def test_slope_uses_bins_whose_centre_is_inside_the_range():
+    assert slope([1.0, 2.0, 3.0, 4.0], 0.5, 1.5) == 0.0  # only bin 0 has its centre inside
+    assert slope([9.0, 1.0, 2.0, 3.0, 9.0], 1.0, 4.0) == pytest.approx(1.0)  # bins 1 to 3 only
+
+
+def test_a_chain_head_a_hair_off_its_note_counts_once():
+    d = diff("Expert", [4.0])
+    n = d.notes[0]
+    d.raw = {
+        "burstSliders": [
+            {"b": 4.0000001, "tb": 5.0, "x": n.x, "y": n.y, "c": int(n.color), "sc": 3}
+        ]
+    }
+    assert note_beats(d) == [4.0]
+
+
+def test_a_malformed_chain_is_skipped():
+    d = diff("Expert", [0.0])
+    d.raw = {"burstSliders": [{"b": 1.0, "x": 0, "y": 0}, {"b": "x", "x": 0, "y": 0, "c": 0}]}
+    assert note_beats(d) == [0.0]
+
+
+def test_all_series_ignores_a_difficulty_with_only_chain_heads():
+    d = diff("Easy", [])
+    d.raw = {"burstSliders": [{"b": 1.0, "x": 0, "y": 0, "c": 0}]}
+    assert list(all_series(beatmap(Easy=d), Timing(120.0, []), 2.0)) == []

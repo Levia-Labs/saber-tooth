@@ -8,13 +8,16 @@ from saber_tooth.timing import Timing
 
 def note_beats(d: Difficulty) -> list[float]:
     """Ascending beats of every note; a chain adds its head once, arcs add none."""
+    heads = {(round(n.beat, 6), n.x, n.y, int(n.color)) for n in d.notes}
     beats = [n.beat for n in d.notes]
-    have = {(n.beat, n.x, n.y, int(n.color)) for n in d.notes}
-    for s in d.raw.get("burstSliders", []):
-        key = (s["b"], s["x"], s["y"], s["c"])
-        if key not in have:
-            have.add(key)
-            beats.append(float(s["b"]))
+    for chain in d.raw.get("burstSliders", []):
+        try:
+            key = (round(float(chain["b"]), 6), int(chain["x"]), int(chain["y"]), int(chain["c"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+        if key not in heads:
+            heads.add(key)
+            beats.append(key[0])
     return sorted(beats)
 
 
@@ -33,7 +36,7 @@ def all_series(beatmap: Beatmap, timing: Timing, duration_s: float) -> dict[str,
     out = {}
     for name in DIFFICULTIES:
         d = beatmap.difficulties.get(name)
-        if d is not None and note_beats(d):
+        if d is not None and d.notes:
             out[name] = nps_series(d, timing, duration_s)
     return out
 
@@ -55,9 +58,9 @@ def mean_nps(series: list[float], start_s: float, end_s: float) -> float:
 
 
 def slope(series: list[float], start_s: float, end_s: float) -> float:
-    """Least squares trend, in notes per second per second, of the bins under the range."""
-    lo = max(0, math.floor(start_s))
-    hi = min(len(series), math.ceil(end_s))
+    """Least squares trend of the bins whose centre lies in [start_s, end_s); 0 under two bins."""
+    lo = max(0, math.ceil(start_s - 0.5))
+    hi = min(len(series), math.ceil(end_s - 0.5))
     ys = series[lo:hi]
     n = len(ys)
     if n < 2:
