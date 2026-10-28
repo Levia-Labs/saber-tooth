@@ -17,6 +17,7 @@ Standalone helper scripts run through the task runner.
 12. `hub.py`: compares the Docker Hub page of `levialabs/sabertooth` with `docs/dockerhub.md`; `--apply` publishes it. `task st:hub:check`, `task st:hub:publish` (run by a person). Tested by `tests/test_script_hub.py`.
 13. `release.py`: preflight (clean tree, main equals origin/main, daemon up, version tag free on Docker Hub and in git), build with OCI labels, verify with compose and `smoke.py`. `--apply` pushes `<version>` and `latest`, checks equal digests, pushes git tag `v<version>`, then checks the Hub page. `task st:release [-- --apply]`; `--apply` is run by a person. Tested by `tests/test_script_release.py`.
 14. `vr_agent.py`: host helper that reports the running VR runtime and whether the headset is worn at `127.0.0.1:8101/status` for the backend; optional `openvr` package. `task st:vr-agent [-- --port N --bind HOST]`. Read-only; closes its OpenVR session on exit.
+15. `profile_fix.py`: runs the Fix pipeline in-process on a temporary copy of a map folder under cProfile; prints phase timings, per-round counts and the top functions by cumulative and own time, and writes the pstats file. `task st:profile-fix MAP=<folder> [ROUNDS=6 TOP=25]`. Offline; never writes the source. Tested by `tests/test_script_profile_fix.py`.
 
 Each script has `-h`. Tests are `tests/test_script_*.py`; they use fakes or temporary git repositories and never touch Docker or the network. See [workflow](../docs/workflow.md).
 

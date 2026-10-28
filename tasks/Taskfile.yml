@@ -83,6 +83,14 @@ tasks:
   smoke:
     desc: "Smoke-check the running stack, read-only. Usage: task st:smoke [-- --base URL --timeout S]"
     cmds: ["uv run python scripts/smoke.py {{.CLI_ARGS}}"]
+  profile-fix:
+    desc: "Profile Fix on a copy of a map folder, offline. Usage: task st:profile-fix MAP=<folder> [ROUNDS=6 TOP=25]"
+    requires:
+      vars: [MAP]
+    vars:
+      ROUNDS: '{{.ROUNDS | default "6"}}'
+      TOP: '{{.TOP | default "25"}}'
+    cmds: ['uv run python scripts/profile_fix.py "{{.MAP}}" --rounds {{.ROUNDS}} --top {{.TOP}}']
   browser-check:
     desc: "Headless browser page check, read-only. Usage: task st:browser-check -- [chrome|firefox] [--base URL]"
     dir: "{{.ROOT_DIR}}"
