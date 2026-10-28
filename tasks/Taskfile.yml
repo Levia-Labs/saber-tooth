@@ -119,3 +119,6 @@ tasks:
   docker-health:
     desc: "State, health and recent logs per compose service. Usage: task st:docker-health"
     cmds: ["uv run python scripts/docker_health.py {{.CLI_ARGS}}"]
+  vr-agent:
+    desc: "Run the VR runtime helper on the host (port 8101). Usage: task st:vr-agent [-- --port N --bind HOST]"
+    cmds: ["uv run python scripts/vr_agent.py {{.CLI_ARGS}}"]
