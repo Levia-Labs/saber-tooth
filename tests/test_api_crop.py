@@ -94,3 +94,11 @@ def test_crop_is_409_while_the_map_has_a_running_job(http):
 def test_crop_of_an_unknown_map_is_404(http):
     resp = http.post(f"/api/maps/{'0' * 12}/crop", json={"start_beat": 0, "end_beat": 128})
     assert resp.status_code == 404
+
+
+def test_crop_with_a_huge_integer_is_422(http):
+    raw = b'{"start_beat": 1' + b"0" * 400 + b', "end_beat": 128}'
+    resp = http.post(
+        f"/api/maps/{MID}/crop", content=raw, headers={"content-type": "application/json"}
+    )
+    assert resp.status_code == 422 and "start_beat must be a number" in resp.json()["error"]

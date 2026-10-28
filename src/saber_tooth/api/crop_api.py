@@ -7,10 +7,16 @@ from saber_tooth.crop.errors import CropError
 
 
 def _beat(value: object, name: str) -> float:
-    bad = isinstance(value, bool) or not isinstance(value, int | float)
-    if bad or not math.isfinite(value) or value < 0:  # type: ignore[operator]
-        raise ApiError(422, f"{name} must be a number of beats, 0 or more")
-    return float(value)  # type: ignore[arg-type]
+    rule = ApiError(422, f"{name} must be a number of beats, 0 or more")
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        raise rule
+    try:
+        beat = float(value)
+    except (OverflowError, ValueError, TypeError):
+        raise rule from None
+    if not math.isfinite(beat) or beat < 0:
+        raise rule
+    return beat
 
 
 class CropApi:
