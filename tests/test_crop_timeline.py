@@ -3,7 +3,7 @@ import json
 import pytest
 
 from saber_tooth.crop.errors import InvalidWindow, NoNotes
-from saber_tooth.crop.timeline import build_timeline, resolve_window, timeline_dict
+from saber_tooth.crop.timeline import build_timeline, resolve_window, timeline_dict, window_label
 from tests.crop_helpers import beatmap, stepped_map
 
 DURATION = 143.0  # stepped_map(72) at 120 bpm: last note at beat 285
@@ -44,20 +44,35 @@ def test_the_timeline_json_has_the_documented_shape(tl):
     assert len(data["nps"]["Expert"]) == 143
 
 
+def test_the_timeline_json_carries_the_minimum_length(tl):
+    assert timeline_dict(tl, "abc")["min_length_s"] == 1.0
+
+
 def test_the_suggestion_resolves_to_its_own_points(tl):
-    plan, start, end = resolve_window(tl, 0.0, 128.0)
-    assert plan.target_s == 60 and (start.beat, end.beat, end.kind) == (0.0, 128.0, "phrase")
-    plan, start, end = resolve_window(tl, 0.0, 224.0)
-    assert plan.target_s == 120 and end.kind == "section"
+    win = resolve_window(tl, 0.0, 128.0)
+    assert (win.start_beat, win.end_beat, win.length_s) == (0.0, 128.0, 64.0)
+    assert window_label(tl, win.length_s) == "1 min"
+    assert window_label(tl, resolve_window(tl, 0.0, 224.0).length_s) == "2 min"
+
+
+def test_a_free_window_mid_bar_resolves(tl):
+    win = resolve_window(tl, 5.5, 71.25)
+    assert (win.start_s, win.end_s) == (2.75, 35.625)
+
+
+def test_exactly_one_second_is_allowed(tl):
+    assert resolve_window(tl, 3.0, 5.0).length_s == 1.0
 
 
 @pytest.mark.parametrize(
     ("start", "end", "rule"),
     [
         (0.0, 0.0, "end_beat must be after start_beat"),
-        (5.0, 133.0, "start_beat is not a section boundary"),
-        (0.0, 64.0, "outside the bands 54-66 s and 108-132 s"),
-        (0.0, 128.5, "end_beat is not an allowed end point"),
+        (8.0, 4.0, "end_beat must be after start_beat"),
+        (0.0, 1.8, "the window must be at least 1 second long"),
+        (10.0, 11.0, "the window must be at least 1 second long"),
+        (0.0, 300.0, "the window must lie inside the song"),
+        (200.0, 400.0, "the window must lie inside the song"),
     ],
 )
 def test_resolve_window_names_the_broken_rule(tl, start, end, rule):
@@ -65,11 +80,20 @@ def test_resolve_window_names_the_broken_rule(tl, start, end, rule):
         resolve_window(tl, start, end)
 
 
-def test_a_song_too_short_for_any_length_refuses_every_window():
+def test_a_song_too_short_for_the_bands_still_allows_a_free_window():
     short = build_timeline(stepped_map(bars=12), 20.0, None)
     assert not any(p.enabled for p in short.plans.values())
-    with pytest.raises(InvalidWindow, match="no crop length"):
-        resolve_window(short, 0.0, 128.0)
+    assert resolve_window(short, 0.0, 20.0).length_s == 10.0
+    assert window_label(short, 10.0) == "crop 0m10s"
+
+
+@pytest.mark.parametrize(
+    ("length", "label"),
+    [(54.0, "1 min"), (66.0, "1 min"), (108.0, "2 min"), (53.9, "crop 0m54s"),
+     (180.0, "crop 3m00s"), (67.4, "crop 1m07s"), (1.0, "crop 0m01s")],
+)  # fmt: skip
+def test_window_label(tl, length, label):
+    assert window_label(tl, length) == label
 
 
 def test_a_map_without_notes_has_no_timeline():

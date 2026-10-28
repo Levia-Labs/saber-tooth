@@ -179,6 +179,6 @@ def crop_beatmap(beatmap: Beatmap, timing: Timing, start_beat: float, end_beat: 
         name: crop_difficulty(d, start_beat, end_beat, lead_beats, new_events)
         for name, d in beatmap.difficulties.items()
     }
-    fade_out_s = end_s - timing.to_seconds(end_beat - BAR)
+    fade_out_s = end_s - timing.to_seconds(max(start_beat, end_beat - BAR))
     cropped = Beatmap(replace(beatmap.info, bpm=bpm0), diffs, "")
     return Cropped(cropped, start_s, end_s - start_s, lead_s, fade_out_s)

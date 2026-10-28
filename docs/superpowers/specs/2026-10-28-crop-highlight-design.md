@@ -119,3 +119,13 @@ Each module has one job and is tested on its own.
 2. Free cutting at arbitrary times.
 3. Changing the original folder.
 4. Running Fix on the cropped copy automatically.
+
+## Note 2026-10-28: free cutting
+
+Supersedes the snap and band rules for `POST /api/maps/{id}/crop`.
+
+1. Any window is accepted when `start_beat >= 0`, `end_beat > start_beat`, the end lies inside the song and the length (through the map's Timing, BPM changes included) is at least 1 second. Section boundaries, snap points and the 1 and 2 minute bands no longer gate the request.
+2. 422 messages: `end_beat must be after start_beat`, `the window must be at least 1 second long`, `the window must lie inside the song`. 409 for a busy map is still checked first.
+3. `GET /timeline` is unchanged, plus `min_length_s: 1.0`; suggestions, sections and snap points stay as guidance.
+4. Label: `1 min` or `2 min` when the length is within the existing band, else `crop MmSSs` from the rounded length (`crop 3m00s`). The colon of `m:ss` is refused by the Windows-safe folder check, so `MmSSs` is used. Collisions are numbered by LevelsWriter.
+5. The fade-out over the last bar is clamped to the window length; the lead-in rule is unchanged.

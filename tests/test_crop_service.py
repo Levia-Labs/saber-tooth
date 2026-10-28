@@ -6,7 +6,7 @@ import pytest
 from saber_tooth.crop.errors import CropError, InvalidWindow, NoNotes
 from saber_tooth.mapio import load_map
 from saber_tooth.service import map_id_for
-from tests.crop_helpers import NAME, cuts, make_360, make_service  # noqa: F401
+from tests.crop_helpers import NAME, cuts, make_360, make_service, stepped_map  # noqa: F401
 from tests.test_service import _hashes
 
 MID = map_id_for(NAME)
@@ -60,8 +60,10 @@ def test_a_two_minute_window_is_labelled_two_minutes(tmp_path, cuts):
 
 def test_crop_check_names_the_broken_rule(tmp_path):
     svc = make_service(tmp_path)
-    with pytest.raises(InvalidWindow, match="section boundary"):
-        svc.crop_check(MID, 5.0, 133.0)
+    with pytest.raises(InvalidWindow, match="at least 1 second"):
+        svc.crop_check(MID, 5.0, 6.8)
+    with pytest.raises(InvalidWindow, match="inside the song"):
+        svc.crop_check(MID, 5.0, 900.0)
     window = svc.crop_timeline(MID)["lengths"]["60"]["suggestions"][0]
     svc.crop_check(MID, window["start_beat"], window["end_beat"])
 
@@ -80,3 +82,33 @@ def test_map_without_standard_notes_is_refused(tmp_path):
     make_360(svc.levels / NAME)
     with pytest.raises(NoNotes, match="no Standard difficulty has notes"):
         svc.crop_timeline(MID)
+
+
+def test_a_free_mid_bar_window_is_written(tmp_path, cuts):
+    svc = make_service(tmp_path)
+    result = svc.crop_map(MID, 5.5, 71.25)
+    assert result["folder"] == "Song [crop 0m33s]" and result["label"] == "crop 0m33s"
+    assert result["length_s"] == pytest.approx(32.875)
+    written = load_map(svc.levels / result["folder"])
+    assert len(written.difficulties) == 5
+    length_s, fade_out_s = cuts[0][3], cuts[0][6]
+    assert fade_out_s <= length_s
+
+
+def test_a_window_shorter_than_a_bar_fades_within_itself(tmp_path, cuts):
+    svc = make_service(tmp_path)
+    svc.crop_map(MID, 5.0, 8.0)  # 1.5 s, less than the 2 s bar
+    _src, _dst, _start, length_s, _lead, _fade_in, fade_out_s = cuts[0]
+    assert length_s == pytest.approx(1.5) and fade_out_s == pytest.approx(1.5)
+
+
+def test_a_three_minute_window_is_labelled_by_its_length(tmp_path, cuts):
+    svc = make_service(tmp_path, stepped_map(bars=100))
+    result = svc.crop_map(MID, 0.0, 360.0)
+    assert result["label"] == "crop 3m00s" and result["folder"] == "Song [crop 3m00s]"
+    assert svc.crop_map(MID, 0.0, 360.0)["folder"] == "Song [crop 3m00s 2]"
+
+
+def test_a_window_in_the_one_minute_band_keeps_its_label(tmp_path, cuts):
+    svc = make_service(tmp_path)
+    assert svc.crop_map(MID, 2.0, 122.0)["folder"] == "Song [1 min]"

@@ -52,28 +52,41 @@ def _same(a: float, b: float) -> bool:
     return abs(a - b) < EPS
 
 
-def resolve_window(
-    tl: Timeline, start_beat: float, end_beat: float
-) -> tuple[CropPlan, StartPoint, EndPoint]:
-    """The plan, start and end a requested pair names, or InvalidWindow naming the broken rule."""
+MIN_LENGTH_S = 1.0
+
+
+@dataclass(frozen=True)
+class Resolved:
+    start_beat: float
+    end_beat: float
+    start_s: float
+    end_s: float
+
+    @property
+    def length_s(self) -> float:
+        return self.end_s - self.start_s
+
+
+def resolve_window(tl: Timeline, start_beat: float, end_beat: float) -> Resolved:
+    """The free window a request names, or InvalidWindow naming the broken rule. Any start and
+    end inside the song is allowed as long as the window is at least MIN_LENGTH_S long."""
     if end_beat <= start_beat:
         raise InvalidWindow("end_beat must be after start_beat")
-    enabled = [p for p in tl.plans.values() if p.enabled]
-    if not enabled:
-        raise InvalidWindow("no crop length is available for this song")
-    holders = [(p, s) for p in enabled for s in p.starts if _same(s.beat, start_beat)]
-    if not holders:
-        raise InvalidWindow("start_beat is not a section boundary with a window in the band")
-    length = tl.timing.to_seconds(end_beat) - tl.timing.to_seconds(start_beat)
-    in_band = [(p, s) for p, s in holders if p.band[0] - EPS <= length <= p.band[1] + EPS]
-    if not in_band:
-        bands = " and ".join(f"{p.band[0]:g}-{p.band[1]:g} s" for p in enabled)
-        raise InvalidWindow(f"the length {length:.1f} s is outside the bands {bands}")
-    for plan, start in in_band:
-        for end in start.ends:
-            if _same(end.beat, end_beat):
-                return plan, start, end
-    raise InvalidWindow("end_beat is not an allowed end point for that start")
+    start_s, end_s = tl.timing.to_seconds(start_beat), tl.timing.to_seconds(end_beat)
+    if start_beat < 0 or end_s > tl.duration_s + EPS:
+        raise InvalidWindow("the window must lie inside the song")
+    if end_s - start_s < MIN_LENGTH_S - EPS:
+        raise InvalidWindow("the window must be at least 1 second long")
+    return Resolved(start_beat, end_beat, start_s, end_s)
+
+
+def window_label(tl: Timeline, length_s: float) -> str:
+    """Return "1 min" or "2 min" within that plan's band, else "crop MmSSs" (rounded seconds)."""
+    for target, plan in tl.plans.items():
+        if plan.band[0] - EPS <= length_s <= plan.band[1] + EPS:
+            return f"{target // 60} min"
+    total = round(length_s)
+    return f"crop {total // 60}m{total % 60:02d}s"
 
 
 def _end(e: EndPoint) -> dict:
@@ -110,6 +123,7 @@ def timeline_dict(tl: Timeline, map_id: str) -> dict:
     """The JSON body of `GET /api/maps/{id}/timeline`; times in beats and seconds."""
     return {
         "map_id": map_id,
+        "min_length_s": MIN_LENGTH_S,
         "duration_s": tl.duration_s,
         "bpm": tl.beatmap.info.bpm,
         "hardest": tl.hardest,

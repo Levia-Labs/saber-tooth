@@ -131,9 +131,9 @@ def _crop_tools(mcp: MCPServer, crop: CropApi) -> None:
 
     @mcp.tool(annotations=JOB)
     def crop_map(map_id: str, start_beat: float, end_beat: float) -> dict[str, Any]:
-        """Crop a map to a 1 or 2 minute highlight: writes a new '<map> [1 min]' or
-        '[2 min]' folder; the original is never changed. start_beat and end_beat must be a start
-        and an allowed end from map_timeline. Returns a job id for job_status."""
+        """Crop a map to any window of at least 1 second inside the song: writes a new
+        '<map> [1 min]', '[2 min]' or '[crop MmSSs]' folder; the original is never changed.
+        map_timeline suggestions are guidance, not a limit. Returns a job id for job_status."""
         try:
             return crop.crop(map_id, start_beat, end_beat)
         except ApiError as exc:

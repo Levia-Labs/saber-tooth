@@ -28,7 +28,7 @@ def test_timeline_route_returns_the_contract(http):
         "bar4",
         "bar",
     }
-    assert body["map_only"] is True
+    assert body["map_only"] is True and body["min_length_s"] == 1.0
 
 
 def test_timeline_for_an_unknown_map_is_404(http):
@@ -69,9 +69,9 @@ def test_crop_job_writes_a_new_folder(http, cuts):
         ({"start_beat": True, "end_beat": 3}, "start_beat must be a number"),
         ({"start_beat": -1, "end_beat": 3}, "start_beat must be a number"),
         ({"start_beat": 8, "end_beat": 8}, "end_beat must be after start_beat"),
-        ({"start_beat": 5, "end_beat": 133}, "section boundary"),
-        ({"start_beat": 0, "end_beat": 64}, "outside the bands"),
-        ({"start_beat": 0, "end_beat": 128.5}, "not an allowed end point"),
+        ({"start_beat": 5, "end_beat": 6.8}, "the window must be at least 1 second long"),
+        ({"start_beat": 0, "end_beat": 9000}, "the window must lie inside the song"),
+        ({"start_beat": 200, "end_beat": 400}, "the window must lie inside the song"),
         ([], "start_beat must be a number"),
     ],
 )
@@ -102,3 +102,14 @@ def test_crop_with_a_huge_integer_is_422(http):
         f"/api/maps/{MID}/crop", content=raw, headers={"content-type": "application/json"}
     )
     assert resp.status_code == 422 and "start_beat must be a number" in resp.json()["error"]
+
+
+def test_crop_accepts_a_free_mid_bar_window(http, cuts):
+    body = {"start_beat": 5.5, "end_beat": 71.25}
+    job = _wait(http, http.post(f"/api/maps/{MID}/crop", json=body).json()["job"])
+    assert job["status"] == "done" and job["result"]["folder"] == "Song [crop 0m33s]"
+
+
+def test_crop_rejects_a_window_under_a_second(http):
+    resp = http.post(f"/api/maps/{MID}/crop", json={"start_beat": 5.0, "end_beat": 6.8})
+    assert resp.status_code == 422 and "at least 1 second" in resp.json()["error"]

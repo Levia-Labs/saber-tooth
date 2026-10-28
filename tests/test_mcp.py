@@ -85,4 +85,6 @@ def test_map_timeline_tool_returns_the_contract(client):
 def test_crop_map_tool_reports_a_broken_window_as_an_error(client):
     result = call(client, "crop_map", map_id=MID, start_beat=5.0, end_beat=9.0)
     assert result["isError"] is True
-    assert "no crop length is available" in result["content"][0]["text"]
+    assert "the window must lie inside the song" in result["content"][0]["text"]
+    short = call(client, "crop_map", map_id=MID, start_beat=0.0, end_beat=1.0)
+    assert "at least 1 second" in short["content"][0]["text"]

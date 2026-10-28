@@ -6,7 +6,13 @@ from pathlib import Path
 from saber_tooth.crop.errors import CropError
 from saber_tooth.crop.phrases import hardest
 from saber_tooth.crop.shift import crop_beatmap
-from saber_tooth.crop.timeline import Timeline, build_timeline, resolve_window, timeline_dict
+from saber_tooth.crop.timeline import (
+    Timeline,
+    build_timeline,
+    resolve_window,
+    timeline_dict,
+    window_label,
+)
 from saber_tooth.crop.write import write_cropped
 from saber_tooth.model import Beatmap
 from saber_tooth.service.duration import audio_path, folder_duration
@@ -14,8 +20,6 @@ from saber_tooth.service.util import map_id_for
 from saber_tooth.service.verify import stored_analysis
 
 log = logging.getLogger(__name__)
-
-LABELS = {60: "1 min", 120: "2 min"}
 
 
 def _timeline(svc, map_id: str) -> tuple[Path, Beatmap, Timeline]:
@@ -40,14 +44,14 @@ def crop_check(svc, map_id: str, start_beat: float, end_beat: float) -> None:
 
 
 def crop_map(svc, map_id: str, start_beat: float, end_beat: float) -> dict:
-    """Crop a map into a new `<map> [1 min]` or `[2 min]` folder; the original is never changed."""
+    """Crop a map into a new `<map> [label]` folder; the original is never changed."""
     folder, beatmap, tl = _timeline(svc, map_id)
-    plan, start, end = resolve_window(tl, start_beat, end_beat)
+    win = resolve_window(tl, start_beat, end_beat)
     audio = audio_path(folder, beatmap.info.song_file)
     if audio is None:
         raise CropError("the map has no readable song file")
-    label = LABELS[plan.target_s]
-    cropped = crop_beatmap(beatmap, tl.timing, start.beat, end.beat)
+    label = window_label(tl, win.length_s)
+    cropped = crop_beatmap(beatmap, tl.timing, win.start_beat, win.end_beat)
     target = write_cropped(svc.levels, folder, audio, cropped, label)
     try:
         svc.refresh_library()
@@ -58,7 +62,7 @@ def crop_map(svc, map_id: str, start_beat: float, end_beat: float) -> dict:
         "folder": target.name,
         "cropped_id": map_id_for(target.name),
         "label": label,
-        "start_beat": start.beat,
-        "end_beat": end.beat,
-        "length_s": end.seconds - start.seconds,
+        "start_beat": win.start_beat,
+        "end_beat": win.end_beat,
+        "length_s": win.length_s,
     }
