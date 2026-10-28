@@ -2,13 +2,29 @@
 
 import sqlite3
 import threading
+from datetime import UTC, datetime
 
 CLAIMED = "applying"  # internal: approved rows an apply has claimed; the API shows "approved"
+
+
+INTERRUPTED = "interrupted: the service restarted before the job finished"
 
 
 class ProposalClaims:
     _lock: threading.Lock
     _db: sqlite3.Connection
+
+    def fail_interrupted_jobs(self) -> int:
+        """Fail queued and running jobs; their worker threads died with the previous process."""
+        now = datetime.now(UTC).isoformat()
+        with self._lock:
+            cur = self._db.execute(
+                "UPDATE jobs SET status='failed', error=?, updated_at=?"
+                " WHERE status IN ('queued','running')",
+                (INTERRUPTED, now),
+            )
+            self._db.commit()
+            return cur.rowcount
 
     def _add_one(self, map_id: str, p: dict) -> int:
         raise NotImplementedError

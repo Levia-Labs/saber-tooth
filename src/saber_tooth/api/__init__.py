@@ -191,10 +191,13 @@ def build_service() -> Service:
         os.environ.get("ANALYSER_URL", "http://beat-analyser:8000"),
         Path(os.environ.get("ANALYSER_UPLOADS", "/analyser")),
     )
+    store = Store(data / "saber-tooth.db")
+    if interrupted := store.fail_interrupted_jobs():  # their worker threads died with the process
+        log.warning("marked %d interrupted job(s) failed after restart", interrupted)
     service = Service(
         Path(os.environ.get("LEVELS_DIR", "/levels")),
         data,
-        Store(data / "saber-tooth.db"),
+        store,
         client,
         encode_egg,
     )
