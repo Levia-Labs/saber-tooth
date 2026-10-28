@@ -1,6 +1,6 @@
 import csv
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 WEIGHTS = {"kick": 1.0, "snare": 0.8, "hh": 0.3}
@@ -16,6 +16,10 @@ class Analysis:
     snare: list[float]
     hh: list[float]
     audio: Path | None
+    bass: list[float] = field(default_factory=list)
+    chords: list[float] = field(default_factory=list)
+    melody: list[float] = field(default_factory=list)
+    melody_ids: list[int] = field(default_factory=list)  # label id per melody onset
 
 
 def _times(path: Path) -> list[float]:
@@ -25,9 +29,27 @@ def _times(path: Path) -> list[float]:
         return sorted(float(row[0]) for row in csv.reader(f) if row)
 
 
+def _labelled(path: Path) -> list[tuple[float, int]]:
+    """(time, label id) rows sorted by time; a missing or non-numeric label reads as 0."""
+    if not path.is_file():
+        return []
+    rows: list[tuple[float, int]] = []
+    with path.open(encoding="utf-8", newline="") as f:
+        for row in csv.reader(f):
+            if not row:
+                continue
+            try:
+                label = int(float(row[1])) if len(row) > 1 else 0
+            except ValueError:
+                label = 0
+            rows.append((float(row[0]), label))
+    return sorted(rows)
+
+
 def read_project(folder: Path) -> Analysis:
     meta = json.loads((folder / "meta.json").read_text(encoding="utf-8"))
     audio = folder / "audio.wav"
+    melody = _labelled(folder / "melody.csv")
     return Analysis(
         name=str(meta["name"]),
         key=str(meta["key"]),
@@ -37,6 +59,10 @@ def read_project(folder: Path) -> Analysis:
         snare=_times(folder / "snare.csv"),
         hh=_times(folder / "hh.csv"),
         audio=audio if audio.is_file() else None,
+        bass=_times(folder / "bass.csv"),
+        chords=_times(folder / "chords.csv"),
+        melody=[t for t, _ in melody],
+        melody_ids=[label for _, label in melody],
     )
 
 
