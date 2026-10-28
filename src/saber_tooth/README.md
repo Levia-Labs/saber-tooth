@@ -12,6 +12,7 @@ Subpackages:
 6. [service/](service/README.md): library refresh, scan, generate, apply and learn.
 7. [web/](web/README.md): build output of the browser UI from [frontend](../../frontend/README.md).
 8. [crop/](crop/README.md): crop a map to a 1 or 2 minute highlight.
+9. [vr/](vr/README.md): VR headset runtime detection, standard library only.
 
 Top-level modules:
 
