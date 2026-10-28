@@ -17,6 +17,7 @@ import "./styles/preview.css";
 import "./styles/crop.css";
 import "./styles/alerts.css";
 import "./styles/about.css";
+import "./styles/vrmode.css";
 import "./styles/vr.css";
 
 const root = document.getElementById("root");

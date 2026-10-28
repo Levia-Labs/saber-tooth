@@ -11,6 +11,17 @@ export interface AnnounceInput {
   message?: string;
   /** A link shown under the message, for example "Open map". */
   link?: BannerLink;
+  /** Buttons shown under the message; pressing one runs it and closes the toast. */
+  actions?: BannerAction[];
+  /** Info and success stay until dismissed instead of fading after a few seconds. */
+  sticky?: boolean;
+  /** Runs when the toast's close button is pressed. */
+  onDismiss?: () => void;
+}
+
+export interface BannerAction {
+  label: string;
+  onClick: () => void;
 }
 
 export interface BannerLink {
@@ -24,6 +35,8 @@ export interface Banner {
   title: string;
   message?: string;
   link?: BannerLink;
+  actions?: BannerAction[];
+  onDismiss?: () => void;
   /** Epoch ms at which the banner goes away, or null when it stays until dismissed. */
   expiresAt: number | null;
 }
@@ -44,7 +57,7 @@ export function capitalize(text: string): string {
 /** Adds or replaces (in place) the banner for the input's key; drops the oldest beyond the cap. */
 export function addBanner(list: Banner[], input: AnnounceInput, now: number): Banner[] {
   const key = input.key ?? input.title;
-  const ms = ttl(input.variant);
+  const ms = input.sticky ? null : ttl(input.variant);
   const banner: Banner = {
     key,
     variant: input.variant,
@@ -53,6 +66,8 @@ export function addBanner(list: Banner[], input: AnnounceInput, now: number): Ba
   };
   if (input.message !== undefined) banner.message = input.message;
   if (input.link !== undefined) banner.link = input.link;
+  if (input.actions !== undefined) banner.actions = input.actions;
+  if (input.onDismiss !== undefined) banner.onDismiss = input.onDismiss;
   const at = list.findIndex((b) => b.key === key);
   const next = at === -1 ? [...list, banner] : list.map((b, i) => (i === at ? banner : b));
   return next.slice(-MAX_BANNERS);

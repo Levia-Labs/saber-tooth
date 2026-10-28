@@ -31,7 +31,7 @@
 .about-version {
   margin-top: 2rem;
 }
-.masthead .about-link {
+.masthead .masthead-actions {
   position: absolute;
   top: 50%;
   right: 1.25rem;
@@ -52,7 +52,7 @@
   color: var(--ink);
 }
 @media (max-width: 719px) {
-  .masthead .about-link {
+  .masthead .masthead-actions {
     right: 0.75rem;
   }
   .about-label {

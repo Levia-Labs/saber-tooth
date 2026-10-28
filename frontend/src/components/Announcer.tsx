@@ -13,6 +13,12 @@ import { Alert } from "./Alert";
 type Announce = (input: AnnounceInput) => void;
 
 const AnnounceContext = createContext<Announce>(() => undefined);
+const WithdrawContext = createContext<(key: string) => void>(() => undefined);
+
+/** Hook returning a function that removes the toast with the given key, if it is showing. */
+export function useWithdraw(): (key: string) => void {
+  return useContext(WithdrawContext);
+}
 
 /** Hook returning a function that shows or updates a toast at the bottom of the window. */
 export function useAnnounce(): Announce {
@@ -26,6 +32,8 @@ export function AnnouncerProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const withdraw = useCallback((key: string) => setBanners((list) => dismissBanner(list, key)), []);
+
   useEffect(() => {
     const at = nextExpiry(banners);
     if (at === null) return undefined;
@@ -38,25 +46,49 @@ export function AnnouncerProvider({ children }: { children: ReactNode }) {
 
   return (
     <AnnounceContext.Provider value={announce}>
-      {children}
-      <div className="toast-stack">
-        {banners.map((b) => (
-          <Alert
-            key={b.key}
-            className="toast"
-            variant={b.variant === "progress" ? "info" : b.variant}
-            progress={b.variant === "progress"}
-            title={b.title}
-            message={b.message}
-            actions={b.link && <Link to={b.link.to}>{b.link.label}</Link>}
-            onDismiss={
-              b.variant === "progress"
-                ? undefined
-                : () => setBanners((list) => dismissBanner(list, b.key))
-            }
-          />
-        ))}
-      </div>
+      <WithdrawContext.Provider value={withdraw}>
+        {children}
+        <div className="toast-stack">
+          {banners.map((b) => (
+            <Alert
+              key={b.key}
+              className="toast"
+              variant={b.variant === "progress" ? "info" : b.variant}
+              progress={b.variant === "progress"}
+              title={b.title}
+              message={b.message}
+              actions={
+                (b.link || b.actions) && (
+                  <>
+                    {b.link && <Link to={b.link.to}>{b.link.label}</Link>}
+                    {b.actions?.map((a) => (
+                      <button
+                        key={a.label}
+                        type="button"
+                        className="btn"
+                        onClick={() => {
+                          a.onClick();
+                          setBanners((list) => dismissBanner(list, b.key));
+                        }}
+                      >
+                        {a.label}
+                      </button>
+                    ))}
+                  </>
+                )
+              }
+              onDismiss={
+                b.variant === "progress"
+                  ? undefined
+                  : () => {
+                      b.onDismiss?.();
+                      withdraw(b.key);
+                    }
+              }
+            />
+          ))}
+        </div>
+      </WithdrawContext.Provider>
     </AnnounceContext.Provider>
   );
 }

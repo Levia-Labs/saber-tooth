@@ -10,6 +10,9 @@ import { PageBoundary } from "./components/ErrorPanel";
 import { PageSkeleton } from "./components/Skeletons";
 import { RouteError } from "./components/RouteError";
 import { lazyRoute } from "./lib/lazyRoute";
+import { ModeSwitch } from "./vr/ModeSwitch";
+import { VrBanner } from "./vr/VrBanner";
+import { VrModeProvider } from "./vr/VrMode";
 import { LibraryPage } from "./pages/LibraryPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
@@ -51,7 +54,16 @@ function useFocusHeading() {
   }, [pathname]);
 }
 
+/** The page frame; the VR mode context wraps it so the mode and `data-ui` apply app-wide. */
 export function Shell() {
+  return (
+    <VrModeProvider>
+      <ShellFrame />
+    </VrModeProvider>
+  );
+}
+
+function ShellFrame() {
   useFocusHeading();
   const { pathname } = useLocation();
   return (
@@ -69,20 +81,24 @@ export function Shell() {
               <span className="blue">tooth</span>
             </span>
           </Link>
-          <Tip text="What saber-tooth is">
-            <Link
-              className="about-link"
-              to="/about"
-              aria-label="About"
-              aria-current={pathname === "/about" ? "page" : undefined}
-            >
-              <Icon name="info" />
-              <span className="about-label">About</span>
-            </Link>
-          </Tip>
+          <div className="masthead-actions">
+            <ModeSwitch />
+            <Tip text="What saber-tooth is">
+              <Link
+                className="about-link"
+                to="/about"
+                aria-label="About"
+                aria-current={pathname === "/about" ? "page" : undefined}
+              >
+                <Icon name="info" />
+                <span className="about-label">About</span>
+              </Link>
+            </Tip>
+          </div>
         </div>
       </header>
       <AnnouncerProvider>
+        <VrBanner />
         <main id="main" tabIndex={-1}>
           <PageBoundary resetKey={pathname}>
             <Suspense fallback={<PageSkeleton />}>

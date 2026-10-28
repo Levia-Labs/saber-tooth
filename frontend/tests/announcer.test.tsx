@@ -3,16 +3,19 @@ import { resolve } from "node:path";
 import { useEffect } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { AnnouncerProvider, useAnnounce } from "../src/components/Announcer";
+import { AnnouncerProvider, useAnnounce, useWithdraw } from "../src/components/Announcer";
 import type { AnnounceInput } from "../src/lib/announcements";
 
 let sendFn: (input: AnnounceInput) => void = () => undefined;
+let withdrawFn: (key: string) => void = () => undefined;
 
 function Grab() {
   const announce = useAnnounce();
+  const withdraw = useWithdraw();
   useEffect(() => {
     sendFn = announce;
-  }, [announce]);
+    withdrawFn = withdraw;
+  }, [announce, withdraw]);
   return null;
 }
 
@@ -90,5 +93,44 @@ describe("Announcer toasts", () => {
       /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.alert-spin \{([^}]*)\}/,
     );
     expect(reduced?.[1]).toMatch(/animation:\s*alert-spin\s+[2-9]/);
+  });
+});
+
+describe("Announcer actions", () => {
+  test("action buttons run their handler, close the toast and a sticky info toast does not fade", () => {
+    const run = vi.fn();
+    show({
+      variant: "info",
+      title: "Pick one",
+      sticky: true,
+      actions: [{ label: "Go", onClick: run }],
+    });
+    act(() => vi.advanceTimersByTime(20_000));
+    expect(screen.getByText("Pick one")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Go" }));
+    expect(run).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Pick one")).toBeNull();
+  });
+
+  test("an info toast without sticky still fades", () => {
+    show({ variant: "info", title: "Brief" });
+    act(() => vi.advanceTimersByTime(6000));
+    expect(screen.queryByText("Brief")).toBeNull();
+  });
+});
+
+describe("Announcer withdraw and close hook", () => {
+  test("the close button runs onDismiss", () => {
+    const closed = vi.fn();
+    show({ variant: "info", title: "Closable", sticky: true, onDismiss: closed });
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
+    expect(closed).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Closable")).toBeNull();
+  });
+
+  test("withdraw removes a toast by key", () => {
+    show({ key: "k", variant: "warning", title: "Stays" });
+    act(() => withdrawFn("k"));
+    expect(screen.queryByText("Stays")).toBeNull();
   });
 });
