@@ -15,3 +15,4 @@ Plain CSS with custom properties; no framework.
 9. `preview.css`: the audio preview button and its progress ring.
 10. `crop.css`: the crop panel and its NPS chart.
 11. `vr.css`: the VR layout, active only under `[data-ui="vr"]`: 22 px text, 64 px targets, 16 px gaps, focus ring, one to three column grid, and the Library card and toggle layout.
+12. `generate.css`: the generate card: "or" divider, audio drop zone, over and disabled states.

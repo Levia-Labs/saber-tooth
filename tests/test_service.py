@@ -1,6 +1,5 @@
 import copy
 import hashlib
-import json
 import shutil
 from pathlib import Path
 
@@ -169,38 +168,3 @@ def test_scan_with_analyser_and_rescan_replaces_pending(tmp_path):
     assert seen and b"%s.ogg" % mid.encode() in seen[0].content
     ids = [p["id"] for p in svc.store.proposals(mid)]
     assert kept in ids and stale not in ids
-
-
-def test_generate_creates_staged_proposal_and_apply_commits(tmp_path):
-    uploads = tmp_path / "up"
-    project = uploads / "song1"
-    project.mkdir(parents=True)
-    import wave
-
-    with wave.open(str(project / "audio.wav"), "wb") as w:
-        w.setnchannels(1)
-        w.setsampwidth(2)
-        w.setframerate(8000)
-        w.writeframes(b"\x00\x00" * 8000)
-    beats = [i * 0.5 for i in range(120)]
-    (project / "meta.json").write_text(
-        json.dumps({"name": "Song One", "key": "A", "bpm": 120}), encoding="utf-8"
-    )
-    (project / "beats.csv").write_text("\n".join(map(str, beats)), encoding="utf-8")
-    for n, part in (("kick", beats[::2]), ("snare", beats[1::2]), ("hh", beats)):
-        (project / f"{n}.csv").write_text("\n".join(map(str, part)), encoding="utf-8")
-
-    def handler(request):
-        headers = {"Content-Disposition": 'attachment; filename="song1_tracks.zip"'}
-        return httpx.Response(200, content=b"zip", headers=headers)
-
-    svc = _make(tmp_path, handler=handler)
-    result = svc.run_generate("https://youtu.be/x")
-    assert result["map_id"].startswith("staging:")
-    props = svc.store.proposals(result["map_id"])
-    assert [p["rule"] for p in props] == ["create-map"] and props[0]["ops"] == []
-    assert Path(props[0]["after"]["staging"]).is_dir()
-    svc.store.set_status(result["proposal"], "approved")
-    out = svc.apply(result["map_id"])
-    assert out.parent == svc.levels and (out / "Info.dat").is_file()
-    assert len(load_map(out).difficulties) == 5

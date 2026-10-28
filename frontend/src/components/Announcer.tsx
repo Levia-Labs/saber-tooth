@@ -7,6 +7,7 @@ import {
   type AnnounceInput,
   type Banner,
 } from "../lib/announcements";
+import { Link } from "react-router";
 import { Alert } from "./Alert";
 
 type Announce = (input: AnnounceInput) => void;
@@ -47,6 +48,7 @@ export function AnnouncerProvider({ children }: { children: ReactNode }) {
             progress={b.variant === "progress"}
             title={b.title}
             message={b.message}
+            actions={b.link && <Link to={b.link.to}>{b.link.label}</Link>}
             onDismiss={
               b.variant === "progress"
                 ? undefined

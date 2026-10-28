@@ -9,6 +9,13 @@ export interface AnnounceInput {
   variant: AnnounceVariant;
   title: string;
   message?: string;
+  /** A link shown under the message, for example "Open map". */
+  link?: BannerLink;
+}
+
+export interface BannerLink {
+  to: string;
+  label: string;
 }
 
 export interface Banner {
@@ -16,6 +23,7 @@ export interface Banner {
   variant: AnnounceVariant;
   title: string;
   message?: string;
+  link?: BannerLink;
   /** Epoch ms at which the banner goes away, or null when it stays until dismissed. */
   expiresAt: number | null;
 }
@@ -44,6 +52,7 @@ export function addBanner(list: Banner[], input: AnnounceInput, now: number): Ba
     expiresAt: ms === null ? null : now + ms,
   };
   if (input.message !== undefined) banner.message = input.message;
+  if (input.link !== undefined) banner.link = input.link;
   const at = list.findIndex((b) => b.key === key);
   const next = at === -1 ? [...list, banner] : list.map((b, i) => (i === at ? banner : b));
   return next.slice(-MAX_BANNERS);

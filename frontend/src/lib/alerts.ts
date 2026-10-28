@@ -159,7 +159,7 @@ function success(job: Job, result: Record<string, unknown>): AlertSpec {
       return {
         variant: "success",
         title: DONE_TITLE.generate,
-        message: "Review the proposed map below.",
+        message: "The finished map is in your library.",
       };
     case "learn":
       return {

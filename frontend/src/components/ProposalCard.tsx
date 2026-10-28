@@ -3,6 +3,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { approveProposal, rejectProposal } from "../api/client";
 import { keys } from "../api/queries";
 import type { Note, Proposal } from "../api/types";
+import { canApprove, canReject } from "../lib/decisions";
 import { beatRange, countOperations, isNotesless } from "../lib/timeline";
 import { plural } from "../lib/format";
 import { TIPS } from "../lib/tips";
@@ -110,7 +111,7 @@ export function ProposalCard({
             tip={TIPS.approve}
             text
             variant="approve"
-            disabled={p.status === "approved" || p.status === "superseded" || decide.isPending}
+            disabled={!canApprove(p.status) || decide.isPending}
             onClick={() => decide.mutate("approve")}
           />
           <ActionButton
@@ -119,7 +120,7 @@ export function ProposalCard({
             tip={TIPS.reject}
             text
             variant="reject"
-            disabled={p.status === "rejected" || p.status === "superseded" || decide.isPending}
+            disabled={!canReject(p.status) || decide.isPending}
             onClick={() => decide.mutate("reject")}
           />
         </div>

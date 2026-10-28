@@ -1,5 +1,6 @@
 """Audio encoding through ffmpeg."""
 
+import json
 import subprocess  # nosec B404 - fixed ffmpeg argv, no shell
 from pathlib import Path
 
@@ -49,3 +50,25 @@ def cut_egg(
         "-c:a", "libvorbis", "-q:a", "6", "-f", "ogg", str(dst),
     ]  # fmt: skip
     _run(argv)
+
+
+def parse_tags(text: str) -> dict[str, str]:
+    """Lower-cased string tags from `ffprobe -of json` output; {} when unreadable."""
+    try:
+        tags = json.loads(text)["format"]["tags"]
+        return {str(k).lower(): v for k, v in tags.items() if isinstance(v, str)}
+    except (ValueError, KeyError, TypeError, AttributeError):
+        return {}
+
+
+def probe_tags(path: Path) -> dict[str, str]:
+    """Title and artist tags of an audio file through ffprobe; {} when ffprobe cannot read them."""
+    argv = [
+        "ffprobe", "-v", "error", "-show_entries", "format_tags=title,artist",
+        "-of", "json", str(path),
+    ]  # fmt: skip
+    try:
+        done = subprocess.run(argv, check=True, capture_output=True, timeout=30)  # nosec B603
+    except (OSError, subprocess.SubprocessError):
+        return {}
+    return parse_tags(done.stdout.decode("utf-8", "replace"))

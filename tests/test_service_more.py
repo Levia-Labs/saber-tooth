@@ -86,27 +86,3 @@ def test_conflict_failure_job_carries_conflict_ids(tmp_path):
     job = svc.store.job(jid)
     jobs.shutdown()
     assert job["status"] == "failed" and job["result"] == {"conflict": [p1, p2]}
-
-
-def test_rejected_staging_is_cleaned_on_refresh(svc):
-    staging = svc.data / "staging" / "abc"
-    staging.mkdir(parents=True)
-    pid = svc.store.add_proposals(
-        "staging:abc",
-        [
-            {
-                "rule": "create-map",
-                "difficulty": "*",
-                "severity": "warn",
-                "summary": "s",
-                "ops": [],
-                "before": [],
-                "after": {"staging": str(staging), "title": "t"},
-            }
-        ],
-    )[0]
-    svc.refresh_library()
-    assert staging.is_dir()
-    svc.store.set_status(pid, "rejected")
-    svc.refresh_library()
-    assert not staging.exists()

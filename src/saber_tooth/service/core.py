@@ -1,16 +1,13 @@
-"""Service layer: library refresh, scan, generate, apply and learn."""
+"""Service layer: library refresh, scan, apply and learn."""
 
-import hashlib
 import logging
-import shutil
 import threading
-import uuid
 from collections.abc import Callable
 from pathlib import Path
 
 from saber_tooth.analyser_client import AnalyserClient, AnalyserError
 from saber_tooth.analysis import Analysis
-from saber_tooth.assemble import assemble_new, folder_name
+from saber_tooth.audio import probe_tags
 from saber_tooth.checks import run_checks
 from saber_tooth.fixer import propose
 from saber_tooth.lightshow import BUNDLED, Templates
@@ -24,18 +21,15 @@ from saber_tooth.service.errors import ApplyConflict, MapNotFound, MapUnreadable
 from saber_tooth.service.lightshow_set import LEARNED, active_templates
 from saber_tooth.service.lightshow_set import info as lightshow_info
 from saber_tooth.service.ordered import Outcome, apply_in_order
-from saber_tooth.service.staging import clean_staging
 from saber_tooth.service.util import map_id_for
 from saber_tooth.service.verify import stored_analysis, verify
-from saber_tooth.service.writeout import commit_staged, write_fixed
+from saber_tooth.service.writeout import write_fixed
 from saber_tooth.store import Store
 from saber_tooth.store_maps import level_mask
 
 log = logging.getLogger(__name__)
 
 SUFFIX = " [saber-tooth]"
-STAGING_PREFIX = "staging:"
-CREATE_MAP = "create-map"
 APPLY_RETRIES = 3
 
 
@@ -45,6 +39,7 @@ class _Stale(Exception):
 
 class Service(DeleteMixin):
     bundled: Path | None = BUNDLED  # tests may point this elsewhere
+    probe_tags = staticmethod(probe_tags)
 
     def __init__(
         self,
@@ -110,7 +105,6 @@ class Service(DeleteMixin):
             except (MapParseError, OSError) as exc:
                 self.store.upsert_map(mid, folder.name, folder.name, "", "", str(exc))
         self.store.prune_maps(seen)
-        clean_staging(self.data / "staging", self.store, STAGING_PREFIX)
         return len(seen)
 
     def _templates(self) -> Templates | None:
@@ -181,43 +175,6 @@ class Service(DeleteMixin):
         count, analysed = self._scan(map_id)
         return {"map_id": map_id, "proposals": count, "analysis": analysed}
 
-    # generate ----------------------------------------------------------------
-
-    def _generate(self, url_or_path: str) -> tuple[str, int]:
-        if url_or_path.startswith(("http://", "https://")):
-            a = self.client.analyse_url(url_or_path)
-        else:
-            src = Path(url_or_path)
-            a = self.client.analyse_file(src, src.name)
-        token = uuid.uuid4().hex
-        staging = self.data / "staging" / token
-        staging.parent.mkdir(parents=True, exist_ok=True)
-        seed = int(hashlib.sha256(a.name.encode("utf-8")).hexdigest()[:8], 16)
-        assemble_new(a, self._templates(), staging, seed, self.encode)
-        proposal = {
-            "rule": CREATE_MAP,
-            "difficulty": "*",
-            "severity": "warn",
-            "summary": f"Create new map: {a.name}",
-            "ops": [],
-            "before": [],
-            "after": {"staging": str(staging), "title": a.name},
-        }
-        map_id = f"{STAGING_PREFIX}{token}"
-        try:
-            ids = self.store.add_proposals(map_id, [proposal])
-        except BaseException:
-            shutil.rmtree(staging, ignore_errors=True)
-            raise
-        return map_id, ids[0]
-
-    def generate(self, url_or_path: str) -> int:
-        return self._generate(url_or_path)[1]
-
-    def run_generate(self, url_or_path: str) -> dict:
-        map_id, pid = self._generate(url_or_path)
-        return {"map_id": map_id, "proposal": pid}
-
     # apply -------------------------------------------------------------------
 
     def apply(self, map_id: str) -> Path:
@@ -225,8 +182,7 @@ class Service(DeleteMixin):
 
     def _apply(self, map_id: str) -> tuple[Path, Outcome]:
         with self._lock:
-            if not map_id.startswith(STAGING_PREFIX):
-                self._folder(map_id)
+            self._folder(map_id)
             for _ in range(APPLY_RETRIES):
                 approved = self.store.approved(map_id)
                 if not approved:
@@ -256,8 +212,6 @@ class Service(DeleteMixin):
             if not self.store.claim(ids):  # from here a reject gets 409 until written
                 raise _Stale
 
-        if map_id.startswith(STAGING_PREFIX):
-            return self._commit_staged(approved, unchanged)
         return self._apply_fixes(map_id, approved, unchanged)
 
     def run_apply(self, map_id: str) -> dict:
@@ -282,19 +236,3 @@ class Service(DeleteMixin):
         unchanged(outcome.applied)
         target = write_fixed(self.levels, folder, fixed, folder.name + SUFFIX)
         return target, outcome
-
-    def _commit_staged(
-        self, approved: list[dict], unchanged: Callable[[list[int]], None]
-    ) -> tuple[Path, Outcome]:
-        proposal = next((p for p in approved if p["rule"] == CREATE_MAP), None)
-        if proposal is None:
-            raise ApplyConflict("no approved create-map proposal", [p["id"] for p in approved])
-        root = (self.data / "staging").resolve()
-        staging = Path(proposal["after"]["staging"]).resolve()
-        if staging.parent != root or not staging.is_dir():
-            raise ApplyConflict("staging folder is missing", [proposal["id"]])
-        ids = [p["id"] for p in approved]
-        unchanged(ids)
-        target = commit_staged(self.levels, staging, folder_name(proposal["after"]["title"]))
-        shutil.rmtree(staging, ignore_errors=True)
-        return target, Outcome(applied=ids)

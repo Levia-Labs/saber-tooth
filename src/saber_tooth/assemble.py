@@ -15,12 +15,12 @@ from saber_tooth.lightshow import Templates, build_lightshow
 from saber_tooth.mapio import write_map
 from saber_tooth.mapio.write import BOX_KEYS
 from saber_tooth.model import Beatmap, MapInfo
+from saber_tooth.songmeta import UNKNOWN_AUTHOR, SongMeta
 
 log = logging.getLogger(__name__)
 
 VANILLA_ENVIRONMENT = "NiceEnvironment"
 MAPPER = "saber-tooth"
-AUTHOR = "Unknown"
 SONG_FILE = "song.egg"
 COVER_FILE = "cover.png"
 COVER_SIZE = 512
@@ -87,7 +87,9 @@ def _apply_lightshow(bm: Beatmap, timing, templates: Templates | None, a: Analys
             d.raw[key] = groups.get(key, [])
 
 
-def _build(a: Analysis, audio: Path, templates: Templates | None, seed: int) -> Beatmap:
+def _build(
+    a: Analysis, audio: Path, templates: Templates | None, seed: int, meta: SongMeta
+) -> Beatmap:
     if not (a.kick or a.snare or a.hh):
         raise ValueError("analysis has no onsets")
     timing, diffs = generate_all(a, seed)
@@ -95,9 +97,9 @@ def _build(a: Analysis, audio: Path, templates: Templates | None, seed: int) -> 
     if empty:
         raise ValueError(f"generated difficulties have no notes: {', '.join(empty)}")
     info = MapInfo(
-        song_name=a.name,
-        sub_name="",
-        author=AUTHOR,
+        song_name=meta.song,
+        sub_name=meta.sub,
+        author=meta.author,
         mapper=MAPPER,
         bpm=tempo_map(a)[0],
         song_file=SONG_FILE,
@@ -106,7 +108,7 @@ def _build(a: Analysis, audio: Path, templates: Templates | None, seed: int) -> 
         preview_duration=PREVIEW_DURATION,
         environment=VANILLA_ENVIRONMENT,
     )
-    bm = Beatmap(info, diffs, folder_name(a.name))
+    bm = Beatmap(info, diffs, folder_name(meta.song))
     _apply_lightshow(bm, timing, templates, a, seed)
     findings = run_checks(bm, a, rules=set(RULES))
     if findings:
@@ -124,18 +126,20 @@ def assemble_new(
     out: Path,
     seed: int,
     encode: Callable[[Path, Path], None],
+    meta: SongMeta | None = None,
 ) -> Beatmap:
     if a.audio is None or not a.audio.is_file():
         raise ValueError("analysis has no audio file")
     if out.exists():
         raise FileExistsError(str(out))
-    bm = _build(a, a.audio, templates, seed)
+    meta = meta or SongMeta(a.name, "", UNKNOWN_AUTHOR)
+    bm = _build(a, a.audio, templates, seed, meta)
     tmp = out.parent / f".{out.name}.partial"
     shutil.rmtree(tmp, ignore_errors=True)
     tmp.mkdir(parents=True)
     try:
         encode(a.audio, tmp / SONG_FILE)
-        _cover(tmp / COVER_FILE, a.name)
+        _cover(tmp / COVER_FILE, meta.song)
         write_map(bm, tmp, None)
         tmp.rename(out)
     except BaseException:

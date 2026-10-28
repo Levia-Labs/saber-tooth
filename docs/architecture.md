@@ -68,9 +68,8 @@ The fixer and apply decide whether a change added a problem by comparing finding
    1. A URL or upload goes to beat-analyser.
    2. saber-tooth reads the analyser project folder from the shared volume.
    3. The generator builds five difficulties and the lightshow applier adds lights.
-   4. The result is staged in `/data/staging/<job>`.
-   5. A `create-map` proposal appears for review.
-   6. On approval, the folder `st-<slug> (<Title> - saber-tooth)` is written to `/levels`.
+   4. The result is staged in `/data/staging/<token>` and the Fix engine runs on it.
+   5. The folder `st-<slug> (<Title> - saber-tooth)` is written to `/levels` (numbered on collision) and the staging folder is removed.
 2. Existing map:
    1. Scan runs the checks. Empty-gap detection first analyses the audio of the map with beat-analyser.
    2. Each finding becomes a pending proposal.

@@ -21,18 +21,14 @@ from saber_tooth.api.library import (
 )
 from saber_tooth.api.overlap import conflicts_with
 from saber_tooth.api.wall_context import changed_walls, stored_walls, walls_context
-from saber_tooth.fixer.codec import note_to_dict
 from saber_tooth.jobs import Jobs
-from saber_tooth.mapio import MapParseError, load_map
 from saber_tooth.service import MapNotFound, MapUnreadable, Service
-from saber_tooth.service.core import CREATE_MAP, STAGING_PREFIX
 from saber_tooth.store import ProposalApplied
 
 log = logging.getLogger(__name__)
 
 
 MAP_ID = re.compile(r"[0-9a-f]{12}")
-STAGING_ID = re.compile(re.escape(STAGING_PREFIX) + r"[0-9a-f]{32}")
 JOB_ID = re.compile(r"[0-9a-f]{32}")
 PROPOSAL_FIELDS = (
     "id",
@@ -86,14 +82,8 @@ class Api:
 
     # ids ---------------------------------------------------------------------
 
-    def map_id(self, raw: str, staging: bool = False) -> str:
-        if MAP_ID.fullmatch(raw):
-            if not any(m["id"] == raw for m in self.store.list_maps()):
-                raise MapNotFound(f"unknown map: {raw}")
-        elif staging and STAGING_ID.fullmatch(raw):
-            if not self.store.proposals(raw):
-                raise MapNotFound(f"unknown map: {raw}")
-        else:
+    def map_id(self, raw: str) -> str:
+        if not MAP_ID.fullmatch(raw) or not any(m["id"] == raw for m in self.store.list_maps()):
             raise MapNotFound(f"unknown map: {raw}")
         return raw
 
@@ -164,17 +154,6 @@ class Api:
             raise MapNotFound(f"no audio for map: {raw}")
         return path, AUDIO_TYPES[path.suffix.lower()]
 
-    def _staged_notes(self, proposal: dict) -> list[dict]:
-        root = (self.service.data / "staging").resolve()
-        try:
-            staging = Path(proposal["after"]["staging"]).resolve()
-            if staging.parent != root:
-                return []
-            notes = load_map(staging).difficulties["Expert"].notes
-        except (KeyError, TypeError, OSError, MapParseError):
-            return []
-        return [note_to_dict(n) for n in notes]
-
     def _stored_walls(self, map_id: str) -> dict[str, list[dict]]:
         row = next((m for m in self.store.list_maps() if m["id"] == map_id), None)
         if row is None or row["parse_error"]:
@@ -195,12 +174,10 @@ class Api:
         view.update(walls_before=before, walls_after=after, walls_context=context)
         if view["status"] == "applying":
             view["status"] = "approved"
-        if proposal["rule"] == CREATE_MAP:  # the UI shows the Expert notes, not a path
-            view.update(difficulty="Expert", before=[], after=self._staged_notes(proposal))
         return view
 
     def proposals(self, map_id: str) -> list[dict]:
-        found = self.store.proposals(self.map_id(map_id, True))
+        found = self.store.proposals(self.map_id(map_id))
         stored = self._stored_walls(map_id)
         clashes = conflicts_with(found)
         return [self._view(p, stored, clashes) for p in found]
@@ -221,7 +198,7 @@ class Api:
         return {"id": pid, "status": status}
 
     def approve_all(self, map_id: str) -> dict:
-        pending = [p for p in self.store.proposals(self.map_id(map_id, True))]
+        pending = [p for p in self.store.proposals(self.map_id(map_id))]
         pending = [p for p in pending if p["status"] == "pending"]
         done = 0
         for p in pending:
@@ -247,7 +224,7 @@ class Api:
         return {"job": self.jobs.submit("scan", self.service.run_scan, map_id, map_id=map_id)}
 
     def apply(self, map_id: str) -> dict:
-        self.map_id(map_id, True)
+        self.map_id(map_id)
         return {"job": self.jobs.submit("apply", self.service.run_apply, map_id, map_id=map_id)}
 
     def fix(self, map_id: str) -> dict:

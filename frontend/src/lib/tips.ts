@@ -8,7 +8,7 @@ export const TIPS = {
   learn:
     "Add the lighting styles of the maps you have installed to the built-in set. Optional: saber-tooth already lights maps with its bundled set.",
   generate:
-    "Create a new map with all five difficulties from a YouTube link or an audio file. You review it before anything is written.",
+    "Create a new map with all five difficulties from a YouTube link or an audio file. The map is fixed and written to your library in one step.",
   resetColumns: "Reset column widths to their defaults.",
   approve: "Accept this fix. It is written when you click Apply.",
   reject: "Discard this fix.",

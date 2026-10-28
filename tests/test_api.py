@@ -124,11 +124,11 @@ def test_unreadable_map_scan_is_409(client, svc):
 def test_generate_url_job(client, svc, monkeypatch):
     seen = []
     monkeypatch.setattr(
-        svc, "run_generate", lambda u: seen.append(u) or {"map_id": "m", "proposal": 1}
+        svc, "run_generate", lambda u: seen.append(u) or {"map_id": "m", "folder": "F"}
     )
     resp = client.post("/api/generate", json={"url": "https://youtu.be/abc"})
     job = _wait(client, resp.json()["job"])
-    assert job["status"] == "done" and job["result"]["proposal"] == 1
+    assert job["status"] == "done" and job["result"]["folder"] == "F"
     assert seen == ["https://youtu.be/abc"]
 
 
@@ -157,7 +157,7 @@ def test_generate_rejects_non_youtube(client, body):
     ],
 )  # fmt: skip
 def test_generate_allows_youtube_hosts(client, svc, monkeypatch, url):
-    monkeypatch.setattr(svc, "run_generate", lambda u: {"map_id": "m", "proposal": 1})
+    monkeypatch.setattr(svc, "run_generate", lambda u: {"map_id": "m", "folder": "F"})
     assert "job" in client.post("/api/generate", json={"url": url}).json()
 
 
@@ -171,7 +171,7 @@ def test_generate_multipart_stores_under_data(client, svc, monkeypatch):
 
     def fake(path):
         seen.append((Path(path), Path(path).read_bytes()))
-        return {"map_id": "m", "proposal": 1}
+        return {"map_id": "m", "folder": "F"}
 
     monkeypatch.setattr(svc, "run_generate", fake)
     files = {"file": ("../../evil name.MP3", b"abc", "audio/mpeg")}
@@ -233,20 +233,6 @@ def test_same_and_absent_origin_allowed(client, svc):
 def test_learn_job(client):
     job = _wait(client, client.post("/api/lightshow/learn").json()["job"])
     assert job["status"] == "done" and "units" in job["result"]
-
-
-def test_staged_proposal_view_hides_path(client, svc, tmp_path):
-    token = "c" * 32
-    staging = svc.data / "staging" / token
-    staging.mkdir(parents=True)
-    p = {
-        "rule": "create-map", "difficulty": "*", "severity": "warn", "summary": "s", "ops": [],
-        "before": [], "after": {"staging": str(staging), "title": "t"},
-    }  # fmt: skip
-    svc.store.add_proposals(f"staging:{token}", [p])
-    rows = client.get(f"/api/maps/staging:{token}/proposals").json()
-    assert rows[0]["difficulty"] == "Expert" and rows[0]["after"] == []
-    assert str(staging) not in str(rows)
 
 
 def test_applied_proposal_cannot_be_reopened(client, svc):

@@ -86,3 +86,14 @@ describe("batchSummary", () => {
     );
   });
 });
+
+describe("banner links", () => {
+  test("a link on the input is kept on the banner and replaced with its key", () => {
+    const link = { to: "/maps/abc", label: "Open map" };
+    const first = addBanner([], { key: "g1", variant: "success", title: "Map ready", link }, 0);
+    expect(first[0]?.link).toEqual(link);
+    const next = addBanner(first, { key: "g1", variant: "danger", title: "Failed" }, 1);
+    expect(next).toHaveLength(1);
+    expect(next[0]?.link).toBeUndefined();
+  });
+});

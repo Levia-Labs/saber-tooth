@@ -1,0 +1,49 @@
+.gen-form .gen-or {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.drop-wrap {
+  display: grid;
+  gap: 0.4rem;
+  justify-items: start;
+  width: 100%;
+}
+.drop-zone {
+  display: grid;
+  gap: 0.25rem;
+  justify-items: center;
+  width: 100%;
+  padding: 1.25rem 1rem;
+  text-align: center;
+  color: var(--muted);
+  background: var(--panel);
+  border: 2px dashed var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.drop-zone:hover,
+.drop-zone:focus-visible,
+.drop-zone.drop-over {
+  color: var(--ink);
+  border-color: var(--blue);
+  background: var(--panel-2);
+}
+.drop-zone[aria-disabled="true"] {
+  cursor: default;
+  opacity: 0.6;
+}
+.drop-main {
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.drop-hint {
+  font-size: 0.85rem;
+}
+.drop-clear {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+}

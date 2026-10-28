@@ -27,7 +27,7 @@ describe("toAlert", () => {
     ["scan", {}, "Scan finished", "Review the proposed fixes below."],
     ["apply", { folder: "C:/maps/a" }, "Applied", "Written to C:/maps/a."],
     ["apply", {}, "Applied", "The approved fixes were applied."],
-    ["generate", { map_id: 3 }, "Map generated", "Review the proposed map below."],
+    ["generate", { map_id: 3 }, "Map generated", "The finished map is in your library."],
     ["learn", {}, "Lightshows learned", "The new lightshows are ready to use."],
   ] as const)("%s done -> success", (kind, result, title, message) => {
     const spec = toAlert(job(kind, { result }));

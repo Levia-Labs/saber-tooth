@@ -146,3 +146,17 @@ def test_assemble_refuses_analysis_without_onsets(tmp_path):
     with pytest.raises(ValueError, match="no onsets"):
         assemble_new(a, None, tmp_path / "out", 1, _copy)
     assert not (tmp_path / "out").exists()
+
+
+def test_assemble_uses_song_meta_for_info_and_folder(tmp_path):
+    from saber_tooth.songmeta import SongMeta
+
+    a = _analysis(_wav(tmp_path / "a.wav"))
+    meta = SongMeta("Stage 1-1 OST", "DEMO", "High Roller Penny")
+    bm = assemble_new(a, None, tmp_path / "out", 3, _copy, meta)
+    assert (bm.info.song_name, bm.info.sub_name, bm.info.author) == (
+        "Stage 1-1 OST",
+        "DEMO",
+        "High Roller Penny",
+    )
+    assert bm.folder_name == folder_name("Stage 1-1 OST")

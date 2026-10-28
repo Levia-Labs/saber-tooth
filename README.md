@@ -12,7 +12,7 @@ saber-tooth is a local Docker service with a browser interface. Give it a song o
 
 ## Features
 
-1. New maps from a YouTube URL or an uploaded audio file, in Easy, Normal, Hard, Expert and ExpertPlus.
+1. New maps from a YouTube URL or a dropped audio file in one step, already fixed, in Easy, Normal, Hard, Expert and ExpertPlus.
 2. Checks for impossible swings, broken parity and long empty stretches where the music has onsets.
 3. Fix and fill proposals that are verified to reach zero findings before they are offered.
 4. Lighting that follows the energy and structure of the song, built from a learned set that ships with the service, so lightshows work without any setup. "Learn lightshows" only adds the styles of your own installed maps and then replaces the bundled set.
@@ -24,7 +24,7 @@ saber-tooth is a local Docker service with a browser interface. Give it a song o
 2. [beat-analyser](https://github.com/Levia-Labs/beat-analyser) downloads the audio and returns the beat grid and onsets.
 3. The generator places notes, the checks look for problems, and the fixer proposes repairs.
 4. You review each proposal on a timeline in the browser.
-5. Approved changes are written as a new map folder in `CustomLevels`.
+5. A generated map is written, fixed, straight into `CustomLevels`; approved fixes to an existing map are written as a new folder.
 
 The design goals are flawless, flowing and atmospheric maps. See the [design spec](docs/superpowers/specs/2026-10-26-saber-tooth-design.md) for the quality bar.
 
