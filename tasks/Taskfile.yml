@@ -83,6 +83,10 @@ tasks:
   smoke:
     desc: "Smoke-check the running stack, read-only. Usage: task st:smoke [-- --base URL --timeout S]"
     cmds: ["uv run python scripts/smoke.py {{.CLI_ARGS}}"]
+  browser-check:
+    desc: "Headless browser page check, read-only. Usage: task st:browser-check -- [chrome|firefox] [--base URL]"
+    dir: "{{.ROOT_DIR}}"
+    cmds: ["node scripts/browser_check.mjs {{.CLI_ARGS}}"]
   lane:
     desc: "Create a work lane worktree. Usage: task st:lane -- <name> [--base main]"
     cmds: ["uv run python scripts/lane.py new {{.CLI_ARGS}}"]

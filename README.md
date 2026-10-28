@@ -60,6 +60,7 @@ The design goals are flawless, flowing and atmospheric maps. See the [design spe
 | `task st:review-diff -- <range>`           | Write a lockfile-free review diff                   |
 | `task st:sync`                             | One-line state of every worktree                    |
 | `task st:smoke`                            | Smoke-check the running stack                       |
+| `task st:browser-check`                    | Headless Chrome or Firefox page check               |
 | `task st:docker-health`                    | Compose service health and recent logs              |
 
 Run `task --list` for every task. Settings (`LEVELS_DIR`, `SABER_PORT`, `YT_MAX_MINUTES`, `MAX_UPLOAD_MB`) are documented in `.env.example`.

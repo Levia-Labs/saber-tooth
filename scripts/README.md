@@ -13,6 +13,7 @@ Standalone helper scripts run through the task runner.
 9. `docker_health.py`: state, health, probe output and recent logs per compose service. `task st:docker-health`. Read-only.
 
 10. `learn_bundle.py`: regenerates the bundled lightshow set from a levels directory with a fixed gzip header, so equal input gives equal bytes; prints environments, units and size. `task st:learn-bundle -- <levels_dir> [--out PATH]`.
+11. `browser_check.mjs`: opens the Library, a map, BeatSaver, playlists and About in headless Chrome (Edge) or Firefox through puppeteer-core (a frontend dev dependency) and fails on any console or page error. GET-only: other requests are aborted. `task st:browser-check -- [chrome|firefox] [--base URL] [--path EXE]`.
 
 Each script has `-h`. Tests are `tests/test_script_*.py`; they use fakes or temporary git repositories and never touch Docker or the network. See [workflow](../docs/workflow.md).
 

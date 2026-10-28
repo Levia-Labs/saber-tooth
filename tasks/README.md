@@ -15,7 +15,7 @@ Tasks:
 9. `st:gate`, `st:review-diff`, `st:sync`: validation, review diffs and worktree state.
 10. `st:lane`, `st:lane-list`, `st:lane-done`: parallel work lanes as git worktrees.
 11. `st:commit`: format, stage and commit exactly the given paths.
-12. `st:smoke`, `st:docker-health`: read-only checks of the running stack.
+12. `st:smoke`, `st:docker-health`, `st:browser-check`: read-only checks of the running stack; the last drives Chrome or Firefox headless.
 13. `st:crepidoma-bump`: update the `.crepidoma` submodule and stage it.
 
 The workflow tools are described in [workflow](../docs/workflow.md).
