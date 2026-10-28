@@ -17,7 +17,77 @@ export const LEVEL_KEYS = ["Easy", "Normal", "Hard", "Expert", "ExpertPlus"] as 
 export type LevelKey = (typeof LEVEL_KEYS)[number];
 
 export type JobState = "queued" | "running" | "done" | "failed";
-export type JobKind = "scan" | "apply" | "fix" | "generate" | "learn";
+export type JobKind = "scan" | "apply" | "fix" | "generate" | "learn" | "crop";
+
+export type CropLength = "60" | "120";
+export type EndKind = "section" | "phrase" | "bar4" | "bar";
+
+export interface CropEnd {
+  beat: number;
+  seconds: number;
+  kind: EndKind;
+}
+
+export interface CropStart {
+  beat: number;
+  seconds: number;
+  ends: CropEnd[];
+}
+
+export interface CropWindow {
+  start_beat: number;
+  end_beat: number;
+  start_s: number;
+  end_s: number;
+  length_s: number;
+  end_kind: EndKind;
+  score: number;
+}
+
+export interface CropPlan {
+  enabled: boolean;
+  /** Why this length is off, when it is. */
+  reason: string | null;
+  /** Allowed length in seconds: 54 to 66 or 108 to 132. */
+  band: [number, number];
+  /** The best window first, then the next two. */
+  suggestions: CropWindow[];
+  starts: CropStart[];
+}
+
+export interface CropSection {
+  start_beat: number;
+  end_beat: number;
+  start_s: number;
+  end_s: number;
+  nps: number;
+  intensity: number;
+}
+
+export interface Timeline {
+  map_id: string;
+  duration_s: number;
+  bpm: number;
+  hardest: string;
+  /** True when the map has no audio analysis: sections come from the notes and lights only. */
+  map_only: boolean;
+  grid_drift_s: number | null;
+  /** Notes per second in 1 s steps, per difficulty that has notes. */
+  nps: Record<string, number[]>;
+  sections: CropSection[];
+  lengths: Record<CropLength, CropPlan>;
+}
+
+/** Result of a finished crop job. */
+export interface CropResult {
+  map_id: string;
+  folder: string;
+  cropped_id: string;
+  label: string;
+  start_beat: number;
+  end_beat: number;
+  length_s: number;
+}
 
 export interface ActiveJob {
   id: string;

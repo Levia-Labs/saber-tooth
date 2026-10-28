@@ -10,7 +10,15 @@ import {
 import { useEffect } from "react";
 import type { LibraryState } from "../lib/urlstate";
 import { isRunning } from "../lib/status";
-import { getFacets, getJob, getMap, getProposals, isRetryable, listMaps } from "./client";
+import {
+  getFacets,
+  getJob,
+  getMap,
+  getProposals,
+  getTimeline,
+  isRetryable,
+  listMaps,
+} from "./client";
 import type { Job, MapItem, MapPage } from "./types";
 
 export const keys = {
@@ -19,6 +27,7 @@ export const keys = {
   facets: ["maps", "facets"] as const,
   map: (id: string) => ["maps", "item", id] as const,
   proposals: (id: string) => ["proposals", id] as const,
+  timeline: (id: string) => ["timeline", id] as const,
   job: (id: string) => ["job", id] as const,
 };
 
@@ -48,6 +57,15 @@ export function useMap(id: string) {
 
 export function useProposals(id: string) {
   return useQuery({ queryKey: keys.proposals(id), queryFn: () => getProposals(id), retry });
+}
+
+export function useTimeline(id: string) {
+  return useQuery({
+    queryKey: keys.timeline(id),
+    queryFn: ({ signal }) => getTimeline(id, signal),
+    retry,
+    staleTime: 60_000,
+  });
 }
 
 /** Replace one item in every cached library page (and the single-item cache). */

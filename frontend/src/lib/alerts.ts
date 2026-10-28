@@ -22,6 +22,7 @@ const FAILED_TITLE: Record<JobKind, string> = {
   fix: "Fix failed",
   generate: "Generation failed",
   learn: "Learning failed",
+  crop: "Crop failed",
 };
 
 const DONE_TITLE: Record<JobKind, string> = {
@@ -30,6 +31,7 @@ const DONE_TITLE: Record<JobKind, string> = {
   fix: "Fixed",
   generate: "Map generated",
   learn: "Lightshows learned",
+  crop: "Cropped",
 };
 
 const RETRY = { kind: "retry", label: "Try again" } as const;
@@ -164,6 +166,12 @@ function success(job: Job, result: Record<string, unknown>): AlertSpec {
         variant: "success",
         title: DONE_TITLE.learn,
         message: "The new lightshows are ready to use.",
+      };
+    case "crop":
+      return {
+        variant: "success",
+        title: DONE_TITLE.crop,
+        message: where || "The cropped map was written.",
       };
   }
 }

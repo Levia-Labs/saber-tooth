@@ -1,6 +1,6 @@
 // Typed API client: every request the app makes goes through this module.
 import { apiParams, type LibraryState } from "../lib/urlstate";
-import type { Facets, Job, MapItem, MapPage, Proposal } from "./types";
+import type { Facets, Job, MapItem, MapPage, Proposal, Timeline } from "./types";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -110,6 +110,12 @@ export const applyMap = (id: string): Promise<Started> =>
   request("POST", `/api/maps/${seg(id)}/apply`);
 
 export const fixMap = (id: string): Promise<Started> => request("POST", `/api/maps/${seg(id)}/fix`);
+
+export const getTimeline = (id: string, signal?: AbortSignal): Promise<Timeline> =>
+  request("GET", `/api/maps/${seg(id)}/timeline`, undefined, signal);
+
+export const cropMap = (id: string, startBeat: number, endBeat: number): Promise<Started> =>
+  request("POST", `/api/maps/${seg(id)}/crop`, { start_beat: startBeat, end_beat: endBeat });
 
 export const deleteMap = (id: string): Promise<{ deleted: string }> =>
   request("DELETE", `/api/maps/${seg(id)}`);

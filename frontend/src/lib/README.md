@@ -13,3 +13,4 @@ Pure helpers and small hooks.
 9. `bsfilters.ts`, `useBsState.ts`: BeatSaver filter state in the URL, API parameters and presets.
 10. `bscolumns.ts`, `bstips.ts`, `preview.ts`: BeatSaver column set, tooltip copy and the single audio preview.
 11. `fixreport.ts`: reads the structured report of a finished fix job.
+12. `crop.ts`: pure crop helpers: snapping, stepping and re-picking the window edges.
