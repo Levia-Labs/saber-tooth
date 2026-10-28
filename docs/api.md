@@ -22,7 +22,7 @@ The service listens on `127.0.0.1:${SABER_PORT:-8100}`. There is no authenticati
 1. `POST /api/maps/{id}/approve-all`: approve every pending proposal for one map. Answers `{"approved": N}`.
 1. `POST /api/maps/{id}/apply`: starts an `apply` job that writes the approved proposals into the sibling folder `<original name> [saber-tooth]`, or a numbered variant. Approved proposals apply in id order to an evolving map. A proposal whose notes an earlier one changed is re-checked: if its finding is gone it becomes `superseded` and is skipped; if the finding remains, a fresh `pending` proposal (`replaces` = the old id) is stored and the old one becomes `superseded`. The job result is `{"map_id", "folder", "applied", "superseded", "needs_review"}`, the three being proposal id lists (`needs_review` holds the new pending ids). The job fails only when applying leaves a new problem or a proposal has no finding to re-check.
 1. `POST /api/maps/{id}/fix`: the one-click Fix. Returns `{"job": id}` and starts a `fix` job (map status `fixing`) that adds missing difficulties and fixes every finding it can, each fix verified against the map as earlier fixes left it, then writes the sibling folder `<original name> [saber-tooth]`; the original is never changed and the library is refreshed so the new folder appears. The beat analyser is used when reachable, else the fix runs without it (`analysed` is false). The job result is `{"map_id", "folder", "fixed_id", "analysed", "rounds", "applied", "before", "after", "difficulties", "complete", "errors", "unfixed"}`. `before` and `after` map difficulty, then `errors` or `warnings`, then rule to a count. `fixed_id` is the library id of the written folder. `folder` and `fixed_id` are null (and `after` equals `before`) when nothing needed fixing. `unfixed` lists the remaining findings, each with its `reason`. 404 for an unknown map, 409 when the map cannot be read. The MCP tool `fix_map(map_id)` starts the same job.
-1. `GET /api/maps/{id}/timeline`: the crop timeline for the 1 and 2 minute highlight (`map_id`, `map_only`, `lengths` keyed `"60"` and `"120"` with `suggestions` and the allowed starts and ends). 404 for an unknown map, 409 when the map cannot be read, 422 with the reason when no Standard difficulty has notes.
+1. `GET /api/maps/{id}/timeline`: the crop timeline `{"map_id", "duration_s", "bpm", "hardest", "map_only", "grid_drift_s", "nps", "sections", "lengths"}`. `nps` maps each difficulty that has notes to notes per second in 1 s steps. `sections` lists `{"start_beat", "end_beat", "start_s", "end_s", "nps", "intensity"}`. `lengths` has the keys `"60"` and `"120"`, each `{"enabled", "reason", "band", "suggestions", "starts"}`: `band` is the allowed length range in seconds, `suggestions` holds the best window then the next two (`{"start_beat", "end_beat", "start_s", "end_s", "length_s", "end_kind", "score"}`), `starts` is every allowed start with its allowed `ends` (`{"beat", "seconds", "kind"}`, kind `section`, `phrase`, `bar4` or `bar`). `map_only` is true when the stored scan has no analysis. Times are given in beats and seconds. 404 for an unknown map, 409 when the map cannot be read, 422 with the reason when no Standard difficulty has notes or the song length is unknown.
 1. `POST /api/maps/{id}/crop`: body `{"start_beat", "end_beat"}`. Answers `{"job": id}` and starts a `crop` job that writes `<original> [1 min]` or `[2 min]` as a new folder; the original is never changed. 400 for a body that is not JSON, 404 for an unknown map, 409 when the map cannot be read or has a queued or running job (checked before the window), 422 naming the broken rule for a bad number or window. The job result carries `folder` and `cropped_id`.
 1. `POST /api/generate`: body `{"url": "<youtube url>"}` or a multipart audio file in the field `file`. Starts a `generate` job that ends in a `create-map` proposal.
 1. `GET /api/lightshow`: `{"source", "environments", "units", "learned_at"}` for the active lightshow set. `source` is `learned` when `/data/lightshow.json` exists (written by the Learn button, which then overrides the bundled set) and `bundled` otherwise; `learned_at` is the file modification time as an ISO 8601 UTC string, or null for the bundled set.
@@ -39,7 +39,8 @@ Routes that start work answer `{"job": "<id>"}`. Poll the job until `status` is 
 3. `generate`: `{"map_id", "proposal"}`. `map_id` is a staging id and `proposal` is the id of the `create-map` proposal.
 4. `learn`: `{"units": N}`, the number of lightshow units indexed.
 5. `bs-download`: `{"results": [{"id", "status", "reason", "folder"}]}` with `status` `installed`, `skipped` or `failed`.
-6. A failed `apply` caused by conflicting proposals has `result` set to `{"conflict": [<proposal ids>]}` and the message in `error`.
+6. `crop`: `{"map_id", "folder", "cropped_id", "label", "start_beat", "end_beat", "length_s"}`: the new folder, its map id, `1 min` or `2 min`, the chosen beats and the length in seconds.
+7. A failed `apply` caused by conflicting proposals has `result` set to `{"conflict": [<proposal ids>]}` and the message in `error`.
 
 ## Errors
 
@@ -49,8 +50,9 @@ Errors answer `{"error": "<message>"}` with these codes.
 2. 403: a `Host` outside the allowlist (any method), or a state-changing request whose `Origin` header does not match the scheme and host the client addressed (see above for proxies).
 3. 404: unknown map, proposal or job. Ids that do not match their expected format are also 404.
 4. 409: the map is unreadable, the proposal is already applied, or approved proposals conflict.
-5. 413: the upload exceeds `MAX_UPLOAD_MB` (default 200).
-6. 415: the uploaded file extension is not a supported audio type.
+5. 422: a crop request whose `start_beat` or `end_beat` breaks a window rule, or a timeline that cannot be built; the message names the rule.
+6. 413: the upload exceeds `MAX_UPLOAD_MB` (default 200).
+7. 415: the uploaded file extension is not a supported audio type.
 
 ## BeatSaver
 
@@ -97,18 +99,20 @@ The same process serves a Model Context Protocol endpoint at `/mcp` (Streamable 
 
 Connect with `claude mcp add --transport http saber-tooth http://127.0.0.1:8100/mcp`. For another host name, add it to `SABER_ALLOWED_HOSTS`.
 
-| Tool                         | Effect                                                                                                                                                                          |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_maps(filter?)`         | Read-only. Up to 200 maps (item shape above) plus `total`; filter is a substring                                                                                                |
-| `get_proposals(map_id)`      | Read-only. Up to 200 proposals plus `total`                                                                                                                                     |
-| `scan_map(map_id)`           | Starts a scan job, returns `{"job"}`                                                                                                                                            |
-| `job_status(job_id)`         | Read-only. Job status, error and result                                                                                                                                         |
-| `approve_proposal(id)`       | Marks approved; idempotent; writes nothing                                                                                                                                      |
-| `reject_proposal(id)`        | Marks rejected; idempotent; writes nothing                                                                                                                                      |
-| `apply_map(map_id)`          | Starts an apply job; writes only a new folder in `CustomLevels`                                                                                                                 |
-| `generate_from_youtube(url)` | Starts a generation job; same YouTube allowlist as `/api/generate`                                                                                                              |
-| `learn_lightshows()`         | Starts a lightshow learning job                                                                                                                                                 |
-| `beatsaver_search(...)`      | Read-only. BeatSaver search with `q`, `tags`, `min_rating`, `nps_min`, `nps_max`, `nps_scope`, `diffs`, `diffs_mode`, `cursor`, `limit`; same result as `/api/beatsaver/search` |
-| `beatsaver_download(ids)`    | Starts a download job for up to 100 keys; writes only new folders in `CustomLevels`                                                                                             |
+| Tool                                     | Effect                                                                                                                                                                          |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_maps(filter?)`                     | Read-only. Up to 200 maps (item shape above) plus `total`; filter is a substring                                                                                                |
+| `get_proposals(map_id)`                  | Read-only. Up to 200 proposals plus `total`                                                                                                                                     |
+| `scan_map(map_id)`                       | Starts a scan job, returns `{"job"}`                                                                                                                                            |
+| `job_status(job_id)`                     | Read-only. Job status, error and result                                                                                                                                         |
+| `approve_proposal(id)`                   | Marks approved; idempotent; writes nothing                                                                                                                                      |
+| `reject_proposal(id)`                    | Marks rejected; idempotent; writes nothing                                                                                                                                      |
+| `apply_map(map_id)`                      | Starts an apply job; writes only a new folder in `CustomLevels`                                                                                                                 |
+| `generate_from_youtube(url)`             | Starts a generation job; same YouTube allowlist as `/api/generate`                                                                                                              |
+| `learn_lightshows()`                     | Starts a lightshow learning job                                                                                                                                                 |
+| `map_timeline(map_id)`                   | Read-only. The timeline of `GET /api/maps/{id}/timeline`: NPS per difficulty, sections and the 1 and 2 minute windows with every allowed start and end                          |
+| `crop_map(map_id, start_beat, end_beat)` | Starts a crop job from beats of `map_timeline`; writes only a new folder in `CustomLevels`, never edits the map. A broken window rule is an error naming the rule               |
+| `beatsaver_search(...)`                  | Read-only. BeatSaver search with `q`, `tags`, `min_rating`, `nps_min`, `nps_max`, `nps_scope`, `diffs`, `diffs_mode`, `cursor`, `limit`; same result as `/api/beatsaver/search` |
+| `beatsaver_download(ids)`                | Starts a download job for up to 100 keys; writes only new folders in `CustomLevels`                                                                                             |
 
 Failures come back as MCP tool errors with the REST message.

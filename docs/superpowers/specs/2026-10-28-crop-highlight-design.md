@@ -63,6 +63,8 @@ Each module has one job and is tested on its own.
    4. BPM changes inside the window are kept and re-timed.
    5. Lights fade in at the start and black out at the end so no light is left on.
    6. Info.dat: song name suffix, duration, preview start inside the new audio.
+   7. Note 2026-10-28: Info.dat gets no duration field, because the v2.1.0 writer has none and the cut audio carries
+      the length. Per-section mean NPS is computed in `sections.py` (`Section.nps`), not in `window.py`.
 
 ### API
 

@@ -11,3 +11,4 @@ Vitest suites run with `task st:web:test`.
 7. `pages.test.tsx`: map page, approve flows, generate form, 404 and back link.
 8. `fixes.test.tsx`: touch long-press tooltips, search flush on close and approve all errors.
 9. `delete.test.tsx`: Delete button, confirm dialog, permanent delete, banner and error path.
+10. `crophelpers.tsx`, `croplib.test.ts`, `cropchart.test.tsx`, `croppanel.test.tsx`, `cropwiring.test.tsx`: the crop timeline fixture and API stub, snapping helpers, the SVG chart, the panel states and its place on the map page.

@@ -11,12 +11,13 @@ Subpackages:
 5. [lightshow/](lightshow/README.md): learn and apply lightshow templates.
 6. [service/](service/README.md): library refresh, scan, generate, apply and learn.
 7. [web/](web/README.md): build output of the browser UI from [frontend](../../frontend/README.md).
+8. [crop/](crop/README.md): crop a map to a 1 or 2 minute highlight.
 
 Top-level modules:
 
 1. `model.py`: internal map model (notes, bombs, walls, events, difficulties).
 2. `profiles.py`: per-difficulty generation profiles.
-3. `analysis.py`, `analyser_client.py`, `audio.py`: beat-analyser output, its HTTP client and audio conversion.
+3. `analysis.py`, `analyser_client.py`, `audio.py`: beat-analyser output, its HTTP client, audio conversion and cutting.
 4. `timing.py`, `swings.py`: beat and time conversion, swing geometry.
 5. `assemble.py`: builds a map from generator output.
 6. `store.py`, `store_maps.py`, `store_claims.py`, `jobs.py`: SQLite storage, map queries, proposal claims and background jobs.

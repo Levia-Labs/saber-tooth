@@ -11,3 +11,4 @@ Plain CSS with custom properties; no framework.
 7. `beatsaver.css`: header mode switch, presets, selection bar and the BeatSaver table layouts.
 8. `alerts.css`: alert variants and the visually hidden helper.
 9. `preview.css`: the audio preview button and its progress ring.
+10. `crop.css`: the crop panel and its NPS chart.
