@@ -79,7 +79,11 @@
       "Bash(git show *--no-ind*)",
       "Bash(git show *--no-index*)",
       "Bash(git show * -O*)",
-      "Bash(git show -O*)"
+      "Bash(git show -O*)",
+      "Bash(task st:hub:publish)",
+      "Bash(task st:hub:publish *)",
+      "Bash(rtk task st:hub:publish)",
+      "Bash(rtk task st:hub:publish *)"
     ]
   },
   "extraKnownMarketplaces": {

@@ -105,6 +105,13 @@ tasks:
   crepidoma-bump:
     desc: "Bump the .crepidoma submodule and stage it. Usage: task st:crepidoma-bump [-- <ref>]"
     cmds: ["uv run python scripts/crepidoma_bump.py {{.CLI_ARGS}}"]
+  hub:check:
+    desc: "Compare the Docker Hub page with docs/dockerhub.md, read-only. Usage: task st:hub:check"
+    cmds: ["uv run python scripts/hub.py"]
+  hub:publish:
+    desc: "Publish docs/dockerhub.md to Docker Hub. Usage: task st:hub:publish"
+    # Run by a person: it needs docker login credentials and edits the public page.
+    cmds: ["uv run python scripts/hub.py --apply"]
   docker-health:
     desc: "State, health and recent logs per compose service. Usage: task st:docker-health"
     cmds: ["uv run python scripts/docker_health.py {{.CLI_ARGS}}"]

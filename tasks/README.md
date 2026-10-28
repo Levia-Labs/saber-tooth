@@ -17,6 +17,7 @@ Tasks:
 11. `st:commit`: format, stage and commit exactly the given paths.
 12. `st:smoke`, `st:docker-health`, `st:browser-check`: read-only checks of the running stack; the last drives Chrome or Firefox headless.
 13. `st:crepidoma-bump`: update the `.crepidoma` submodule and stage it.
+14. `st:hub:check`, `st:hub:publish`: compare or publish the Docker Hub page; publish is run by a person.
 
 The workflow tools are described in [workflow](../docs/workflow.md).
 

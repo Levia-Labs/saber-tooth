@@ -1,0 +1,173 @@
+![saber-tooth logo](https://raw.githubusercontent.com/Levia-Labs/saber-tooth/main/docs/assets/logo.svg)
+
+# saber-tooth
+
+**Check, fix and generate Beat Saber custom levels from your own music.**
+
+[![built on Crepidoma](https://img.shields.io/badge/built%20on-Crepidoma-6d28d9.svg)](https://github.com/Levia-Labs/Crepidoma)
+[![licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](https://github.com/Levia-Labs/saber-tooth/blob/main/LICENSE)
+
+Give it a song or an existing map and it writes a map folder into your `CustomLevels`
+directory. It builds all five Standard difficulties, finds impossible swings, broken parity
+and empty stretches in existing maps, and adds atmospheric lighting learned from the maps you
+already have installed. It uses vanilla features only: no Chroma, Noodle Extensions or
+Vivify. Every change is reviewed by you in the browser first, and fixes go into a new sibling
+folder so the original map is never touched.
+
+Source, issues and full documentation: <https://github.com/Levia-Labs/saber-tooth>
+
+## How it works
+
+1. A song (YouTube URL or uploaded audio file) or an existing map goes in.
+2. The [beat-analyser](https://github.com/Levia-Labs/beat-analyser) sidecar downloads
+   the audio and returns the beat grid and onsets.
+3. The generator places notes, the checks look for problems, and the fixer proposes repairs,
+   each verified to reach zero findings before it is offered.
+4. You review each proposal on a timeline in the browser.
+5. Approved changes are written as a new map folder in `CustomLevels`.
+6. **FastAPI** serves a React web UI, a JSON API and an MCP endpoint on port 8100. **ffmpeg**
+   is built into the image.
+
+## Quick start
+
+The service needs beat-analyser next to it. Save this as `docker-compose.yml`:
+
+```yaml
+services:
+  saber-tooth:
+    image: levialabs/sabertooth:latest
+    ports: ["127.0.0.1:8100:8100"]
+    environment:
+      LEVELS_DIR: /levels
+      DATA_DIR: /data
+      ANALYSER_URL: http://beat-analyser:8000
+      ANALYSER_UPLOADS: /analyser
+      PUID: 1000
+      PGID: 1000
+    volumes:
+      - "/path/to/Beat Saber_Data/CustomLevels:/levels"
+      - analyser-uploads:/analyser:ro
+      - saber-data:/data
+    depends_on:
+      beat-analyser:
+        condition: service_healthy
+  beat-analyser:
+    image: levialabs/beat-analyser:latest
+    volumes: ["analyser-uploads:/app/uploads"]
+    read_only: true
+    tmpfs: ["/tmp"]
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/folders', timeout=4)
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+volumes:
+  analyser-uploads:
+  saber-data:
+```
+
+Then run `docker compose up -d` and open <http://127.0.0.1:8100>.
+
+The container starts as root only to apply `PUID` and `PGID`, then drops to that user. It
+never changes ownership of `/levels`: on Linux, the mounted levels folder must be writable by
+the `PUID` user.
+
+The source repository has the full `docker-compose.yml` with the optional settings, including
+the Playlists folder.
+
+## Volumes
+
+| Mount        | Purpose                                                                |
+| ------------ | ---------------------------------------------------------------------- |
+| `/levels`    | Your `CustomLevels` folder. Maps are read here and new folders written |
+| `/data`      | Service state: scan results, proposals, caches, learned lightshows     |
+| `/analyser`  | beat-analyser's uploads volume, mounted read-only to read its output   |
+| `/playlists` | Optional. Beat Saber Playlists folder for `.bplist` export             |
+
+## Configuration
+
+| Variable                  | Default                     | Meaning                                                                        |
+| ------------------------- | --------------------------- | ------------------------------------------------------------------------------ |
+| `LEVELS_DIR`              | `/levels`                   | Where the service reads and writes maps                                        |
+| `DATA_DIR`                | `/data`                     | Where the service keeps its own state                                          |
+| `ANALYSER_URL`            | `http://beat-analyser:8000` | Base URL of the beat-analyser service                                          |
+| `ANALYSER_UPLOADS`        | `/analyser`                 | Where beat-analyser's output volume is mounted                                 |
+| `PLAYLISTS_DIR`           | unset                       | Playlists folder; setting it enables the `.bplist` export                      |
+| `MAX_UPLOAD_MB`           | `200`                       | Largest audio upload                                                           |
+| `SABER_ALLOWED_HOSTS`     | empty                       | Extra `Host` names accepted besides `127.0.0.1`, `localhost` and `[::1]`       |
+| `SABER_TRUSTED_PROXY_IPS` | empty                       | Comma list of single proxy addresses whose `X-Forwarded-*` headers are trusted |
+| `PUID`, `PGID`            | `1000`                      | User and group the service runs as                                             |
+
+`MAX_UPLOAD_MB` and `YT_MAX_MINUTES` (default `20`) also apply to the beat-analyser container.
+
+## API and MCP
+
+The REST API lives under `/api`. Routes that start work answer `{"job": "<id>"}`; poll
+`GET /api/jobs/{id}` until `status` is `done` or `failed`.
+
+| Method | Path                       | Does                                                          |
+| ------ | -------------------------- | ------------------------------------------------------------- |
+| GET    | `/api/health`              | `{"status": "ok"}`, the container health check                |
+| GET    | `/api/maps`                | One page of the library, with search, sort and filters        |
+| POST   | `/api/maps/{id}/scan`      | Check one map                                                 |
+| POST   | `/api/maps/{id}/fix`       | One-click fix, written to a new `<name> [saber-tooth]` folder |
+| POST   | `/api/generate`            | New map from a YouTube URL or an uploaded audio file          |
+| GET    | `/api/maps/{id}/proposals` | Proposed changes for a map, with before and after excerpts    |
+| POST   | `/api/maps/{id}/apply`     | Write the approved proposals into a new sibling folder        |
+| POST   | `/api/lightshow/learn`     | Learn lightshow styles from the installed maps                |
+| GET    | `/api/beatsaver/search`    | Search BeatSaver                                              |
+| POST   | `/api/beatsaver/download`  | Install up to 100 BeatSaver maps as new folders               |
+
+Errors are JSON: `{"error": "..."}`. The route list is longer than this table; see the
+[API reference](https://github.com/Levia-Labs/saber-tooth/blob/main/docs/api.md).
+
+Agents can connect over MCP (Streamable HTTP) at `/mcp`:
+
+```bash
+claude mcp add --transport http saber-tooth http://127.0.0.1:8100/mcp
+```
+
+Tools include `list_maps`, `scan_map`, `fix_map`, `generate_from_youtube`, `apply_map` and
+`beatsaver_search`. The full list is in the
+[MCP section](https://github.com/Levia-Labs/saber-tooth/blob/main/docs/api.md#mcp).
+
+## Security
+
+The API has no authentication. Publish the port on `127.0.0.1` (as above) unless the service
+sits behind something that authenticates. Requests with a `Host` outside the allowlist get
+403, and state-changing requests whose `Origin` does not match are refused. Behind a TLS
+proxy, set `SABER_ALLOWED_HOSTS` and `SABER_TRUSTED_PROXY_IPS`. Fixes are written to a new
+folder and the original map is never changed.
+
+## Tags
+
+| Tag      | What it is                |
+| -------- | ------------------------- |
+| `1.0.0`  | The 1.0.0 release         |
+| `latest` | The same build as `1.0.0` |
+
+## Limits
+
+1. Standard characteristic only: the five Standard difficulties are generated and checked.
+2. Vanilla features only. Maps that require Noodle or Mapping Extensions are refused on
+   BeatSaver download.
+3. Map generation needs beat-analyser; YouTube downloads need outbound internet.
+4. Only YouTube URLs are accepted for generation. Other sites are refused.
+5. The service is built for a single user on localhost.
+
+## Part of Levia Labs
+
+1. [beat-analyser](https://github.com/Levia-Labs/beat-analyser): the audio download and
+   beat and onset analysis service that saber-tooth runs next to.
+2. [Crepidoma](https://github.com/Levia-Labs/Crepidoma): the base every Levia Labs project
+   stands on, a Claude Code plugin with shared Task namespaces, configs and ADRs.
+3. [Levia-Labs on GitHub](https://github.com/Levia-Labs): every public project.
+
+## Licence
+
+MIT.
