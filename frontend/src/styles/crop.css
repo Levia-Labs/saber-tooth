@@ -4,7 +4,29 @@
 .nps-chart {
   margin: 0.75rem 0;
 }
-.nps-chart svg {
+.nps-grid {
+  display: grid;
+  grid-template-columns: 2.2rem minmax(0, 1fr);
+  padding-right: 1rem;
+}
+.nps-yaxis {
+  position: relative;
+  height: 11rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+.nps-ytick {
+  position: absolute;
+  right: 0.35rem;
+  transform: translateY(50%);
+  line-height: 1;
+}
+.nps-stage {
+  position: relative;
+  min-width: 0;
+}
+.nps-stage > svg {
   display: block;
   width: 100%;
   height: 11rem;
@@ -28,15 +50,82 @@
   opacity: 0.2;
 }
 .nps-line {
-  stroke: var(--muted);
   stroke-width: 1.5;
+  opacity: 0.75;
+  vector-effect: non-scaling-stroke;
+}
+.nps-line-plain {
+  stroke: var(--muted);
+}
+.nps-line-hardest {
+  stroke-width: 2.5;
+  opacity: 1;
+}
+.nps-grid-line {
+  stroke: var(--line);
+  stroke-width: 1;
   opacity: 0.6;
   vector-effect: non-scaling-stroke;
 }
-.nps-line-hardest {
+.nps-playhead {
   stroke: var(--ink);
-  stroke-width: 2.5;
-  opacity: 1;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+.nps-selection {
+  cursor: grab;
+}
+.nps-xaxis {
+  position: relative;
+  height: 1.2rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+.nps-xtick {
+  position: absolute;
+  top: 0.25rem;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.nps-xtick:first-child {
+  transform: none;
+}
+.nps-under {
+  grid-column: 2;
+  position: relative;
+  height: 3.6rem;
+}
+.nps-move {
+  position: absolute;
+  top: 1.6rem;
+  display: flex;
+  gap: 0.5rem;
+  transform: translateX(-50%);
+}
+.nps-play {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.nps-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin: 0.25rem 0 0 2.2rem;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.nps-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.nps-legend svg {
+  stroke-width: 3;
 }
 .nps-end {
   stroke: var(--amber);
@@ -95,4 +184,45 @@
   display: block;
   height: 11rem;
   border-radius: var(--radius);
+}
+
+.map-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin: 1rem 0 0.75rem;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+}
+.map-tab {
+  min-height: 44px;
+  padding: 0 1.1rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.map-tab:hover {
+  color: var(--ink);
+}
+.map-tab[aria-selected="true"] {
+  color: var(--ink);
+  border-bottom-color: var(--blue);
+}
+.map-tab-danger[aria-selected="true"] {
+  border-bottom-color: var(--red);
+}
+.delete-panel {
+  max-width: 36rem;
+  padding: 1rem 0;
+}
+.delete-panel h2 {
+  margin: 0 0 0.5rem;
+}
+.delete-panel .row {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
 }

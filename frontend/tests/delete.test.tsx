@@ -29,24 +29,26 @@ const deletes = (fn: ReturnType<typeof api>["fn"]) =>
   fn.mock.calls.filter(([, init]) => init?.method === "DELETE");
 
 describe("delete map", () => {
-  test("opens a confirm dialog naming the folder; cancel does nothing", async () => {
+  test("the Delete tab confirms inline, naming the folder; Back does nothing", async () => {
     const { fn } = api();
     renderApp(`/maps/${ID}`);
-    await userEvent.click(await screen.findByRole("button", { name: "Delete" }));
-    const dialog = await screen.findByRole("dialog", { name: "Delete permanently?" });
-    expect(dialog).toHaveTextContent("Folder 1");
-    expect(dialog).toHaveTextContent("cannot be undone");
-    await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await userEvent.click(await screen.findByRole("tab", { name: "Delete" }));
+    const panel = await screen.findByRole("tabpanel");
+    expect(panel).toHaveTextContent("Delete permanently?");
+    expect(panel).toHaveTextContent("Folder 1");
+    expect(panel).toHaveTextContent("cannot be undone");
     expect(screen.queryByRole("dialog")).toBeNull();
+    await userEvent.click(within(panel).getByRole("button", { name: "Back" }));
+    expect(screen.getByRole("tab", { name: "Status" })).toHaveAttribute("aria-selected", "true");
     expect(deletes(fn)).toHaveLength(0);
   });
 
   test("confirm sends DELETE, navigates to the library and shows a banner", async () => {
     const { fn } = api();
     const { router } = renderApp(`/maps/${ID}`);
-    await userEvent.click(await screen.findByRole("button", { name: "Delete" }));
-    const dialog = await screen.findByRole("dialog");
-    await userEvent.click(within(dialog).getByRole("button", { name: "Delete" }));
+    await userEvent.click(await screen.findByRole("tab", { name: "Delete" }));
+    const panel = await screen.findByRole("tabpanel");
+    await userEvent.click(within(panel).getByRole("button", { name: "Delete" }));
     await waitFor(() => expect(deletes(fn)).toHaveLength(1));
     expect(String(deletes(fn)[0]?.[0])).toContain(`/api/maps/${ID}`);
     await waitFor(() => expect(router.state.location.pathname).toBe("/"));
@@ -56,16 +58,17 @@ describe("delete map", () => {
   test("an error announces danger and stays on the page", async () => {
     api({ fail: true });
     const { router } = renderApp(`/maps/${ID}`);
-    await userEvent.click(await screen.findByRole("button", { name: "Delete" }));
-    const dialog = await screen.findByRole("dialog");
-    await userEvent.click(within(dialog).getByRole("button", { name: "Delete" }));
+    await userEvent.click(await screen.findByRole("tab", { name: "Delete" }));
+    const panel = await screen.findByRole("tabpanel");
+    await userEvent.click(within(panel).getByRole("button", { name: "Delete" }));
     expect(await screen.findByText(/map has a job/)).toBeVisible();
     expect(router.state.location.pathname).toBe(`/maps/${ID}`);
   });
 
   test("the button is disabled while a job runs", async () => {
     api({ job: true });
-    renderApp(`/maps/${ID}`);
-    expect(await screen.findByRole("button", { name: "Delete" })).toBeDisabled();
+    renderApp(`/maps/${ID}?tab=delete`);
+    const panel = await screen.findByRole("tabpanel");
+    expect(within(panel).getByRole("button", { name: "Delete" })).toBeDisabled();
   });
 });

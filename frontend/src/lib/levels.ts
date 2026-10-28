@@ -73,3 +73,9 @@ export function ringText(bg: string, surface: string = SURFACE): string {
   }
   return out;
 }
+
+/** The colour a level is drawn in, chips and chart lines alike; undefined for an unknown key. */
+export function levelColor(key: string): string | undefined {
+  const level = LEVELS.find((l) => l.key === key);
+  return level ? ringText(level.bg) : undefined;
+}

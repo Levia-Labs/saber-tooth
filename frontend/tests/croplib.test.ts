@@ -3,13 +3,18 @@ import { cropMap, getTimeline } from "../src/api/client";
 import type { CropStart } from "../src/api/types";
 import { toAlert } from "../src/lib/alerts";
 import {
+  canStep,
+  clampStart,
+  sectionAt,
   clock,
   endFor,
+  endKeepingLength,
   keepStart,
   pickEnd,
   secondsAt,
   snapEnd,
   snapStart,
+  startAtOrAfter,
   stepEnd,
   stepStart,
   suggestion,
@@ -132,5 +137,46 @@ describe("client and alerts", () => {
       title: "Cropped",
       message: "Written to Song [1 min].",
     });
+  });
+});
+
+describe("moving the whole window", () => {
+  test("startAtOrAfter picks the first start from the given second, else the last", () => {
+    expect(startAtOrAfter(P60, 0).beat).toBe(0);
+    expect(startAtOrAfter(P60, 1).beat).toBe(128);
+    expect(startAtOrAfter(P60, 64).beat).toBe(128);
+    expect(startAtOrAfter(P60, 100).beat).toBe(128);
+  });
+
+  test("canStep is false at the first and last start", () => {
+    expect(canStep(P60, 0, -1)).toBe(false);
+    expect(canStep(P60, 0, 1)).toBe(true);
+    expect(canStep(P60, 128, 1)).toBe(false);
+    expect(canStep(P60, 128, -1)).toBe(true);
+  });
+});
+
+describe("re-picking the end by length", () => {
+  test("picks the end whose length is closest to the wanted one, stronger kind on a tie", () => {
+    expect(endKeepingLength(S0, 64).beat).toBe(128);
+    expect(endKeepingLength(S0, 58.4).beat).toBe(116);
+    expect(endKeepingLength(S0, 57).beat).toBe(112);
+    expect(endKeepingLength(S0, 1).beat).toBe(112);
+    expect(endKeepingLength(S128, 64).beat).toBe(256);
+  });
+});
+
+describe("window and section helpers", () => {
+  test("clampStart keeps the window inside the song", () => {
+    expect(clampStart(-5, 64, 140)).toBe(0);
+    expect(clampStart(50, 64, 140)).toBe(50);
+    expect(clampStart(100, 64, 140)).toBe(76);
+    expect(clampStart(10, 200, 140)).toBe(0);
+  });
+
+  test("sectionAt finds the band holding a second", () => {
+    expect(sectionAt(TIMELINE.sections, 0)?.start_s).toBe(0);
+    expect(sectionAt(TIMELINE.sections, 64)?.start_s).toBe(64);
+    expect(sectionAt(TIMELINE.sections, 140)).toBeUndefined();
   });
 });

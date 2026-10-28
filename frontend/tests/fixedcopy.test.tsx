@@ -69,11 +69,11 @@ describe("fixed copy links", () => {
 });
 
 describe("clean copy page", () => {
-  test("hides fix controls and the empty alert, keeps Delete and the banner", async () => {
+  test("hides fix controls and the empty alert, keeps the Delete tab and the banner", async () => {
     serve(copy("ok"));
     renderApp("/maps/id0000000099");
     await screen.findByText("Fixed copy of");
-    await screen.findByRole("button", { name: /^Delete/ });
+    await screen.findByRole("tab", { name: "Delete" });
     for (const name of [
       /^Fix/,
       /^Scan/,
@@ -91,16 +91,10 @@ describe("clean copy page", () => {
     serve(copy("error"));
     renderApp("/maps/id0000000099");
     await screen.findByText("Fixed copy of");
-    for (const name of [
-      /Scan/,
-      /Approve all/,
-      /Apply approved/,
-      /Expand all/,
-      /Collapse all/,
-      /Delete/,
-    ]) {
+    for (const name of [/Scan/, /Approve all/, /Apply approved/, /Expand all/, /Collapse all/]) {
       expect(await screen.findByRole("button", { name })).toBeInTheDocument();
     }
+    expect(screen.getByRole("tab", { name: "Delete" })).toBeInTheDocument();
     expect(screen.getByText("No fixes yet")).toBeInTheDocument();
   });
 

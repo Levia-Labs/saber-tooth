@@ -14,6 +14,9 @@ const MARKS = [
 function chart(patch: Partial<Parameters<typeof NpsChart>[0]> = {}) {
   const onMove = vi.fn();
   const onStep = vi.fn();
+  const onShift = vi.fn();
+  const onJump = vi.fn();
+  const onShiftStep = vi.fn();
   const view = render(
     <NpsChart
       nps={TIMELINE.nps}
@@ -25,6 +28,10 @@ function chart(patch: Partial<Parameters<typeof NpsChart>[0]> = {}) {
       endMarks={MARKS}
       onMove={onMove}
       onStep={onStep}
+      onShift={onShift}
+      onJump={onJump}
+      onShiftStep={onShiftStep}
+      canShift={{ earlier: true, later: true }}
       {...patch}
     />,
   );
@@ -40,7 +47,7 @@ function chart(patch: Partial<Parameters<typeof NpsChart>[0]> = {}) {
     y: 0,
     toJSON: () => ({}),
   });
-  return { ...view, svg, onMove, onStep };
+  return { ...view, svg, onMove, onStep, onShift, onJump, onShiftStep };
 }
 
 describe("NpsChart", () => {
@@ -102,7 +109,7 @@ describe("NpsChart", () => {
     fireEvent.pointerMove(svg, { clientX: 500 });
     expect(screen.getByText(/^1:10\.0, section 2 of 3, notes per second: Expert/)).toBeVisible();
     fireEvent.pointerLeave(svg);
-    expect(screen.getByText(/Hover the chart/)).toBeVisible();
+    expect(screen.queryByText(/^1:10.0, section/)).toBeNull();
   });
 });
 
@@ -127,6 +134,10 @@ describe("NpsChart keyboard readout", () => {
         endMarks={[]}
         onMove={vi.fn()}
         onStep={onStep}
+        onShift={vi.fn()}
+        onJump={vi.fn()}
+        onShiftStep={vi.fn()}
+        canShift={{ earlier: true, later: true }}
       />,
     );
     const readout = screen.getByText(/^1:10\.0, section 2 of 3, notes per second: /);

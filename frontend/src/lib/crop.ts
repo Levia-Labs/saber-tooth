@@ -15,9 +15,8 @@ export const KIND_LABEL: Record<EndKind, string> = {
 
 export const CROP_TIPS = {
   create:
-    "Write the chosen stretch of the song as a new folder beside this map. The original is never changed.",
+    "Save the chosen stretch of the song as a new map in a folder beside this one. The original is never changed.",
   reset: "Go back to the suggested window.",
-  toggle: "Show or hide the crop panel: cut a 1 or 2 minute highlight.",
 } as const;
 
 /** A chosen window, in beats. */
@@ -107,4 +106,34 @@ export function suggestion(plan: CropPlan): Choice | null {
 export function keepStart(plan: CropPlan, choice: Choice | null): Choice | null {
   const start = choice ? plan.starts.find((s) => same(s.beat, choice.start)) : undefined;
   return start ? { start: start.beat, end: pickEnd(start, plan.band).beat } : null;
+}
+
+/** The first start from `seconds` on; the last start when none follows. */
+export function startAtOrAfter(plan: CropPlan, seconds: number): CropStart {
+  const sorted = [...plan.starts].sort((a, b) => a.seconds - b.seconds);
+  return sorted.find((s) => s.seconds >= seconds - EPS) ?? (sorted.at(-1) as CropStart);
+}
+
+/** Whether another start lies in that direction. */
+export const canStep = (plan: CropPlan, beat: number, dir: 1 | -1): boolean =>
+  stepIn(plan.starts, beat, dir) !== undefined;
+
+/** The end whose length is closest to `length` seconds; a tie goes to the stronger kind. */
+export function endKeepingLength(start: CropStart, length: number): CropEnd {
+  const off = (e: CropEnd) => Math.abs(e.seconds - start.seconds - length);
+  return [...start.ends].sort(
+    (a, b) => off(a) - off(b) || KIND_RANK[a.kind] - KIND_RANK[b.kind] || a.beat - b.beat,
+  )[0] as CropEnd;
+}
+
+/** A window start kept inside the song: from 0 to the last start that still fits `length`. */
+export const clampStart = (start: number, length: number, duration: number): number =>
+  Math.max(0, Math.min(duration - length, start));
+
+/** The section holding `seconds`, if any. */
+export function sectionAt<T extends { start_s: number; end_s: number }>(
+  sections: readonly T[],
+  seconds: number,
+): T | undefined {
+  return sections.find((s) => s.start_s <= seconds && seconds < s.end_s);
 }

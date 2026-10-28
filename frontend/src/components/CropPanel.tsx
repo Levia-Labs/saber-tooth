@@ -11,12 +11,15 @@ import {
   KIND_LABEL,
   clock,
   endFor,
+  endKeepingLength,
   keepStart,
   same,
   snapEnd,
   snapStart,
+  startAtOrAfter,
   stepEnd,
   stepStart,
+  canStep,
   suggestion,
   type Choice,
 } from "../lib/crop";
@@ -81,7 +84,14 @@ function CropOutcome({ job, error }: { job: Job | null; error: string | null }) 
   );
 }
 
-function CropEditor({ mapId, data, busy }: { mapId: string; data: Timeline; busy: boolean }) {
+interface EditorProps {
+  mapId: string;
+  data: Timeline;
+  busy: boolean;
+  audioUrl?: string | null;
+}
+
+function CropEditor({ mapId, data, busy, audioUrl }: EditorProps) {
   const client = useQueryClient();
   const crop = useJobRunner("Crop");
   const [length, setLength] = useState<CropLength>(data.lengths["60"].enabled ? "60" : "120");
@@ -98,6 +108,14 @@ function CropEditor({ mapId, data, busy }: { mapId: string; data: Timeline; busy
 
   const moveStart = (next: CropStart) =>
     setPicked({ start: next.beat, end: endFor(next, selection?.end ?? null, plan.band).beat });
+  /** Move the whole window to a start, keeping its length as close as the new start allows. */
+  const moveWindow = (next: CropStart) =>
+    setPicked({ start: next.beat, end: endKeepingLength(next, seconds ?? 0).beat });
+  const onShift = (at: number) => moveWindow(snapStart(plan, at));
+  const onJump = (at: number) => moveWindow(startAtOrAfter(plan, at));
+  const onShiftStep = (dir: 1 | -1) => {
+    if (start) moveWindow(stepStart(plan, start.beat, dir));
+  };
   const onMove = (edge: Edge, at: number) => {
     if (edge === "start") moveStart(snapStart(plan, at));
     else if (start) setPicked({ start: start.beat, end: snapEnd(start, at).beat });
@@ -147,6 +165,14 @@ function CropEditor({ mapId, data, busy }: { mapId: string; data: Timeline; busy
         endMarks={start ? start.ends.map((e) => ({ seconds: e.seconds, kind: e.kind })) : []}
         onMove={onMove}
         onStep={onStep}
+        onShift={onShift}
+        onJump={onJump}
+        onShiftStep={onShiftStep}
+        canShift={{
+          earlier: start !== undefined && canStep(plan, start.beat, -1),
+          later: start !== undefined && canStep(plan, start.beat, 1),
+        }}
+        audioUrl={audioUrl}
       />
       {end && seconds !== null && (
         <p className={amber ? "crop-readout crop-amber" : "crop-readout"} aria-live="polite">
@@ -160,7 +186,7 @@ function CropEditor({ mapId, data, busy }: { mapId: string; data: Timeline; busy
       <div className="crop-actions">
         <ActionButton
           icon="apply"
-          label="Create cropped map"
+          label="Save as new map"
           tip={CROP_TIPS.create}
           text
           variant="accent"
@@ -182,7 +208,15 @@ function CropEditor({ mapId, data, busy }: { mapId: string; data: Timeline; busy
   );
 }
 
-function CropBody({ mapId, busy }: { mapId: string; busy: boolean }) {
+function CropBody({
+  mapId,
+  busy,
+  audioUrl,
+}: {
+  mapId: string;
+  busy: boolean;
+  audioUrl?: string | null;
+}) {
   const timeline = useTimeline(mapId);
   if (timeline.isPending) return <CropSkeleton />;
   if (timeline.isError) {
@@ -193,32 +227,23 @@ function CropBody({ mapId, busy }: { mapId: string; busy: boolean }) {
       />
     );
   }
-  return <CropEditor mapId={mapId} data={timeline.data} busy={busy} />;
+  return <CropEditor mapId={mapId} data={timeline.data} busy={busy} audioUrl={audioUrl} />;
 }
 
-/** The toolbar button that opens and closes the crop panel; styled like Fix and Scan. */
-export function CropToggle({ open, onToggle }: { open: boolean; onToggle: () => void }) {
-  return (
-    <ActionButton
-      icon="crop"
-      label="Crop"
-      aria-label="Crop to 1 or 2 minutes"
-      tip={CROP_TIPS.toggle}
-      text
-      aria-expanded={open}
-      aria-controls="crop-body"
-      onClick={onToggle}
-    />
-  );
-}
-
-/** Crop to a 1 or 2 minute highlight: the panel under the toolbar; loads the timeline when open. */
-export function CropPanel({ mapId, busy, open }: { mapId: string; busy: boolean; open: boolean }) {
-  if (!open) return null;
+/** Crop to a 1 or 2 minute highlight; mount it when the Crop tab first shows, it loads the timeline. */
+export function CropPanel({
+  mapId,
+  busy,
+  audioUrl,
+}: {
+  mapId: string;
+  busy: boolean;
+  audioUrl?: string | null;
+}) {
   return (
     <section className="crop-panel" aria-label="Crop to a highlight">
       <div id="crop-body">
-        <CropBody key={mapId} mapId={mapId} busy={busy} />
+        <CropBody key={mapId} mapId={mapId} busy={busy} audioUrl={audioUrl} />
       </div>
     </section>
   );

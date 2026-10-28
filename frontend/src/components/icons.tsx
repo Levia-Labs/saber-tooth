@@ -90,6 +90,7 @@ const ICONS = {
     </>
   ),
   back: <path d="M19 12H5M11 6l-6 6 6 6" />,
+  forward: <path d="M5 12h14M13 6l6 6-6 6" />,
   external: (
     <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
   ),
@@ -131,6 +132,7 @@ const ICONS = {
   download: <path d="M12 4v12M7 11l5 5 5-5M4 17v3h16v-3" />,
   play: <path d="M8 5l11 7-11 7z" />,
   stop: <rect x="6" y="6" width="12" height="12" rx="1.5" />,
+  pause: <path d="M8 5v14M16 5v14" />,
   playlist: <path d="M4 6h12M4 11h12M4 16h7M17 14v6l5-3z" />,
   "tag-plus": (
     <>

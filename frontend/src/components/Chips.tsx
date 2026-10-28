@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { MapItem } from "../api/types";
 import { formatBpm, formatDuration } from "../lib/format";
-import { levelSlots, ringText } from "../lib/levels";
+import { levelColor, levelSlots } from "../lib/levels";
 import { STATUS_META, statusLabel, statusText } from "../lib/status";
 import { Icon } from "./icons";
 import { Tip } from "./Tip";
@@ -63,7 +63,7 @@ export function LevelChips({
             <Tip text={text}>
               <span
                 className={present ? "level" : "level missing"}
-                style={present ? { color: ringText(l.bg) } : undefined}
+                style={present ? { color: levelColor(l.key) } : undefined}
                 role="img"
                 aria-label={text}
               >

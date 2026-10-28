@@ -30,31 +30,30 @@ describe("masthead", () => {
   });
 });
 
-describe("Crop on the map page toolbar", () => {
-  test("is in the Fix actions toolbar, toggles the panel and loads lazily", async () => {
+describe("Crop on the map page tabs", () => {
+  test("is a tab beside Status, selects its panel and loads lazily", async () => {
     const { calls } = cropApi();
     renderApp("/maps/id0000000001");
     const bar = await screen.findByRole("toolbar", { name: "Fix actions" });
-    const crop = await within(bar).findByRole("button", { name: /Crop to 1 or 2 minutes/ });
-    expect(crop).toHaveAttribute("aria-expanded", "false");
+    const crop = await screen.findByRole("tab", { name: "Crop" });
+    expect(crop).toHaveAttribute("aria-selected", "false");
     expect(within(bar).getByRole("button", { name: "Scan" })).toBeInTheDocument();
     expect(calls.some((u) => u.pathname.endsWith("/timeline"))).toBe(false);
     const user = userEvent.setup();
     await user.click(crop);
-    expect(crop).toHaveAttribute("aria-expanded", "true");
+    expect(crop).toHaveAttribute("aria-selected", "true");
     expect(await screen.findByRole("slider", { name: "Crop end" })).toBeInTheDocument();
-    await user.click(crop);
-    expect(crop).toHaveAttribute("aria-expanded", "false");
+    await user.click(screen.getByRole("tab", { name: "Status" }));
+    expect(crop).toHaveAttribute("aria-selected", "false");
     expect(screen.queryByRole("slider", { name: "Crop end" })).toBeNull();
   });
 
-  test("a clean fixed copy shows Crop and Delete, without Fix and Scan", async () => {
+  test("a clean fixed copy shows the Crop and Delete tabs, without Fix and Scan", async () => {
     cropApi({ map: { status: "ok", original_id: "id0000000002" } });
     renderApp("/maps/id0000000001");
-    const bar = await screen.findByRole("toolbar", { name: "Fix actions" });
-    await within(bar).findByRole("button", { name: /Crop to 1 or 2 minutes/ });
-    await waitFor(() => expect(within(bar).queryByRole("button", { name: "Scan" })).toBeNull());
-    expect(within(bar).getByRole("button", { name: "Delete" })).toBeInTheDocument();
+    await screen.findByRole("tab", { name: "Crop" });
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Scan" })).toBeNull());
+    expect(screen.getByRole("tab", { name: "Delete" })).toBeInTheDocument();
   });
 });
 
@@ -75,10 +74,9 @@ describe("Crop does not depend on the proposals request", () => {
   test("present and working while proposals are pending", async () => {
     const calls = proposalsApi(() => new Promise<Response>(() => {}));
     renderApp("/maps/id0000000001");
-    const bar = await screen.findByRole("toolbar", { name: "Fix actions" });
-    const crop = await within(bar).findByRole("button", { name: /Crop to 1 or 2 minutes/ });
+    const crop = await screen.findByRole("tab", { name: "Crop" });
     await userEvent.setup().click(crop);
-    expect(crop).toHaveAttribute("aria-expanded", "true");
+    expect(crop).toHaveAttribute("aria-selected", "true");
     expect(await screen.findByRole("slider", { name: "Crop end" })).toBeInTheDocument();
     expect(calls.some((u) => u.pathname.endsWith("/timeline"))).toBe(true);
   });
@@ -86,9 +84,8 @@ describe("Crop does not depend on the proposals request", () => {
   test("present and working when proposals fail with 500", async () => {
     proposalsApi(() => Promise.resolve(new Response('{"error":"boom"}', { status: 500 })));
     renderApp("/maps/id0000000001");
-    const bar = await screen.findByRole("toolbar", { name: "Fix actions" });
     await screen.findByText("Could not load proposals", {}, { timeout: 5000 });
-    const crop = await within(bar).findByRole("button", { name: /Crop to 1 or 2 minutes/ });
+    const crop = await screen.findByRole("tab", { name: "Crop" });
     await userEvent.setup().click(crop);
     expect(await screen.findByRole("slider", { name: "Crop end" })).toBeInTheDocument();
   });
@@ -115,8 +112,8 @@ describe("clean copy toolbar", () => {
     none();
     expect(screen.queryByRole("toolbar", { name: "Fix actions" })).toBeNull();
     release();
-    const bar = await screen.findByRole("toolbar", { name: "Fix actions" });
-    await within(bar).findByRole("button", { name: /Crop to 1 or 2 minutes/ });
+    await screen.findByRole("tab", { name: "Crop" });
+    expect(screen.queryByRole("toolbar", { name: "Fix actions" })).toBeNull();
     none();
   });
 });

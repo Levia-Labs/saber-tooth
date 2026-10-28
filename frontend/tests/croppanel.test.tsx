@@ -1,48 +1,31 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useState } from "react";
 import { describe, expect, test } from "vitest";
-import { CropPanel, CropToggle } from "../src/components/CropPanel";
+import { CropPanel } from "../src/components/CropPanel";
 import { TIMELINE, cropApi, renderPanel } from "./crophelpers";
 
 const P120 = TIMELINE.lengths["120"];
 
-async function openPanel(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole("button", { name: /Crop to 1 or 2 minutes/ }));
+async function openPanel(_user?: ReturnType<typeof userEvent.setup>) {
   await screen.findByRole("slider", { name: "Crop end" });
-}
-
-function Harness({ busy }: { busy: boolean }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <CropToggle open={open} onToggle={() => setOpen((o) => !o)} />
-      <CropPanel mapId="id0000000001" busy={busy} open={open} />
-    </>
-  );
 }
 
 function setup(options = {}, busy = false) {
   const api = cropApi(options);
-  renderPanel(<Harness busy={busy} />);
+  renderPanel(<CropPanel mapId="id0000000001" busy={busy} />);
   return { ...api, user: userEvent.setup() };
 }
 
 describe("CropPanel", () => {
-  test("stays closed, and fetches nothing, until it is opened", async () => {
-    const { calls, user } = setup();
-    const toggle = screen.getByRole("button", { name: /Crop to 1 or 2 minutes/ });
-    expect(toggle).toHaveAttribute("aria-expanded", "false");
-    expect(calls.some((u) => u.pathname.endsWith("/timeline"))).toBe(false);
-    await user.click(toggle);
-    expect(toggle).toHaveAttribute("aria-expanded", "true");
+  test("fetches the timeline once when mounted and shows the chart", async () => {
+    const { calls } = setup();
     await screen.findByRole("slider", { name: "Crop start" });
+    expect(calls.filter((u) => u.pathname.endsWith("/timeline"))).toHaveLength(1);
   });
 
   test("shows a skeleton while the timeline loads", async () => {
     const slow = new Promise((resolve) => setTimeout(() => resolve(TIMELINE), 100));
-    const { user } = setup({ timeline: slow });
-    await user.click(screen.getByRole("button", { name: /Crop to 1 or 2 minutes/ }));
+    setup({ timeline: slow });
     expect(document.querySelector("[data-skeleton]")).not.toBeNull();
     await screen.findByRole("slider", { name: "Crop end" });
     expect(document.querySelector("[data-skeleton]")).toBeNull();
@@ -54,7 +37,7 @@ describe("CropPanel", () => {
     const readout = screen.getByText(/^Length 1:04\.0/);
     expect(readout).not.toHaveClass("crop-amber");
     expect(readout).toHaveTextContent("Both cuts are on section boundaries.");
-    expect(screen.getByRole("button", { name: "Create cropped map" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Save as new map" })).toBeEnabled();
   });
 
   test("the end steps to allowed points and the readout turns amber off a section end", async () => {
@@ -76,12 +59,38 @@ describe("CropPanel", () => {
     await user.keyboard("{ArrowRight}");
     const readout = screen.getByText(/^Length 1:04\.0/);
     expect(readout).toHaveTextContent("Ends on a phrase line, not a section boundary.");
-    await user.click(screen.getByRole("button", { name: "Create cropped map" }));
+    await user.click(screen.getByRole("button", { name: "Save as new map" }));
     await waitFor(() =>
       expect(posts).toEqual([
         { path: "/api/maps/id0000000001/crop", body: { start_beat: 128, end_beat: 256 } },
       ]),
     );
+  });
+
+  test("the arrow buttons step the whole window and keep its length", async () => {
+    const { user, posts } = setup();
+    await openPanel(user);
+    const earlier = screen.getByRole("button", { name: "Move selection earlier" });
+    const later = screen.getByRole("button", { name: "Move selection later" });
+    expect(earlier).toBeDisabled();
+    await user.click(later);
+    expect(screen.getByRole("slider", { name: "Crop start" })).toHaveAttribute(
+      "aria-valuenow",
+      "64",
+    );
+    expect(screen.getByText(/^Length 1:04.0/)).toHaveTextContent("Ends on a phrase line");
+    expect(later).toBeDisabled();
+    expect(earlier).toBeEnabled();
+    await user.click(screen.getByRole("button", { name: "Save as new map" }));
+    await waitFor(() => expect(posts[0]?.body).toEqual({ start_beat: 128, end_beat: 256 }));
+  });
+
+  test("a single allowed start leaves both arrows disabled", async () => {
+    const { user } = setup();
+    await openPanel(user);
+    await user.click(screen.getByRole("radio", { name: "2 min" }));
+    expect(screen.getByRole("button", { name: "Move selection earlier" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Move selection later" })).toBeDisabled();
   });
 
   test("Reset to suggestion appears after an edit and restores the suggestion", async () => {
@@ -136,17 +145,16 @@ describe("CropPanel", () => {
       status: 422,
       headers: { "Content-Type": "application/json" },
     });
-    const { user } = setup({ timeline: failing });
-    await user.click(screen.getByRole("button", { name: /Crop to 1 or 2 minutes/ }));
+    setup({ timeline: failing });
     expect(await screen.findByText("Could not build the crop timeline")).toBeInTheDocument();
     expect(screen.getByText(/no Standard difficulty has notes/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Crop to 1 or 2 minutes/ })).toBeEnabled();
+    expect(screen.getByRole("region", { name: "Crop to a highlight" })).toBeInTheDocument();
   });
 
   test("a finished job links to the new folder", async () => {
     const { user } = setup();
     await openPanel(user);
-    await user.click(screen.getByRole("button", { name: "Create cropped map" }));
+    await user.click(screen.getByRole("button", { name: "Save as new map" }));
     const link = await screen.findByRole("link", { name: "Open cropped map" });
     expect(link).toHaveAttribute("href", "/maps/id0000000099");
     expect(screen.getByText(/Written to Folder 1 \[1 min\]/)).toBeInTheDocument();
@@ -155,7 +163,7 @@ describe("CropPanel", () => {
   test("a failed job shows the reason", async () => {
     const { user } = setup({ jobStatus: "failed", jobError: "ffmpeg failed: bad input" });
     await openPanel(user);
-    await user.click(screen.getByRole("button", { name: "Create cropped map" }));
+    await user.click(screen.getByRole("button", { name: "Save as new map" }));
     expect(await screen.findByText("Crop failed")).toBeInTheDocument();
     expect(screen.getAllByText(/ffmpeg failed: bad input/).length).toBeGreaterThan(0);
   });
@@ -163,6 +171,6 @@ describe("CropPanel", () => {
   test("Create is disabled while a job runs on the map", async () => {
     const { user } = setup({}, true);
     await openPanel(user);
-    expect(screen.getByRole("button", { name: "Create cropped map" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Save as new map" })).toBeDisabled();
   });
 });

@@ -1,26 +1,28 @@
 import { formatEnvironment } from "../lib/environment";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { ApiError, applyMap, approveAll, scanMap, deleteMap } from "../api/client";
 import { Alert, SpecAlert } from "../components/Alert";
 import { useAnnounce } from "../components/Announcer";
 import { FixesSkeleton, MapHeadSkeleton } from "../components/Skeletons";
 import { errorToAlert } from "../lib/alerts";
-import { FixButton } from "../components/FixButton";
 import { FixOutcomes } from "../components/FixOutcomes";
 import { FixedCopyLink, FixedCopyOf } from "../components/FixedCopyLink";
-import { CropPanel, CropToggle } from "../components/CropPanel";
+import { CropPanel } from "../components/CropPanel";
+import { DeletePanel } from "../components/DeletePanel";
+import { FixToolbar } from "../components/FixToolbar";
+import { MapTabList, MapTabPanel } from "../components/MapTabs";
+import { parseTab, tabsFor, type MapTab } from "../lib/mapTabs";
+import { stopPreview } from "../lib/previewPlayer";
 import { useJobRunner } from "../api/jobs";
 import { keys, useLiveRows, useMap, useProposals } from "../api/queries";
-import { ActionButton } from "../components/Buttons";
 import { Cover, LevelChips, StatusChip, Tempo } from "../components/Chips";
-import { ConfirmDialog } from "../components/ConfirmDialog";
 import { Icon } from "../components/icons";
 import { JobOutcome } from "../components/JobOutcome";
 import { ProposalGroups } from "../components/ProposalGroups";
 import { useDocumentTitle, libraryHref } from "../lib/hooks";
-import { applyTip, TIPS } from "../lib/tips";
+import { TIPS } from "../lib/tips";
 import { isCleanCopy, mapName } from "../lib/status";
 import { NotFoundPage } from "./NotFoundPage";
 
@@ -32,7 +34,8 @@ export function MapPage() {
   const map = useMap(id);
   const proposals = useProposals(id);
   const [approveError, setApproveError] = useState<unknown>(null);
-  const [cropOpen, setCropOpen] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const [cropSeen, setCropSeen] = useState(false);
   const [openIds, setOpenIds] = useState<ReadonlySet<string>>(new Set());
   const toggleOne = (pid: string, on: boolean) =>
     setOpenIds((prev) => {
@@ -86,6 +89,21 @@ export function MapPage() {
   const clean = map.data ? isCleanCopy(map.data) : false;
   const canCrop = map.data != null && map.data.status !== "unreadable";
   const running = map.data?.job != null || scan.busy || apply.busy;
+  const available = tabsFor(canCrop);
+  const tab = parseTab(params.get("tab"), available);
+  if (tab === "crop" && !cropSeen) setCropSeen(true);
+  const select = (next: MapTab) => {
+    if (next !== "crop") stopPreview();
+    setParams(
+      (prev) => {
+        const out = new URLSearchParams(prev);
+        if (next === "status") out.delete("tab");
+        else out.set("tab", next);
+        return out;
+      },
+      { replace: true },
+    );
+  };
 
   return (
     <section className="page map-page">
@@ -119,131 +137,86 @@ export function MapPage() {
           </div>
         </div>
       )}
-      {map.data && <FixedCopyLink item={map.data} />}
-      {map.data && <FixedCopyOf item={map.data} />}
-      <FixOutcomes mapId={id} />
-      <JobOutcome
-        job={apply.job}
-        error={apply.error}
-        onRetry={() => void apply.run(() => applyMap(id)).then(refresh)}
-        onReview={() => document.getElementById("fixes-top")?.scrollIntoView?.()}
-      />
-      <JobOutcome
-        job={scan.job}
-        error={scan.error}
-        onRetry={() => void scan.run(() => scanMap(id)).then(refresh)}
-      />
-      {approveError !== null && (
-        <SpecAlert
-          spec={errorToAlert(approveError, "Approve all failed")}
-          onRetry={() => void approveEverything()}
-          onDismiss={() => setApproveError(null)}
+      {map.data && <MapTabList available={available} active={tab} onSelect={select} />}
+      <MapTabPanel tab="status" active={tab === "status"}>
+        {map.data && <FixedCopyLink item={map.data} />}
+        {map.data && <FixedCopyOf item={map.data} />}
+        <FixOutcomes mapId={id} />
+        <JobOutcome
+          job={apply.job}
+          error={apply.error}
+          onRetry={() => void apply.run(() => applyMap(id)).then(refresh)}
+          onReview={() => document.getElementById("fixes-top")?.scrollIntoView?.()}
         />
-      )}
-      {approved === 0 && pendingCount > 0 && (
-        <Alert
-          variant="info"
-          title="No fixes approved yet"
-          message="Approve the fixes you want, then choose Apply approved."
+        <JobOutcome
+          job={scan.job}
+          error={scan.error}
+          onRetry={() => void scan.run(() => scanMap(id)).then(refresh)}
         />
+        {approveError !== null && (
+          <SpecAlert
+            spec={errorToAlert(approveError, "Approve all failed")}
+            onRetry={() => void approveEverything()}
+            onDismiss={() => setApproveError(null)}
+          />
+        )}
+        {approved === 0 && pendingCount > 0 && (
+          <Alert
+            variant="info"
+            title="No fixes approved yet"
+            message="Approve the fixes you want, then choose Apply approved."
+          />
+        )}
+        <span id="fixes-top" />
+        {map.data && !clean && (
+          <FixToolbar
+            item={map.data}
+            name={name}
+            running={running}
+            pendingCount={pendingCount}
+            approved={approved}
+            proposalCount={list.length}
+            onScan={() => void scan.run(() => scanMap(id)).then(refresh)}
+            onApproveAll={() => void approveEverything()}
+            onApply={() => void apply.run(() => applyMap(id)).then(refresh)}
+            onExpandAll={() => setOpenIds(new Set(list.map((p) => String(p.id))))}
+            onCollapseAll={() => setOpenIds(new Set())}
+          />
+        )}
+        {proposals.isPending ? (
+          <FixesSkeleton />
+        ) : proposals.isError ? (
+          <SpecAlert
+            spec={errorToAlert(proposals.error, "Could not load proposals")}
+            onRetry={() => void proposals.refetch()}
+          />
+        ) : (
+          <ProposalGroups
+            proposals={list}
+            mapId={id}
+            open={openIds}
+            onToggle={toggleOne}
+            clean={clean}
+          />
+        )}
+      </MapTabPanel>
+      {canCrop && (
+        <MapTabPanel tab="crop" active={tab === "crop"}>
+          {cropSeen && (
+            <CropPanel key={id} mapId={id} busy={running} audioUrl={map.data?.audio_url} />
+          )}
+        </MapTabPanel>
       )}
-      <span id="fixes-top" />
       {map.data && (
-        <div className="map-toolbar" role="toolbar" aria-label="Fix actions">
-          {!clean && map.data && <FixButton item={map.data} text />}
-          {!clean && (
-            <ActionButton
-              icon="scan"
-              label="Scan"
-              tip={TIPS.scan}
-              text
-              disabled={running || map.data?.status === "unreadable"}
-              onClick={() => void scan.run(() => scanMap(id)).then(refresh)}
-            />
-          )}
-          {canCrop && <CropToggle open={cropOpen} onToggle={() => setCropOpen((o) => !o)} />}
-          {!clean && (
-            <ConfirmDialog
-              title="Approve all fixes"
-              description={`Approve every pending proposal for "${name}"?`}
-              confirmLabel="Approve all"
-              onConfirm={() => void approveEverything()}
-            >
-              <ActionButton
-                icon="approve-all"
-                label="Approve all"
-                tip={TIPS.approveAll}
-                text
-                disabled={pendingCount === 0}
-              />
-            </ConfirmDialog>
-          )}
-          <ConfirmDialog
-            title="Delete permanently?"
-            description={`"${map.data?.folder ?? name}" is removed from disk and cannot be undone.`}
-            confirmLabel="Delete"
-            danger
-            onConfirm={() => void remove()}
-          >
-            <ActionButton
-              icon="trash"
-              label="Delete"
-              tip={TIPS.delete}
-              text
-              variant="danger"
-              disabled={running || !map.data}
-            />
-          </ConfirmDialog>
-          {!clean && (
-            <ActionButton
-              icon="apply"
-              label="Apply approved"
-              tip={applyTip(name)}
-              text
-              variant="primary"
-              disabled={running || approved === 0}
-              onClick={() => void apply.run(() => applyMap(id)).then(refresh)}
-            />
-          )}
-          <span className="spacer" />
-          {!clean && (
-            <>
-              <ActionButton
-                icon="expand"
-                label="Expand all"
-                tip="Open every fix."
-                text
-                disabled={list.length === 0}
-                onClick={() => setOpenIds(new Set(list.map((p) => String(p.id))))}
-              />
-              <ActionButton
-                icon="collapse"
-                label="Collapse all"
-                tip="Close every fix."
-                text
-                disabled={list.length === 0}
-                onClick={() => setOpenIds(new Set())}
-              />
-            </>
-          )}
-        </div>
-      )}
-      {canCrop && <CropPanel key={id} mapId={id} busy={running} open={cropOpen} />}
-      {proposals.isPending ? (
-        <FixesSkeleton />
-      ) : proposals.isError ? (
-        <SpecAlert
-          spec={errorToAlert(proposals.error, "Could not load proposals")}
-          onRetry={() => void proposals.refetch()}
-        />
-      ) : (
-        <ProposalGroups
-          proposals={list}
-          mapId={id}
-          open={openIds}
-          onToggle={toggleOne}
-          clean={clean}
-        />
+        <MapTabPanel tab="delete" active={tab === "delete"}>
+          <DeletePanel
+            folder={map.data.folder ?? name}
+            disabled={running}
+            tip={TIPS.delete}
+            onDelete={() => void remove()}
+            onBack={() => select("status")}
+          />
+        </MapTabPanel>
       )}
     </section>
   );
