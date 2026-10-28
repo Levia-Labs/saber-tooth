@@ -55,7 +55,7 @@ def create_app(
     # The SDK's own Host check is off: same_origin below already covers /mcp, and honours
     # SABER_ALLOWED_HOSTS and trusted proxies, which the SDK list cannot.
     crop_api = CropApi(api)
-    mcp_app = build_mcp(api, bs).streamable_http_app(
+    mcp_app = build_mcp(api, bs, crop_api).streamable_http_app(
         json_response=True,
         stateless_http=True,
         transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False),

@@ -3,10 +3,12 @@
 from typing import Any
 
 from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
 
 from saber_tooth.api.beatsaver import BeatSaverApi
-from saber_tooth.api.core import Api
+from saber_tooth.api.core import Api, ApiError
+from saber_tooth.api.crop_api import CropApi
 
 MAX_MAPS = 200
 MAX_PROPOSALS = 200
@@ -17,7 +19,7 @@ JOB = ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=
 WEB = ToolAnnotations(readOnlyHint=False, destructiveHint=False, openWorldHint=True)
 
 
-def build_mcp(api: Api, bs: BeatSaverApi | None = None) -> MCPServer:
+def build_mcp(api: Api, bs: BeatSaverApi | None = None, crop: CropApi | None = None) -> MCPServer:
     mcp = MCPServer("saber-tooth", instructions="Review and fix Beat Saber custom levels.")
 
     @mcp.tool(annotations=READ)
@@ -77,6 +79,8 @@ def build_mcp(api: Api, bs: BeatSaverApi | None = None) -> MCPServer:
 
     if bs is not None:
         _beatsaver_tools(mcp, bs)
+    if crop is not None:
+        _crop_tools(mcp, crop)
     return mcp
 
 
@@ -112,3 +116,25 @@ def _beatsaver_tools(mcp: MCPServer, bs: BeatSaverApi) -> None:
         """Download BeatSaver maps (up to 100 keys) into CustomLevels as new folders; maps
         already installed are skipped. Returns a job id for job_status."""
         return bs.download({"ids": ids})
+
+
+def _crop_tools(mcp: MCPServer, crop: CropApi) -> None:
+    @mcp.tool(annotations=READ)
+    def map_timeline(map_id: str) -> dict[str, Any]:
+        """Notes per second per difficulty, the song sections with intensity and, for 1 and
+        2 minute crops, the suggested windows and every allowed start and end point. Times are
+        in beats and seconds; an analysed map gives better sections than `map_only` ones."""
+        try:
+            return crop.timeline(map_id)
+        except ApiError as exc:
+            raise ToolError(str(exc)) from None
+
+    @mcp.tool(annotations=JOB)
+    def crop_map(map_id: str, start_beat: float, end_beat: float) -> dict[str, Any]:
+        """Crop a map to a 1 or 2 minute highlight: writes a new '<map> [1 min]' or
+        '[2 min]' folder; the original is never changed. start_beat and end_beat must be a start
+        and an allowed end from map_timeline. Returns a job id for job_status."""
+        try:
+            return crop.crop(map_id, start_beat, end_beat)
+        except ApiError as exc:
+            raise ToolError(str(exc)) from None
