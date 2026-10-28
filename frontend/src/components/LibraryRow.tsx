@@ -7,7 +7,6 @@ import { mapName, reviewNeeds } from "../lib/status";
 import { ActionLink } from "./Buttons";
 import { Cover, LevelChips, StatusChip } from "./Chips";
 import { FixButton } from "./FixButton";
-import { FixedCopyLink } from "./FixedCopyLink";
 import { PreviewButton } from "./PreviewButton";
 
 export function LibraryRow({ item, index }: { item: MapItem; index: number }) {
@@ -41,7 +40,6 @@ export function LibraryRow({ item, index }: { item: MapItem; index: number }) {
           </span>
         </div>
         <LevelChips names={item.difficulties} className="levels-inline" />
-        <FixedCopyLink item={item} />
       </div>
       <div className="col-author" role="cell" title={item.mapper}>
         {item.mapper}

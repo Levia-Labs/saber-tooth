@@ -81,6 +81,11 @@ export function mapName(item: Pick<MapItem, "title" | "folder">): string {
   return item.title || item.folder;
 }
 
+/** A fixed copy that was scanned with zero findings: nothing left to fix, scan or apply. */
+export function isCleanCopy(item: Pick<MapItem, "status"> & Partial<Pick<MapItem, "original_id">>) {
+  return Boolean(item.original_id) && item.status === "ok";
+}
+
 /** What waits on the map page: fixes to review and approved fixes not yet applied. */
 export function reviewNeeds(item: Pick<MapItem, "pending" | "approved">): {
   count: number;

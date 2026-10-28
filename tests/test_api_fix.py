@@ -35,12 +35,14 @@ def test_fixed_copy_lists_as_scanned_and_links_from_original(tmp_path):
         jid = http.post(f"/api/maps/{MID}/fix").json()["job"]
         report = _wait(http, jid)["result"]
         items = {m["id"]: m for m in http.get("/api/maps").json()["items"]}
+        assert MID not in items  # original hidden once its copy exists
         copy = items[report["fixed_id"]]
         assert copy["status"] == "ok" and copy["errors"] == 0 and copy["warnings"] == 0
         assert copy["scanned_at"] and copy["pending"] == 0
-        assert items[MID]["fixed_copy_id"] == report["fixed_id"]
-        assert items[MID]["fixed_copy_folder"] == report["folder"]
-        assert copy["fixed_copy_id"] is None
+        original = http.get(f"/api/maps/{MID}").json()
+        assert original["fixed_copy_id"] == report["fixed_id"]
+        assert original["fixed_copy_folder"] == report["folder"]
+        assert copy["fixed_copy_id"] is None and copy["original_id"] == MID
 
 
 def test_fix_unreadable_map_is_409(client, svc):
@@ -52,3 +54,16 @@ def test_fix_unreadable_map_is_409(client, svc):
 def test_fix_unknown_map_is_404(client):
     resp = client.post(f"/api/maps/{'0' * 12}/fix")
     assert resp.status_code == 404 and "error" in resp.json()
+
+
+# Moved from test_api.py, which sits at the 300-line cap; the copy link fields are optional.
+def test_list_maps_has_ui_fields(client):
+    page = client.get("/api/maps").json()
+    rows = page["items"]
+    assert (page["total"], page["offset"], page["limit"]) == (1, 0, 40) and len(rows) == 1
+    links = {"fixed_copy_id", "fixed_copy_folder", "original_id", "original_folder"}
+    assert set(rows[0]) - links == {
+        "id", "folder", "title", "mapper", "environment", "parse_error", "errors", "warnings",
+        "scanned_at", "status", "cover_url", "difficulties", "approved", "pending",
+    } | {"bpm", "duration_s", "job", "audio_url", "preview_start"}  # fmt: skip
+    assert rows[0]["id"] == MID and rows[0]["folder"] == NAME

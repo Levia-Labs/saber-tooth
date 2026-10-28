@@ -246,6 +246,7 @@ def shape_item(row: dict, levels: Path, extras: Extras) -> dict:
     item.update(approved=row["approved"], pending=row["pending"])
     item["duration_s"] = row["duration_s"]
     item.update(fixed_copy_id=row["fixed_copy_id"], fixed_copy_folder=row["fixed_copy_folder"])
+    item.update(original_id=row["original_id"], original_folder=row["original_folder"])
     job = {"id": row["job_id"], "kind": row["job_kind"], "status": row["job_status"]}
     item["job"] = job if row["job_id"] else None
     item.update(cover_url=None, difficulties=[], audio_url=None, preview_start=None)

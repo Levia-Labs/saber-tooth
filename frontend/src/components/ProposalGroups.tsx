@@ -18,10 +18,13 @@ export function ProposalGroups({
   proposals,
   mapId,
   actions,
+  clean = false,
 }: {
   proposals: Proposal[];
   mapId: string;
   actions?: ReactNode;
+  /** A clean fixed copy: no expand/collapse and no "No fixes yet" prompt. */
+  clean?: boolean;
 }) {
   const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
   const setOne = (id: string, on: boolean) =>
@@ -37,25 +40,29 @@ export function ProposalGroups({
       <div className="map-toolbar" role="toolbar" aria-label="Fix actions">
         {actions}
         <span className="spacer" />
-        <ActionButton
-          icon="expand"
-          label="Expand all"
-          tip="Open every fix."
-          text
-          disabled={none}
-          onClick={() => setOpen(new Set(proposals.map((p) => String(p.id))))}
-        />
-        <ActionButton
-          icon="collapse"
-          label="Collapse all"
-          tip="Close every fix."
-          text
-          disabled={none}
-          onClick={() => setOpen(new Set())}
-        />
+        {!clean && (
+          <>
+            <ActionButton
+              icon="expand"
+              label="Expand all"
+              tip="Open every fix."
+              text
+              disabled={none}
+              onClick={() => setOpen(new Set(proposals.map((p) => String(p.id))))}
+            />
+            <ActionButton
+              icon="collapse"
+              label="Collapse all"
+              tip="Close every fix."
+              text
+              disabled={none}
+              onClick={() => setOpen(new Set())}
+            />
+          </>
+        )}
       </div>
       <div className="fixes-scroll">
-        {none && (
+        {none && !clean && (
           <Alert
             variant="info"
             title="No fixes yet"

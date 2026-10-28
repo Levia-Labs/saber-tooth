@@ -86,6 +86,42 @@ def test_incomplete_status_filter_facet_and_sort(tmp_path):
     assert [r["id"] for r in rows] == ["a", "c", "b", "d"]
 
 
+def _pair(tmp_path):
+    store = Store(tmp_path / "db.sqlite")
+    store.upsert_map("o", "Song", "Song", "m", "E1", None, levels=31)
+    store.upsert_map("c", "Song [saber-tooth]", "Song", "m", "E2", None, levels=31)
+    store.upsert_map("x", "Other", "Other", "m", "E1", None, levels=31)
+    return store
+
+
+def test_original_hidden_while_copy_exists(tmp_path):
+    store = _pair(tmp_path)
+    rows, total = store.query_maps()
+    assert {r["id"] for r in rows} == {"x", "c"} and total == 2
+    assert store.query_maps(status=("unscanned",))[1] == 2
+    assert store.query_maps(env=("E1",))[1] == 1
+    f = store.facets()
+    assert f["total"] == 2 and f["status"]["unscanned"] == 2
+    assert {e["name"]: e["count"] for e in f["environments"]} == {"E1": 1, "E2": 1}
+    assert store.get_map("o")["id"] == "o"  # still reachable by id
+
+
+def test_original_shown_again_after_copy_deleted(tmp_path):
+    store = _pair(tmp_path)
+    store.delete_map("c")
+    rows, total = store.query_maps()
+    assert total == 2 and {r["id"] for r in rows} == {"o", "x"}
+    assert store.facets()["total"] == 2
+
+
+def test_reverse_link_on_copy(tmp_path):
+    store = _pair(tmp_path)
+    copy, orig = store.get_map("c"), store.get_map("o")
+    assert (copy["original_id"], copy["original_folder"]) == ("o", "Song")
+    assert (orig["original_id"], orig["original_folder"]) == (None, None)
+    assert orig["fixed_copy_id"] == "c"
+
+
 def test_multi_status_env_and_q_fields(tmp_path):
     store = Store(tmp_path / "db.sqlite")
     store.upsert_map("a", "fold1", "Alpha", "Zed", "E1", None, levels=31)

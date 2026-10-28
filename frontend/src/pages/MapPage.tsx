@@ -9,7 +9,7 @@ import { FixesSkeleton, MapHeadSkeleton } from "../components/Skeletons";
 import { errorToAlert } from "../lib/alerts";
 import { FixButton } from "../components/FixButton";
 import { FixOutcomes } from "../components/FixOutcomes";
-import { FixedCopyLink } from "../components/FixedCopyLink";
+import { FixedCopyLink, FixedCopyOf } from "../components/FixedCopyLink";
 import { useJobRunner } from "../api/jobs";
 import { keys, useLiveRows, useMap, useProposals } from "../api/queries";
 import { ActionButton } from "../components/Buttons";
@@ -20,7 +20,7 @@ import { JobOutcome } from "../components/JobOutcome";
 import { ProposalGroups } from "../components/ProposalGroups";
 import { useDocumentTitle, libraryHref } from "../lib/hooks";
 import { applyTip, TIPS } from "../lib/tips";
-import { mapName } from "../lib/status";
+import { isCleanCopy, mapName } from "../lib/status";
 import { NotFoundPage } from "./NotFoundPage";
 
 export function MapPage() {
@@ -73,6 +73,7 @@ export function MapPage() {
     }
   };
   const approved = list.filter((p) => p.status === "approved").length;
+  const clean = map.data ? isCleanCopy(map.data) : false;
   const running = map.data?.job != null || scan.busy || apply.busy;
 
   return (
@@ -107,7 +108,8 @@ export function MapPage() {
           </div>
         </div>
       )}
-      {map.data && <FixedCopyLink item={map.data} banner />}
+      {map.data && <FixedCopyLink item={map.data} />}
+      {map.data && <FixedCopyOf item={map.data} />}
       <FixOutcomes mapId={id} />
       <JobOutcome
         job={apply.job}
@@ -148,29 +150,33 @@ export function MapPage() {
           mapId={id}
           actions={
             <>
-              {map.data && <FixButton item={map.data} text />}
-              <ActionButton
-                icon="scan"
-                label="Scan"
-                tip={TIPS.scan}
-                text
-                disabled={running || map.data?.status === "unreadable"}
-                onClick={() => void scan.run(() => scanMap(id)).then(refresh)}
-              />
-              <ConfirmDialog
-                title="Approve all fixes"
-                description={`Approve every pending proposal for "${name}"?`}
-                confirmLabel="Approve all"
-                onConfirm={() => void approveEverything()}
-              >
+              {!clean && map.data && <FixButton item={map.data} text />}
+              {!clean && (
                 <ActionButton
-                  icon="approve-all"
-                  label="Approve all"
-                  tip={TIPS.approveAll}
+                  icon="scan"
+                  label="Scan"
+                  tip={TIPS.scan}
                   text
-                  disabled={pendingCount === 0}
+                  disabled={running || map.data?.status === "unreadable"}
+                  onClick={() => void scan.run(() => scanMap(id)).then(refresh)}
                 />
-              </ConfirmDialog>
+              )}
+              {!clean && (
+                <ConfirmDialog
+                  title="Approve all fixes"
+                  description={`Approve every pending proposal for "${name}"?`}
+                  confirmLabel="Approve all"
+                  onConfirm={() => void approveEverything()}
+                >
+                  <ActionButton
+                    icon="approve-all"
+                    label="Approve all"
+                    tip={TIPS.approveAll}
+                    text
+                    disabled={pendingCount === 0}
+                  />
+                </ConfirmDialog>
+              )}
               <ConfirmDialog
                 title="Delete permanently?"
                 description={`"${map.data?.folder ?? name}" is removed from disk and cannot be undone.`}
@@ -187,17 +193,20 @@ export function MapPage() {
                   disabled={running || !map.data}
                 />
               </ConfirmDialog>
-              <ActionButton
-                icon="apply"
-                label="Apply approved"
-                tip={applyTip(name)}
-                text
-                variant="primary"
-                disabled={running || approved === 0}
-                onClick={() => void apply.run(() => applyMap(id)).then(refresh)}
-              />
+              {!clean && (
+                <ActionButton
+                  icon="apply"
+                  label="Apply approved"
+                  tip={applyTip(name)}
+                  text
+                  variant="primary"
+                  disabled={running || approved === 0}
+                  onClick={() => void apply.run(() => applyMap(id)).then(refresh)}
+                />
+              )}
             </>
           }
+          clean={clean}
         />
       )}
     </section>

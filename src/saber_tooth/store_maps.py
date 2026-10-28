@@ -8,6 +8,7 @@ STATUS_VALUES = (
     "unreadable", "error", "warn", "scanning", "applying", "fixing", "queued", "incomplete",
     "unscanned", "ok",
 )  # fmt: skip
+FIXED_COPY_SUFFIX = " [saber-tooth]"  # folder suffix Fix gives the copy it writes
 STATUS_FILTERS = {"all", *STATUS_VALUES}
 MAX_ENVS = 50
 MAX_MAPPERS = 50
@@ -65,8 +66,12 @@ SELECT m.id, m.folder, m.title, m.mapper, m.environment, m.parse_error, s.scanne
   (SELECT count(*) FROM proposals p WHERE p.map_id = m.id
    AND p.status IN ('approved', 'applying')) AS approved,
   (SELECT count(*) FROM proposals p WHERE p.map_id = m.id AND p.status = 'pending') AS pending,
-  (SELECT f.id FROM maps f WHERE f.folder = m.folder || ' [saber-tooth]') AS fixed_copy_id,
-  (SELECT f.folder FROM maps f WHERE f.folder = m.folder || ' [saber-tooth]') AS fixed_copy_folder,
+  (SELECT f.id FROM maps f WHERE f.folder = m.folder || '{FIXED_COPY_SUFFIX}') AS fixed_copy_id,
+  (SELECT f.folder FROM maps f
+   WHERE f.folder = m.folder || '{FIXED_COPY_SUFFIX}') AS fixed_copy_folder,
+  (SELECT o.id FROM maps o WHERE m.folder = o.folder || '{FIXED_COPY_SUFFIX}') AS original_id,
+  (SELECT o.folder FROM maps o
+   WHERE m.folder = o.folder || '{FIXED_COPY_SUFFIX}') AS original_folder,
   j.id AS job_id, j.kind AS job_kind, j.status AS job_status,
   CASE WHEN m.parse_error IS NOT NULL AND m.parse_error != '' THEN 'unreadable'
        WHEN j.status = 'running' AND j.kind = 'scan' THEN 'scanning'
@@ -84,7 +89,10 @@ LEFT JOIN jobs j ON j.id = (
   SELECT a.id FROM jobs a WHERE a.map_id = m.id AND a.kind IN ('scan', 'apply', 'fix')
   AND a.status IN ('queued', 'running')
   ORDER BY (a.status = 'running') DESC, a.created_at DESC, a.id LIMIT 1)
-"""  # noqa: S608 - interpolates only the int constant ALL_LEVELS
+"""  # noqa: S608 - interpolates only the constants ALL_LEVELS, FIXED_COPY_SUFFIX
+
+# Lists and facets hide an original once its fixed copy exists; by-id lookups still find it.
+_VISIBLE = "fixed_copy_id IS NULL"
 
 _SEARCH = {
     "all": "instr(lower(title||char(10)||mapper||char(10)||environment||char(10)||folder), ?)>0",
@@ -104,7 +112,7 @@ _LEVEL_WHERE = {"any": "(levels & ?) != 0", "all": "(levels & ?) = ?"}
 
 def _where(shape: tuple) -> str:
     n_status, n_env, n_mapper, level_mode, search, ranges = shape
-    parts = ["1=1"]
+    parts = [_VISIBLE]
     if n_status:
         parts.append(f"status IN ({_marks(n_status)})")
     if n_env:
@@ -138,7 +146,10 @@ def _page_sql(shape: tuple, key: str, direction: str) -> str:
 
 
 _ONE_SQL = f"SELECT * FROM ({_MAP_VIEW}) WHERE id=?"  # noqa: S608
-_FACET_SQL = f"SELECT status, environment, mapper, levels, bpm, duration_s FROM ({_MAP_VIEW})"  # noqa: S608
+_FACET_SQL = (
+    f"SELECT status, environment, mapper, levels, bpm, duration_s FROM ({_MAP_VIEW})"  # noqa: S608
+    f" WHERE {_VISIBLE}"
+)
 
 
 def _ranked(counts: dict[str, int]) -> list[dict]:

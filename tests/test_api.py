@@ -40,17 +40,6 @@ def test_import_does_not_touch_levels():
     assert "app" not in vars(api_module)
 
 
-def test_list_maps_has_ui_fields(client):
-    page = client.get("/api/maps").json()
-    rows = page["items"]
-    assert (page["total"], page["offset"], page["limit"]) == (1, 0, 40) and len(rows) == 1
-    assert set(rows[0]) - {"fixed_copy_id", "fixed_copy_folder"} == {
-        "id", "folder", "title", "mapper", "environment", "parse_error", "errors", "warnings",
-        "scanned_at", "status", "cover_url", "difficulties", "approved", "pending",
-    } | {"bpm", "duration_s", "job", "audio_url", "preview_start"}  # fmt: skip
-    assert rows[0]["id"] == MID and rows[0]["folder"] == NAME
-
-
 def test_scan_job_and_proposals(client):
     started = client.post(f"/api/maps/{MID}/scan")
     assert started.status_code == 200

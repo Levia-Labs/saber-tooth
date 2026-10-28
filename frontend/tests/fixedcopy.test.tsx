@@ -1,50 +1,113 @@
 import { screen, within } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
+import { isCleanCopy } from "../src/lib/status";
 import { FACETS, item, mockFetch, renderApp } from "./helpers";
 
-const items = [
-  item(1, {
-    status: "error",
-    fixed_copy_id: "id0000000099",
-    fixed_copy_folder: "Folder 1 [saber-tooth]",
-  }),
-  item(2, { status: "ok" }),
-];
-
-describe("fixed copy link", () => {
-  test("original row links to its fixed copy, other rows show none", async () => {
-    mockFetch((url) => {
-      if (url.pathname === "/api/maps/facets") return FACETS;
-      return { items, total: items.length, offset: 0, limit: 40 };
-    });
-    renderApp("/");
-    const title = await screen.findByRole("link", { name: "Song 1" });
-    const row = within(title.closest("[role=row]") as HTMLElement);
-    expect(row.getByRole("link", { name: "Folder 1 [saber-tooth]" })).toHaveAttribute(
-      "href",
-      "/maps/id0000000099",
-    );
-    const other = within(
-      screen.getByRole("link", { name: "Song 2" }).closest("[role=row]") as HTMLElement,
-    );
-    expect(other.queryByText(/Fixed copy:/)).toBeNull();
+const original = item(1, {
+  status: "error",
+  fixed_copy_id: "id0000000099",
+  fixed_copy_folder: "Folder 1 [saber-tooth]",
+});
+const copy = (status: "ok" | "error" | "unscanned") =>
+  item(99, {
+    folder: "Folder 1 [saber-tooth]",
+    status,
+    errors: status === "error" ? 2 : 0,
+    original_id: "id0000000001",
+    original_folder: "Folder 1",
   });
 
-  test("map page shows the fixed copy as a banner alert with a link to it", async () => {
-    mockFetch((url) => {
-      if (url.pathname === "/api/maps/facets") return FACETS;
-      if (url.pathname === "/api/maps/id0000000001") return items[0];
-      if (url.pathname.endsWith("/proposals")) return [];
-      return { items: [], total: 0, offset: 0, limit: 40 };
-    });
+function serve(map: ReturnType<typeof item>, list = [map]) {
+  mockFetch((url) => {
+    if (url.pathname === "/api/maps/facets") return FACETS;
+    if (url.pathname === `/api/maps/${map.id}`) return map;
+    if (url.pathname.endsWith("/proposals")) return [];
+    return { items: list, total: list.length, offset: 0, limit: 40 };
+  });
+}
+
+describe("isCleanCopy", () => {
+  test("needs original_id and an ok status", () => {
+    expect(isCleanCopy({ status: "ok", original_id: "a" })).toBe(true);
+    expect(isCleanCopy({ status: "ok", original_id: null })).toBe(false);
+    expect(isCleanCopy({ status: "ok" })).toBe(false);
+    expect(isCleanCopy({ status: "error", original_id: "a" })).toBe(false);
+    expect(isCleanCopy({ status: "unscanned", original_id: "a" })).toBe(false);
+  });
+});
+
+describe("fixed copy links", () => {
+  test("library rows have no inline fixed-copy link", async () => {
+    serve(original, [original]);
+    renderApp("/");
+    await screen.findByRole("link", { name: "Song 1" });
+    expect(screen.queryByText(/Fixed copy:/)).toBeNull();
+    expect(screen.queryByRole("link", { name: "Folder 1 [saber-tooth]" })).toBeNull();
+  });
+
+  test("original page shows the fixed copy banner with a link to it", async () => {
+    serve(original);
     renderApp("/maps/id0000000001");
-    const title = await screen.findByText("Fixed copy ready");
-    const banner = title.closest(".alert") as HTMLElement;
+    const banner = (await screen.findByText("Fixed copy ready")).closest(".alert") as HTMLElement;
     expect(banner).toHaveClass("alert-success");
     expect(within(banner).getByRole("link", { name: "Folder 1 [saber-tooth]" })).toHaveAttribute(
       "href",
       "/maps/id0000000099",
     );
-    expect(screen.queryByText(/Fixed copy:/)).toBeNull();
+  });
+
+  test("copy page shows a Fixed copy of banner linking to the original", async () => {
+    serve(copy("error"));
+    renderApp("/maps/id0000000099");
+    const banner = (await screen.findByText("Fixed copy of")).closest(".alert") as HTMLElement;
+    expect(banner).toHaveClass("alert-info");
+    expect(within(banner).getByRole("link", { name: "Folder 1" })).toHaveAttribute(
+      "href",
+      "/maps/id0000000001",
+    );
+  });
+});
+
+describe("clean copy page", () => {
+  test("hides fix controls and the empty alert, keeps Delete and the banner", async () => {
+    serve(copy("ok"));
+    renderApp("/maps/id0000000099");
+    await screen.findByText("Fixed copy of");
+    await screen.findByRole("button", { name: /^Delete/ });
+    for (const name of [
+      /^Fix/,
+      /^Scan/,
+      /Approve all/,
+      /Apply approved/,
+      /Expand all/,
+      /Collapse all/,
+    ]) {
+      expect(screen.queryByRole("button", { name })).toBeNull();
+    }
+    expect(screen.queryByText("No fixes yet")).toBeNull();
+  });
+
+  test("a copy with findings keeps every control", async () => {
+    serve(copy("error"));
+    renderApp("/maps/id0000000099");
+    await screen.findByText("Fixed copy of");
+    for (const name of [
+      /Scan/,
+      /Approve all/,
+      /Apply approved/,
+      /Expand all/,
+      /Collapse all/,
+      /Delete/,
+    ]) {
+      expect(await screen.findByRole("button", { name })).toBeInTheDocument();
+    }
+    expect(screen.getByText("No fixes yet")).toBeInTheDocument();
+  });
+
+  test("an unscanned copy keeps every control", async () => {
+    serve(copy("unscanned"));
+    renderApp("/maps/id0000000099");
+    expect(await screen.findByRole("button", { name: /Apply approved/ })).toBeInTheDocument();
+    expect(screen.getByText("No fixes yet")).toBeInTheDocument();
   });
 });
