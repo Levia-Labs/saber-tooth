@@ -126,3 +126,13 @@ later phase with its own spec.
 2. Map review and New map in the VR layout.
 3. Free-text search in the VR layout.
 4. Authentication for LAN access.
+
+## Amendments
+
+Amended 2026-10-28, after the implementation. Where this section and the text above differ, this section describes what shipped.
+
+1. The headset suggestion is a sticky toast in the bottom stack titled "Headset in use: switch to VR layout?" with Switch and Not now actions, not a banner. Closing it or pressing Not now hides it for the session.
+2. The Crop step buttons work under free cutting: Previous section and Next section move the whole window to the previous or next section start and keep its length, End 1 s earlier and End 1 s later move the end by one second. At the edges the window stays put.
+3. Mode values are case-insensitive: `?mode=VR`, a `/VR` path and a stored `VR` are honoured. Unknown values and lookalike paths such as `/vrx` decide nothing.
+4. A host not listed in `SABER_ALLOWED_HOSTS` is refused with 403 `{"error": "host not allowed"}` by the existing host check, not 400.
+5. The helper also takes `--bind` (default `127.0.0.1`), answers 405 to every method except GET, and the probes live in `src/saber_tooth/vr`. User-facing details are in [vr.md](../../vr.md).

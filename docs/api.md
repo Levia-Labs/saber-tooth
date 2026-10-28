@@ -72,6 +72,12 @@ Search and download from BeatSaver. The server calls only `https://api.beatsaver
 
 BeatSaver failures answer 404 (not found), 429 with `{"error", "retry_after"}` and a `Retry-After` header (rate limited and nothing found yet), or 502.
 
+## VR status
+
+1. `GET /api/vr/status` answers `{"os": str, "runtime": str | null, "runtimes": [str], "xr_runtime": str | null, "worn": bool | null, "source": "agent" | "local" | "none"}`. `runtime` is the first of `runtimes` in the order SteamVR, Oculus, Virtual Desktop, Monado, WiVRn, ALVR.
+2. In a container the service asks the host helper at `VR_AGENT_URL` (default `http://host.docker.internal:8101/status`, started with `task st:vr-agent`); run natively it probes in-process. The call has a 300 ms timeout and the answer is cached for 2 s. Any failure still answers 200 with `runtime: null`, `runtimes: []`, `worn: null` and `source: "none"`.
+3. The route is not an MCP tool. `GET /vr`, `GET /vr/maps/{id}` and `GET /vr/beatsaver` answer with `index.html` like the other pages. See [VR mode](vr.md).
+
 ## URL rule
 
 `POST /api/generate` accepts only `http` and `https` URLs whose host is exactly `youtube.com`, `www.youtube.com`, `m.youtube.com`, `music.youtube.com` or `youtu.be`. URLs with credentials, a malformed port, spaces, backslashes or non-printable characters are refused. See [ADR 0008](adr/0008-youtube-only-url-intake.md).

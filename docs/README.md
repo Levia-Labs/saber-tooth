@@ -10,5 +10,6 @@ Project documentation. Start with the architecture page.
 6. [workflow.md](workflow.md): parallel work lanes, commits, review diffs, gates and smoke checks.
 7. [superpowers/](superpowers/README.md): the design spec and implementation plan for v1.
 8. [dockerhub.md](dockerhub.md): the Docker Hub page of `levialabs/sabertooth`, published by `task st:hub:publish`.
+9. [vr.md](vr.md): VR mode: opening it, the host helper, LAN access with its warning and the manual headset checklist.
 
 Code is the source of truth. When a doc disagrees with the code, fix the doc. The root [README](../README.md) covers install and usage.
