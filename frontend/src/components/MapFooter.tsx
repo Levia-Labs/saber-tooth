@@ -6,7 +6,9 @@ import { Icon } from "./icons";
 /** Previous and next map of the library's current list with the position, at the page bottom. */
 export function MapFooter({ id }: { id: string }) {
   const neighbors = useNeighbors(id, storedLibrarySearch());
-  if (!neighbors.data?.prev || !neighbors.data.next) return null;
+  if (!neighbors.data?.prev || !neighbors.data.next) {
+    return <div className="map-footer map-footer-empty" aria-hidden="true" />;
+  }
   const { prev, next, index, total } = neighbors.data;
   const to = (target: string) => `/maps/${encodeURIComponent(target)}`;
   return (

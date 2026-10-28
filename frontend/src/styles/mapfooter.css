@@ -1,0 +1,48 @@
+/* The previous/next footer is pinned to the bottom of the map page and never changes size. */
+:root {
+  --map-footer-h: 3.25rem;
+}
+[data-ui="vr"] {
+  --map-footer-h: calc(var(--vr-target) + 1rem);
+}
+.map-page > .map-footer {
+  flex: none;
+  height: var(--map-footer-h);
+  margin: 0;
+  padding: 0;
+}
+.map-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0 1rem;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-top: 1px solid var(--line);
+}
+.map-footer .back {
+  margin: 0;
+  min-width: 0;
+}
+.map-footer-next {
+  justify-self: end;
+}
+.map-footer-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.map-footer-count {
+  min-width: 5rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+/* Toasts stack above the footer, never over it. */
+:root:has(.map-page) .toast-stack {
+  bottom: calc(var(--map-footer-h) + 0.75rem + env(safe-area-inset-bottom, 0px));
+}
+[data-ui="vr"]:has(.map-page) .toast-stack {
+  bottom: calc(var(--map-footer-h) + var(--vr-gap) + env(safe-area-inset-bottom, 0px));
+}

@@ -139,92 +139,94 @@ export function MapPage() {
         </div>
       )}
       {map.data && <MapTabList available={available} active={tab} onSelect={select} />}
-      <MapTabPanel tab="status" active={tab === "status"}>
-        {map.data && <FixedCopyLink item={map.data} />}
-        {map.data && <FixedCopyOf item={map.data} />}
-        <FixOutcomes mapId={id} />
-        <JobOutcome
-          job={apply.job}
-          error={apply.error}
-          onRetry={() => void apply.run(() => applyMap(id)).then(refresh)}
-          onReview={() => document.getElementById("fixes-top")?.scrollIntoView?.()}
-        />
-        <JobOutcome
-          job={scan.job}
-          error={scan.error}
-          onRetry={() => void scan.run(() => scanMap(id)).then(refresh)}
-        />
-        {approveError !== null && (
-          <SpecAlert
-            spec={errorToAlert(approveError, "Approve all failed")}
-            onRetry={() => void approveEverything()}
-            onDismiss={() => setApproveError(null)}
+      <div className="map-scroll">
+        <MapTabPanel tab="status" active={tab === "status"}>
+          {map.data && <FixedCopyLink item={map.data} />}
+          {map.data && <FixedCopyOf item={map.data} />}
+          <FixOutcomes mapId={id} />
+          <JobOutcome
+            job={apply.job}
+            error={apply.error}
+            onRetry={() => void apply.run(() => applyMap(id)).then(refresh)}
+            onReview={() => document.getElementById("fixes-top")?.scrollIntoView?.()}
           />
-        )}
-        {approved === 0 && pendingCount > 0 && (
-          <Alert
-            variant="info"
-            title="No fixes approved yet"
-            message="Approve the fixes you want, then choose Apply approved."
+          <JobOutcome
+            job={scan.job}
+            error={scan.error}
+            onRetry={() => void scan.run(() => scanMap(id)).then(refresh)}
           />
-        )}
-        <span id="fixes-top" />
-        {map.data && !clean && (
-          <FixToolbar
-            item={map.data}
-            name={name}
-            running={running}
-            pendingCount={pendingCount}
-            approved={approved}
-            proposalCount={list.length}
-            onScan={() => void scan.run(() => scanMap(id)).then(refresh)}
-            onApproveAll={() => void approveEverything()}
-            onApply={() => void apply.run(() => applyMap(id)).then(refresh)}
-            onExpandAll={() => setOpenIds(new Set(list.map((p) => String(p.id))))}
-            onCollapseAll={() => setOpenIds(new Set())}
-          />
-        )}
-        {proposals.isPending ? (
-          <FixesSkeleton />
-        ) : proposals.isError ? (
-          <SpecAlert
-            spec={errorToAlert(proposals.error, "Could not load proposals")}
-            onRetry={() => void proposals.refetch()}
-          />
-        ) : (
-          <ProposalGroups
-            proposals={list}
-            mapId={id}
-            open={openIds}
-            onToggle={toggleOne}
-            clean={clean}
-          />
-        )}
-      </MapTabPanel>
-      {canCrop && (
-        <MapTabPanel tab="crop" active={tab === "crop"}>
-          {cropSeen && (
-            <CropPanel
-              key={id}
+          {approveError !== null && (
+            <SpecAlert
+              spec={errorToAlert(approveError, "Approve all failed")}
+              onRetry={() => void approveEverything()}
+              onDismiss={() => setApproveError(null)}
+            />
+          )}
+          {approved === 0 && pendingCount > 0 && (
+            <Alert
+              variant="info"
+              title="No fixes approved yet"
+              message="Approve the fixes you want, then choose Apply approved."
+            />
+          )}
+          <span id="fixes-top" />
+          {map.data && !clean && (
+            <FixToolbar
+              item={map.data}
+              name={name}
+              running={running}
+              pendingCount={pendingCount}
+              approved={approved}
+              proposalCount={list.length}
+              onScan={() => void scan.run(() => scanMap(id)).then(refresh)}
+              onApproveAll={() => void approveEverything()}
+              onApply={() => void apply.run(() => applyMap(id)).then(refresh)}
+              onExpandAll={() => setOpenIds(new Set(list.map((p) => String(p.id))))}
+              onCollapseAll={() => setOpenIds(new Set())}
+            />
+          )}
+          {proposals.isPending ? (
+            <FixesSkeleton />
+          ) : proposals.isError ? (
+            <SpecAlert
+              spec={errorToAlert(proposals.error, "Could not load proposals")}
+              onRetry={() => void proposals.refetch()}
+            />
+          ) : (
+            <ProposalGroups
+              proposals={list}
               mapId={id}
-              folder={map.data?.folder ?? name}
-              busy={running}
-              audioUrl={map.data?.audio_url}
+              open={openIds}
+              onToggle={toggleOne}
+              clean={clean}
             />
           )}
         </MapTabPanel>
-      )}
-      {map.data && (
-        <MapTabPanel tab="delete" active={tab === "delete"}>
-          <DeletePanel
-            folder={map.data.folder ?? name}
-            disabled={running}
-            tip={TIPS.delete}
-            onDelete={() => void remove()}
-            onBack={() => select("status")}
-          />
-        </MapTabPanel>
-      )}
+        {canCrop && (
+          <MapTabPanel tab="crop" active={tab === "crop"}>
+            {cropSeen && (
+              <CropPanel
+                key={id}
+                mapId={id}
+                folder={map.data?.folder ?? name}
+                busy={running}
+                audioUrl={map.data?.audio_url}
+              />
+            )}
+          </MapTabPanel>
+        )}
+        {map.data && (
+          <MapTabPanel tab="delete" active={tab === "delete"}>
+            <DeletePanel
+              folder={map.data.folder ?? name}
+              disabled={running}
+              tip={TIPS.delete}
+              onDelete={() => void remove()}
+              onBack={() => select("status")}
+            />
+          </MapTabPanel>
+        )}
+      </div>
       <MapFooter id={id} />
     </section>
   );

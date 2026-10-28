@@ -99,19 +99,23 @@ describe("map page footer", () => {
     expect(sent[1]?.search).toBe("");
   });
 
-  test("a failed request hides the footer", async () => {
+  test("a failed request keeps an empty footer of the same size", async () => {
     const { calls } = api(() => fail(500));
     renderApp("/maps/id0000000002");
     await waitFor(() => expect(neighborCalls(calls)).toHaveLength(1));
     await screen.findByRole("heading", { level: 1 });
-    expect(document.querySelector(".map-footer")).toBeNull();
+    const footer = document.querySelector(".map-footer") as HTMLElement;
+    expect(footer).toHaveClass("map-footer-empty");
+    expect(footer.querySelector("a")).toBeNull();
   });
 
-  test("a 404 without filters hides the footer", async () => {
+  test("a 404 without filters keeps an empty footer of the same size", async () => {
     const { calls } = api(() => fail(404));
     renderApp("/maps/id0000000002");
     await waitFor(() => expect(neighborCalls(calls)).toHaveLength(1));
     await screen.findByRole("heading", { level: 1 });
-    expect(document.querySelector(".map-footer")).toBeNull();
+    const footer = document.querySelector(".map-footer") as HTMLElement;
+    expect(footer).toHaveClass("map-footer-empty");
+    expect(footer.querySelector("a")).toBeNull();
   });
 });

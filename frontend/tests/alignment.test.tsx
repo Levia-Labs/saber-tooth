@@ -43,6 +43,8 @@ describe("map page layout", () => {
     expect(rule(page, ".map-page")).toMatch(/overflow:\s*hidden/);
     expect(rule(page, ".map-page > .fixes-scroll")).toMatch(/min-height:\s*0/);
     expect(rule(page, ".map-page > .fixes-scroll")).toMatch(/overflow:\s*auto/);
+    expect(rule(page, ".map-page > .map-scroll")).toMatch(/min-height:\s*0/);
+    expect(rule(page, ".map-page > .map-scroll")).toMatch(/overflow:\s*auto/);
     expect(rule(page, ".map-toolbar")).toMatch(/flex-wrap:\s*wrap/);
     expect(rule(css("base.css"), "html,\nbody,\n#root")).toMatch(/overflow:\s*hidden/);
   });
