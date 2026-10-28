@@ -8,5 +8,6 @@ Crops a map to a 1 or 2 minute highlight on song-part boundaries. Plan: [crop-hi
 4. `sections.py`: `Section`, `SectionMap` and `find_sections`, song sections from change scores over map and audio terms.
 5. `window.py`: `TARGETS`, `band`, `build_plan` and the `CropPlan`, `StartPoint`, `EndPoint` and `Window` types, the suggested stretch and every allowed start and end.
 6. `shift.py`: `Cropped`, `crop_difficulty` and `crop_beatmap`, the pure shift, trim, lead-in and light fade of a map to a beat window.
+7. `info.py`: `crop_info`, the song name suffix and in-range preview of a cropped map.
 
-Tests: `task st:test -- tests/test_crop_phrases.py tests/test_crop_nps.py tests/test_crop_sections.py tests/test_crop_window.py tests/test_crop_shift.py`.
+Tests: `task st:test -- tests/test_crop_phrases.py tests/test_crop_nps.py tests/test_crop_sections.py tests/test_crop_window.py tests/test_crop_shift.py tests/test_crop_info.py`.
