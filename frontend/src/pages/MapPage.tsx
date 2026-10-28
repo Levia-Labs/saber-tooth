@@ -19,6 +19,7 @@ import { stopPreview } from "../lib/previewPlayer";
 import { useJobRunner } from "../api/jobs";
 import { keys, useLiveRows, useMap, useProposals } from "../api/queries";
 import { Cover, LevelChips, StatusChip, Tempo } from "../components/Chips";
+import { PreviewButton } from "../components/PreviewButton";
 import { Icon } from "../components/icons";
 import { JobOutcome } from "../components/JobOutcome";
 import { ProposalGroups } from "../components/ProposalGroups";
@@ -136,6 +137,7 @@ export function MapPage() {
               <StatusChip item={map.data} />
               <LevelChips names={map.data.difficulties} />
               <Tempo item={map.data} />
+              <PreviewButton src={map.data.audio_url} start={map.data.preview_start} title={name} />
             </div>
           </div>
         </div>
