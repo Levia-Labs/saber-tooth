@@ -39,6 +39,42 @@ describe("announcements", () => {
     expect(list.map((b) => b.key)).toEqual(["job 2", "job 3", "job 4", "job 5"]);
   });
 
+  test("cap drops the oldest non-danger toast before an older sticky danger one", () => {
+    let list = addBanner([], { variant: "danger", title: "bad" }, 0);
+    for (let i = 0; i < MAX_BANNERS + 1; i++) list = add(list, `job ${i}`);
+    expect(list.map((b) => b.key)).toEqual(["bad", "job 2", "job 3", "job 4"]);
+  });
+
+  test("cap drops sticky success before danger, and danger only when all are danger", () => {
+    let list = addBanner([], { variant: "danger", title: "d0" }, 0);
+    list = addBanner(list, { variant: "success", title: "s", sticky: true }, 0);
+    list = addBanner(list, { variant: "warning", title: "w" }, 0);
+    list = addBanner(list, { variant: "danger", title: "d1" }, 0);
+    list = addBanner(list, { variant: "danger", title: "d2" }, 0);
+    expect(list.map((b) => b.key)).toEqual(["d0", "w", "d1", "d2"]);
+    list = addBanner(list, { variant: "danger", title: "d3" }, 0);
+    list = addBanner(list, { variant: "danger", title: "d4" }, 0);
+    expect(list.map((b) => b.key)).toEqual(["d1", "d2", "d3", "d4"]);
+  });
+
+  test("property: the cap holds and fewer dangers than the cap are never dropped", () => {
+    const variant = fc.constantFrom("progress", "success", "info", "warning", "danger" as const);
+    fc.assert(
+      fc.property(fc.array(fc.tuple(fc.nat(30), variant), { maxLength: 40 }), (steps) => {
+        let list: Banner[] = [];
+        for (const [n, v] of steps) {
+          const key = `k${n}`;
+          const kept = list.filter((b) => b.variant === "danger" && b.key !== key);
+          list = addBanner(list, { key, variant: v, title: key }, 0);
+          expect(list.length).toBeLessThanOrEqual(MAX_BANNERS);
+          if (kept.length < MAX_BANNERS) {
+            for (const d of kept) expect(list.some((b) => b.key === d.key)).toBe(true);
+          }
+        }
+      }),
+    );
+  });
+
   test("ttl is 5 s for success and info only", () => {
     expect(ttl("success")).toBe(AUTO_DISMISS_MS);
     expect(ttl("info")).toBe(AUTO_DISMISS_MS);

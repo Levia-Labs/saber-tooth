@@ -68,8 +68,8 @@ export interface JobRunner {
   run: (start: () => Promise<Started>) => Promise<Job | null>;
 }
 
-/** Runs one job at a time, announcing progress with the given label. */
-export function useJobRunner(label: string): JobRunner {
+/** Runs one job at a time, announcing progress with the given label; `key` (default the label) names its toast, so give per-map jobs a key with the map id. */
+export function useJobRunner(label: string, key: string = label): JobRunner {
   const announce = useAnnounce();
   const [state, setState] = useState<RunState>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -88,28 +88,28 @@ export function useJobRunner(label: string): JobRunner {
       setState("running");
       setError(null);
       setJob(null);
-      announce({ variant: "progress", title: label, message: "Queued" });
+      announce({ key, variant: "progress", title: label, message: "Queued" });
       try {
         const started = await start();
         const done = await pollJob(started.job, ctl.signal, (s) =>
-          announce({ variant: "progress", title: label, message: capitalize(s) }),
+          announce({ key, variant: "progress", title: label, message: capitalize(s) }),
         );
         setJob(done);
         setState("done");
-        announce({ variant: "success", title: label, message: "Done" });
+        announce({ key, variant: "success", title: label, message: "Done" });
         return done;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         if (err instanceof JobFailed && err.job) setJob(err.job);
         setError(message);
         setState("failed");
-        announce({ variant: "danger", title: label, message });
+        announce({ key, variant: "danger", title: label, message });
         return null;
       } finally {
         running.current = false;
       }
     },
-    [announce, label],
+    [announce, label, key],
   );
 
   return { state, busy: state === "running", error, job, run };

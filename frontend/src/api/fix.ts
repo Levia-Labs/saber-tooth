@@ -20,18 +20,19 @@ export function useFix(item: MapItem, name: string): () => Promise<void> {
   const client = useQueryClient();
   const announce = useAnnounce();
   return useCallback(async () => {
-    const key = fixKey(name);
-    announce({ key, variant: "progress", title: key, message: "Queued" });
+    const key = fixKey(item.id);
+    const title = `Fix ${name}`;
+    announce({ key, variant: "progress", title, message: "Queued" });
     try {
       const started = await fixMap(item.id);
       markRunning(client, item, "fix", started.job);
       const job = await pollJob(started.job, new AbortController().signal, (s) =>
-        announce({ key, variant: "progress", title: key, message: capitalize(s) }),
+        announce({ key, variant: "progress", title, message: capitalize(s) }),
       );
-      announce(fixToast(name, job, null));
+      announce(fixToast(item.id, name, job, null));
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      announce(fixToast(name, err instanceof JobFailed ? err.job : null, message));
+      announce(fixToast(item.id, name, err instanceof JobFailed ? err.job : null, message));
     }
     await refresh(client, item.id);
   }, [client, announce, item, name]);

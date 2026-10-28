@@ -5,8 +5,8 @@ import { specToInput } from "../lib/announcements";
 import { useAnnounce } from "./Announcer";
 
 interface Props {
-  /** Toast key; the runner's progress toast uses the same label, so the outcome replaces it. */
-  label: string;
+  /** Toast key; the runner's progress toast uses the same toastKey, so the outcome replaces it. */
+  toastKey: string;
   job: Job | null;
   error: string | null;
   onRetry?: () => void;
@@ -14,7 +14,7 @@ interface Props {
 }
 
 /** Shows the result of a finished or failed job (scan, apply, learn) as a toast; renders nothing. */
-export function JobOutcome({ label, job, error, onRetry, onReview }: Props) {
+export function JobOutcome({ toastKey, job, error, onRetry, onReview }: Props) {
   const announce = useAnnounce();
   const handlers = useRef({ onRetry, onReview });
   useEffect(() => {
@@ -22,7 +22,7 @@ export function JobOutcome({ label, job, error, onRetry, onReview }: Props) {
   });
   useEffect(() => {
     const spec = toAlert(job, error);
-    if (spec) announce(specToInput(label, spec, handlers.current));
-  }, [announce, label, job, error]);
+    if (spec) announce(specToInput(toastKey, spec, handlers.current));
+  }, [announce, toastKey, job, error]);
   return null;
 }

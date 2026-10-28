@@ -45,7 +45,7 @@ export function LibraryPage() {
           <BarSlot />
         </div>
         <LibraryTools learn={learn} onResetColumns={columns.api.resetAll} />
-        <JobOutcome label="Learn lightshows" job={learn.job} error={learn.error} />
+        <JobOutcome toastKey="Learn lightshows" job={learn.job} error={learn.error} />
         {narrow && (
           <LibraryMobileBar
             state={state}

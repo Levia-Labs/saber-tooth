@@ -68,8 +68,9 @@ export function AnnouncerProvider({ children }: { children: ReactNode }) {
                         type="button"
                         className="btn"
                         onClick={() => {
-                          a.onClick();
+                          // Dismiss first so a handler that re-announces this key keeps its toast.
                           setBanners((list) => dismissBanner(list, b.key));
+                          a.onClick();
                         }}
                       >
                         {a.label}

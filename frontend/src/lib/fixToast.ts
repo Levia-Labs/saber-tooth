@@ -4,10 +4,15 @@ import type { AnnounceInput } from "./announcements";
 import { fixSummary, readFixReport } from "./fixreport";
 
 /** Toast key shared with the fix's progress toast, so the outcome replaces it. */
-export const fixKey = (name: string) => `Fix ${name}`;
+export const fixKey = (mapId: string) => `Fix:${mapId}`;
 
-export function fixToast(name: string, job: Job | null, error: string | null): AnnounceInput {
-  const key = fixKey(name);
+export function fixToast(
+  mapId: string,
+  name: string,
+  job: Job | null,
+  error: string | null,
+): AnnounceInput {
+  const key = fixKey(mapId);
   if (error !== null || !job) {
     return {
       key,

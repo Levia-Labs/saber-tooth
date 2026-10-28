@@ -64,24 +64,32 @@ function LengthSwitch(props: { value: Choice; data: Timeline; onChange: (next: C
 }
 
 /** Reports a finished or failed crop as a toast; renders nothing. */
-function CropOutcome({ job, error }: { job: Job | null; error: string | null }) {
+function CropOutcome({
+  mapId,
+  job,
+  error,
+}: {
+  mapId: string;
+  job: Job | null;
+  error: string | null;
+}) {
   const announce = useAnnounce();
   useEffect(() => {
     if (error !== null) {
       const spec = toAlert(job, error);
-      if (spec) announce(specToInput("Crop", spec));
+      if (spec) announce(specToInput(`Crop:${mapId}`, spec));
       return;
     }
     const result = job?.result as Partial<CropResult> | null | undefined;
     if (!result?.cropped_id || result.replaced) return;
     announce({
-      key: "Crop",
+      key: `Crop:${mapId}`,
       variant: "success",
       title: "Cropped map written",
       message: `Written to ${result.folder ?? "a new folder"}.`,
       link: { to: `/maps/${encodeURIComponent(result.cropped_id)}`, label: "Open cropped map" },
     });
-  }, [announce, job, error]);
+  }, [announce, mapId, job, error]);
   return null;
 }
 
@@ -97,7 +105,7 @@ interface EditorProps {
 function CropEditor({ mapId, folder, data, busy, audioUrl, steps }: EditorProps) {
   const client = useQueryClient();
   const announce = useAnnounce();
-  const crop = useJobRunner("Crop");
+  const crop = useJobRunner("Crop", `Crop:${mapId}`);
   const [length, setLength] = useState<Choice>(
     data.lengths["60"].enabled ? "60" : data.lengths["120"].enabled ? "120" : "unlimited",
   );
@@ -134,7 +142,12 @@ function CropEditor({ mapId, folder, data, busy, audioUrl, steps }: EditorProps)
       .run(() => cropMap(mapId, selection.start_s, selection.end_s, replace))
       .then((job) => {
         if (job && replace) {
-          announce({ variant: "success", title: "Map replaced", message: folder });
+          announce({
+            key: `Replaced:${mapId}`,
+            variant: "success",
+            title: "Map replaced",
+            message: folder,
+          });
           void client.invalidateQueries({ queryKey: keys.timeline(mapId) });
           void client.invalidateQueries({ queryKey: keys.proposals(mapId) });
           void client.invalidateQueries({ queryKey: keys.map(mapId) });
@@ -198,7 +211,7 @@ function CropEditor({ mapId, folder, data, busy, audioUrl, steps }: EditorProps)
         audioUrl={audioUrl}
       />
       {steps && <CropSteps onStep={onPress} />}
-      <CropOutcome job={crop.job} error={crop.error} />
+      <CropOutcome mapId={mapId} job={crop.job} error={crop.error} />
     </div>
   );
 }

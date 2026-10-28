@@ -167,7 +167,9 @@ describe("JobOutcome", () => {
     );
 
   test("apply failure is a danger toast, not Apply: failed text", () => {
-    const { container } = shown(<JobOutcome label="Apply" job={null} error="database is locked" />);
+    const { container } = shown(
+      <JobOutcome toastKey="Apply" job={null} error="database is locked" />,
+    );
     const stack = container.querySelector(".toast-stack") as HTMLElement;
     expect(within(stack).getByRole("alert")).toHaveTextContent("Apply failed");
     expect(screen.queryByText(/Apply: failed/)).toBeNull();
@@ -175,7 +177,7 @@ describe("JobOutcome", () => {
 
   test("its Try again action runs the retry handler from the toast", async () => {
     const retry = vi.fn();
-    shown(<JobOutcome label="Scan" job={null} error="boom" onRetry={retry} />);
+    shown(<JobOutcome toastKey="Scan" job={null} error="boom" onRetry={retry} />);
     await userEvent.click(await screen.findByRole("button", { name: "Try again" }));
     expect(retry).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
@@ -184,13 +186,13 @@ describe("JobOutcome", () => {
   test("a job that needs review offers Review in the toast", async () => {
     const review = vi.fn();
     const done = job("apply", { result: { needs_review: ["a1"] } });
-    shown(<JobOutcome label="Apply" job={done} error={null} onReview={review} />);
+    shown(<JobOutcome toastKey="Apply" job={done} error={null} onReview={review} />);
     await userEvent.click(await screen.findByRole("button", { name: "Review" }));
     expect(review).toHaveBeenCalledTimes(1);
   });
 
   test("shows nothing without job or error", () => {
-    const { container } = shown(<JobOutcome label="Apply" job={null} error={null} />);
+    const { container } = shown(<JobOutcome toastKey="Apply" job={null} error={null} />);
     expect(container.querySelector(".alert")).toBeNull();
   });
 });

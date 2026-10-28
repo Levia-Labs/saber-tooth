@@ -74,7 +74,32 @@ export function addBanner(list: Banner[], input: AnnounceInput, now: number): Ba
   if (input.onDismiss !== undefined) banner.onDismiss = input.onDismiss;
   const at = list.findIndex((b) => b.key === key);
   const next = at === -1 ? [...list, banner] : list.map((b, i) => (i === at ? banner : b));
-  return next.slice(-MAX_BANNERS);
+  return trim(next, key);
+}
+
+/** Whether a toast can only be closed by the user: danger, or anything without an expiry. */
+function lingers(b: Banner): boolean {
+  return b.variant === "danger" || (b.variant !== "progress" && b.expiresAt === null);
+}
+
+/** Over the cap, drops the oldest toast that fades or is progress, then non-danger, then any; never the new one. */
+function trim(list: Banner[], newest: string): Banner[] {
+  const out = [...list];
+  const tiers: ((b: Banner) => boolean)[] = [
+    (b) => !lingers(b),
+    (b) => b.variant !== "danger",
+    () => true,
+  ];
+  while (out.length > MAX_BANNERS) {
+    for (const test of tiers) {
+      const at = out.findIndex((b) => b.key !== newest && test(b));
+      if (at !== -1) {
+        out.splice(at, 1);
+        break;
+      }
+    }
+  }
+  return out;
 }
 
 /** Turns an alert spec into a toast; its action button appears only when the page supplies the handler. */

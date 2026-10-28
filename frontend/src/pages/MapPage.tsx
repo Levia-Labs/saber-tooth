@@ -44,8 +44,8 @@ export function MapPage() {
       else next.delete(pid);
       return next;
     });
-  const scan = useJobRunner("Scan");
-  const apply = useJobRunner("Apply");
+  const scan = useJobRunner("Scan", `Scan:${id}`);
+  const apply = useJobRunner("Apply", `Apply:${id}`);
   useLiveRows(map.data ? [map.data] : []);
   const name = map.data ? mapName(map.data) : "Map";
   useDocumentTitle(map.isError ? "Map not found" : name);
@@ -66,7 +66,7 @@ export function MapPage() {
       await refresh();
     } catch (err) {
       announce(
-        specToInput("Approve all", errorToAlert(err, "Approve all failed"), {
+        specToInput(`Approve all:${id}`, errorToAlert(err, "Approve all failed"), {
           onRetry: () => void approveEverything(),
         }),
       );
@@ -146,14 +146,14 @@ export function MapPage() {
           {map.data && <FixedCopyLink item={map.data} />}
           {map.data && <FixedCopyOf item={map.data} />}
           <JobOutcome
-            label="Apply"
+            toastKey={`Apply:${id}`}
             job={apply.job}
             error={apply.error}
             onRetry={() => void apply.run(() => applyMap(id)).then(refresh)}
             onReview={() => document.getElementById("fixes-top")?.scrollIntoView?.()}
           />
           <JobOutcome
-            label="Scan"
+            toastKey={`Scan:${id}`}
             job={scan.job}
             error={scan.error}
             onRetry={() => void scan.run(() => scanMap(id)).then(refresh)}
