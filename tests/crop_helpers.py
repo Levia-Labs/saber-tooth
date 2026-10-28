@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import pytest
+
 from saber_tooth.mapio import write_map
 from saber_tooth.model import (
     DIFFICULTIES,
@@ -57,3 +59,16 @@ def write_original(levels: Path, name: str = NAME, bm: Beatmap | None = None) ->
     (folder / "song.ogg").write_bytes(b"og")
     (folder / "cover.jpg").write_bytes(b"jp")
     return folder
+
+
+@pytest.fixture
+def cuts(monkeypatch):
+    """Replace the ffmpeg cut with a fake that records its arguments and writes 3 bytes."""
+    calls: list[tuple] = []
+
+    def fake(src, dst, start_s, length_s, lead_s, fade_in_s, fade_out_s):
+        calls.append((src.name, dst.name, start_s, length_s, lead_s, fade_in_s, fade_out_s))
+        dst.write_bytes(b"cut")
+
+    monkeypatch.setattr("saber_tooth.crop.write.cut_egg", fake)
+    return calls

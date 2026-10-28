@@ -110,6 +110,16 @@ def _dump(path: Path, data: dict) -> None:
     path.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
 
 
+def copy_asset(copy_from: Path, folder: Path, name: str) -> None:
+    """Copy one named file from the source map folder; skips empty names and files outside it."""
+    if not name:
+        return
+    safe_name(name)
+    src = (copy_from / name).resolve()
+    if copy_from.resolve() in src.parents and src.is_file():
+        shutil.copyfile(src, folder / name)
+
+
 def write_map(beatmap: Beatmap, folder: Path, copy_from: Path | None) -> None:
     folder.mkdir(parents=True, exist_ok=True)
     diffs = [beatmap.difficulties[n] for n in DIFFICULTIES if n in beatmap.difficulties]
@@ -118,9 +128,4 @@ def write_map(beatmap: Beatmap, folder: Path, copy_from: Path | None) -> None:
     _dump(folder / "Info.dat", info_json(beatmap.info, diffs))
     if copy_from is not None:
         for name in (beatmap.info.song_file, beatmap.info.cover_file):
-            if not name:
-                continue
-            safe_name(name)
-            src = (copy_from / name).resolve()
-            if copy_from.resolve() in src.parents and src.is_file():
-                shutil.copyfile(src, folder / name)
+            copy_asset(copy_from, folder, name)
