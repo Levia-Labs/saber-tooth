@@ -29,4 +29,22 @@ describe("fixed copy link", () => {
     );
     expect(other.queryByText(/Fixed copy:/)).toBeNull();
   });
+
+  test("map page shows the fixed copy as a banner alert with a link to it", async () => {
+    mockFetch((url) => {
+      if (url.pathname === "/api/maps/facets") return FACETS;
+      if (url.pathname === "/api/maps/id0000000001") return items[0];
+      if (url.pathname.endsWith("/proposals")) return [];
+      return { items: [], total: 0, offset: 0, limit: 40 };
+    });
+    renderApp("/maps/id0000000001");
+    const title = await screen.findByText("Fixed copy ready");
+    const banner = title.closest(".alert") as HTMLElement;
+    expect(banner).toHaveClass("alert-success");
+    expect(within(banner).getByRole("link", { name: "Folder 1 [saber-tooth]" })).toHaveAttribute(
+      "href",
+      "/maps/id0000000099",
+    );
+    expect(screen.queryByText(/Fixed copy:/)).toBeNull();
+  });
 });

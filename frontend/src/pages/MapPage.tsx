@@ -85,10 +85,10 @@ export function MapPage() {
               <LevelChips names={map.data.difficulties} />
               <Tempo item={map.data} />
             </div>
-            <FixedCopyLink item={map.data} />
           </div>
         </div>
       )}
+      {map.data && <FixedCopyLink item={map.data} banner />}
       <FixOutcomes mapId={id} />
       <JobOutcome
         job={apply.job}

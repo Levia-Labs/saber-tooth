@@ -14,7 +14,7 @@ export function FixButton({ item, text = false }: { item: MapItem; text?: boolea
       icon="fix"
       label={text ? "Fix" : `Fix ${name}`}
       tip={TIPS.fix}
-      variant="accent"
+      variant={text ? "accent" : undefined}
       text={text}
       disabled={busy}
       onClick={() => void fix()}

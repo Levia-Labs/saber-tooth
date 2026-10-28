@@ -52,7 +52,12 @@
   --tone: var(--muted);
   color: var(--muted);
 }
+.chip-incomplete {
+  --tone: var(--amber);
+  color: var(--amber);
+}
 .chip-unscanned::before,
+.chip-incomplete::before,
 .chip-unreadable::before {
   box-shadow: none;
   opacity: 0.6;
@@ -63,7 +68,8 @@
 .chip-error .ic {
   color: var(--red);
 }
-.chip-warn .ic {
+.chip-warn .ic,
+.chip-incomplete .ic {
   color: var(--amber);
 }
 .chip-ok .ic {

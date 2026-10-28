@@ -8,6 +8,7 @@ import { formatBpm, formatDuration } from "../lib/format";
 import { applyTip, TIPS } from "../lib/tips";
 import { mapName } from "../lib/status";
 import { ActionButton, ActionLink } from "./Buttons";
+import { capitalize } from "../lib/announcements";
 import { useAnnounce } from "./Announcer";
 import { Cover, LevelChips, StatusChip } from "./Chips";
 import { FixButton } from "./FixButton";
@@ -21,7 +22,12 @@ export function LibraryRow({ item, index }: { item: MapItem; index: number }) {
   const href = `/maps/${encodeURIComponent(item.id)}`;
   const busy = item.job !== null || item.status === "unreadable";
   const start = (kind: "scan" | "apply") =>
-    jobStart(kind, item, (msg) => announce(`${kind} ${name}: ${msg}`), client);
+    jobStart(
+      kind,
+      item,
+      (message) => announce({ variant: "danger", title: `${capitalize(kind)} ${name}`, message }),
+      client,
+    );
   const scan = useMutation(start("scan"));
   const apply = useMutation(start("apply"));
   const pending = item.pending;

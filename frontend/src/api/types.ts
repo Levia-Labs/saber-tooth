@@ -3,6 +3,7 @@ export const STATUS_KEYS = [
   "error",
   "warn",
   "ok",
+  "incomplete",
   "unscanned",
   "unreadable",
   "scanning",

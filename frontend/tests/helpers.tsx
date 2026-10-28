@@ -34,6 +34,7 @@ export const FACETS: Facets = {
     error: 2,
     warn: 1,
     ok: 0,
+    incomplete: 0,
     unscanned: 3,
     unreadable: 0,
     scanning: 1,

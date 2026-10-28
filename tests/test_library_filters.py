@@ -68,10 +68,28 @@ def test_sort_bpm_and_duration_put_nulls_last(tmp_path):
         assert "".join(r["id"] for r in rows) == want
 
 
+def test_incomplete_status_filter_facet_and_sort(tmp_path):
+    from saber_tooth.store_maps import LEVEL_NAMES, level_mask
+
+    store = Store(tmp_path / "db.sqlite")
+    store.upsert_map("a", "a", "A", "m", "E1", None, levels=level_mask(LEVEL_NAMES[:3]))
+    store.upsert_map("b", "b", "B", "m", "E1", None, levels=level_mask(LEVEL_NAMES))
+    store.upsert_map("c", "c", "C", "m", "E1", None)
+    store.upsert_map("d", "d", "D", "m", "E1", None, levels=level_mask(LEVEL_NAMES[:2]))
+    store.replace_open_proposals("d", [], scan={"findings": [], "analysis": None})
+    status = {r["id"]: r["status"] for r in store.query_maps()[0]}
+    assert status == {"a": "incomplete", "b": "unscanned", "c": "incomplete", "d": "ok"}
+    rows, _ = store.query_maps(status=("incomplete",))
+    assert [r["id"] for r in rows] == ["a", "c"]
+    assert store.facets()["status"]["incomplete"] == 2
+    rows, _ = store.query_maps(sort="status")
+    assert [r["id"] for r in rows] == ["a", "c", "b", "d"]
+
+
 def test_multi_status_env_and_q_fields(tmp_path):
     store = Store(tmp_path / "db.sqlite")
-    store.upsert_map("a", "fold1", "Alpha", "Zed", "E1", None)
-    store.upsert_map("b", "fold2", "Beta", "Yan", "E2", None)
+    store.upsert_map("a", "fold1", "Alpha", "Zed", "E1", None, levels=31)
+    store.upsert_map("b", "fold2", "Beta", "Yan", "E2", None, levels=31)
     store.upsert_map("c", "fold3", "Gamma", "", "E2", "broken")
     ids = lambda **kw: [r["id"] for r in store.query_maps(**kw)[0]]  # noqa: E731
     assert ids(status=("unscanned", "unreadable")) == ["a", "b", "c"]
@@ -86,9 +104,9 @@ def test_multi_status_env_and_q_fields(tmp_path):
 
 def test_facets_ignore_filters(tmp_path):
     store = Store(tmp_path / "db.sqlite")
-    store.upsert_map("a", "a", "A", "m", "E1", None)
-    store.upsert_map("b", "b", "B", "m", "E2", None)
-    store.upsert_map("c", "c", "C", "m", "E2", None)
+    store.upsert_map("a", "a", "A", "m", "E1", None, levels=31)
+    store.upsert_map("b", "b", "B", "m", "E2", None, levels=31)
+    store.upsert_map("c", "c", "C", "m", "E2", None, levels=31)
     f = store.facets()
     assert (
         f["total"] == 3 and f["status"]["unscanned"] == 3 and set(f["status"]) == set(STATUS_VALUES)

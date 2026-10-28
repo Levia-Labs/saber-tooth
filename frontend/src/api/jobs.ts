@@ -1,6 +1,7 @@
 // Start a job and poll it until it ends; used by learn, generate and the map page actions.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAnnounce } from "../components/Announcer";
+import { capitalize } from "../lib/announcements";
 import { getJob, isRetryable, type Started } from "./client";
 import type { Job } from "./types";
 
@@ -87,20 +88,22 @@ export function useJobRunner(label: string): JobRunner {
       setState("running");
       setError(null);
       setJob(null);
-      announce(`${label}: queued`);
+      announce({ variant: "progress", title: label, message: "Queued" });
       try {
         const started = await start();
-        const done = await pollJob(started.job, ctl.signal, (s) => announce(`${label}: ${s}`));
+        const done = await pollJob(started.job, ctl.signal, (s) =>
+          announce({ variant: "progress", title: label, message: capitalize(s) }),
+        );
         setJob(done);
         setState("done");
-        announce(`${label}: done`);
+        announce({ variant: "success", title: label, message: "Done" });
         return done;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         if (err instanceof JobFailed && err.job) setJob(err.job);
         setError(message);
         setState("failed");
-        announce(`${label}: failed. ${message}`);
+        announce({ variant: "danger", title: label, message });
         return null;
       } finally {
         running.current = false;

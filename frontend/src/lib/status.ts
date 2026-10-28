@@ -7,6 +7,7 @@ export const STATUS_META: Record<StatusKey, { label: string; icon: IconName }> =
   error: { label: "Errors", icon: "error" },
   warn: { label: "Warnings", icon: "warning" },
   ok: { label: "Good", icon: "ok" },
+  incomplete: { label: "Not scanned, missing levels", icon: "unscanned" },
   unscanned: { label: "Not scanned", icon: "unscanned" },
   unreadable: { label: "Unreadable", icon: "unreadable" },
   scanning: { label: "Scanning", icon: "sweep" },
@@ -20,6 +21,7 @@ export const STATUS_ORDER: readonly StatusKey[] = [
   "error",
   "warn",
   "ok",
+  "incomplete",
   "unscanned",
   "unreadable",
   "scanning",
@@ -68,6 +70,8 @@ export function statusLabel(item: StatusFields): string {
       return "Queued";
     case "unreadable":
       return item.parse_error ? `Unreadable: ${item.parse_error}` : "Unreadable";
+    case "incomplete":
+      return STATUS_META.incomplete.label;
     default:
       return "Not scanned";
   }

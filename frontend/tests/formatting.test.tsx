@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import fc from "fast-check";
@@ -14,6 +16,7 @@ import {
   SURFACE,
   textColor,
 } from "../src/lib/levels";
+import { STATUS_META, STATUS_ORDER } from "../src/lib/status";
 import { applyTip, TIPS } from "../src/lib/tips";
 
 describe("formatters", () => {
@@ -155,6 +158,7 @@ describe("status chip", () => {
     [{ status: "warn", errors: 0, warnings: 1 }, "1 warning", "1"],
     [{ status: "ok", ...base }, "All good", ""],
     [{ status: "unscanned", ...base }, "Not scanned", ""],
+    [{ status: "incomplete", ...base }, "Not scanned, missing levels", ""],
     [{ status: "unreadable", ...base }, "Unreadable", ""],
     [{ status: "unreadable", ...base, parse_error: "bad json" }, "Unreadable: bad json", ""],
     [{ status: "scanning", ...base }, "Scanning", ""],
@@ -164,6 +168,16 @@ describe("status chip", () => {
     const { container } = chip(item);
     expect(screen.getByRole("img", { name: label })).toBeInTheDocument();
     expect(container.textContent).toBe(visible);
+  });
+
+  test("incomplete chip uses the unscanned icon in the warning colour", () => {
+    chip({ status: "incomplete", ...base });
+    const el = screen.getByRole("img", { name: "Not scanned, missing levels" });
+    expect(el).toHaveClass("chip-incomplete");
+    expect(STATUS_META.incomplete.icon).toBe(STATUS_META.unscanned.icon);
+    expect(STATUS_ORDER.indexOf("incomplete")).toBe(STATUS_ORDER.indexOf("unscanned") - 1);
+    const css = readFileSync(resolve(__dirname, "../src/styles/chips.css"), "utf8");
+    expect(css).toMatch(/\.chip-incomplete\s*\{[^}]*--tone:\s*var\(--amber\)/);
   });
 
   test("unknown status falls back to not scanned", () => {

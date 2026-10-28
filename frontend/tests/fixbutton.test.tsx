@@ -51,7 +51,10 @@ describe("fix button", () => {
     const row = within(link.closest("[role=row]") as HTMLElement);
     const actions = row.getAllByRole("button");
     expect(actions[0]).toHaveAccessibleName("Fix Song 1");
-    expect(actions[0]).toHaveClass("accent");
+    // Fix is styled like the other row actions (Scan), not as a coloured accent button.
+    const scan = row.getByRole("button", { name: "Scan Song 1" });
+    expect(actions[0]).not.toHaveClass("accent");
+    expect(actions[0]).toHaveAttribute("class", scan.getAttribute("class"));
     await user.hover(actions[0] as HTMLElement);
     expect(await screen.findByRole("tooltip")).toHaveTextContent(TIPS.fix);
     await user.click(actions[0] as HTMLElement);

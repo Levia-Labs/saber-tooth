@@ -5,12 +5,14 @@ import sqlite3
 import threading
 
 STATUS_VALUES = (
-    "unreadable", "error", "warn", "scanning", "applying", "fixing", "queued", "unscanned", "ok",
+    "unreadable", "error", "warn", "scanning", "applying", "fixing", "queued", "incomplete",
+    "unscanned", "ok",
 )  # fmt: skip
 STATUS_FILTERS = {"all", *STATUS_VALUES}
 MAX_ENVS = 50
 MAX_MAPPERS = 50
 LEVEL_NAMES = ("Easy", "Normal", "Hard", "Expert", "ExpertPlus")  # bit i of maps.levels
+ALL_LEVELS = (1 << len(LEVEL_NAMES)) - 1  # mask with every Standard difficulty present
 LEVEL_MODES = ("any", "all")
 # (query keyword, SQL column, comparison) of the range filters, in bound order
 RANGES = (
@@ -53,7 +55,7 @@ SORT_KEYS = {
     "levels": f"levels IS NULL OR levels = 0, ({_levels_height()}) * 8 + ({_levels_bits()})",
 }
 _TIE_BREAK = "lower(title) ASC, id ASC"
-_MAP_VIEW = """
+_MAP_VIEW = f"""
 SELECT m.id, m.folder, m.title, m.mapper, m.environment, m.parse_error, s.scanned_at,
   m.bpm, m.duration_s, m.levels,
   COALESCE((SELECT count(*) FROM json_each(s.keys_json)
@@ -71,6 +73,7 @@ SELECT m.id, m.folder, m.title, m.mapper, m.environment, m.parse_error, s.scanne
        WHEN j.status = 'running' AND j.kind = 'fix' THEN 'fixing'
        WHEN j.status = 'running' THEN 'applying'
        WHEN j.status = 'queued' THEN 'queued'
+       WHEN s.map_id IS NULL AND (m.levels IS NULL OR m.levels != {ALL_LEVELS}) THEN 'incomplete'
        WHEN s.map_id IS NULL THEN 'unscanned'
        WHEN (SELECT count(*) FROM json_each(s.keys_json)
              WHERE json_extract(value, '$.severity') = 'error') > 0 THEN 'error'
@@ -81,7 +84,7 @@ LEFT JOIN jobs j ON j.id = (
   SELECT a.id FROM jobs a WHERE a.map_id = m.id AND a.kind IN ('scan', 'apply', 'fix')
   AND a.status IN ('queued', 'running')
   ORDER BY (a.status = 'running') DESC, a.created_at DESC, a.id LIMIT 1)
-"""
+"""  # noqa: S608 - interpolates only the int constant ALL_LEVELS
 
 _SEARCH = {
     "all": "instr(lower(title||char(10)||mapper||char(10)||environment||char(10)||folder), ?)>0",

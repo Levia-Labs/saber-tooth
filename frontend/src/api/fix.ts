@@ -2,6 +2,7 @@
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { useCallback, useSyncExternalStore } from "react";
 import { useAnnounce } from "../components/Announcer";
+import { capitalize } from "../lib/announcements";
 import { fixMap } from "./client";
 import { JobFailed, pollJob } from "./jobs";
 import { keys, markRunning } from "./queries";
@@ -57,20 +58,20 @@ export function useFix(item: MapItem, name: string): () => Promise<void> {
   return useCallback(async () => {
     const entry = { key: ++counter, mapId: item.id, name };
     publish(outcomes.filter((o) => o.mapId !== item.id));
-    announce(`Fix ${name}: queued`);
+    announce({ variant: "progress", title: `Fix ${name}`, message: "Queued" });
     try {
       const started = await fixMap(item.id);
       markRunning(client, item, "fix", started.job);
       const job = await pollJob(started.job, new AbortController().signal, (s) =>
-        announce(`Fix ${name}: ${s}`),
+        announce({ variant: "progress", title: `Fix ${name}`, message: capitalize(s) }),
       );
       publish([{ ...entry, job, error: null }, ...outcomes]);
-      announce(`Fix ${name}: done`);
+      announce({ variant: "success", title: `Fix ${name}`, message: "Done" });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       const job = err instanceof JobFailed ? err.job : null;
       publish([{ ...entry, job, error: message }, ...outcomes]);
-      announce(`Fix ${name}: failed. ${message}`);
+      announce({ variant: "danger", title: `Fix ${name}`, message });
     }
     await refresh(client, item.id);
   }, [client, announce, item, name]);

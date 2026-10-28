@@ -48,7 +48,7 @@ export function ProposalCard({
       await client.invalidateQueries({ queryKey: keys.proposals(mapId) });
       await client.invalidateQueries({ queryKey: keys.map(mapId) });
     },
-    onError: (err: Error) => announce(`Error: ${err.message}`),
+    onError: (err: Error) => announce({ variant: "danger", title: "Error", message: err.message }),
   });
 
   // The pressed button becomes disabled; hand focus to the next enabled button or the card.

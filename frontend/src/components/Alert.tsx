@@ -20,6 +20,8 @@ interface AlertProps {
   className?: string;
   /** Render the title as the page's h1 and focus target, for full-page alerts. */
   pageHeading?: boolean;
+  /** Running job: a spinning spinner replaces the icon. */
+  progress?: boolean;
 }
 
 /** One status message: icon, title, plain-language text, optional details, actions and dismiss. */
@@ -32,6 +34,7 @@ export function Alert({
   onDismiss,
   className,
   pageHeading = false,
+  progress = false,
 }: AlertProps) {
   const urgent = variant === "danger" || variant === "warning";
   const cls = ["alert", `alert-${variant}`, className ?? ""].filter(Boolean).join(" ");
@@ -41,7 +44,10 @@ export function Alert({
       role={urgent ? "alert" : "status"}
       aria-live={urgent ? "assertive" : "polite"}
     >
-      <Icon name={ICON[variant]} className="alert-icon" />
+      <Icon
+        name={progress ? "spinner" : ICON[variant]}
+        className={progress ? "alert-icon alert-spin" : "alert-icon"}
+      />
       <div className="alert-body">
         {pageHeading ? (
           <h1 className="alert-title" tabIndex={-1} data-page-heading>

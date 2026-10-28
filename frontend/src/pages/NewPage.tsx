@@ -73,7 +73,7 @@ export function NewPage() {
     const chosen = file.current?.files?.[0];
     const text = url.trim();
     if (!chosen && !text) {
-      announce("Provide a URL or an audio file.");
+      announce({ variant: "warning", title: "Provide a URL or an audio file." });
       return;
     }
     setMapId(null);

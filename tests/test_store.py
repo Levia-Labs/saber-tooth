@@ -134,7 +134,7 @@ def _library(store: Store) -> None:
     store.upsert_map("b", "fb", "beta", "Amy", "Nice", None)
     store.upsert_map("c", "fc", "Gamma", "", "", "broken")
     store.upsert_map("d", "fd", "Delta", "Amy", "Nice", None)
-    store.upsert_map("e", "fe", "Eps_100%", "Q", "Q", None)
+    store.upsert_map("e", "fe", "Eps_100%", "Q", "Q", None, levels=31)
     store.replace_open_proposals(
         "a", [], {"findings": [{"severity": "error"}] * 2 + [{"severity": "warn"}]}
     )
