@@ -1,0 +1,175 @@
+/* VR layout, active only under [data-ui="vr"]. Sizes are the design values: 22 px text, 64 px
+   targets, 16 px gaps. tests/vrcss.test.ts pins them; change the test with the design. */
+:root[data-ui="vr"] {
+  --vr-text: 22px;
+  --vr-target: 64px;
+  --vr-gap: 16px;
+  --vr-focus: #ffd33d;
+  --stage: #0b0818;
+  --panel: #1c1738;
+  --panel-2: #2a2352;
+  --line: #9a94d6;
+  --ink: #ffffff;
+  --muted: #e1def5;
+  --red: #ff6b73;
+  --blue: #6cc4ff;
+  --amber: #ffc861;
+  --green: #5bf0a6;
+  --radius: 12px;
+}
+
+[data-ui="vr"] body {
+  font-size: var(--vr-text);
+  line-height: 1.5;
+}
+[data-ui="vr"] main {
+  max-width: none;
+  padding-inline: var(--vr-gap);
+}
+[data-ui="vr"]
+  :where(p, span, small, a, label, li, dt, dd, button, select, input, summary, .chip-text) {
+  font-size: var(--vr-text);
+}
+
+/* Targets: every control is at least 64 px high and wide. */
+[data-ui="vr"]
+  :where(button, a.btn, .btn, select, input, summary, [role="radio"], [role="tab"], .vr-target) {
+  min-height: var(--vr-target);
+  min-width: var(--vr-target);
+  padding-inline: var(--vr-gap);
+}
+
+/* Gaps. */
+[data-ui="vr"]
+  :where(
+    .vr-screen,
+    .vr-bar,
+    .vr-toggles,
+    .vr-nav,
+    .vr-actions,
+    .crop-actions,
+    .crop-editor,
+    .crop-switch,
+    .alert-actions,
+    .banner-stack,
+    .modal .row
+  ) {
+  gap: var(--vr-gap);
+}
+
+/* Focus: a thick ring on whatever holds focus, for mouse, keyboard and the controller laser. */
+[data-ui="vr"] :focus,
+[data-ui="vr"] :focus-visible {
+  outline: 4px solid var(--vr-focus);
+  outline-offset: 3px;
+}
+[data-ui="vr"] main:focus,
+[data-ui="vr"] h1:focus {
+  outline: none;
+}
+
+/* Help is text under the control, never a hover tooltip. */
+[data-ui="vr"] .tooltip,
+[data-ui="vr"] .tip-info {
+  display: none !important;
+}
+
+[data-ui="vr"] .alert {
+  padding: var(--vr-gap);
+}
+
+/* Screen frame shared by the three VR screens. */
+[data-ui="vr"] .vr-screen {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding-block: var(--vr-gap);
+}
+[data-ui="vr"] .vr-heading {
+  font-size: calc(var(--vr-text) * 1.45);
+  margin: 0;
+}
+[data-ui="vr"] .vr-nav {
+  display: flex;
+  flex-wrap: wrap;
+}
+[data-ui="vr"] .vr-nav a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--ink);
+  text-decoration: none;
+}
+[data-ui="vr"] .vr-nav a[aria-current="page"] {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #08051a;
+}
+[data-ui="vr"] .vr-bar,
+[data-ui="vr"] .vr-toggles,
+[data-ui="vr"] .vr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+[data-ui="vr"] .vr-toggles button {
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--ink);
+}
+[data-ui="vr"] .vr-toggles button[aria-pressed="true"],
+[data-ui="vr"] .vr-toggles button[aria-checked="true"] {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #08051a;
+}
+[data-ui="vr"] .vr-help {
+  margin: 0;
+  color: var(--muted);
+}
+[data-ui="vr"] .vr-big {
+  min-height: calc(var(--vr-target) * 1.25);
+  font-weight: 700;
+}
+[data-ui="vr"] .vr-empty {
+  padding: var(--vr-gap);
+  color: var(--muted);
+}
+
+/* Cards in one to three columns, by the width of the scroll area they sit in. */
+[data-ui="vr"] .vr-scroll {
+  container-type: inline-size;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+[data-ui="vr"] .vr-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--vr-gap);
+}
+@container (min-width: 900px) {
+  [data-ui="vr"] .vr-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@container (min-width: 1500px) {
+  [data-ui="vr"] .vr-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* The reused crop panel. */
+[data-ui="vr"] .crop-switch,
+[data-ui="vr"] .crop-actions {
+  display: flex;
+  flex-wrap: wrap;
+}
+[data-ui="vr"] .nps-chart svg {
+  height: 14rem;
+}
