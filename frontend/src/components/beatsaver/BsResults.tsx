@@ -1,15 +1,16 @@
 import type { InfiniteData, UseInfiniteQueryResult } from "@tanstack/react-query";
-import { useCallback, useMemo, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useBsConfig, type BsMap, type BsPage } from "../../api/beatsaver";
 import { errorMessage } from "../../api/client";
 import { BS_COLUMNS } from "../../lib/bscolumns";
 import { BS_TIPS } from "../../lib/bstips";
 import { isBsDefault } from "../../lib/bsfilters";
-import { plural } from "../../lib/format";
+import { batchSummary } from "../../lib/announcements";
 import { useMediaQuery } from "../../lib/hooks";
 import { sortLoaded } from "../../lib/bsrating";
 import { useColumns } from "../../lib/useColumns";
 import type { BsControls } from "../../lib/useBsState";
+import { useAnnounce } from "../Announcer";
 import { Icon } from "../icons";
 import { Tip } from "../Tip";
 import { BsTable } from "./BsTable";
@@ -30,35 +31,19 @@ interface Props {
   extra?: (ctx: { items: BsMap[]; downloads: Downloads; selection: Selection }) => ReactNode;
 }
 
+/** Announces the finished batch as the keyed "Download maps" toast, replacing its progress toast. */
 export function DownloadSummary({ downloads }: { downloads: Downloads }) {
+  const announce = useAnnounce();
   const { runner, results } = downloads;
-  const t = tally(results);
-  const failed = Object.values(results).filter((o) => o.status === "failed");
-  if (runner.busy) {
-    return (
-      <div className="result" role="status">
-        Downloading {plural(downloads.pending.size, "map")}
-      </div>
-    );
-  }
-  if (!runner.error && Object.keys(results).length === 0) return null;
-  return (
-    <div className="result" role="status">
-      {runner.error && <p className="err">Download job failed: {runner.error}</p>}
-      <p className={failed.length ? "" : "ok"}>
-        Installed {t.installed}, skipped {t.skipped}, failed {t.failed}.
-      </p>
-      {failed.length > 0 && (
-        <ul className="confirm-list">
-          {failed.map((o) => (
-            <li key={o.id}>
-              {o.id}: {o.reason ?? "failed"}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
+  const busy = runner.busy;
+  useEffect(() => {
+    if (busy || Object.keys(results).length === 0) return;
+    const reasons = Object.values(results)
+      .filter((o) => o.status === "failed")
+      .map((o) => `${o.id}: ${o.reason ?? "failed"}`);
+    announce(batchSummary("Download maps", tally(results), reasons));
+  }, [busy, results, announce]);
+  return null;
 }
 
 /** Toolbar, selection, banners, the list and the scan footer; shared by maps and playlists. */

@@ -1,8 +1,10 @@
+import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import {
   AUTO_DISMISS_MS,
   MAX_BANNERS,
   addBanner,
+  batchSummary,
   capitalize,
   dismissBanner,
   expireBanners,
@@ -55,5 +57,32 @@ describe("announcements", () => {
   test("capitalize", () => {
     expect(capitalize("retrying (1/3)")).toBe("Retrying (1/3)");
     expect(capitalize("")).toBe("");
+  });
+});
+
+describe("batchSummary", () => {
+  const sum = (installed: number, skipped: number, failed: number, reasons: string[] = []) =>
+    batchSummary("Download maps", { installed, skipped, failed }, reasons);
+
+  test("success when nothing failed, warning when some failed, danger when all failed", () => {
+    expect(sum(1, 0, 0)).toMatchObject({
+      key: "Download maps",
+      variant: "success",
+      message: "Installed 1, skipped 0, failed 0.",
+    });
+    expect(sum(1, 0, 1, ["k3: Needs Noodle"]).variant).toBe("warning");
+    expect(sum(1, 0, 1, ["k3: Needs Noodle"]).message).toBe(
+      "Installed 1, skipped 0, failed 1. k3: Needs Noodle",
+    );
+    expect(sum(0, 0, 2).variant).toBe("danger");
+  });
+
+  test("variant follows the counts for any tally", () => {
+    fc.assert(
+      fc.property(fc.nat(50), fc.nat(50), fc.nat(50), (i, s, f) => {
+        const v = sum(i, s, f).variant;
+        expect(v).toBe(f === 0 ? "success" : i + s === 0 ? "danger" : "warning");
+      }),
+    );
   });
 });

@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { useEffect } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
@@ -55,5 +57,38 @@ describe("Announcer banners", () => {
     expect(screen.getAllByRole("alert")).toHaveLength(4);
     expect(screen.queryByText("job 1")).toBeNull();
     expect(screen.getByText("job 5")).toBeTruthy();
+  });
+});
+
+const css = (name: string) => readFileSync(resolve(__dirname, "../src/styles", name), "utf8");
+
+describe("Announcer toasts", () => {
+  test("toasts render in a bottom container that is fixed to the bottom", () => {
+    show({ variant: "progress", title: "Fix Acid Rain" });
+    const stack = document.querySelector(".toast-stack") as HTMLElement;
+    expect(stack.querySelector(".alert")).not.toBeNull();
+    expect(document.querySelector(".banner-stack")).toBeNull();
+    const rule = css("alerts.css").match(/\.toast-stack \{([^}]*)\}/)?.[1] ?? "";
+    expect(rule).toMatch(/position:\s*fixed/);
+    expect(rule).toMatch(/bottom:/);
+    expect(rule).toMatch(/safe-area-inset-bottom/);
+  });
+
+  test("the progress toast icon has the spinning class and the CSS animates it", () => {
+    show({ variant: "progress", title: "Fix Acid Rain" });
+    const icon = document.querySelector(".toast-stack .alert svg") as SVGElement;
+    expect(icon.getAttribute("class")).toContain("alert-spin");
+    const sheet = css("alerts.css");
+    expect(sheet).toMatch(/@keyframes alert-spin\s*\{[^}]*\{[^}]*rotate\(360deg\)/);
+    const media = sheet.match(
+      /@media \(prefers-reduced-motion: no-preference\) \{[\s\S]*?\.alert-spin \{([^}]*)\}/,
+    );
+    expect(media?.[1]).toMatch(/animation:\s*alert-spin/);
+    // The spinner is the only sign a job is alive, so it keeps turning (slower) when the
+    // system asks for reduced motion; Windows "Animation effects: off" sets that preference.
+    const reduced = sheet.match(
+      /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.alert-spin \{([^}]*)\}/,
+    );
+    expect(reduced?.[1]).toMatch(/animation:\s*alert-spin\s+[2-9]/);
   });
 });

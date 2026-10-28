@@ -13,7 +13,7 @@ type Announce = (input: AnnounceInput) => void;
 
 const AnnounceContext = createContext<Announce>(() => undefined);
 
-/** Hook returning a function that shows or updates a banner under the header. */
+/** Hook returning a function that shows or updates a toast at the bottom of the window. */
 export function useAnnounce(): Announce {
   return useContext(AnnounceContext);
 }
@@ -37,11 +37,12 @@ export function AnnouncerProvider({ children }: { children: ReactNode }) {
 
   return (
     <AnnounceContext.Provider value={announce}>
-      <div className="banner-stack">
+      {children}
+      <div className="toast-stack">
         {banners.map((b) => (
           <Alert
             key={b.key}
-            className="banner"
+            className="toast"
             variant={b.variant === "progress" ? "info" : b.variant}
             progress={b.variant === "progress"}
             title={b.title}
@@ -54,7 +55,6 @@ export function AnnouncerProvider({ children }: { children: ReactNode }) {
           />
         ))}
       </div>
-      {children}
     </AnnounceContext.Provider>
   );
 }

@@ -51,7 +51,7 @@
     .crop-editor,
     .crop-switch,
     .alert-actions,
-    .banner-stack,
+    .toast-stack,
     .modal .row
   ) {
   gap: var(--vr-gap);
@@ -76,6 +76,10 @@
 
 [data-ui="vr"] .alert {
   padding: var(--vr-gap);
+}
+[data-ui="vr"] .toast-stack {
+  bottom: calc(var(--vr-gap) * 3 + env(safe-area-inset-bottom, 0px));
+  width: min(100% - var(--vr-gap) * 2, 1480px);
 }
 
 /* Screen frame shared by the three VR screens. */

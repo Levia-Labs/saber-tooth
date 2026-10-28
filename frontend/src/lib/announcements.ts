@@ -64,3 +64,20 @@ export function nextExpiry(list: Banner[]): number | null {
   const times = list.flatMap((b) => (b.expiresAt === null ? [] : [b.expiresAt]));
   return times.length === 0 ? null : Math.min(...times);
 }
+
+/** The keyed result toast for a finished batch: success, warning when some failed, danger when all did. */
+export function batchSummary(
+  key: string,
+  t: { installed: number; skipped: number; failed: number },
+  reasons: string[],
+): AnnounceInput {
+  const variant: AnnounceVariant =
+    t.failed === 0 ? "success" : t.installed + t.skipped === 0 ? "danger" : "warning";
+  const counts = `Installed ${t.installed}, skipped ${t.skipped}, failed ${t.failed}.`;
+  return {
+    key,
+    variant,
+    title: key,
+    message: reasons.length ? `${counts} ${reasons.join("; ")}` : counts,
+  };
+}

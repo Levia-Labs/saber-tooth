@@ -182,7 +182,7 @@ describe("BeatSaver view", () => {
         body: { ids: ["k1", "k3"] },
       }),
     );
-    expect(await screen.findByText("Installed 1, skipped 0, failed 1.")).toBeInTheDocument();
+    expect(await screen.findByText(/Installed 1, skipped 0, failed 1\./)).toBeInTheDocument();
     expect(screen.getByText(/k3: Needs Noodle/)).toBeInTheDocument();
     expect(screen.queryByText("3 selected")).toBeNull();
   });
@@ -197,7 +197,7 @@ describe("BeatSaver view", () => {
       expect(within(row).getByRole("img", { name: /^Downloading\./ })).toBeInTheDocument(),
     );
     expect(within(row).queryByText("Downloading")).toBeNull();
-    expect(screen.getByText("Downloading 1 map")).toBeInTheDocument();
+    expect(document.querySelector(".toast-stack .alert-spin")).not.toBeNull();
     expect(within(row).getByRole("button", { name: "Download Song 1" })).toBeDisabled();
   });
 
