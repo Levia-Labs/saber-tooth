@@ -173,3 +173,37 @@
 [data-ui="vr"] .nps-chart svg {
   height: 14rem;
 }
+
+/* Library cards. */
+[data-ui="vr"] .vr-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vr-gap);
+  max-width: 22rem;
+}
+[data-ui="vr"] .vr-card {
+  display: flex;
+  gap: var(--vr-gap);
+  padding: var(--vr-gap);
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+[data-ui="vr"] .vr-card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  gap: var(--vr-gap);
+}
+[data-ui="vr"] .vr-card-title {
+  margin: 0;
+  font-size: calc(var(--vr-text) * 1.2);
+  overflow-wrap: anywhere;
+}
+[data-ui="vr"] .vr-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--vr-gap);
+}

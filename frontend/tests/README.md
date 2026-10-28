@@ -14,3 +14,4 @@ Vitest suites run with `task st:web:test`.
 10. `crophelpers.tsx`, `croplib.test.ts`, `cropchart.test.tsx`, `croppanel.test.tsx`, `cropwiring.test.tsx`: the crop timeline fixture and API stub, snapping helpers, the SVG chart, the panel states and its place on the map page.
 11. `vrstatus.test.tsx`, `vrmodepure.test.ts`, `vrmode.test.tsx`: the VR status poll, the pure mode decision and the `VrModeProvider` redirects, attribute and banner.
 12. `vrcss.test.ts`: reads `src/styles/vr.css` as text and pins the 22 px, 64 px and 16 px sizes, the scoping, focus ring, hidden tooltips and grid.
+13. `vrhelpers.tsx`, `vrpresets.test.ts`, `vrlibrary.test.tsx`: the VR render and observer helpers, the pure presets and sorts, and the `/vr` Library screen (cards, presets, sort, scroll loading).
