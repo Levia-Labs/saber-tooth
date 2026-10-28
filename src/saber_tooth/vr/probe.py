@@ -12,6 +12,11 @@ WINDOWS_PROCESSES = {
     "vrcompositor.exe": "SteamVR",
     "virtualdesktop.streamer.exe": "Virtual Desktop",
 }
+LINUX_PROCESSES = {
+    "vrserver": "SteamVR",
+    "monado-service": "Monado",
+    "wivrn-server": "WiVRn",
+}
 
 
 @dataclass(frozen=True)
@@ -44,15 +49,29 @@ def probe_windows(readers: Readers) -> Probe:
     return Probe(sorted(found), _xr(readers))
 
 
+def _linux_runtime(comm: str) -> str | None:
+    name = comm.strip().lower()
+    if name in LINUX_PROCESSES:
+        return LINUX_PROCESSES[name]
+    return "ALVR" if name.startswith("alvr") else None
+
+
+def probe_linux(readers: Readers) -> Probe:
+    found = {_linux_runtime(comm) for comm in _names(readers.processes)}
+    return Probe(sorted(name for name in found if name), _xr(readers))
+
+
 def probe_macos(readers: Readers) -> Probe:
     """No PC VR runtime exists on macOS, so nothing is read."""
     return Probe()
 
 
 def probe(os_name: str, readers: Readers) -> Probe:
-    """The probe for `os_name` (`windows`, `macos`); any other name finds nothing."""
+    """The probe for `os_name` (`windows`, `linux`, `macos`); any other name finds nothing."""
     if os_name == "windows":
         return probe_windows(readers)
+    if os_name == "linux":
+        return probe_linux(readers)
     if os_name == "macos":
         return probe_macos(readers)
     return Probe()
