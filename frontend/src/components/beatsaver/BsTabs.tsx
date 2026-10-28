@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import { Icon, type IconName } from "../icons";
+import { SectionTabs } from "../SectionTabs";
 import { Tip } from "../Tip";
 
 const TABS = [
@@ -39,9 +40,7 @@ export function BsTabs({
   return (
     <div className="lib-bar">
       <div className="lib-title">
-        <h1 id={headingId} tabIndex={-1} data-page-heading>
-          {heading}
-        </h1>
+        <SectionTabs active="beatsaver" heading={heading} headingId={headingId} />
         {note && <span className="count">{note}</span>}
       </div>
       <nav className="bs-tabs" aria-label="BeatSaver sections">

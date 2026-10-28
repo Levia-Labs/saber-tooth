@@ -5,6 +5,7 @@ import { useFacets, useLibrary, useLiveRows } from "../api/queries";
 import { useJobRunner } from "../api/jobs";
 import { FixOutcomes } from "../components/FixOutcomes";
 import { JobOutcome } from "../components/JobOutcome";
+import { SectionTabs } from "../components/SectionTabs";
 import { LibraryTable } from "../components/LibraryTable";
 import { LibraryMobileBar } from "../components/LibraryMobileBar";
 import { LibraryTools } from "../components/LibraryTools";
@@ -35,9 +36,7 @@ export function LibraryPage() {
     <section className="library" aria-labelledby="library-heading">
       <div className="lib-bar">
         <div className="lib-title">
-          <h1 id="library-heading" tabIndex={-1} data-page-heading>
-            Library
-          </h1>
+          <SectionTabs active="library" heading="Library" headingId="library-heading" />
           <span className="count" aria-live="polite">
             {library.isPending ? "" : `${total} ${total === 1 ? "map" : "maps"}`}
           </span>

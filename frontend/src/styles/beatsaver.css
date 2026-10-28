@@ -1,11 +1,7 @@
 /* BeatSaver view. The table reuses the library's scroll region, grid, header and row styles. */
-.masthead {
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.6rem 1.5rem;
-}
 .mode-switch {
   display: inline-flex;
+  flex: none;
   border: 1px solid var(--line);
   border-radius: 999px;
   overflow: hidden;

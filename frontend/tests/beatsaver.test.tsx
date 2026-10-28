@@ -82,7 +82,7 @@ describe("BeatSaver view", () => {
     ).toBeGreaterThan(0);
   });
 
-  test("the header switch links Library and BeatSaver and marks the route", async () => {
+  test("the section tabs link Library and BeatSaver and mark the route", async () => {
     bsApi();
     renderApp("/beatsaver");
     await screen.findByText("Song 1");

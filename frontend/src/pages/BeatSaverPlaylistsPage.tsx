@@ -73,7 +73,12 @@ function PlaylistDetail({ id }: { id: string }) {
   useDocumentTitle(name);
   return (
     <section className="library" aria-labelledby="bs-heading">
-      <BsTabs tab="playlists" heading={name} headingId="bs-heading" note={playlist?.owner} />
+      <BsTabs
+        tab="playlists"
+        heading={name}
+        headingId="bs-heading"
+        note={playlist ? `${name} - ${playlist.owner}` : undefined}
+      />
       <BsResults
         query={query}
         controls={controls}

@@ -126,7 +126,10 @@ describe("routes", () => {
     await screen.findByText("No maps match these filters");
     await router.navigate("/maps/id0000000001");
     const main = within(screen.getByRole("main"));
-    const back = await main.findAllByRole("link", { name: /Library/ });
-    expect(back[0]).toHaveAttribute("href", "/?status=error");
+    await waitFor(() =>
+      expect(
+        main.getAllByRole("link", { name: /Library/ }).map((a) => a.getAttribute("href")),
+      ).toContain("/?status=error"),
+    );
   });
 });

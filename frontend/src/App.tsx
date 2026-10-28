@@ -44,27 +44,6 @@ function useFocusHeading() {
   }, [pathname]);
 }
 
-/** Library | BeatSaver switch: two real links, the active one follows the route. */
-function ModeSwitch() {
-  const { pathname } = useLocation();
-  const onBeatSaver = pathname === "/beatsaver" || pathname.startsWith("/beatsaver/");
-  const items = [
-    { to: "/", label: "Library", active: !onBeatSaver, tip: "Maps in your CustomLevels folder." },
-    { to: "/beatsaver", label: "BeatSaver", active: onBeatSaver, tip: "Search and download maps." },
-  ];
-  return (
-    <nav className="mode-switch" aria-label="Section">
-      {items.map((i) => (
-        <Tip key={i.to} text={i.tip}>
-          <Link to={i.to} aria-current={i.active ? "page" : undefined}>
-            {i.label}
-          </Link>
-        </Tip>
-      ))}
-    </nav>
-  );
-}
-
 export function Shell() {
   useFocusHeading();
   const { pathname } = useLocation();
@@ -82,7 +61,6 @@ export function Shell() {
             <span className="blue">tooth</span>
           </span>
         </Link>
-        <ModeSwitch />
         <Tip text="What saber-tooth is">
           <Link
             className="about-link"
