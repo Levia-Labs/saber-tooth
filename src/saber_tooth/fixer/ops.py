@@ -5,6 +5,7 @@ from dataclasses import dataclass, replace
 from typing import ClassVar
 
 from saber_tooth.fixer import codec
+from saber_tooth.fixer.cow import Draft
 from saber_tooth.fixer.fill_op import Fill
 from saber_tooth.fixer.sliders import retarget
 from saber_tooth.mapio.write import BOX_KEYS, FX_KEY
@@ -166,10 +167,10 @@ def op_from_dict(d: dict) -> Op:
         raise ValueError(f"unknown or malformed operation: {e}") from e
 
 
-def _diff(beatmap: Beatmap, name: str) -> Difficulty:
-    if name not in beatmap.difficulties:
+def _diff(draft: Draft, name: str) -> Difficulty:
+    if name not in draft.map.difficulties:
         raise OpConflict(f"difficulty {name} does not exist")
-    return beatmap.difficulties[name]
+    return draft.own(name)
 
 
 def _take(d: Difficulty, note: Note, what: str) -> None:
@@ -194,13 +195,14 @@ def _fill_walls(d: Difficulty, op: Fill) -> None:
     d.walls.sort()
 
 
-def _apply_lightshow(beatmap: Beatmap, op: ApplyLightshow) -> None:
-    beatmap.info.environment = op.environment
-    beatmap.info.color_scheme = op.color_scheme
+def _apply_lightshow(draft: Draft, op: ApplyLightshow) -> None:
+    info = draft.info()
+    info.environment = op.environment
+    info.color_scheme = op.color_scheme
     for name, (events, boosts, groups) in copy.deepcopy(op.events).items():
-        if name not in beatmap.difficulties:
+        if name not in draft.map.difficulties:
             continue
-        _set_show(beatmap.difficulties[name], events, boosts, groups)
+        _set_show(draft.own(name), events, boosts, groups)
 
 
 def _set_show(d: Difficulty, events: list, boosts: list, groups: dict) -> None:
@@ -210,77 +212,77 @@ def _set_show(d: Difficulty, events: list, boosts: list, groups: dict) -> None:
     d.raw.update(groups)
 
 
-def _light_absent(beatmap: Beatmap, op: ApplyLightshow) -> None:
+def _light_absent(draft: Draft, op: ApplyLightshow) -> None:
     """Difficulties the payload lacks (added in the same apply) get its first show."""
     if not op.events:
         return
     events, boosts, groups = copy.deepcopy(next(iter(op.events.values())))
-    for name, d in beatmap.difficulties.items():
+    for name in list(draft.map.difficulties):
         if name not in op.events:
-            _set_show(d, events, boosts, copy.deepcopy(groups))
+            _set_show(draft.own(name), events, boosts, copy.deepcopy(groups))
 
 
-def _add_difficulty(beatmap: Beatmap, op: AddDifficulty) -> None:
+def _add_difficulty(draft: Draft, op: AddDifficulty) -> None:
     name = op.difficulty.name
-    if name in beatmap.difficulties:
+    if name in draft.map.difficulties:
         raise OpConflict(f"difficulty {name} already exists")
-    beatmap.difficulties[name] = copy.deepcopy(op.difficulty)
-    ordered = sorted(beatmap.difficulties.items(), key=lambda kv: RANKS.get(kv[0], 99))
-    beatmap.difficulties = dict(ordered)
+    draft.map.difficulties[name] = copy.deepcopy(op.difficulty)
+    draft.adopt(name)
+    ordered = sorted(draft.map.difficulties.items(), key=lambda kv: RANKS.get(kv[0], 99))
+    draft.map.difficulties = dict(ordered)
 
 
-def _apply_one(beatmap: Beatmap, op: Op) -> None:
+def _apply_one(draft: Draft, op: Op) -> None:
     match op:
         case ApplyLightshow():
-            _apply_lightshow(beatmap, op)
+            _apply_lightshow(draft, op)
         case AddDifficulty():
-            _add_difficulty(beatmap, op)
+            _add_difficulty(draft, op)
         case Fill():
-            d = _diff(beatmap, op.difficulty)
+            d = _diff(draft, op.difficulty)
             for n in op.notes:
                 if not op.beat_start - EPS <= n.beat <= op.beat_end + EPS:
                     raise OpConflict(f"fill: note at beat {n.beat:g} is outside the range")
                 _put(d, n, "fill")
             _fill_walls(d, op)
         case Move():
-            d = _diff(beatmap, op.difficulty)
+            d = _diff(draft, op.difficulty)
             _take(d, op.note, "move")
             moved = replace(op.note, x=op.x, y=op.y, cut=op.cut)
             _put(d, moved, "move")
             retarget(d, op.note, moved)
         case Flip():
-            d = _diff(beatmap, op.difficulty)
+            d = _diff(draft, op.difficulty)
             _take(d, op.note, "flip")
             flipped = replace(op.note, cut=op.cut)
             d.notes.append(flipped)
             retarget(d, op.note, flipped)
         case Recolor():
-            d = _diff(beatmap, op.difficulty)
+            d = _diff(draft, op.difficulty)
             _take(d, op.note, "recolor")
             recoloured = replace(op.note, color=Color(1 - op.note.color))
             d.notes.append(recoloured)
             retarget(d, op.note, recoloured)
         case Delete():
-            d = _diff(beatmap, op.difficulty)
+            d = _diff(draft, op.difficulty)
             _take(d, op.note, "delete")
             retarget(d, op.note, None)
         case DeleteWall():
-            d = _diff(beatmap, op.difficulty)
+            d = _diff(draft, op.difficulty)
             if op.wall not in d.walls:
                 raise OpConflict(
                     f"delete-wall: wall at beat {op.wall.beat:g} not found in {d.name}"
                 )
             d.walls.remove(op.wall)
-    for d in beatmap.difficulties.values():
-        d.notes.sort()
 
 
 def apply_ops(beatmap: Beatmap, ops: list[Op]) -> Beatmap:
-    """Return a deep copy of the map with every op applied in order; the input is untouched."""
-    out = copy.deepcopy(beatmap)
+    """Return a copy of the map with every op applied in order; the input is untouched.
+    Copy-on-write: only the difficulties and lists an op mutates are copied, the rest is shared."""
+    draft = Draft(beatmap)
     for op in ops:
-        _apply_one(out, op)
+        _apply_one(draft, op)
     shows = [op for op in ops if isinstance(op, ApplyLightshow)]
     if shows:
-        _light_absent(out, shows[-1])
-    return out
+        _light_absent(draft, shows[-1])
+    return draft.finish()
