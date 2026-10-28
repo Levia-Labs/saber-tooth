@@ -80,3 +80,19 @@ export function statusLabel(item: StatusFields): string {
 export function mapName(item: Pick<MapItem, "title" | "folder">): string {
   return item.title || item.folder;
 }
+
+/** What waits on the map page: fixes to review and approved fixes not yet applied. */
+export function reviewNeeds(item: Pick<MapItem, "pending" | "approved">): {
+  count: number;
+  text: string;
+} {
+  const parts: string[] = [];
+  if (item.pending > 0) {
+    parts.push(`${item.pending} ${item.pending === 1 ? "fix" : "fixes"} waiting for review`);
+  }
+  if (item.approved > 0) {
+    const fixes = item.approved === 1 ? "fix" : "fixes";
+    parts.push(`${item.approved} approved ${fixes} not applied`);
+  }
+  return { count: item.pending + item.approved, text: parts.join(", ") };
+}

@@ -1,9 +1,10 @@
 import { formatEnvironment } from "../lib/environment";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link, useParams } from "react-router";
-import { ApiError, applyMap, approveAll, scanMap } from "../api/client";
+import { Link, useNavigate, useParams } from "react-router";
+import { ApiError, applyMap, approveAll, scanMap, deleteMap } from "../api/client";
 import { Alert, SpecAlert } from "../components/Alert";
+import { useAnnounce } from "../components/Announcer";
 import { FixesSkeleton, MapHeadSkeleton } from "../components/Skeletons";
 import { errorToAlert } from "../lib/alerts";
 import { FixButton } from "../components/FixButton";
@@ -25,6 +26,8 @@ import { NotFoundPage } from "./NotFoundPage";
 export function MapPage() {
   const { id = "" } = useParams();
   const client = useQueryClient();
+  const navigate = useNavigate();
+  const announce = useAnnounce();
   const map = useMap(id);
   const proposals = useProposals(id);
   const [approveError, setApproveError] = useState<unknown>(null);
@@ -51,6 +54,22 @@ export function MapPage() {
       await refresh();
     } catch (err) {
       setApproveError(err);
+    }
+  };
+  const remove = async () => {
+    try {
+      const out = await deleteMap(id);
+      client.removeQueries({ queryKey: keys.map(id) });
+      client.removeQueries({ queryKey: keys.proposals(id) });
+      await navigate("/");
+      await client.invalidateQueries({ queryKey: ["maps"] });
+      announce({ variant: "success", title: "Deleted", message: out.deleted });
+    } catch (err) {
+      announce({
+        variant: "danger",
+        title: "Could not delete the map",
+        message: err instanceof Error ? err.message : "unknown error",
+      });
     }
   };
   const approved = list.filter((p) => p.status === "approved").length;
@@ -150,6 +169,22 @@ export function MapPage() {
                   tip={TIPS.approveAll}
                   text
                   disabled={pendingCount === 0}
+                />
+              </ConfirmDialog>
+              <ConfirmDialog
+                title="Delete permanently?"
+                description={`"${map.data?.folder ?? name}" is removed from disk and cannot be undone.`}
+                confirmLabel="Delete"
+                danger
+                onConfirm={() => void remove()}
+              >
+                <ActionButton
+                  icon="trash"
+                  label="Delete"
+                  tip={TIPS.delete}
+                  text
+                  variant="danger"
+                  disabled={running || !map.data}
                 />
               </ConfirmDialog>
               <ActionButton

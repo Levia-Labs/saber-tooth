@@ -6,11 +6,20 @@ interface Props {
   description: string;
   confirmLabel: string;
   onConfirm: () => void;
+  /** Style the confirm button as destructive. */
+  danger?: boolean;
   /** The element that opens the dialog; it receives focus again when the dialog closes. */
   children: ReactElement;
 }
 
-export function ConfirmDialog({ title, description, confirmLabel, onConfirm, children }: Props) {
+export function ConfirmDialog({
+  title,
+  description,
+  confirmLabel,
+  onConfirm,
+  danger,
+  children,
+}: Props) {
   return (
     <Dialog.Root>
       <Dialog.Trigger asChild>{children}</Dialog.Trigger>
@@ -21,7 +30,7 @@ export function ConfirmDialog({ title, description, confirmLabel, onConfirm, chi
           <Dialog.Description>{description}</Dialog.Description>
           <div className="row">
             <Dialog.Close className="btn plain">Cancel</Dialog.Close>
-            <Dialog.Close className="btn primary" onClick={onConfirm}>
+            <Dialog.Close className={danger ? "btn danger" : "btn primary"} onClick={onConfirm}>
               {confirmLabel}
             </Dialog.Close>
           </div>

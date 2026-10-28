@@ -28,6 +28,22 @@ class WriteRefused(Exception):
     """Raised when a write would touch a pre-existing map folder."""
 
 
+class LevelsRoot:
+    """A levels directory; `guard` accepts only real, direct child folders of it."""
+
+    def __init__(self, root: Path):
+        self.root = root
+
+    def guard(self, path: Path) -> Path:
+        """Return `path` when it is a non-symlink directory directly under the root."""
+        # Junctions are Windows directory links that is_symlink() does not report.
+        if path.is_symlink() or path.is_junction() or not path.is_dir():
+            raise WriteRefused(f"not a map folder: {path}")
+        if path.resolve().parent != self.root.resolve():
+            raise WriteRefused(f"not a direct child of the levels folder: {path}")
+        return path
+
+
 class LevelsWriter:
     """Writes new map folders under root; never into folders that already existed."""
 

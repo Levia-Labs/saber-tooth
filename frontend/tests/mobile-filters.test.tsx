@@ -205,7 +205,7 @@ describe("icon-only actions on mobile", () => {
     const { container } = renderApp("/");
     await screen.findByRole("link", { name: /Review Song 1/ });
     expect(container.querySelector(".short")).toBeNull();
-    expect(screen.getByRole("button", { name: /Scan Song 1/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Fix Song 1/ })).toBeInTheDocument();
   });
 
   test("unreadable maps show only the chip on mobile; the reason stays in its name", async () => {

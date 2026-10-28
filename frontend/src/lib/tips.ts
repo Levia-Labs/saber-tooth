@@ -14,6 +14,7 @@ export const TIPS = {
   reject: "Discard this fix.",
   overlaps:
     "Approving both is fine: saber-tooth applies them in order and re-checks the later one.",
+  delete: "Delete this map folder from disk for good. This cannot be undone.",
   approveAll: "Accept every proposed fix for this map. They are written when you click Apply.",
 } as const;
 

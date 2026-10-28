@@ -27,6 +27,7 @@ from saber_tooth.api.web_routes import register as register_web_routes
 from saber_tooth.audio import encode_egg
 from saber_tooth.beatsaver.client import BeatSaverClient
 from saber_tooth.service import ApplyConflict, MapNotFound, MapUnreadable, Service
+from saber_tooth.service.errors import DeleteRefused
 from saber_tooth.store import Store
 
 log = logging.getLogger(__name__)
@@ -92,6 +93,7 @@ def create_app(
         return _error(404, str(exc))
 
     @app.exception_handler(MapUnreadable)
+    @app.exception_handler(DeleteRefused)
     @app.exception_handler(ApplyConflict)
     async def _conflict(_: Request, exc: Exception):
         return _error(409, str(exc))
@@ -108,6 +110,10 @@ def create_app(
 
     # The library, cover and SPA routes are registered after the JSON routes below so the
     # catch-all /api/* 404 never shadows them.
+    @app.delete("/api/maps/{map_id}")
+    def delete_map(map_id: str):
+        return service.delete_map(api.map_id(map_id))
+
     @app.post("/api/maps/{map_id}/scan")
     def scan(map_id: str):
         return api.scan(map_id)

@@ -215,6 +215,23 @@ class Store(MapQueries, ProposalClaims):
                     self._db.execute("DELETE FROM scans WHERE map_id=?", (mid,))
             self._db.commit()
 
+    def has_active_job(self, map_id: str) -> bool:
+        return bool(
+            self._query(
+                "SELECT 1 FROM jobs WHERE map_id=? AND status IN ('queued','running') LIMIT 1",
+                (map_id,),
+            )
+        )
+
+    def delete_map(self, map_id: str) -> None:
+        """Drop a map's rows from maps, scans, proposals and jobs."""
+        with self._lock:
+            self._db.execute("DELETE FROM maps WHERE id=?", (map_id,))
+            self._db.execute("DELETE FROM scans WHERE map_id=?", (map_id,))
+            self._db.execute("DELETE FROM proposals WHERE map_id=?", (map_id,))
+            self._db.execute("DELETE FROM jobs WHERE map_id=?", (map_id,))
+            self._db.commit()
+
     def approved(self, map_id: str) -> list[dict]:
         return [p for p in self.proposals(map_id) if p["status"] == "approved"]
 

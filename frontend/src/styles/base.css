@@ -187,6 +187,13 @@ button.btn {
 .btn.reject {
   border-color: var(--red);
 }
+.btn.danger {
+  border-color: var(--red);
+  color: var(--red);
+}
+.btn.danger .ic {
+  color: var(--red);
+}
 .btn.plain {
   background: transparent;
 }
@@ -209,6 +216,11 @@ button.btn {
   line-height: 18px;
   text-align: center;
   font-variant-numeric: tabular-nums;
+}
+/* The eye is the row's only route to Scan and Apply, so waiting work tints it. */
+.needs-action {
+  color: var(--amber);
+  border-color: color-mix(in srgb, var(--amber) 45%, transparent);
 }
 input[type="text"],
 input[type="url"],

@@ -18,6 +18,7 @@ from saber_tooth.lightshow import learn as learn_templates
 from saber_tooth.mapio import MapParseError, load_map
 from saber_tooth.mapio.errors import safe_name
 from saber_tooth.model import Beatmap
+from saber_tooth.service.delete import DeleteMixin
 from saber_tooth.service.duration import folder_duration
 from saber_tooth.service.errors import ApplyConflict, MapNotFound, MapUnreadable
 from saber_tooth.service.lightshow_set import LEARNED, active_templates
@@ -42,7 +43,7 @@ class _Stale(Exception):
     """The approved set changed between reading it and writing the result."""
 
 
-class Service:
+class Service(DeleteMixin):
     bundled: Path | None = BUNDLED  # tests may point this elsewhere
 
     def __init__(

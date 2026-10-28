@@ -111,6 +111,9 @@ export const applyMap = (id: string): Promise<Started> =>
 
 export const fixMap = (id: string): Promise<Started> => request("POST", `/api/maps/${seg(id)}/fix`);
 
+export const deleteMap = (id: string): Promise<{ deleted: string }> =>
+  request("DELETE", `/api/maps/${seg(id)}`);
+
 export const approveAll = (id: string): Promise<{ approved: number }> =>
   request("POST", `/api/maps/${seg(id)}/approve-all`);
 

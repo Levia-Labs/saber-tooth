@@ -10,3 +10,4 @@ Vitest suites run with `task st:web:test`.
 6. `timeline.test.ts`: note grid and wall geometry.
 7. `pages.test.tsx`: map page, approve flows, generate form, 404 and back link.
 8. `fixes.test.tsx`: touch long-press tooltips, search flush on close and approve all errors.
+9. `delete.test.tsx`: Delete button, confirm dialog, permanent delete, banner and error path.

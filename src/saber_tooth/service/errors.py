@@ -17,5 +17,9 @@ class MapNotFound(KeyError):
         return str(self.args[0]) if self.args else "map not found"
 
 
+class DeleteRefused(ValueError):
+    """The map has a queued or running job and cannot be deleted."""
+
+
 class MapUnreadable(ValueError):
     """The map folder cannot be parsed."""

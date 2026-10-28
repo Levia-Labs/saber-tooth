@@ -80,8 +80,24 @@ describe("library page", () => {
       "href",
       "/maps/id0000000001",
     );
-    expect(row.getByRole("button", { name: "Scan Song 1" })).toBeEnabled();
-    expect(row.queryByRole("button", { name: /Apply approved/ })).toBeNull();
+    // A row keeps only Fix and Review; the page holds Scan and Apply.
+    expect(row.getByRole("button", { name: "Fix Song 1" })).toBeEnabled();
+    expect(row.queryByRole("button", { name: /Scan|Apply approved/ })).toBeNull();
+    const review = row.getByRole("link", { name: /Review Song 1/ });
+    expect(review).toHaveClass("needs-action");
+    expect(within(review).getByText("2")).toBeInTheDocument();
+  });
+
+  test("review shows approved-but-unapplied fixes as needing action", async () => {
+    api();
+    renderApp("/");
+    const four = (await screen.findByRole("link", { name: "Song 4" })).closest("[role=row]");
+    const review = within(four as HTMLElement).getByRole("link", { name: /Review Song 4/ });
+    expect(review).toHaveAccessibleName("Review Song 4, 1 approved fix not applied");
+    expect(review).toHaveClass("needs-action");
+    const two = (await screen.findByRole("link", { name: "Song 2" })).closest("[role=row]");
+    const quiet = within(two as HTMLElement).getByRole("link", { name: "Review Song 2" });
+    expect(quiet).not.toHaveClass("needs-action");
   });
 
   test("each column cell shows only its own data", async () => {
@@ -140,15 +156,10 @@ describe("library page", () => {
     api();
     renderApp("/");
     const four = (await screen.findByRole("link", { name: "Song 4" })).closest("[role=row]");
-    expect(
-      within(four as HTMLElement).getByRole("button", { name: /Apply approved/ }),
-    ).toBeEnabled();
     expect(within(four as HTMLElement).getAllByText("–").length).toBeGreaterThan(0);
     const three = (await screen.findByRole("link", { name: "Song 3" })).closest("[role=row]");
     expect(within(three as HTMLElement).getByRole("img", { name: "Scanning" })).toBeInTheDocument();
-    expect(
-      within(three as HTMLElement).getByRole("button", { name: "Scan Song 3" }),
-    ).toBeDisabled();
+    expect(within(three as HTMLElement).getByRole("button", { name: "Fix Song 3" })).toBeDisabled();
   });
 
   test("filters in the URL become API parameters", async () => {
@@ -231,28 +242,5 @@ describe("column filters", () => {
     await user.hover(screen.getByRole("link", { name: /Generate map/ }));
     const tip = await screen.findByRole("tooltip");
     expect(tip).toHaveTextContent("Create a new map with all five difficulties");
-  });
-});
-
-describe("live job status", () => {
-  test("starting a scan shows queued on that row at once and polls the job", async () => {
-    const { calls } = mockFetch((url, init) => {
-      if (url.pathname === "/api/maps/facets") return FACETS;
-      if (url.pathname === "/api/maps/id0000000002/scan" && init?.method === "POST") {
-        return { job: "j9" };
-      }
-      if (url.pathname === "/api/jobs/j9") {
-        return { id: "j9", kind: "scan", status: "running", error: null, result: null };
-      }
-      return { items, total: items.length, offset: 0, limit: 40 };
-    });
-    renderApp("/");
-    const user = userEvent.setup();
-    const link = await screen.findByRole("link", { name: "Song 2" });
-    const row = within(link.closest("[role=row]") as HTMLElement);
-    await user.click(row.getByRole("button", { name: "Scan Song 2" }));
-    expect(await row.findByRole("img", { name: "Queued" })).toBeInTheDocument();
-    expect(row.getByRole("button", { name: "Scan Song 2" })).toBeDisabled();
-    await waitFor(() => expect(calls.some((u) => u.pathname === "/api/jobs/j9")).toBe(true));
   });
 });
