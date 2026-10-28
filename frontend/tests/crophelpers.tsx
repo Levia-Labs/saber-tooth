@@ -1,4 +1,13 @@
 import type { CropEnd, CropPlan, CropWindow, EndKind, Timeline } from "../src/api/types";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { render } from "@testing-library/react";
+import type { ReactElement } from "react";
+import { MemoryRouter } from "react-router";
+import { makeQueryClient } from "../src/App";
+import { AnnouncerProvider } from "../src/components/Announcer";
+import { TipProvider } from "../src/components/Tip";
+import type { MapItem } from "../src/api/types";
+import { item, mockFetch } from "./helpers";
 
 const series = (scale: number): number[] =>
   Array.from({ length: 140 }, (_, i) => Math.round(((i % 20) / 20) * scale * 10) / 10);
@@ -55,3 +64,57 @@ export const TIMELINE: Timeline = {
   ],
   lengths: { "60": PLAN_60, "120": PLAN_120 },
 };
+
+export function renderPanel(ui: ReactElement) {
+  return render(
+    <QueryClientProvider client={makeQueryClient()}>
+      <TipProvider delayDuration={0}>
+        <AnnouncerProvider>
+          <MemoryRouter>{ui}</MemoryRouter>
+        </AnnouncerProvider>
+      </TipProvider>
+    </QueryClientProvider>,
+  );
+}
+
+interface ApiOptions {
+  timeline?: unknown;
+  jobStatus?: string;
+  jobError?: string | null;
+  map?: Partial<MapItem>;
+}
+
+export function cropApi(options: ApiOptions = {}) {
+  const posts: { path: string; body: unknown }[] = [];
+  const mock = mockFetch((url, init) => {
+    if (init?.method === "POST") {
+      posts.push({ path: url.pathname, body: JSON.parse(String(init.body ?? "{}")) });
+      return { job: "jc" };
+    }
+    if (url.pathname === "/api/maps/id0000000001") return item(1, options.map);
+    if (url.pathname === "/api/maps/id0000000001/proposals") return [];
+    if (url.pathname === "/api/maps/id0000000001/timeline") return options.timeline ?? TIMELINE;
+    if (url.pathname === "/api/jobs/j") {
+      return { id: "j", kind: "scan", status: "running", error: null, result: null };
+    }
+    if (url.pathname === "/api/jobs/jc") {
+      return {
+        id: "jc",
+        kind: "crop",
+        status: options.jobStatus ?? "done",
+        error: options.jobError ?? null,
+        result: {
+          map_id: "id0000000001",
+          folder: "Folder 1 [1 min]",
+          cropped_id: "id0000000099",
+          label: "1 min",
+          start_beat: 0,
+          end_beat: 128,
+          length_s: 64,
+        },
+      };
+    }
+    return { items: [item(1)], total: 1, offset: 0, limit: 40 };
+  });
+  return { ...mock, posts };
+}

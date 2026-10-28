@@ -16,3 +16,4 @@ Shared UI.
 11. `Skeletons.tsx`: layout-matching loading placeholders for the map page and route fallback.
 12. `FixButton.tsx`, `FixOutcomes.tsx`: the primary Fix action and the alerts under finished fixes.
 13. `NpsChart.tsx`: hand-written SVG notes-per-second chart for the crop panel: section bands, window handles, end marks.
+14. `CropPanel.tsx`: disclosure that loads the crop timeline on open; length switch, snapping chart, readout, Create and Reset, job banners and result link.

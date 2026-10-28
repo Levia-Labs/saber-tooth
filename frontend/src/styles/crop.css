@@ -68,3 +68,36 @@
   color: var(--muted);
   font-size: 0.9rem;
 }
+.crop-toggle {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.crop-switch {
+  display: inline-flex;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+.crop-readout {
+  margin: 0.5rem 0;
+  font-weight: 600;
+}
+.crop-amber {
+  color: var(--amber);
+}
+.crop-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+.crop-skeleton {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+.crop-skeleton-chart {
+  display: block;
+  height: 11rem;
+  border-radius: var(--radius);
+}
