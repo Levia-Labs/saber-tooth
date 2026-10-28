@@ -11,6 +11,7 @@ import "./styles/page.css";
 import "./styles/beatsaver.css";
 import "./styles/playlists.css";
 import "./styles/preview.css";
+import "./styles/crop.css";
 import "./styles/alerts.css";
 import "./styles/about.css";
 
