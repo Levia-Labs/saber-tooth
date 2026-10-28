@@ -102,7 +102,7 @@ later phase with its own spec.
 4. Port 8101 taken: the helper exits with a clear message naming `--port` and `VR_AGENT_URL`.
 5. Unknown OS or unreadable process list: that probe returns empty results; the others still run.
 6. WebXR missing or blocked: treated as unsupported, no console errors.
-7. LAN access on with an unlisted host: the existing host check answers 400; the docs show the needed setting.
+7. LAN access on with an unlisted host: the existing host check answers 403 (src/saber_tooth/api/**init**.py); the docs show the needed setting.
 
 ## Testing
 
