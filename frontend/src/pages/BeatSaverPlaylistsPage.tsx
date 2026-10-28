@@ -8,6 +8,7 @@ import {
   type BsPlaylistMaps,
 } from "../api/beatsaver";
 import { BsResults } from "../components/beatsaver/BsResults";
+import { BarSlotProvider } from "../components/beatsaver/BarSlot";
 import { BsTabs } from "../components/beatsaver/BsTabs";
 import type { Downloads } from "../components/beatsaver/downloads";
 import { PlaylistList } from "../components/beatsaver/PlaylistList";
@@ -73,25 +74,27 @@ function PlaylistDetail({ id }: { id: string }) {
   useDocumentTitle(name);
   return (
     <section className="library" aria-labelledby="bs-heading">
-      <BsTabs
-        heading={name}
-        headingId="bs-heading"
-        note={playlist ? `${name} - ${playlist.owner}` : undefined}
-      />
-      <BsResults
-        query={query}
-        controls={controls}
-        tab="playlists"
-        extra={({ downloads }) => (
-          <div className="bs-playlist-actions">
-            <Link className="btn plain" to="/beatsaver/playlists">
-              <Icon name="back" />
-              <span className="label-hide-mobile">All playlists</span>
-            </Link>
-            <DownloadAll query={query} downloads={downloads} />
-          </div>
-        )}
-      />
+      <BarSlotProvider>
+        <BsTabs
+          heading={name}
+          headingId="bs-heading"
+          note={playlist ? `${name} - ${playlist.owner}` : undefined}
+        />
+        <BsResults
+          query={query}
+          controls={controls}
+          tab="playlists"
+          extra={({ downloads }) => (
+            <div className="bs-playlist-actions">
+              <Link className="btn plain" to="/beatsaver/playlists">
+                <Icon name="back" />
+                <span className="label-hide-mobile">All playlists</span>
+              </Link>
+              <DownloadAll query={query} downloads={downloads} />
+            </div>
+          )}
+        />
+      </BarSlotProvider>
     </section>
   );
 }
@@ -102,8 +105,10 @@ function PlaylistSearch() {
   const query = useBsPlaylists(controls.state);
   return (
     <section className="library" aria-labelledby="bs-heading">
-      <BsTabs heading="BeatSaver playlists" headingId="bs-heading" />
-      <PlaylistList query={query} controls={controls} />
+      <BarSlotProvider>
+        <BsTabs heading="BeatSaver playlists" headingId="bs-heading" />
+        <PlaylistList query={query} controls={controls} />
+      </BarSlotProvider>
     </section>
   );
 }

@@ -38,7 +38,6 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.5rem 1rem;
-  margin-bottom: 0.5rem;
 }
 .bs-toolbar .filter-body {
   min-width: min(22rem, 100%);
@@ -293,7 +292,4 @@ button.bs-tag[aria-pressed="true"] {
 .bs-ups .ic {
   width: 0.95em;
   height: 0.95em;
-}
-.bs-toolbar .bs-tabs {
-  margin-left: auto;
 }

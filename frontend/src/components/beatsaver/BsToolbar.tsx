@@ -15,6 +15,7 @@ import { Icon } from "../icons";
 import { Tip } from "../Tip";
 import { LevelsBody, MoreBody, TagsBody, type Patch } from "./BsFilterBodies";
 import { BpmBody, LengthBody, RatingBody, UpvotesBody } from "./BsNumberBodies";
+import { InBar } from "./BarSlot";
 import { BsSectionTabs, type BsTab } from "./BsSectionTabs";
 import { PresetsBar } from "./PresetsBar";
 
@@ -84,22 +85,24 @@ function MoreFilters({ state, update, clear }: Omit<Props, "set" | "narrow" | "t
 export function BsToolbar({ state, update, set, clear, narrow, tab = "maps" }: Props) {
   const active = bsTotal(bsCounts(state)) > 0;
   return (
-    <div className={narrow ? "lib-mobile-bar bs-toolbar" : "bs-toolbar"}>
-      <PresetsBar state={state} onApply={set} />
-      <div className="mobile-filters">
-        {narrow && <OrderControls state={state} update={update} />}
-        <MoreFilters state={state} update={update} clear={clear} />
-        {active && (
-          <Tip text="Remove every filter.">
-            <button type="button" className="btn icon tap" onClick={clear}>
-              <Icon name="filter-x" />
-              <span className="sr">Clear filters</span>
-            </button>
-          </Tip>
-        )}
+    <InBar>
+      <div className={narrow ? "lib-mobile-bar bs-toolbar" : "bs-toolbar"}>
+        <PresetsBar state={state} onApply={set} />
+        <div className="mobile-filters">
+          {narrow && <OrderControls state={state} update={update} />}
+          <MoreFilters state={state} update={update} clear={clear} />
+          {active && (
+            <Tip text="Remove every filter.">
+              <button type="button" className="btn icon tap" onClick={clear}>
+                <Icon name="filter-x" />
+                <span className="sr">Clear filters</span>
+              </button>
+            </Tip>
+          )}
+        </div>
+        <BsSectionTabs tab={tab} />
       </div>
-      <BsSectionTabs tab={tab} />
-    </div>
+    </InBar>
   );
 }
 

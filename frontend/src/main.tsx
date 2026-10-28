@@ -9,6 +9,7 @@ import "./styles/chips.css";
 import "./styles/overlays.css";
 import "./styles/page.css";
 import "./styles/beatsaver.css";
+import "./styles/bsbar.css";
 import "./styles/playlists.css";
 import "./styles/preview.css";
 import "./styles/crop.css";

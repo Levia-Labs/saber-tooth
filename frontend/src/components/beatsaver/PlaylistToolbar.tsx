@@ -14,6 +14,7 @@ import { PL_TIPS } from "../../lib/pltips";
 import { TextFilterBody } from "../FilterBodies";
 import { Icon } from "../icons";
 import { Tip } from "../Tip";
+import { InBar } from "./BarSlot";
 import { BsSectionTabs } from "./BsSectionTabs";
 import {
   PlCreatedBody,
@@ -133,20 +134,22 @@ function OrderControls({ state, update }: { state: PlState; update: PlPatch }) {
 export function PlaylistToolbar({ state, update, clear, narrow }: Props) {
   const active = plTotal(plCounts(state)) > 0;
   return (
-    <div className={narrow ? "lib-mobile-bar bs-toolbar" : "bs-toolbar"}>
-      <div className="mobile-filters">
-        {narrow && <OrderControls state={state} update={update} />}
-        <FilterSheet state={state} update={update} clear={clear} />
-        {active && (
-          <Tip text={PL_TIPS.clearFilters}>
-            <button type="button" className="btn icon tap" onClick={clear}>
-              <Icon name="filter-x" />
-              <span className="sr">Clear filters</span>
-            </button>
-          </Tip>
-        )}
+    <InBar>
+      <div className={narrow ? "lib-mobile-bar bs-toolbar" : "bs-toolbar"}>
+        <div className="mobile-filters">
+          {narrow && <OrderControls state={state} update={update} />}
+          <FilterSheet state={state} update={update} clear={clear} />
+          {active && (
+            <Tip text={PL_TIPS.clearFilters}>
+              <button type="button" className="btn icon tap" onClick={clear}>
+                <Icon name="filter-x" />
+                <span className="sr">Clear filters</span>
+              </button>
+            </Tip>
+          )}
+        </div>
+        <BsSectionTabs tab="playlists" />
       </div>
-      <BsSectionTabs tab="playlists" />
-    </div>
+    </InBar>
   );
 }

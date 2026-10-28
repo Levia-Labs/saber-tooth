@@ -1,0 +1,13 @@
+.bs-bar-slot {
+  display: flex;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  min-width: 0;
+}
+.bs-bar-slot .bs-toolbar {
+  justify-content: flex-end;
+  margin-bottom: 0;
+}
+.bs-bar-slot .bs-tabs {
+  margin-left: 0;
+}
