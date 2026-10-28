@@ -57,5 +57,9 @@ export default defineConfig({
     setupFiles: ["./tests/setup.ts"],
     include: ["tests/**/*.test.{ts,tsx}"],
     css: false,
+    // Half the cores: every worker cold-compiles the lazy pages, and a full fan-out starved them
+    // past the 5 s asyncUtilTimeout.
+    maxWorkers: "50%",
+    testTimeout: 15_000,
   },
 });

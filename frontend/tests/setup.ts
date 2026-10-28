@@ -5,6 +5,15 @@ import { afterEach, vi } from "vitest";
 // Lazy routes cold-compile under parallel load; the 1 s default flaked findBy on first render.
 configure({ asyncUtilTimeout: 5000 });
 
+// Compile the lazy pages here, outside any test timer, so a first render never pays for it.
+await Promise.all([
+  import("../src/pages/MapPage"),
+  import("../src/pages/BeatSaverPage"),
+  import("../src/pages/BeatSaverPlaylistsPage"),
+  import("../src/pages/AboutPage"),
+  import("../src/pages/NewPage"),
+]);
+
 // jsdom has no layout: give scroll containers a size so the virtualiser renders rows.
 Object.defineProperty(HTMLElement.prototype, "clientHeight", { configurable: true, value: 600 });
 Object.defineProperty(HTMLElement.prototype, "clientWidth", { configurable: true, value: 1200 });
