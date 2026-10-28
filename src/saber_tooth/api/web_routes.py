@@ -114,6 +114,9 @@ def register(app: FastAPI, api: Api, web: Path) -> None:
     @app.get("/beatsaver", include_in_schema=False)
     @app.get("/beatsaver/playlists", include_in_schema=False)
     @app.get("/beatsaver/playlists/{map_id}", include_in_schema=False)
+    @app.get("/vr", include_in_schema=False)
+    @app.get("/vr/maps/{map_id}", include_in_schema=False)
+    @app.get("/vr/beatsaver", include_in_schema=False)
     def spa(map_id: str = ""):
         return FileResponse(
             web / "index.html", media_type="text/html", headers={"Cache-Control": SHELL_CACHE}

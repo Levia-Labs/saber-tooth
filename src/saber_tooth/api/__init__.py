@@ -25,6 +25,8 @@ from saber_tooth.api.hosts import (
 from saber_tooth.api.mcp_tools import build_mcp
 from saber_tooth.api.static import WebFiles
 from saber_tooth.api.upload import _save_upload
+from saber_tooth.api.vr_routes import register as register_vr
+from saber_tooth.api.vr_status import VrStatusClient
 from saber_tooth.api.web_routes import register as register_web_routes
 from saber_tooth.audio import encode_egg
 from saber_tooth.beatsaver.client import BeatSaverClient
@@ -42,10 +44,12 @@ def create_app(
     warm: bool = False,
     bs_client: BeatSaverClient | None = None,
     playlists_dir: Path | None = None,
+    vr_status: VrStatusClient | None = None,
 ) -> FastAPI:
     """Build the app; `warm` runs the first library refresh in a background thread.
 
-    `bs_client` and `playlists_dir` (default: env PLAYLISTS_DIR) configure the BeatSaver routes.
+    `bs_client` and `playlists_dir` (default: env PLAYLISTS_DIR) configure the BeatSaver routes;
+    `vr_status` (default: built from env VR_AGENT_URL) answers /api/vr/status.
     """
     api = Api(service)
     env_dir = os.environ.get("PLAYLISTS_DIR")
@@ -111,6 +115,7 @@ def create_app(
 
     register_beatsaver(app, bs)
     register_crop(app, crop_api)
+    register_vr(app, vr_status or VrStatusClient())
 
     # The library, cover and SPA routes are registered after the JSON routes below so the
     # catch-all /api/* 404 never shadows them.
