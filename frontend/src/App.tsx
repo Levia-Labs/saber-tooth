@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Suspense, useEffect, useRef } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { createBrowserRouter, Link, Outlet, useLocation, type RouteObject } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import { AnnouncerProvider } from "./components/Announcer";
@@ -137,15 +137,26 @@ export function createAppRouter() {
   return createBrowserRouter(routes);
 }
 
-export function App({
-  router = createAppRouter(),
-}: {
-  router?: ReturnType<typeof createBrowserRouter>;
-}) {
+type AppRouter = ReturnType<typeof createBrowserRouter>;
+
+/**
+ * One router and one query client for the life of the app. Built in the render body they were
+ * rebuilt whenever React re-ran `App` (an error retry, a Suspense replay): a second browser router
+ * then registered its own popstate listener and started loading beside the first.
+ */
+export function useAppInstances(router?: AppRouter) {
+  const [client] = useState(makeQueryClient);
+  const [own] = useState(() => (router ? null : createAppRouter()));
+  return { client, router: router ?? own };
+}
+
+export function App({ router }: { router?: AppRouter }) {
+  const instances = useAppInstances(router);
+  if (!instances.router) return null;
   return (
-    <QueryClientProvider client={makeQueryClient()}>
+    <QueryClientProvider client={instances.client}>
       <TipProvider delayDuration={300}>
-        <RouterProvider router={router} />
+        <RouterProvider router={instances.router} />
       </TipProvider>
     </QueryClientProvider>
   );
