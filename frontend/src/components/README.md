@@ -16,7 +16,7 @@ Shared UI.
 11. `Skeletons.tsx`: layout-matching loading placeholders for the map page and route fallback.
 12. `FixButton.tsx`, `FixOutcomes.tsx`: the primary Fix action and the alerts under finished fixes.
 13. `NpsChart.tsx`: hand-written SVG notes-per-second chart for the crop panel: section bands, window handles, end marks.
-14. `CropPanel.tsx`: the Crop tab body, mounted when the tab first shows and loading the crop timeline; length switch, free-drag chart, Save and Reset, job banners and result link. It posts song seconds; the server converts them to beats.
+14. `CropPanel.tsx`: the Crop tab body, mounted when the tab first shows and loading the crop timeline; length switch, free-drag chart, Save and Reset, job banners and result link. With `steps` (VR layout) the large step buttons of `CropSteps.tsx` show under the chart. It posts song seconds; the server converts them to beats.
 15. `CropSave.tsx`: "Save as new map" and "Save over this map" (warning style, `ConfirmDialog` with the danger option; hidden while a job runs).
 16. `MapFooter.tsx`: footer row on the map page: previous title, `index / total`, next title, from `GET /api/maps/{id}/neighbors` with the Library's last query (kept in sessionStorage); hidden when the request fails.
 17. `DropZone.tsx`: audio drop target and keyboard-reachable picker used by the generate page.

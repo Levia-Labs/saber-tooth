@@ -11,6 +11,7 @@ import {
   MIN_LENGTH_S,
   keepStart,
   moveEdge,
+  moveWindowToSection,
   nudgeEdge,
   sameSpan,
   shiftWindow,
@@ -21,6 +22,7 @@ import { Alert, SpecAlert } from "./Alert";
 import { useAnnounce } from "./Announcer";
 import { ActionButton } from "./Buttons";
 import { CropSave } from "./CropSave";
+import { CropSteps } from "./CropSteps";
 import { NpsChart, type Edge } from "./NpsChart";
 
 type Choice = CropLength | "unlimited";
@@ -85,9 +87,10 @@ interface EditorProps {
   folder: string;
   busy: boolean;
   audioUrl?: string | null;
+  steps?: boolean;
 }
 
-function CropEditor({ mapId, folder, data, busy, audioUrl }: EditorProps) {
+function CropEditor({ mapId, folder, data, busy, audioUrl, steps }: EditorProps) {
   const client = useQueryClient();
   const announce = useAnnounce();
   const crop = useJobRunner("Crop");
@@ -106,6 +109,12 @@ function CropEditor({ mapId, folder, data, busy, audioUrl }: EditorProps) {
     selection && setPicked(moveEdge(selection, edge, at, min, data.duration_s));
   const onStep = (edge: Edge, dir: 1 | -1, big: boolean) =>
     selection && setPicked(nudgeEdge(selection, edge, dir, big, min, data.duration_s));
+  /** The VR step buttons: the start jumps a section, the end moves a second. */
+  const onPress = (edge: Edge, dir: 1 | -1) => {
+    if (edge === "end") return onStep(edge, dir, true);
+    const starts = data.sections.map((s) => s.start_s);
+    if (selection) setPicked(moveWindowToSection(selection, starts, dir, min, data.duration_s));
+  };
   /** Move the whole window to a start, keeping its length. */
   const onShift = (at: number) =>
     selection && setPicked(shiftWindow(selection, at, data.duration_s));
@@ -184,6 +193,7 @@ function CropEditor({ mapId, folder, data, busy, audioUrl }: EditorProps) {
         onJump={onShift}
         audioUrl={audioUrl}
       />
+      {steps && <CropSteps onStep={onPress} />}
       <CropOutcome job={crop.job} error={crop.error} />
     </div>
   );
@@ -194,11 +204,13 @@ function CropBody({
   folder,
   busy,
   audioUrl,
+  steps,
 }: {
   mapId: string;
   folder: string;
   busy: boolean;
   audioUrl?: string | null;
+  steps?: boolean;
 }) {
   const timeline = useTimeline(mapId);
   if (timeline.isPending) return <CropSkeleton />;
@@ -217,6 +229,7 @@ function CropBody({
       data={timeline.data}
       busy={busy}
       audioUrl={audioUrl}
+      steps={steps}
     />
   );
 }
@@ -227,16 +240,26 @@ export function CropPanel({
   folder,
   busy,
   audioUrl,
+  steps = false,
 }: {
   mapId: string;
   folder: string;
   busy: boolean;
   audioUrl?: string | null;
+  /** Show the large step buttons of the VR layout under the chart. */
+  steps?: boolean;
 }) {
   return (
     <section className="crop-panel" aria-label="Crop to a highlight">
       <div id="crop-body">
-        <CropBody key={mapId} mapId={mapId} folder={folder} busy={busy} audioUrl={audioUrl} />
+        <CropBody
+          key={mapId}
+          mapId={mapId}
+          folder={folder}
+          busy={busy}
+          audioUrl={audioUrl}
+          steps={steps}
+        />
       </div>
     </section>
   );

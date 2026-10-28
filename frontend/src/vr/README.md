@@ -6,3 +6,4 @@ The VR layout: mode decision, headset status, screens and the CSS hooks they use
 2. `mode.ts`: the pure mode decision (URL, remembered choice, headset browser, default), storage helpers, `/vr` path mapping and the WebXR probe.
 3. `VrMode.tsx`: `VrModeProvider` and `useVrMode`: the decided mode, headset status, banner state, `choose`, the `data-ui` attribute and the redirects between desktop and VR paths.
 4. `presets.ts`, `VrNav.tsx`, `useNearEnd.ts`, `VrCard.tsx`, `VrLibraryPage.tsx`: the `/vr` Library screen (presets map onto the library query, state in the address, more cards on scroll).
+5. `VrMapPage.tsx`: the `/vr/maps/:id` screen; it reuses `CropPanel` with `steps` (the large step buttons of `../components/CropSteps.tsx`).

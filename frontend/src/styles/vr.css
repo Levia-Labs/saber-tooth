@@ -211,3 +211,32 @@
   align-items: center;
   gap: var(--vr-gap);
 }
+
+/* Map screen. */
+[data-ui="vr"] .vr-head {
+  display: flex;
+  gap: var(--vr-gap);
+  align-items: flex-start;
+}
+[data-ui="vr"] .vr-head-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vr-gap);
+  min-width: 0;
+}
+[data-ui="vr"] .vr-back {
+  align-self: flex-start;
+}
+[data-ui="vr"] .vr-act,
+[data-ui="vr"] .vr-step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vr-gap);
+  max-width: 22rem;
+}
+[data-ui="vr"] .vr-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--vr-gap);
+  margin-block: var(--vr-gap);
+}
