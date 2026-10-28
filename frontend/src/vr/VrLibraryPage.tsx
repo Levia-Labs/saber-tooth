@@ -15,6 +15,7 @@ import {
   vrState,
   type VrView,
 } from "./presets";
+import { MoreError } from "./MoreError";
 import { useNearEnd } from "./useNearEnd";
 import { VrCard } from "./VrCard";
 import { VrNav } from "./VrNav";
@@ -25,7 +26,7 @@ export function VrLibraryPage() {
   const search = params.toString();
   const view = useMemo(() => parseVrView(search), [search]);
   const library = useLibrary(useMemo(() => vrState(view), [view]));
-  const { fetchNextPage, hasNextPage, isFetchingNextPage } = library;
+  const { fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError } = library;
   const items = useMemo(() => library.data?.pages.flatMap((p) => p.items) ?? [], [library.data]);
   const shown = view.presets.includes("fixed") ? items.filter(isFixedCopy) : items;
   // The fixed-copy filter runs in the browser, so only the loaded matches can be counted.
@@ -35,7 +36,10 @@ export function VrLibraryPage() {
   useLiveRows(items);
 
   const loadMore = useCallback(() => void fetchNextPage(), [fetchNextPage]);
-  const end = useNearEnd(loadMore, Boolean(hasNextPage) && !isFetchingNextPage);
+  const end = useNearEnd(
+    loadMore,
+    Boolean(hasNextPage) && !isFetchingNextPage && !isFetchNextPageError,
+  );
   const change = (next: VrView) => setParams(encodeVrView(next));
 
   return (
@@ -101,6 +105,7 @@ export function VrLibraryPage() {
             Loading more maps
           </p>
         )}
+        {isFetchNextPageError && !isFetchingNextPage && <MoreError onRetry={loadMore} />}
       </div>
     </section>
   );

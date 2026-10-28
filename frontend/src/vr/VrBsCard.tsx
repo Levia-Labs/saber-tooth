@@ -5,6 +5,7 @@ import { Cover, LevelChips } from "../components/Chips";
 import { PreviewButton } from "../components/PreviewButton";
 import { errorToAlert } from "../lib/alerts";
 import { formatCount, formatDuration } from "../lib/format";
+import { MoreError } from "./MoreError";
 import { useNearEnd } from "./useNearEnd";
 
 const LABEL = {
@@ -61,6 +62,7 @@ export interface ListProps {
   onRetry: () => void;
   hasNext: boolean;
   fetching: boolean;
+  moreFailed: boolean;
   onMore: () => void;
   downloads: Downloads;
   emptyText: string;
@@ -68,7 +70,7 @@ export interface ListProps {
 
 /** The scrolling card grid with its loading, error and empty states and the end sentinel. */
 export function VrBsList(p: ListProps) {
-  const end = useNearEnd(p.onMore, p.hasNext && !p.fetching);
+  const end = useNearEnd(p.onMore, p.hasNext && !p.fetching && !p.moreFailed);
   const failed = p.error !== null && p.error !== undefined;
   return (
     <div className="vr-scroll">
@@ -94,6 +96,7 @@ export function VrBsList(p: ListProps) {
           Loading more maps
         </p>
       )}
+      {p.moreFailed && !p.fetching && <MoreError onRetry={p.onMore} />}
     </div>
   );
 }

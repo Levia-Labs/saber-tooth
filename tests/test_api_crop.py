@@ -152,3 +152,12 @@ def test_crop_by_seconds_converts_with_the_bpm_changes(tmp_path, cuts):
 def test_crop_seconds_pair_rules(http, body, rule):
     resp = http.post(f"/api/maps/{MID}/crop", json=body)
     assert resp.status_code == 422 and rule in resp.json()["error"]
+
+
+def test_crop_an_exact_one_second_window_across_a_tempo_change_is_accepted(tmp_path, cuts):
+    with TestClient(create_app(_tempo_change_http(tmp_path)), base_url="http://localhost") as c:
+        for start in (10.0, 31.7, 32.3, 40.1):
+            body = {"start_s": start, "end_s": start + 1.0}
+            resp = c.post(f"/api/maps/{MID}/crop", json=body)
+            assert resp.status_code == 200, (start, resp.json())
+            assert _wait(c, resp.json()["job"])["status"] == "done"

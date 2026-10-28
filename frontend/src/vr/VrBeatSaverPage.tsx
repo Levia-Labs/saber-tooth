@@ -61,6 +61,7 @@ function VrBsMaps({ downloads }: { downloads: Downloads }) {
         onRetry={() => void query.refetch()}
         hasNext={query.hasNextPage}
         fetching={query.isFetchingNextPage}
+        moreFailed={query.isFetchNextPageError}
         onMore={more}
         downloads={downloads}
         emptyText="No maps match. Pick another preset."

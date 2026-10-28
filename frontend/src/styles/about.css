@@ -59,3 +59,15 @@
     display: none;
   }
 }
+@media (max-width: 419px) {
+  .masthead .masthead-inner {
+    flex-wrap: wrap;
+    row-gap: 0.4rem;
+  }
+  .masthead .masthead-actions {
+    position: static;
+    transform: none;
+    width: 100%;
+    justify-content: center;
+  }
+}

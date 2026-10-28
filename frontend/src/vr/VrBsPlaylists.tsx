@@ -9,6 +9,7 @@ import { errorToAlert } from "../lib/alerts";
 import { DEFAULT_BS_STATE } from "../lib/bsfilters";
 import { formatDuration, plural } from "../lib/format";
 import { DEFAULT_PL_STATE } from "../lib/plfilters";
+import { MoreError } from "./MoreError";
 import { useNearEnd } from "./useNearEnd";
 import { VrBsList } from "./VrBsCard";
 
@@ -20,7 +21,10 @@ export function VrBsPlaylists() {
   const lists = useMemo(() => query.data?.pages.flatMap((p) => p.items) ?? [], [query.data]);
   const { fetchNextPage } = query;
   const more = useCallback(() => void fetchNextPage(), [fetchNextPage]);
-  const end = useNearEnd(more, Boolean(query.hasNextPage) && !query.isFetchingNextPage);
+  const end = useNearEnd(
+    more,
+    Boolean(query.hasNextPage) && !query.isFetchingNextPage && !query.isFetchNextPageError,
+  );
   return (
     <div className="vr-scroll">
       {query.isPending && (
@@ -59,6 +63,7 @@ export function VrBsPlaylists() {
         ))}
       </div>
       <div ref={end} aria-hidden="true" />
+      {query.isFetchNextPageError && !query.isFetchingNextPage && <MoreError onRetry={more} />}
     </div>
   );
 }
@@ -83,6 +88,7 @@ export function VrBsPlaylistMaps({ id, downloads }: { id: string; downloads: Dow
         onRetry={() => void query.refetch()}
         hasNext={query.hasNextPage}
         fetching={query.isFetchingNextPage}
+        moreFailed={query.isFetchNextPageError}
         onMore={more}
         downloads={downloads}
         emptyText="This playlist has no maps."

@@ -32,13 +32,19 @@ export function renderVr(url: string, route: string, element: ReactElement) {
 }
 
 /** Stand in for IntersectionObserver; `fire()` reports the newest observer's target as visible. */
-export function stubObserver() {
+export function stubObserver(auto = false) {
   const callbacks: IntersectionObserverCallback[] = [];
+  const entries = [{ isIntersecting: true } as IntersectionObserverEntry];
   class Stub {
+    private callback: IntersectionObserverCallback;
     constructor(callback: IntersectionObserverCallback) {
+      this.callback = callback;
       callbacks.push(callback);
     }
-    observe() {}
+    /** With `auto`, a sentinel already in view reports at once, as a real observer does. */
+    observe() {
+      if (auto) this.callback(entries, {} as IntersectionObserver);
+    }
     unobserve() {}
     disconnect() {}
   }

@@ -32,6 +32,7 @@ from saber_tooth.audio import encode_egg
 from saber_tooth.beatsaver.client import BeatSaverClient
 from saber_tooth.service import ApplyConflict, MapNotFound, MapUnreadable, Service
 from saber_tooth.service.errors import DeleteRefused
+from saber_tooth.service.staging import sweep_staging
 from saber_tooth.store import Store
 
 log = logging.getLogger(__name__)
@@ -185,6 +186,7 @@ def build_service() -> Service:
     """Build the production service from the environment; the library is indexed by `warm`."""
     data = Path(os.environ.get("DATA_DIR", "/data"))
     data.mkdir(parents=True, exist_ok=True)
+    sweep_staging(data)  # folders a killed generation left behind
     client = AnalyserClient(
         os.environ.get("ANALYSER_URL", "http://beat-analyser:8000"),
         Path(os.environ.get("ANALYSER_UPLOADS", "/analyser")),

@@ -5,6 +5,7 @@ from typing import Any
 
 from saber_tooth.api.core import Api, ApiError
 from saber_tooth.crop.errors import CropError
+from saber_tooth.crop.timeline import MIN_LENGTH_S
 
 _MISSING: Any = object()
 _PAIR_RULE = "send either start_beat and end_beat or start_s and end_s"
@@ -62,6 +63,8 @@ class CropApi:
         )
         try:
             if seconds:
+                if start < end and end - start < MIN_LENGTH_S - 1e-6:  # judged on the seconds sent
+                    raise CropError("the window must be at least 1 second long")
                 start, end = self.service.crop_beats(map_id, start, end)  # type: ignore[attr-defined]
             self.service.crop_check(map_id, start, end)  # type: ignore[attr-defined]
         except CropError as exc:
