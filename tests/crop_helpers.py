@@ -16,6 +16,9 @@ from saber_tooth.model import (
     MapInfo,
     Note,
 )
+from saber_tooth.service import Service
+from saber_tooth.store import Store
+from tests.test_service import _client, _fake_encode
 
 NAME = "Song"
 DENSITY = (1, 1, 3, 3, 2, 4, 4, 1, 2)  # notes per bar, one value per 8-bar section
@@ -72,3 +75,23 @@ def cuts(monkeypatch):
 
     monkeypatch.setattr("saber_tooth.crop.write.cut_egg", fake)
     return calls
+
+
+def make_service(tmp_path: Path, bm: Beatmap | None = None) -> Service:
+    levels = tmp_path / "levels"
+    levels.mkdir()
+    write_original(levels, NAME, bm)
+    data = tmp_path / "data"
+    data.mkdir()
+    svc = Service(levels, data, Store(data / "s.db"), _client(tmp_path), _fake_encode)
+    svc.refresh_library()
+    return svc
+
+
+def make_360(folder: Path) -> None:
+    """Rewrite every Standard characteristic in Info.dat as 360Degree: no Standard notes remain."""
+    info_dat = folder / "Info.dat"
+    info_dat.write_text(
+        info_dat.read_text(encoding="utf-8").replace('"Standard"', '"360Degree"'),
+        encoding="utf-8",
+    )

@@ -1,0 +1,64 @@
+"""Service side of the crop highlight: the timeline, the window check and the crop job."""
+
+import logging
+from pathlib import Path
+
+from saber_tooth.crop.errors import CropError
+from saber_tooth.crop.phrases import hardest
+from saber_tooth.crop.shift import crop_beatmap
+from saber_tooth.crop.timeline import Timeline, build_timeline, resolve_window, timeline_dict
+from saber_tooth.crop.write import write_cropped
+from saber_tooth.model import Beatmap
+from saber_tooth.service.duration import audio_path, folder_duration
+from saber_tooth.service.util import map_id_for
+from saber_tooth.service.verify import stored_analysis
+
+log = logging.getLogger(__name__)
+
+LABELS = {60: "1 min", 120: "2 min"}
+
+
+def _timeline(svc, map_id: str) -> tuple[Path, Beatmap, Timeline]:
+    folder = svc._folder(map_id)
+    beatmap = svc._load(folder)
+    hardest(beatmap)  # NoNotes first: a map with no Standard notes has no length either
+    duration = folder_duration(folder, beatmap)
+    if duration is None:
+        raise CropError("the song length is unknown")
+    analysis = stored_analysis(svc.uploads, svc.store.scan_info(map_id))
+    return folder, beatmap, build_timeline(beatmap, duration, analysis)
+
+
+def crop_timeline(svc, map_id: str) -> dict:
+    """NPS per difficulty, sections and the 1 and 2 minute plans for one map."""
+    return timeline_dict(_timeline(svc, map_id)[2], map_id)
+
+
+def crop_check(svc, map_id: str, start_beat: float, end_beat: float) -> None:
+    """Raise InvalidWindow when the pair breaks a window rule; used before a job is queued."""
+    resolve_window(_timeline(svc, map_id)[2], start_beat, end_beat)
+
+
+def crop_map(svc, map_id: str, start_beat: float, end_beat: float) -> dict:
+    """Crop a map into a new `<map> [1 min]` or `[2 min]` folder; the original is never changed."""
+    folder, beatmap, tl = _timeline(svc, map_id)
+    plan, start, end = resolve_window(tl, start_beat, end_beat)
+    audio = audio_path(folder, beatmap.info.song_file)
+    if audio is None:
+        raise CropError("the map has no readable song file")
+    label = LABELS[plan.target_s]
+    cropped = crop_beatmap(beatmap, tl.timing, start.beat, end.beat)
+    target = write_cropped(svc.levels, folder, audio, cropped, label)
+    try:
+        svc.refresh_library()
+    except Exception:
+        log.exception("library refresh failed after cropping %s", map_id)
+    return {
+        "map_id": map_id,
+        "folder": target.name,
+        "cropped_id": map_id_for(target.name),
+        "label": label,
+        "start_beat": start.beat,
+        "end_beat": end.beat,
+        "length_s": end.seconds - start.seconds,
+    }
