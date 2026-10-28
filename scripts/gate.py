@@ -109,6 +109,9 @@ def _csv(value: str) -> list[str]:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Gate logs quote tool output (vitest prints check marks); a cp1250 console crashed on them.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--only", type=_csv, default=[], help="comma list of gates to run")
     parser.add_argument("--skip", type=_csv, default=[], help="comma list of gates to skip")
