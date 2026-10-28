@@ -10,4 +10,4 @@ Application code.
 6. `components/`: shared UI.
 7. `pages/`: one component per route.
 8. `styles/`: design tokens and plain CSS.
-9. `vr/`: VR mode status client and layout.
+9. `vr/`: VR mode status client, mode decision, context provider and layout.
