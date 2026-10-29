@@ -110,10 +110,11 @@
    already --head-h tall, so only the height is a target; the width follows the content. */
 [data-ui="vr"] .lib-head :where(button, .th-sort) {
   min-width: 0;
-  padding-inline: 0.2rem;
+  padding-inline: 0;
 }
 [data-ui="vr"] .lib-head .filter-btn {
-  min-width: 1.75rem;
+  width: calc(28px * var(--ui-scale));
+  height: calc(28px * var(--ui-scale));
 }
 
 /* The desktop sets 40 and 44 px heights on selects and toggles with more specific selectors than
@@ -153,4 +154,53 @@
 [data-ui="vr"] .logo {
   width: 2.5rem;
   height: 2.5rem;
+}
+
+/* Fixed px sizes of the desktop rows, scaled with the text. */
+[data-ui="vr"] :is(.cover, .sk-cover) {
+  width: calc(48px * var(--ui-scale));
+  height: calc(48px * var(--ui-scale));
+}
+[data-ui="vr"] .cover-big {
+  width: calc(96px * var(--ui-scale));
+  height: calc(96px * var(--ui-scale));
+}
+[data-ui="vr"] .cover-empty .glyph {
+  width: calc(28px * var(--ui-scale));
+  height: calc(28px * var(--ui-scale));
+}
+[data-ui="vr"] .actions {
+  gap: calc(8px * var(--ui-scale));
+}
+/* The checkbox is a button, so the target rule made it a large black square: it is the desktop
+   20 px box scaled with the text. */
+[data-ui="vr"] .checkbox {
+  width: 1.25rem;
+  height: 1.25rem;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+}
+[data-ui="vr"] .checkbox .ic {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Tab bar and tools: the desktop keeps them on one nowrap row below 1100 px, which at VR size
+   overlaps. They wrap instead, the tools staying right-aligned. */
+[data-ui="vr"] .lib-bar {
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: calc(var(--vr-gap) / 2) var(--vr-gap);
+}
+[data-ui="vr"] .lib-bar .lib-title {
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  gap: calc(var(--vr-gap) / 2) var(--vr-gap);
+}
+[data-ui="vr"] .lib-bar :where(.lib-tools, .bs-toolbar, .lib-mobile-bar) {
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  min-width: 0;
 }

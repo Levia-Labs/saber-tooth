@@ -76,17 +76,17 @@ export const LABELS: Record<ColumnKey, string> = {
 export const LIMITS: Partial<Record<ColumnKey, { min: number; max: number }>> = {
   title: { min: 100, max: 800 },
   author: { min: 100, max: 400 },
-  levels: { min: 72, max: 400 },
-  length: { min: 64, max: 200 },
-  bpm: { min: 64, max: 200 },
-  env: { min: 72, max: 400 },
-  status: { min: 84, max: 300 },
-  rating: { min: 72, max: 200 },
-  upvotes: { min: 72, max: 200 },
+  levels: { min: 102, max: 400 },
+  length: { min: 102, max: 200 },
+  bpm: { min: 88, max: 200 },
+  env: { min: 84, max: 400 },
+  status: { min: 50, max: 300 },
+  rating: { min: 98, max: 200 },
+  upvotes: { min: 106, max: 200 },
   tags: { min: 96, max: 500 },
-  maps: { min: 64, max: 200 },
+  maps: { min: 90, max: 200 },
   nps: { min: 72, max: 200 },
-  created: { min: 84, max: 200 },
+  created: { min: 106, max: 200 },
   operation: { min: 72, max: 200 },
   queue: { min: 64, max: 160 },
   rounds: { min: 64, max: 160 },
@@ -102,28 +102,31 @@ export const DEFAULTS: Record<Breakpoint, Record<string, number>> = {
     title: 200,
     author: 120,
     levels: 140,
-    length: 88,
-    bpm: 80,
+    length: 102,
+    bpm: 88,
     env: 120,
-    status: 96,
+    status: 106,
     actions: 140,
   },
   mid: {
     cover: 56,
-    title: 200,
+    title: 150,
     author: 120,
     levels: 140,
-    length: 88,
-    bpm: 80,
-    status: 96,
+    length: 102,
+    bpm: 88,
+    status: 106,
     actions: 140,
   },
-  compact: { cover: 64, title: 100, length: 88, bpm: 80, status: 100, actions: 140 },
+  compact: { cover: 56, title: 100, length: 102, bpm: 88, status: 106, actions: 120 },
 };
 
-/** Bumped when the default widths change, so widths saved against older defaults are dropped. */
-const STORE_PREFIX = "saber-tooth.columns.v3.";
-const LEGACY_PREFIXES = ["saber-tooth.columns.v1.", "saber-tooth.columns.v2."];
+const STORE_PREFIX = "saber-tooth.columns.v4.";
+const LEGACY_PREFIXES = [
+  "saber-tooth.columns.v1.",
+  "saber-tooth.columns.v2.",
+  "saber-tooth.columns.v3.",
+];
 
 /** Tracks, default widths and storage key of one list; the library is the default. */
 export interface ColumnSet {
@@ -131,6 +134,8 @@ export interface ColumnSet {
   defaults: Record<Breakpoint, Record<string, number>>;
   storePrefix: string;
   legacyPrefixes: readonly string[];
+  /** Header widths that differ from `HEADER_FIT` for this list (a column without a filter button). */
+  fit?: Partial<Record<ColumnKey, number>>;
 }
 
 export const LIBRARY_COLUMNS: ColumnSet = {

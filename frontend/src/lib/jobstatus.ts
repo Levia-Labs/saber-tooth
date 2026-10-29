@@ -1,5 +1,6 @@
 // Job states shown as the library's status chips: the same icon box, colours and tooltip.
 import type { JobState, JobView, StatusKey } from "../api/types";
+import type { IconName } from "../components/icons";
 
 /** The library chip a job state borrows: its icon and colour. */
 const CHIP: Record<JobState, StatusKey> = {
@@ -9,6 +10,17 @@ const CHIP: Record<JobState, StatusKey> = {
   failed: "error",
   cancelled: "unscanned",
 };
+
+/** One icon per state: spinner running, clock queued, check done, X failed, trash cancelled. */
+const ICON: Record<JobState, IconName> = {
+  running: "spinner",
+  queued: "clock",
+  done: "ok",
+  failed: "reject",
+  cancelled: "trash",
+};
+
+export const jobIcon = (job: Pick<JobView, "status">): IconName => ICON[job.status];
 
 const WORD: Record<JobState, string> = {
   running: "Running",

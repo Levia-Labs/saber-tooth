@@ -201,6 +201,7 @@ button.bs-tag[aria-pressed="true"] {
 }
 
 @media (max-width: 1279px) {
+  .bs-table .col-bpm,
   .col-tags {
     display: none;
   }

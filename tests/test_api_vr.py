@@ -52,7 +52,7 @@ def test_status_is_not_an_mcp_tool(svc):
     assert tools and not [t["name"] for t in tools if "vr" in t["name"].lower()]
 
 
-@pytest.mark.parametrize("path", ["/vr", "/vr/maps/abc123", "/vr/beatsaver"])
+@pytest.mark.parametrize("path", ["/vr", "/vr/maps/abc123", "/vr/beatsaver", "/vr/jobs", "/jobs"])
 def test_vr_client_routes_serve_the_shell_on_reload(svc, tmp_path, path):
     web = tmp_path / "web"
     web.mkdir()

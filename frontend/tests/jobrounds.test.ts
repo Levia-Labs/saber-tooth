@@ -47,3 +47,13 @@ describe("job status mapping", () => {
     expect(jobStatusLabel({ status: "done", cancel_requested: true })).toBe("Done");
   });
 });
+
+describe("job status icons", () => {
+  test("every state has its own icon and the running one is the spinner", async () => {
+    const { jobIcon } = await import("../src/lib/jobstatus");
+    const states = ["running", "queued", "done", "failed", "cancelled"] as const;
+    const icons = states.map((status) => jobIcon({ status }));
+    expect(icons).toEqual(["spinner", "clock", "ok", "reject", "trash"]);
+    expect(new Set(icons).size).toBe(5);
+  });
+});

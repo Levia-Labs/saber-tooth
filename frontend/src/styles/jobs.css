@@ -56,16 +56,27 @@
 .jobs-rounds {
   color: var(--amber);
 }
-.jc-title {
+.jobs-row .jc-title {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 .jobs-title {
   overflow: hidden;
-  font-weight: 600;
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: none;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+a.jobs-title:hover,
+a.jobs-title:focus-visible {
+  text-decoration: underline;
+}
+.jobs-grid .th,
+.jobs-grid .th-row {
+  justify-content: flex-start;
+  text-align: left;
 }
 .jobs-kind,
 .jobs-detail {

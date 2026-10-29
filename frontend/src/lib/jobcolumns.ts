@@ -24,21 +24,22 @@ const TRACKS: readonly ColumnKey[] = [
   JOB_COL.actions,
 ];
 
+/** Each width holds the header label plus its filter and sort icons; Title takes the rest. */
 const DEFAULTS: Record<string, number> = {
   cover: 56,
   title: 200,
-  length: 120,
-  operation: 96,
-  status: 96,
-  queue: 80,
-  rounds: 80,
-  actions: 80,
+  length: 112,
+  operation: 104,
+  status: 104,
+  queue: 72,
+  rounds: 64,
+  actions: 72,
 };
 
 const same = (): Record<Breakpoint, Record<string, number>> => ({
   wide: { ...DEFAULTS },
   mid: { ...DEFAULTS },
-  compact: { ...DEFAULTS, length: 100 },
+  compact: { ...DEFAULTS },
 });
 
 export const JOB_COLUMNS: ColumnSet = {

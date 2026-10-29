@@ -11,7 +11,7 @@ Pure helpers and small hooks.
 7. `hooks.ts`: URL-backed library state, debounce, media query and document title.
 8. `timeline.ts`: canvas geometry and drawing for the before and after note grids.
 9. `bsfilters.ts`, `useBsState.ts`: BeatSaver filter state in the URL, API parameters and presets.
-10. `bscolumns.ts`, `bstips.ts`, `preview.ts`: BeatSaver column set, tooltip copy and the single audio preview.
+10. `columnfit.ts`, `bscolumns.ts`, `bstips.ts`, `preview.ts`: the width each column header needs, BeatSaver column set (widths at least `HEADER_FIT`), tooltip copy and the single audio preview.
 11. `fixreport.ts`, `fixToast.ts`: read the report of a finished fix job; build its toast (failed, incomplete, nothing to fix, fixed).
 12. `crop.ts`: pure crop helpers: snapping, stepping and re-picking the window edges.
 13. `generate.ts`, `decisions.ts`: link and audio checks for the generate card, and which proposal decisions are still allowed.

@@ -123,7 +123,7 @@ describe("fit", () => {
 
   test("widths saved under the old BeatSaver key are discarded", () => {
     localStorage.setItem("saber-tooth.columns.bs.v1.wide", JSON.stringify({ rating: 150 }));
-    expect(loadWidths("wide", localStorage, BS_COLUMNS).rating).toBe(84);
+    expect(loadWidths("wide", localStorage, BS_COLUMNS).rating).toBe(98);
     expect(localStorage.getItem("saber-tooth.columns.bs.v1.wide")).toBeNull();
   });
 });

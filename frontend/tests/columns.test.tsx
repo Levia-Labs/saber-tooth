@@ -47,7 +47,7 @@ function throwingStorage(): Storage {
   return { length: 0, clear: boom, getItem: boom, key: boom, removeItem: boom, setItem: boom };
 }
 
-const STORE_WIDE = "saber-tooth.columns.v3.wide";
+const STORE_WIDE = "saber-tooth.columns.v4.wide";
 
 afterEach(() => localStorage.clear());
 
@@ -125,8 +125,8 @@ describe("width math", () => {
 
   test("grid template and table minimum follow the widths", () => {
     const w = { ...defaultWidths("compact"), title: 200 };
-    expect(gridTemplate("compact", w)).toBe("64px minmax(200px, 1fr) 88px 80px 100px 140px");
-    expect(tableMinWidth("compact", w)).toBe(64 + 200 + 88 + 80 + 100 + 140 + 5 * 12 + 24);
+    expect(gridTemplate("compact", w)).toBe("56px minmax(200px, 1fr) 102px 88px 106px 120px");
+    expect(tableMinWidth("compact", w)).toBe(56 + 200 + 102 + 88 + 106 + 120 + 5 * 12 + 24);
   });
 });
 
@@ -154,7 +154,7 @@ describe("persistence", () => {
     s.setItem(STORE_WIDE, JSON.stringify({ author: 5000, bpm: "x", nope: 1 }));
     const w = loadWidths("wide", s);
     expect(w.author).toBe(400);
-    expect(w.bpm).toBe(80);
+    expect(w.bpm).toBe(88);
   });
 });
 
