@@ -14,11 +14,13 @@ import {
 } from "../src/lib/columns";
 import { headerFit } from "../src/lib/columnfit";
 import { PL_COLUMNS } from "../src/lib/plcolumns";
+import { LP_COLUMNS } from "../src/lib/lpcolumns";
 
 const SETS: [string, ColumnSet][] = [
   ["library", LIBRARY_COLUMNS],
   ["beatsaver", BS_COLUMNS],
   ["playlists", PL_COLUMNS],
+  ["local playlists", LP_COLUMNS],
 ];
 /** The narrowest viewport each tier applies at; below 720 px rows are cards with no header. */
 const NARROWEST = { wide: 1280, mid: 1100, compact: 720 } as const;

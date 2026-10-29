@@ -114,7 +114,7 @@ export function PlaylistsPage() {
           <SectionTabs active="playlists" heading="Playlists" headingId="playlists-heading" />
         </div>
         <ActionButton
-          icon="tag-plus"
+          icon="plus"
           text
           variant="primary"
           label="New playlist"

@@ -165,6 +165,7 @@ const ICONS = {
   stop: <rect x="6" y="6" width="12" height="12" rx="1.5" />,
   pause: <path d="M8 5v14M16 5v14" />,
   playlist: <path d="M4 6h12M4 11h12M4 16h7M17 14v6l5-3z" />,
+  plus: <path d="M12 5v14M5 12h14" />,
   "tag-plus": (
     <>
       <path d="M3.5 12.5V4.5a1 1 0 0 1 1-1h8l8 8-8.5 8.5z" />

@@ -1,6 +1,6 @@
 .lp-grid {
   display: grid;
-  grid-template-columns: 56px minmax(160px, 1fr) 150px minmax(110px, 160px) 90px 132px;
+  grid-template-columns: var(--cols-wide);
   column-gap: 12px;
   align-items: center;
   padding: 0 12px;
@@ -10,7 +10,7 @@
 }
 .lp-table {
   position: relative;
-  min-width: 720px;
+  min-width: var(--min-wide, 0);
 }
 .lp-table .lib-head {
   display: grid;
@@ -141,4 +141,30 @@
 .lp-tabs .active {
   font-weight: 700;
   text-decoration: underline;
+}
+@media (max-width: 1279px) {
+  .lp-grid {
+    grid-template-columns: var(--cols-mid);
+  }
+  .lp-table {
+    min-width: var(--min-mid, 0);
+  }
+}
+@media (max-width: 1099px) {
+  .lp-grid {
+    grid-template-columns: var(--cols-compact);
+  }
+  .lp-table {
+    min-width: var(--min-compact, 0);
+  }
+}
+@media (max-width: 719px) {
+  .lp-table.lib-table {
+    min-width: var(--min-compact, 0);
+  }
+}
+.lp-grid .th,
+.lp-grid .th-row {
+  justify-content: flex-start;
+  text-align: left;
 }

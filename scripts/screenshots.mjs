@@ -129,12 +129,14 @@ async function main() {
     ["about", "/about", desktop, null],
     ["jobs", "/jobs", desktop, null],
     ["playlists", "/beatsaver/playlists", desktop, null],
+    ["local-playlists", "/playlists", desktop, null],
     ["vr-library", "/vr", vr, null],
     ["vr-map", `/vr/maps/${status.id}`, vr, null],
     ["vr-beatsaver", "/vr/beatsaver", vr, null],
     ["vr-jobs", "/vr/jobs", vr, null],
     ["vr-about", "/about?mode=vr", vr, null],
     ["vr-playlists", "/beatsaver/playlists?mode=vr", vr, null],
+    ["vr-local-playlists", "/vr/playlists", vr, null],
   ];
   const picked = shots.filter(([name]) => !opt.only.length || opt.only.includes(name));
   const plan = opt.sizes.length

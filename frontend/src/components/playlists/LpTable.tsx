@@ -1,5 +1,7 @@
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import type { Playlist } from "../../api/playlists";
+import { LP_COLUMNS } from "../../lib/lpcolumns";
+import { useColumns } from "../../lib/useColumns";
 import { lpFilterCount, type LpSort, type LpState, type LpSync } from "../../lib/lpfilters";
 import { ActionButton } from "../Buttons";
 import { Cover } from "../Chips";
@@ -225,6 +227,8 @@ function Row({
 
 /** The playlists table: sort and filter in the header, one row per playlist. */
 export function LpTable({ rows, all, state, update, empty, ...actions }: Props) {
+  const table = useRef<HTMLDivElement>(null);
+  const columns = useColumns(table, LP_COLUMNS);
   return (
     <div className="lib-scroll lp-scroll" tabIndex={-1}>
       <div
@@ -232,6 +236,8 @@ export function LpTable({ rows, all, state, update, empty, ...actions }: Props) 
         aria-label="Playlists"
         aria-rowcount={rows.length + 1}
         className="lib-table lp-table"
+        ref={table}
+        style={columns.style}
       >
         <Header state={state} update={update} all={all} />
         <div role="rowgroup">
