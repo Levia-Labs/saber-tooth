@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 
 from fastapi.responses import JSONResponse
 
-from saber_tooth.api.jobs_api import core_handlers
+from saber_tooth.api.jobs_api import core_handlers, job_detail, list_jobs
 from saber_tooth.api.library import (
     AUDIO_TYPES,
     COVER_TYPES,
@@ -252,11 +252,27 @@ class Api:
             shutil.rmtree(path.parent, ignore_errors=True)
             raise
 
+    def _job_id(self, raw: str) -> str:
+        if not JOB_ID.fullmatch(raw):
+            raise ApiError(404, f"unknown job: {raw}")
+        return raw
+
     def job(self, raw: str) -> dict:
         try:
-            if not JOB_ID.fullmatch(raw):
-                raise KeyError(raw)
-            j = self.store.job(raw)
+            return job_detail(self.store, self._job_id(raw))
         except KeyError:
             raise ApiError(404, f"unknown job: {raw}") from None
-        return {k: j[k] for k in ("id", "kind", "status", "error", "result")}
+
+    def jobs_list(self) -> dict:
+        return list_jobs(self.store)
+
+    def cancel_job(self, raw: str) -> dict:
+        try:
+            outcome = self.store.cancel_job(self._job_id(raw))
+        except KeyError:
+            raise ApiError(404, f"unknown job: {raw}") from None
+        if outcome == "running":
+            raise ApiError(409, "a running job cannot be stopped")
+        if outcome != "cancelled":
+            raise ApiError(409, "the job already finished")
+        return self.job(raw)

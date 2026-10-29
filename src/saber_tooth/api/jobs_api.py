@@ -43,3 +43,61 @@ def core_handlers(service) -> dict[str, Handler]:
         "generate": lambda a, p: _generate(service, a),
         "crop": lambda a, p: service.crop_map(a["map_id"], a["start"], a["end"], a["replace"]),
     }
+
+
+KIND_LABELS = {
+    "scan": "Scan",
+    "fix": "Fix",
+    "apply": "Apply",
+    "crop": "Crop",
+    "learn": "Learn lightshows",
+    "bs-download": "Download maps",
+}
+VIEW_FIELDS = (
+    "id",
+    "kind",
+    "status",
+    "map_id",
+    "created_at",
+    "started_at",
+    "updated_at",
+    "progress",
+    "progress_at",
+    "error",
+)
+
+
+def _title(row: dict) -> str:
+    if row.get("map_title"):
+        return row["map_title"]
+    if row["kind"] == "generate":
+        return "Generate from YouTube" if "url" in row["args"] else "Generate from file"
+    return KIND_LABELS.get(row["kind"], row["kind"])
+
+
+def view(row: dict, position: int | None = None) -> dict:
+    out = {k: row.get(k) for k in VIEW_FIELDS}
+    out["title"] = _title(row)
+    out["map_exists"] = bool(row.get("map_exists"))
+    out["position"] = position
+    return out
+
+
+def list_jobs(store) -> dict:
+    lists = store.job_lists()
+    return {
+        "running": [view(r) for r in lists["running"]],
+        "queued": [view(r, n) for n, r in enumerate(lists["queued"], start=1)],
+        "recent": [view(r) for r in lists["recent"]],
+    }
+
+
+def job_detail(store, job_id: str) -> dict:
+    """One job with its result; raises KeyError for an unknown id."""
+    row = store.job(job_id)
+    found = store.get_map(row["map_id"]) if row.get("map_id") else None
+    row["map_title"] = found["title"] if found else None
+    row["map_exists"] = found is not None
+    out = view(row, store.queue_position(job_id))
+    out["result"] = row["result"]
+    return out

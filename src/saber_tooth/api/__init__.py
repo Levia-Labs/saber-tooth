@@ -172,6 +172,14 @@ def create_app(
     def learn():
         return api.learn()
 
+    @app.get("/api/jobs")
+    def jobs():
+        return api.jobs_list()
+
+    @app.delete("/api/jobs/{job_id}")
+    def cancel_job(job_id: str):
+        return api.cancel_job(job_id)
+
     @app.get("/api/jobs/{job_id}")
     def job(job_id: str):
         return api.job(job_id)
