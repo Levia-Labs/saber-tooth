@@ -7,7 +7,7 @@ import {
   type SortOrder,
   type StatusKey,
 } from "../api/types";
-import { inverted } from "./range";
+import { inverted, wholeBound } from "./range";
 
 export const SORT_KEYS: readonly SortKey[] = [
   "title",
@@ -117,7 +117,7 @@ export function parseState(search: string): LibraryState {
   const ranges = Object.fromEntries(
     RANGE_NAMES.map((name) => {
       const { key, min, max } = RANGES[name];
-      return [name, bounded(params.get(key), min, max)];
+      return [name, wholeBound(name, bounded(params.get(key), min, max))];
     }),
   ) as Pick<LibraryState, RangeName>;
   return {

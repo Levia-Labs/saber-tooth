@@ -75,17 +75,17 @@ function ShellFrame() {
       </a>
       <header className="masthead">
         <div className="masthead-inner">
-          <Link className="brand" to="/" aria-label="saber-tooth, library">
+          <Link className="brand" to="/" aria-label="Saber Tooth, library">
             <Logo />
             <span className="wordmark">
-              <span className="red">saber</span>
-              <span className="dash">-</span>
-              <span className="blue">tooth</span>
+              <span className="red">Saber</span>
+              <span className="space">{" "}</span>
+              <span className="blue">Tooth</span>
             </span>
           </Link>
           <div className="masthead-actions">
             <ModeSwitch />
-            <Tip text="What saber-tooth is">
+            <Tip text="What Saber Tooth is">
               <Link
                 className="about-link"
                 to="/about"

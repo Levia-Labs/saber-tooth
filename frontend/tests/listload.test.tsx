@@ -43,7 +43,7 @@ describe("wordmark", () => {
     expect(rule(base, ".wordmark")).toMatch(/align-items:\s*baseline/);
     expect(rule(base, ".wordmark")).toMatch(/line-height:\s*1/);
     expect(rule(base, ".brand")).toMatch(/align-items:\s*center/);
-    const mark = (await screen.findByLabelText("saber-tooth, library")).querySelector(".wordmark");
-    expect([...(mark?.children ?? [])].map((c) => c.textContent)).toEqual(["saber", "-", "tooth"]);
+    const mark = (await screen.findByLabelText("Saber Tooth, library")).querySelector(".wordmark");
+    expect([...(mark?.children ?? [])].map((c) => c.textContent)).toEqual(["Saber", " ", "Tooth"]);
   });
 });

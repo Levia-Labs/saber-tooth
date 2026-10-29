@@ -13,8 +13,10 @@
 .popover {
   z-index: 40;
   width: min(300px, calc(100vw - 16px));
+  display: flex;
+  flex-direction: column;
   max-height: min(70vh, 460px);
-  overflow: auto;
+  overflow: hidden;
   padding: 0.8rem;
   background: var(--panel);
   border: 1px solid var(--line);
@@ -22,6 +24,7 @@
   box-shadow: 0 10px 32px rgba(0, 0, 0, 0.55);
 }
 .popover-head {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -35,10 +38,6 @@
 .popover-x {
   flex: none;
   margin-left: auto;
-}
-.filter-body {
-  display: grid;
-  gap: 0.5rem;
 }
 .field {
   position: relative;
@@ -265,36 +264,4 @@
     padding: 0;
     justify-content: center;
   }
-}
-.popover .filter-body + .filter-body {
-  margin-top: 0.75rem;
-}
-.segmented {
-  display: flex;
-  gap: 0.4rem;
-}
-.segmented .btn[aria-pressed="true"] {
-  color: var(--blue);
-  border-color: var(--blue);
-}
-.filter-row {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-.filter-row .field {
-  flex: 1;
-  min-width: 0;
-}
-.filter-row .segmented {
-  flex: 1;
-}
-.filter-row .clear-filter {
-  flex: none;
-}
-.filter-actions:has(.clear-filter) {
-  justify-content: space-between;
-}
-.filter-actions.end {
-  justify-content: flex-end;
 }

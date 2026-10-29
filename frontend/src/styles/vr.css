@@ -120,6 +120,10 @@
   flex-wrap: wrap;
   align-items: center;
 }
+/* Filter toggles carry help text of one or two lines; top-align so the buttons line up. */
+[data-ui="vr"] .vr-toggles {
+  align-items: flex-start;
+}
 [data-ui="vr"] .vr-toggles button {
   border: 2px solid var(--line);
   border-radius: var(--radius);

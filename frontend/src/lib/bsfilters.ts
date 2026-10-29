@@ -1,6 +1,7 @@
 // BeatSaver search state: URL encoding, API parameters and preset conversion. Pure functions.
 // The URL keys are the API query keys, so a preset (stored as those keys) is also a shareable URL.
 import { LEVEL_KEYS, type LevelKey } from "../api/types";
+import { wholeBound } from "./range";
 
 export const BS_ORDERS = [
   "Latest",
@@ -156,7 +157,7 @@ export function parseBsState(search: string): BsState {
   };
   for (const name of NUM_KEYS) {
     const { key, min, max } = NUMBERS[name];
-    state[name] = number(p.get(key), min, max);
+    state[name] = wholeBound(name, number(p.get(key), min, max));
   }
   return state;
 }

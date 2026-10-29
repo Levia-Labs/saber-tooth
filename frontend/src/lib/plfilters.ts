@@ -1,6 +1,7 @@
 // BeatSaver playlist search state: URL encoding, API parameters, client-side filter and sort.
 // The URL keys are the API query keys, so the address is shareable.
 import type { BsPlaylist } from "../api/beatsaver";
+import { wholeBound } from "./range";
 
 export const PL_ORDERS = ["Latest", "Relevance", "Rating", "Curated"] as const;
 export type PlOrder = (typeof PL_ORDERS)[number];
@@ -113,7 +114,7 @@ export function parsePlState(search: string): PlState {
   };
   for (const name of NUM_KEYS) {
     const { key, min, max } = PL_NUMBERS[name];
-    state[name] = number(p.get(key), min, max);
+    state[name] = wholeBound(name, number(p.get(key), min, max));
   }
   return state;
 }

@@ -83,7 +83,7 @@ export function BpmBody({ state, update }: Props) {
   return (
     <RangeFilterBody
       name="BPM"
-      kind="number"
+      kind="integer"
       min={state.bpmMin}
       max={state.bpmMax}
       limit={NUMBERS.bpmMax.max}

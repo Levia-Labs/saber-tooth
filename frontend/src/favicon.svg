@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img">
-<title>saber-tooth</title>
+<title>Saber Tooth</title>
 <defs>
 <filter id="g" x="-50%" y="-30%" width="200%" height="160%"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
 <filter id="s" x="-50%" y="-30%" width="200%" height="160%"><feGaussianBlur stdDeviation="2"/></filter>

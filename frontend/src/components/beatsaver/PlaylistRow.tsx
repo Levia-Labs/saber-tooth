@@ -74,7 +74,7 @@ export function PlaylistRow({ playlist: p, index, busy, onDownloadAll }: Props) 
         <div className="actions">
           <ActionLink
             icon="maps"
-            label={`Open ${p.name} in saber-tooth`}
+            label={`Open ${p.name} in Saber Tooth`}
             tip={PL_TIPS.open}
             to={to}
           />

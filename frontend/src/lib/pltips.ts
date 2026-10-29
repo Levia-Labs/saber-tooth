@@ -1,6 +1,6 @@
 // Tooltip copy for the BeatSaver playlists table, in plain words.
 export const PL_TIPS = {
-  open: "Open this playlist in saber-tooth to browse its maps with the same filters.",
+  open: "Open this playlist in Saber Tooth to browse its maps with the same filters.",
   openSite: "Open this playlist's page on BeatSaver in a new tab.",
   downloadAll:
     "Download every map in this playlist. Maps you already have are skipped; you confirm first.",

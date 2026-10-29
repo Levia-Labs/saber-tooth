@@ -101,7 +101,7 @@ describe("text inputs", () => {
     await user.click(within(sheet).getByRole("button", { name: /^Title/ }));
     await user.click(within(sheet).getByRole("button", { name: /^Author/ }));
     expect(within(sheet).getByLabelText("Title contains")).toHaveAttribute("placeholder", "Title");
-    expect(within(sheet).getByLabelText("Name contains")).toHaveAttribute("placeholder", "Mapper");
+    expect(within(sheet).queryByLabelText("Name contains")).toBeNull();
   });
 
   test("X button appears only with text, has no search icon, and clears", async () => {

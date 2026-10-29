@@ -72,7 +72,7 @@ function plainReason(raw: string): Reason | null {
   ) {
     return {
       variant: "danger",
-      message: "The server could not be reached. Check that saber-tooth is running and try again.",
+      message: "The server could not be reached. Check that Saber Tooth is running and try again.",
     };
   }
   if (text.includes("no such file") || text.includes("not found")) {

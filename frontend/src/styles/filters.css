@@ -1,0 +1,96 @@
+/* Filter popover bodies: the first row stays put, only the lists scroll. */
+.filter-body {
+  display: grid;
+  gap: 0.5rem;
+}
+.popover .filter-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.filter-body .checks {
+  min-height: 0;
+  overflow: auto;
+  scrollbar-gutter: stable;
+  padding-right: 0.5rem;
+}
+.popover .filter-body + .filter-body {
+  margin-top: 0.75rem;
+}
+.segmented {
+  display: flex;
+  gap: 0.4rem;
+}
+.segmented .btn[aria-pressed="true"] {
+  color: var(--blue);
+  border-color: var(--blue);
+}
+.filter-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.filter-row .field {
+  flex: 1;
+  min-width: 0;
+}
+.filter-row .segmented {
+  flex: 1;
+}
+.filter-row .clear-filter {
+  flex: none;
+}
+.filter-actions:has(.clear-filter) {
+  justify-content: space-between;
+}
+.filter-actions.end {
+  justify-content: flex-end;
+}
+.filter-row .range-input {
+  flex: 1;
+  min-width: 0;
+}
+.filter-row .range-sep {
+  flex: none;
+  color: var(--muted);
+}
+.filter-row > input[type="text"] {
+  flex: 1;
+  min-width: 0;
+}
+.range-field {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+.range-field .range-input {
+  flex: 1;
+  min-width: 0;
+}
+.steps {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+}
+.step-btn {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 16px;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+}
+.step-btn:hover {
+  color: var(--ink);
+}
+.step-btn .ic {
+  width: 14px;
+  height: 14px;
+}

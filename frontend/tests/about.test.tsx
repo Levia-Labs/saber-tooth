@@ -6,9 +6,9 @@ describe("about page", () => {
   test("renders with correct external links", async () => {
     mockFetch(() => ({}));
     renderApp("/about");
-    expect(await screen.findByRole("heading", { name: "About saber-tooth" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "About Saber Tooth" })).toBeInTheDocument();
     const want: Record<string, string> = {
-      "saber-tooth on GitHub": "https://github.com/Levia-Labs/saber-tooth",
+      "Saber Tooth on GitHub": "https://github.com/Levia-Labs/saber-tooth",
       "Levia Labs": "https://levialabs.net",
       "beat-analyser (companion)": "https://github.com/Levia-Labs/beat-analyser",
       "Crepidoma (companion)": "https://github.com/Levia-Labs/Crepidoma",
