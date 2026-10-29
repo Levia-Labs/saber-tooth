@@ -55,8 +55,7 @@ function plainReason(raw: string): Reason | null {
   if (text.includes("timed out")) {
     return {
       variant: "warning",
-      message:
-        "The job ran longer than 30 minutes and was stopped. Check the library, then try again.",
+      message: "The job timed out and was stopped. Check the library, then try again.",
     };
   }
   if (text.includes("cancel")) {
@@ -189,6 +188,10 @@ export function toAlert(job: Job | null, error: string | null = null): AlertSpec
   if (!job && !error) return null;
   const result = job?.result ?? {};
   const raw = error ?? job?.error ?? null;
+  if (job?.status === "cancelled") {
+    const message = plainReason("cancelled")?.message ?? "The job was cancelled.";
+    return { variant: "info", title: "Job cancelled", message, details: raw ? [raw] : [] };
+  }
   if (raw !== null || job?.status === "failed") {
     return failure(job?.kind ?? "apply", raw ?? "job failed", result);
   }

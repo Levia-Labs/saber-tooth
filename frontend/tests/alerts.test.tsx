@@ -70,9 +70,15 @@ describe("toAlert", () => {
     expect(spec?.details).toEqual(["database is locked"]);
   });
 
-  test("polling timeout is a warning, cancel is info", () => {
-    expect(toAlert(null, "timed out after 30 minutes")).toMatchObject({ variant: "warning" });
+  test("a server-side timeout is a warning, cancel is info", () => {
+    expect(toAlert(null, "timed out")).toMatchObject({ variant: "warning" });
     expect(toAlert(null, "cancelled")).toMatchObject({ variant: "info" });
+  });
+
+  test("a cancelled job reads cancelled, never failed, whatever its error text", () => {
+    const spec = toAlert(job("fix", { status: "cancelled", error: "interrupted" }));
+    expect(spec).toMatchObject({ variant: "info", title: "Job cancelled" });
+    expect(spec?.title).not.toContain("failed");
   });
 
   test("needs_review ids give a warning with a Review action, tolerating other fields", () => {

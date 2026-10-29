@@ -1,111 +1,32 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import { Link } from "react-router";
+import { useEffect, useMemo, useState } from "react";
 import { cancelJob } from "../api/client";
 import { useJobLists } from "../api/joblist";
 import { keys } from "../api/queries";
-import type { JobKind, JobView } from "../api/types";
+import type { JobView } from "../api/types";
 import { useAnnounce } from "../components/Announcer";
-import { Icon } from "../components/icons";
+import { ActionButton } from "../components/Buttons";
+import { JobsTable } from "../components/JobsTable";
 import { SectionTabs } from "../components/SectionTabs";
 import { useDocumentTitle } from "../lib/hooks";
-import { duration, staleMinutes } from "../lib/jobtime";
-
-const KIND_LABEL: Record<JobKind, string> = {
-  scan: "Scan",
-  fix: "Fix",
-  apply: "Apply",
-  crop: "Crop",
-  generate: "Generate",
-  learn: "Learn lightshows",
-  "bs-download": "Download maps",
-};
-
-const STATUS_WORD: Partial<Record<JobView["status"], string>> = {
-  done: "Done",
-  failed: "Failed",
-  cancelled: "Cancelled",
-};
+import { allJobs, filterJobs, jobsFilterCount, sortJobs } from "../lib/jobfilters";
+import { useJobsState } from "../lib/useJobsState";
 
 const errorText = (err: unknown) => (err instanceof Error ? err.message : String(err));
-
-function Title({ job }: { job: JobView }) {
-  return job.map_exists && job.map_id ? (
-    <Link className="jobs-title" to={`/maps/${job.map_id}`}>
-      {job.title}
-    </Link>
-  ) : (
-    <span className="jobs-title">{job.title}</span>
-  );
-}
-
-function Running({ job, now }: { job: JobView; now: number }) {
-  const stale = staleMinutes(job, now);
-  return (
-    <li className="jobs-row">
-      <div className="jobs-main">
-        <Title job={job} />
-        <span className="jobs-kind">{KIND_LABEL[job.kind]}</span>
-      </div>
-      {job.progress && <span className="jobs-detail">{job.progress}</span>}
-      <span className="jobs-time">
-        {duration(job.started_at ?? job.created_at, now)}
-        {stale !== null && <span className="jobs-stale">no progress for {stale} min</span>}
-      </span>
-    </li>
-  );
-}
-
-function Queued({ job, now, onCancel }: { job: JobView; now: number; onCancel: () => void }) {
-  return (
-    <li className="jobs-row">
-      <div className="jobs-main">
-        <span className="jobs-pos">#{job.position}</span>
-        <Title job={job} />
-        <span className="jobs-kind">{KIND_LABEL[job.kind]}</span>
-      </div>
-      <span className="jobs-time">waiting {duration(job.created_at, now)}</span>
-      <button type="button" className="btn" aria-label={`Cancel ${job.title}`} onClick={onCancel}>
-        Cancel
-      </button>
-    </li>
-  );
-}
-
-function Recent({ job }: { job: JobView }) {
-  const end = Date.parse(job.updated_at);
-  const icon = job.status === "done" ? "ok" : job.status === "failed" ? "error" : null;
-  return (
-    <li className="jobs-row">
-      <div className="jobs-main">
-        {icon ? (
-          <Icon name={icon} className={`jobs-${job.status}`} aria-hidden="true" />
-        ) : (
-          <span className="jobs-dot" aria-hidden="true" />
-        )}
-        <span className="jobs-status">{STATUS_WORD[job.status] ?? job.status}</span>
-        <Title job={job} />
-        <span className="jobs-kind">{KIND_LABEL[job.kind]}</span>
-      </div>
-      {job.error && <span className="jobs-detail">{job.error}</span>}
-      <span className="jobs-time">
-        {duration(job.started_at ?? job.created_at, end)}
-        {Number.isFinite(end) && ` · ${new Date(end).toLocaleTimeString()}`}
-      </span>
-    </li>
-  );
-}
 
 export function JobsPage() {
   useDocumentTitle("Jobs");
   const lists = useJobLists();
   const client = useQueryClient();
   const announce = useAnnounce();
+  const { state, update, clearFilters } = useJobsState();
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
+  const all = useMemo(() => allJobs(lists), [lists]);
+  const rows = useMemo(() => sortJobs(filterJobs(all, state), state, now), [all, state, now]);
   const cancel = async (job: JobView) => {
     try {
       await cancelJob(job.id);
@@ -114,7 +35,22 @@ export function JobsPage() {
     }
     await client.invalidateQueries({ queryKey: keys.jobs });
   };
-  const idle = lists.running.length === 0 && lists.queued.length === 0;
+  const filtered = Object.values(jobsFilterCount(state)).some((n) => n > 0);
+  const empty =
+    all.length > 0 && filtered ? (
+      <p className="jobs-empty">
+        No jobs match the filters.{" "}
+        <ActionButton
+          icon="filter-x"
+          label="Clear filters"
+          tip="Show every job again"
+          text
+          onClick={clearFilters}
+        />
+      </p>
+    ) : (
+      <p className="jobs-empty">Nothing running or queued.</p>
+    );
   return (
     <section className="library jobs" aria-labelledby="jobs-heading">
       <div className="lib-bar">
@@ -122,37 +58,15 @@ export function JobsPage() {
           <SectionTabs active="jobs" heading="Jobs" headingId="jobs-heading" />
         </div>
       </div>
-      {idle && <p className="jobs-empty">Nothing running or queued.</p>}
-      {lists.running.length > 0 && (
-        <section aria-labelledby="jobs-running">
-          <h2 id="jobs-running">Running</h2>
-          <ul className="jobs-list">
-            {lists.running.map((j) => (
-              <Running key={j.id} job={j} now={now} />
-            ))}
-          </ul>
-        </section>
-      )}
-      {lists.queued.length > 0 && (
-        <section aria-labelledby="jobs-queued">
-          <h2 id="jobs-queued">Queued</h2>
-          <ul className="jobs-list">
-            {lists.queued.map((j) => (
-              <Queued key={j.id} job={j} now={now} onCancel={() => void cancel(j)} />
-            ))}
-          </ul>
-        </section>
-      )}
-      {lists.recent.length > 0 && (
-        <section aria-labelledby="jobs-recent">
-          <h2 id="jobs-recent">Recent</h2>
-          <ul className="jobs-list">
-            {lists.recent.map((j) => (
-              <Recent key={j.id} job={j} />
-            ))}
-          </ul>
-        </section>
-      )}
+      <JobsTable
+        rows={rows}
+        all={all}
+        state={state}
+        update={update}
+        now={now}
+        onCancel={(j) => void cancel(j)}
+        empty={empty}
+      />
     </section>
   );
 }

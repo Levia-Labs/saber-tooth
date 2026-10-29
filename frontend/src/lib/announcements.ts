@@ -1,4 +1,5 @@
 // Pure state for the announcement banners: reduce by key, cap, expiry.
+import type { IconName } from "../components/icons";
 import type { AlertSpec, AlertVariant } from "./alerts";
 
 export type AnnounceVariant = "progress" | AlertVariant;
@@ -24,6 +25,11 @@ export interface AnnounceInput {
 export interface BannerAction {
   label: string;
   onClick: () => void;
+  /** Icon shown before the label. */
+  icon?: IconName;
+  disabled?: boolean;
+  /** Keep the toast open after the press; its owner replaces it with the next state. */
+  keepOpen?: boolean;
 }
 
 export interface BannerLink {

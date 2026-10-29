@@ -3,7 +3,7 @@ import { JobFailed, ownedJobs, pollJob, watchedJobs } from "../src/api/jobs";
 import { mockFetch } from "./helpers";
 
 const MIN = 60_000;
-let state: { status: string; position?: number | null };
+let state: { status: string; position?: number | null; cancel_requested?: boolean };
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -29,12 +29,64 @@ describe("pollJob", () => {
     await expect(p).resolves.toMatchObject({ status: "done" });
   });
 
-  test("times out after 31 minutes of running", async () => {
+  test("never gives up while the server reports the job running", async () => {
     state = { status: "running" };
-    const p = pollJob("j1", new AbortController().signal, () => {});
-    const settled = expect(p).rejects.toThrow("timed out after 30 minutes");
-    await vi.advanceTimersByTimeAsync(31 * MIN);
-    await settled;
+    let ended = false;
+    const p = pollJob("j1", new AbortController().signal, () => {}).finally(() => (ended = true));
+    p.catch(() => {});
+    await vi.advanceTimersByTimeAsync(90 * MIN);
+    expect(ended).toBe(false);
+    state = { status: "done" };
+    await vi.advanceTimersByTimeAsync(10_000);
+    await expect(p).resolves.toMatchObject({ status: "done" });
+  });
+
+  test("passes the polled job to onStatus, so cancel_requested is visible", async () => {
+    state = { status: "running", cancel_requested: true };
+    const seen: unknown[] = [];
+    const ctl = new AbortController();
+    const p = pollJob("j1", ctl.signal, (_s, job) => seen.push(job?.cancel_requested));
+    p.catch(() => {});
+    await vi.advanceTimersByTimeAsync(10);
+    ctl.abort();
+    await vi.advanceTimersByTimeAsync(10);
+    expect(seen[0]).toBe(true);
+  });
+
+  test("an unreachable server is reported once, polling goes on and the real outcome arrives", async () => {
+    let down = true;
+    mockFetch(() => {
+      if (down) throw new TypeError("Failed to fetch");
+      return { id: "j2", kind: "fix", error: null, result: null, status: "done" };
+    });
+    const seen: [string, string | undefined][] = [];
+    let ended = false;
+    const p = pollJob("j2", new AbortController().signal, (s, job) =>
+      seen.push([s, job?.status]),
+    ).finally(() => (ended = true));
+    p.catch(() => {});
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(ended).toBe(false);
+    expect(seen.filter(([s]) => s === "unreachable")).toHaveLength(1);
+    down = false;
+    await vi.advanceTimersByTimeAsync(10_000);
+    await expect(p).resolves.toMatchObject({ status: "done" });
+  });
+
+  test("retrying keeps the last known job so toast actions persist", async () => {
+    let calls = 0;
+    mockFetch(() => {
+      calls += 1;
+      if (calls > 1) throw new TypeError("Failed to fetch");
+      return { id: "j3", kind: "fix", error: null, result: null, status: "running" };
+    });
+    const seen: [string, string | undefined][] = [];
+    const ctl = new AbortController();
+    const p = pollJob("j3", ctl.signal, (s, job) => seen.push([s, job?.status]));
+    p.catch(() => {});
+    await vi.advanceTimersByTimeAsync(5000);
+    ctl.abort();
+    expect(seen).toContainEqual(["retrying (1/3)", "running"]);
   });
 
   test("a cancelled job rejects with JobFailed cancelled", async () => {

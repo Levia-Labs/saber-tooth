@@ -9,6 +9,7 @@ import {
 } from "../lib/announcements";
 import { Link } from "react-router";
 import { Alert } from "./Alert";
+import { Icon } from "./icons";
 
 type Announce = (input: AnnounceInput) => void;
 
@@ -67,12 +68,14 @@ export function AnnouncerProvider({ children }: { children: ReactNode }) {
                         key={a.label}
                         type="button"
                         className="btn"
+                        disabled={a.disabled === true}
                         onClick={() => {
                           // Dismiss first so a handler that re-announces this key keeps its toast.
-                          setBanners((list) => dismissBanner(list, b.key));
+                          if (!a.keepOpen) setBanners((list) => dismissBanner(list, b.key));
                           a.onClick();
                         }}
                       >
+                        {a.icon && <Icon name={a.icon} />}
                         {a.label}
                       </button>
                     ))}

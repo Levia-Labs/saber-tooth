@@ -1,8 +1,12 @@
 // Restores job toasts after a refresh and takes over jobs whose page went away.
-import { useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
+import { cancelJob } from "../api/client";
 import { useJobLists } from "../api/joblist";
 import { ownedJobs } from "../api/jobs";
+import { keys } from "../api/queries";
+import type { JobView } from "../api/types";
 import { planToasts, SUMMARY_KEY, type ToastPlan } from "../lib/jobtoasts";
 import { useAnnounce, useWithdraw } from "./Announcer";
 
@@ -13,10 +17,27 @@ export function JobToasts() {
   const navigate = useNavigate();
   const prev = useRef<ToastPlan["next"]>(new Map());
   const summaryClosed = useRef(false);
+  const dismissed = useRef(new Set<string>());
   const shownSummary = useRef<string | null>(null);
 
+  const client = useQueryClient();
+  const cancel = useCallback(
+    (job: JobView) => {
+      cancelJob(job.id)
+        .catch((err: unknown) =>
+          announce({
+            variant: "danger",
+            title: `Cancel ${job.title}`,
+            message: err instanceof Error ? err.message : String(err),
+          }),
+        )
+        .finally(() => void client.invalidateQueries({ queryKey: keys.jobs }));
+    },
+    [announce, client],
+  );
+
   useEffect(() => {
-    const plan = planToasts(prev.current, lists, ownedJobs);
+    const plan = planToasts(prev.current, lists, ownedJobs, cancel, dismissed.current);
     prev.current = plan.next;
     for (const key of plan.withdraw) withdraw(key);
     for (const t of plan.show) {
@@ -33,6 +54,7 @@ export function JobToasts() {
         actions: [
           {
             label: "Show jobs",
+            icon: "playlist",
             onClick: () => {
               summaryClosed.current = true;
               navigate("/jobs");
@@ -46,7 +68,7 @@ export function JobToasts() {
       if (shownSummary.current !== null) withdraw(SUMMARY_KEY);
       shownSummary.current = null;
     }
-  }, [lists, announce, withdraw, navigate]);
+  }, [lists, announce, withdraw, navigate, cancel]);
 
   return null;
 }

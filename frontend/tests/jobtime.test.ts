@@ -30,6 +30,7 @@ describe("staleMinutes", () => {
     progress_at: null,
     error: null,
     position: null,
+    cancel_requested: false,
   };
   test("counts from the last progress, else from the start", () => {
     expect(staleMinutes(base, at("2026-10-29T10:09:59Z"))).toBeNull();

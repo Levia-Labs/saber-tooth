@@ -2,10 +2,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAnnounce } from "../components/Announcer";
 import { capitalize } from "../lib/announcements";
-import { getJob, isRetryable, type Started } from "./client";
+import { cancelAction } from "../lib/jobtoasts";
+import { cancelJob, getJob, isRetryable, type Started } from "./client";
 import type { Job } from "./types";
 
-const MAX_JOB_MS = 30 * 60 * 1000;
 const MAX_FETCH_FAILS = 3;
 const FIRST_DELAY_MS = 1000;
 const MAX_DELAY_MS = 3000;
@@ -38,20 +38,28 @@ export const ownedJobs: { has(id: string): boolean } = {
   has: (id) => watched.has(id) || settled.has(id),
 };
 
-/** Poll a job to its end with backoff to 3 s; gives up 30 minutes after it starts running, never while queued. */
+/** onStatus text once the server has failed to answer MAX_FETCH_FAILS times in a row. */
+export const UNREACHABLE = "unreachable";
+
+/**
+ * Poll a job to its end with backoff to 3 s. It never gives up while the server reports the job
+ * queued or running, and never on an unreachable server (it reports `UNREACHABLE` once and keeps
+ * trying); only a server verdict (done, failed, cancelled), an abort or a non-retryable error ends it.
+ */
 export async function pollJob(
   jobId: string,
   signal: AbortSignal,
-  onStatus: (status: string) => void,
+  onStatus: (status: string, job?: Job) => void,
 ): Promise<Job> {
   watched.set(jobId, (watched.get(jobId) ?? 0) + 1);
   try {
-    let deadline = Number.POSITIVE_INFINITY; // the 30 minutes start once the job runs
     let delay = FIRST_DELAY_MS;
     let fails = 0;
-    while (Date.now() < deadline && !signal.aborted) {
+    let last: Job | undefined; // the last job the server reported, kept so toasts keep their actions
+    while (!signal.aborted) {
       try {
         const job = await getJob(jobId);
+        last = job;
         fails = 0;
         if (job.status === "done" || job.status === "failed" || job.status === "cancelled") {
           settled.add(jobId); // the page announces this end; a stale list must not re-announce it
@@ -59,23 +67,22 @@ export async function pollJob(
         if (job.status === "done") return job;
         if (job.status === "failed") throw new JobFailed(job.error ?? "job failed", job);
         if (job.status === "cancelled") throw new JobFailed("cancelled", job);
-        if (job.status !== "queued" && deadline === Number.POSITIVE_INFINITY) {
-          deadline = Date.now() + MAX_JOB_MS;
-        }
         onStatus(
           job.status === "queued" && job.position ? `queued, position ${job.position}` : job.status,
+          job,
         );
       } catch (err) {
         if (err instanceof JobFailed) throw err;
         fails += 1;
-        if (!isRetryable(err) || fails >= MAX_FETCH_FAILS) throw err;
-        onStatus(`retrying (${fails}/${MAX_FETCH_FAILS})`);
+        if (!isRetryable(err)) throw err;
+        // Unreachable is not a verdict: the job may still run, so keep polling and report once.
+        if (fails === MAX_FETCH_FAILS) onStatus(UNREACHABLE, last);
+        else if (fails < MAX_FETCH_FAILS) onStatus(`retrying (${fails}/${MAX_FETCH_FAILS})`, last);
       }
       await sleep(delay, signal);
       delay = Math.min(delay * 1.5, MAX_DELAY_MS);
     }
-    if (signal.aborted) throw new JobFailed("cancelled");
-    throw new JobFailed("timed out after 30 minutes");
+    throw new JobFailed("cancelled");
   } finally {
     const left = (watched.get(jobId) ?? 1) - 1;
     if (left > 0) watched.set(jobId, left);
@@ -114,12 +121,32 @@ export function useJobRunner(label: string, key: string = label): JobRunner {
       setState("running");
       setError(null);
       setJob(null);
-      announce({ key, variant: "progress", title: label, message: "Queued" });
       try {
         const started = await start();
-        const done = await pollJob(started.job, ctl.signal, (s) =>
-          announce({ key, variant: "progress", title: label, message: capitalize(s) }),
-        );
+        // No toast while the job is queued; the first one appears when it runs.
+        const done = await pollJob(started.job, ctl.signal, (s, polled) => {
+          if (s.startsWith("queued")) return;
+          if (s === UNREACHABLE) {
+            announce({
+              key,
+              variant: "warning",
+              title: label,
+              message:
+                "The server is unreachable, so the state of this job is unknown. Waiting for it to answer.",
+            });
+            return;
+          }
+          const requested = polled?.cancel_requested === true;
+          announce({
+            key,
+            variant: "progress",
+            title: label,
+            message: requested ? "Cancelling" : capitalize(s),
+            ...(polled && {
+              actions: [cancelAction(requested, () => void cancelJob(started.job).catch(() => {}))],
+            }),
+          });
+        });
         setJob(done);
         setState("done");
         announce({ key, variant: "success", title: label, message: "Done" });
@@ -131,7 +158,13 @@ export function useJobRunner(label: string, key: string = label): JobRunner {
         if (err instanceof JobFailed && err.job) setJob(err.job);
         setError(message);
         setState("failed");
-        announce({ key, variant: "danger", title: label, message });
+        const cancelled = err instanceof JobFailed && err.job?.status === "cancelled";
+        announce({
+          key,
+          variant: cancelled ? "info" : "danger",
+          title: label,
+          message: cancelled ? "Cancelled" : message,
+        });
         return null;
       } finally {
         running.current = false;

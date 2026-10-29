@@ -18,6 +18,7 @@ const view = (id: string, status: JobView["status"], extra: Partial<JobView> = {
   progress_at: null,
   error: null,
   position: null,
+  cancel_requested: false,
   ...extra,
 });
 
@@ -51,12 +52,10 @@ describe("job toast watcher", () => {
   }, 15_000);
 
   test("more than four active jobs fold into one summary with a Show jobs action", async () => {
-    const queued = Array.from({ length: 6 }, (_, i) =>
-      view(`q${i}`, "queued", { map_id: `m${i}`, position: i + 1 }),
-    );
-    api({ running: [view("r", "running", { map_id: "mr" })], queued, recent: [] });
+    const more = Array.from({ length: 6 }, (_, i) => view(`q${i}`, "running", { map_id: `m${i}` }));
+    api({ running: [view("r", "running", { map_id: "mr" }), ...more], queued: [], recent: [] });
     const { router } = renderApp("/");
-    expect(await toasts().findByText("1 running, 6 waiting")).toBeInTheDocument();
+    expect(await toasts().findByText("7 running")).toBeInTheDocument();
     expect(document.querySelectorAll(".toast-stack .alert")).toHaveLength(1);
     await userEvent.setup().click(toasts().getByRole("button", { name: "Show jobs" }));
     await waitFor(() => expect(router.state.location.pathname).toBe("/jobs"));
@@ -65,28 +64,28 @@ describe("job toast watcher", () => {
   test("a closed summary stays closed while folded and returns after the count drops and rises", async () => {
     const mk = (n: number) =>
       Array.from({ length: n }, (_, i) =>
-        view(`q${i}`, "queued", { map_id: `m${i}`, title: `Song ${i}`, position: i + 1 }),
+        view(`q${i}`, "running", { map_id: `m${i}`, title: `Song ${i}` }),
       );
     const run = view("r", "running", { map_id: "mr", title: "Song r" });
-    const { state, calls } = api({ running: [run], queued: mk(5), recent: [] });
+    const { state, calls } = api({ running: [run, ...mk(5)], queued: [], recent: [] });
     const { router } = renderApp("/");
-    expect(await toasts().findByText("1 running, 5 waiting")).toBeInTheDocument();
+    expect(await toasts().findByText("6 running")).toBeInTheDocument();
     await userEvent.setup().click(toasts().getByRole("button", { name: "Show jobs" }));
     await waitFor(() => expect(router.state.location.pathname).toBe("/jobs"));
     const polls = () => calls.filter((u) => u.pathname === "/api/jobs").length;
     const before = polls();
-    state.jobs = { running: [run], queued: mk(6), recent: [] };
+    state.jobs = { running: [run, ...mk(6)], queued: [], recent: [] };
     await waitFor(() => expect(polls()).toBeGreaterThan(before + 1), { timeout: 8000 });
     await act(async () => {
       await new Promise((r) => setTimeout(r, 100));
     });
-    expect(toasts().queryByText(/waiting/)).toBeNull();
-    state.jobs = { running: [], queued: mk(3), recent: [] };
+    expect(toasts().queryByText(/^\d+ running$/)).toBeNull();
+    state.jobs = { running: mk(3), queued: [], recent: [] };
     await waitFor(() => expect(toasts().getAllByText(/^Fix Song \d$/)).toHaveLength(3), {
       timeout: 8000,
     });
-    state.jobs = { running: [run], queued: mk(5), recent: [] };
-    expect(await toasts().findByText("1 running, 5 waiting", {}, { timeout: 8000 })).toBeVisible();
+    state.jobs = { running: [run, ...mk(5)], queued: [], recent: [] };
+    expect(await toasts().findByText("6 running", {}, { timeout: 8000 })).toBeVisible();
   }, 40_000);
 
   test("a page-finished job is not adopted from a stale running list", async () => {

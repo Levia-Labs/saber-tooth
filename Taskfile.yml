@@ -14,7 +14,7 @@ includes:
       # frontend/ has its own eslint config (react, jsx-a11y) run by `npm --prefix frontend run lint`;
       # the shared config lacks those plugins and would reject their disable comments.
       LINT_ESLINT: >-
-        npx --no-install eslint --ignore-pattern ".worktrees/**"
+        npx --no-install eslint --ignore-pattern ".worktrees/**" --ignore-pattern ".claude/worktrees/**"
         --ignore-pattern "src/saber_tooth/web/**" --ignore-pattern "frontend/**"
   repo: .crepidoma/taskfiles/repo
   todo: .crepidoma/taskfiles/todo

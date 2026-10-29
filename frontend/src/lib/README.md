@@ -19,3 +19,4 @@ Pure helpers and small hooks.
 15. `stepRange.ts`, `useHoldRepeat.ts`: clamped stepping of a range bound and the press-and-hold repeat hook of the arrow buttons.
 16. `jobtime.ts`: elapsed-time text and the stale-minutes check for the Jobs page.
 17. `jobtoasts.ts`: which job toasts to show from the server job list (keys, finish toasts, the more-than-4 summary); pure.
+18. `jobfilters.ts`, `jobkinds.ts`, `jobcolumns.ts`, `useJobsState.ts`: Jobs table URL state, whitelisted parsing, filter and sort; kind labels and icons; column set; the URL-state hook.

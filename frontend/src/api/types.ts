@@ -161,6 +161,8 @@ export interface JobView {
   progress_at: string | null;
   error: string | null;
   position: number | null;
+  /** A running job's Cancel was pressed; it is still running until it stops. */
+  cancel_requested: boolean;
 }
 
 export type Job = Pick<JobView, "id" | "kind" | "status" | "error"> &
