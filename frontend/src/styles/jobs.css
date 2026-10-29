@@ -47,6 +47,10 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.jobs-main + .jobs-time:last-child {
+  grid-column: 3;
+}
+.jobs-status,
 .jobs-kind,
 .jobs-pos,
 .jobs-time,
@@ -82,5 +86,8 @@
 @media (max-width: 719px) {
   .jobs-row {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .jobs-main + .jobs-time:last-child {
+    grid-column: auto;
   }
 }

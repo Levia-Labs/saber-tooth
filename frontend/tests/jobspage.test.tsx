@@ -71,6 +71,30 @@ describe("Jobs page", () => {
     await waitFor(() => expect(deletes).toEqual(["/api/jobs/q1"]));
   });
 
+  test("recent rows name their status in words", async () => {
+    serve({
+      running: [],
+      queued: [],
+      recent: [
+        job("a", { status: "done" }),
+        job("b", { status: "failed", error: "boom" }),
+        job("c", { status: "cancelled" }),
+      ],
+    });
+    renderApp("/jobs");
+    const recent = within(await screen.findByRole("region", { name: "Recent" }));
+    expect(recent.getByText("Done")).toBeTruthy();
+    expect(recent.getByText("Failed")).toBeTruthy();
+    expect(recent.getByText("Cancelled")).toBeTruthy();
+  });
+
+  test("a running job without progress renders no empty progress cell", async () => {
+    serve({ running: [job("r", { status: "running", started_at: NOW })], queued: [], recent: [] });
+    const { container } = renderApp("/jobs");
+    await screen.findByRole("heading", { name: "Running" });
+    expect(container.querySelectorAll(".jobs-detail")).toHaveLength(0);
+  });
+
   test("an empty list says so and the tab has no count", async () => {
     serve({ running: [], queued: [], recent: [] });
     renderApp("/jobs");

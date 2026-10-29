@@ -21,6 +21,12 @@ const KIND_LABEL: Record<JobKind, string> = {
   "bs-download": "Download maps",
 };
 
+const STATUS_WORD: Partial<Record<JobView["status"], string>> = {
+  done: "Done",
+  failed: "Failed",
+  cancelled: "Cancelled",
+};
+
 const errorText = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
 function Title({ job }: { job: JobView }) {
@@ -41,7 +47,7 @@ function Running({ job, now }: { job: JobView; now: number }) {
         <Title job={job} />
         <span className="jobs-kind">{KIND_LABEL[job.kind]}</span>
       </div>
-      <span className="jobs-detail">{job.progress}</span>
+      {job.progress && <span className="jobs-detail">{job.progress}</span>}
       <span className="jobs-time">
         {duration(job.started_at ?? job.created_at, now)}
         {stale !== null && <span className="jobs-stale">no progress for {stale} min</span>}
@@ -73,14 +79,15 @@ function Recent({ job }: { job: JobView }) {
     <li className="jobs-row">
       <div className="jobs-main">
         {icon ? (
-          <Icon name={icon} className={`jobs-${job.status}`} />
+          <Icon name={icon} className={`jobs-${job.status}`} aria-hidden="true" />
         ) : (
-          <span className="jobs-dot" />
+          <span className="jobs-dot" aria-hidden="true" />
         )}
+        <span className="jobs-status">{STATUS_WORD[job.status] ?? job.status}</span>
         <Title job={job} />
         <span className="jobs-kind">{KIND_LABEL[job.kind]}</span>
       </div>
-      <span className="jobs-detail">{job.error}</span>
+      {job.error && <span className="jobs-detail">{job.error}</span>}
       <span className="jobs-time">
         {duration(job.started_at ?? job.created_at, end)}
         {Number.isFinite(end) && ` · ${new Date(end).toLocaleTimeString()}`}
