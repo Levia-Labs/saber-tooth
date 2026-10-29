@@ -62,30 +62,48 @@ describe("Jobs page", () => {
     expect(screen.queryByRole("heading", { name: "Running" })).toBeNull();
     expect(screen.queryByRole("heading", { name: "Queued" })).toBeNull();
     expect(screen.getByRole("link", { name: "Acid Rain" }).getAttribute("href")).toBe("/maps/m1");
-    expect(screen.getByText("round 2 of 6")).toBeTruthy();
+    expect(within(rowOf("r1")).getByText("2/6")).toBeTruthy();
     expect(screen.getByText("boom")).toBeTruthy();
     const tabs = screen.getByRole("navigation", { name: "Section" });
     expect(within(tabs).getByText("3")).toBeTruthy();
   });
 
-  test("columns are Status, Actions, Title, Icon, Length", async () => {
+  test("columns mirror the library: Icon, Title, Length, Operation, Status, Queue #, Rounds, Actions", async () => {
     serve(FULL);
     renderApp("/jobs");
     await loaded();
     const heads = screen.getAllByRole("columnheader").map((h) => h.textContent);
-    expect(heads).toEqual(["Status", "Actions", "Title", "Icon", "Length"]);
+    expect(heads).toEqual([
+      "Icon",
+      "Title",
+      "Length",
+      "Operation",
+      "Status",
+      "Queue #",
+      "Rounds",
+      "Actions",
+    ]);
+    const cells = within(rowOf("r1")).getAllByRole("cell");
+    expect(cells).toHaveLength(8);
+    expect(cells[3]?.textContent).toBe("Fix");
+    expect(cells[6]?.textContent).toBe("2/6");
   });
 
-  test("the status column holds the kind and a badge; queued shows its position", async () => {
+  test("status cells are library chips with a tooltip name; queue # only when queued", async () => {
     serve(FULL);
     renderApp("/jobs");
     await loaded();
-    const q2 = within(rowOf("q2"));
-    expect(q2.getByText("Scan")).toBeTruthy();
-    expect(q2.getByText("Queued #2")).toBeTruthy();
-    const r1 = within(rowOf("r1"));
-    expect(r1.getByText("Fix")).toBeTruthy();
-    expect(r1.getByText("Running")).toBeTruthy();
+    const chip = (id: string) => rowOf(id).querySelector(".chip") as HTMLElement;
+    expect(chip("r1").className).toContain("chip-fixing");
+    expect(chip("r1").getAttribute("aria-label")).toBe("Running");
+    expect(chip("q2").className).toContain("chip-queued");
+    expect(chip("q2").getAttribute("aria-label")).toBe("Queued");
+    expect(chip("d1").className).toContain("chip-error");
+    expect(chip("d1").getAttribute("aria-label")).toBe("Failed");
+    expect(within(rowOf("q2")).getAllByRole("cell")[5]?.textContent).toBe("2");
+    expect(within(rowOf("r1")).getAllByRole("cell")[5]?.textContent).toBe("");
+    expect(within(rowOf("q2")).getAllByRole("cell")[3]?.textContent).toBe("Scan");
+    expect(within(rowOf("q1")).getAllByRole("cell")[6]?.textContent).toBe("");
   });
 
   test("a queued row has no waiting counter and no length", async () => {
@@ -115,7 +133,9 @@ describe("Jobs page", () => {
       return url.pathname === "/api/jobs" ? FULL : {};
     });
     renderApp("/jobs");
-    fireEvent.click(await screen.findByRole("button", { name: "Cancel Title q1" }));
+    const buttons = await screen.findAllByRole("button", { name: "Cancel job" });
+    fireEvent.click(within(rowOf("q1")).getByRole("button", { name: "Cancel job" }));
+    expect(buttons.length).toBeGreaterThan(0);
     await waitFor(() => expect(deletes).toEqual(["/api/jobs/q1"]));
   });
 
@@ -129,11 +149,13 @@ describe("Jobs page", () => {
       recent: [],
     });
     renderApp("/jobs");
-    const cancel = await screen.findByRole("button", { name: "Cancel Title a" });
+    await loaded();
+    const cancel = within(rowOf("a")).getByRole("button", { name: "Cancel job" });
     expect((cancel as HTMLButtonElement).disabled).toBe(false);
-    const busy = screen.getByRole("button", { name: "Cancelling Title b" });
+    expect(cancel.querySelector("svg")).not.toBeNull();
+    const busy = within(rowOf("b")).getByRole("button", { name: "Cancelling job" });
     expect((busy as HTMLButtonElement).disabled).toBe(true);
-    expect(within(rowOf("b")).getAllByText("Cancelling").length).toBeGreaterThan(0);
+    expect(within(rowOf("b")).getByRole("img", { name: "Cancelling" })).toBeTruthy();
   });
 
   test("finished rows name their status in words and have no Cancel", async () => {
@@ -148,10 +170,10 @@ describe("Jobs page", () => {
     });
     renderApp("/jobs");
     await loaded();
-    expect(within(rowOf("a")).getByText("Done")).toBeTruthy();
-    expect(within(rowOf("b")).getByText("Failed")).toBeTruthy();
-    expect(within(rowOf("c")).getByText("Cancelled")).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /^Cancel /i })).toBeNull();
+    expect(within(rowOf("a")).getByRole("img", { name: "Done" })).toBeTruthy();
+    expect(within(rowOf("b")).getByRole("img", { name: "Failed" })).toBeTruthy();
+    expect(within(rowOf("c")).getByRole("img", { name: "Cancelled" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /^Cancel/i })).toBeNull();
   });
 
   test("a running job without progress renders no empty progress cell", async () => {

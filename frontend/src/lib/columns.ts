@@ -3,6 +3,8 @@
  * all take their grid tracks from `gridTemplate`, so they cannot drift apart.
  */
 
+import { scaledPx } from "../vr/scale";
+
 export type Breakpoint = "wide" | "mid" | "compact";
 export type ColumnKey =
   | "cover"
@@ -20,7 +22,10 @@ export type ColumnKey =
   | "tags"
   | "maps"
   | "nps"
-  | "created";
+  | "created"
+  | "operation"
+  | "queue"
+  | "rounds";
 export type Widths = Partial<Record<ColumnKey, number>>;
 
 export const BREAKPOINTS: readonly Breakpoint[] = ["wide", "mid", "compact"];
@@ -63,6 +68,9 @@ export const LABELS: Record<ColumnKey, string> = {
   maps: "Maps",
   nps: "NPS",
   created: "Created",
+  operation: "Operation",
+  queue: "Queue #",
+  rounds: "Rounds",
 };
 
 export const LIMITS: Partial<Record<ColumnKey, { min: number; max: number }>> = {
@@ -79,6 +87,9 @@ export const LIMITS: Partial<Record<ColumnKey, { min: number; max: number }>> = 
   maps: { min: 64, max: 200 },
   nps: { min: 72, max: 200 },
   created: { min: 84, max: 200 },
+  operation: { min: 72, max: 200 },
+  queue: { min: 64, max: 160 },
+  rounds: { min: 64, max: 160 },
 };
 
 /**
@@ -191,11 +202,13 @@ export function gridTemplate(
   bp: Breakpoint,
   widths: Widths,
   set: ColumnSet = LIBRARY_COLUMNS,
+  scale = 1,
 ): string {
   return set.tracks[bp]
     .map((key) => {
       const w = width(bp, widths, key, set);
-      return key === "title" ? `minmax(${w}px, 1fr)` : `${w}px`;
+      const px = scaledPx(w, scale);
+      return key === "title" ? `minmax(${px}px, 1fr)` : `${px}px`;
     })
     .join(" ");
 }
@@ -205,21 +218,23 @@ export function tableMinWidth(
   bp: Breakpoint,
   widths: Widths,
   set: ColumnSet = LIBRARY_COLUMNS,
+  scale = 1,
 ): number {
   const cols = set.tracks[bp];
   const sum = cols.reduce((acc, key) => acc + width(bp, widths, key, set), 0);
-  return sum + GAP * (cols.length - 1) + PAD;
+  return scaledPx(sum + GAP * (cols.length - 1) + PAD, scale);
 }
 
 /** Custom properties for the list container, one grid template and one min width per breakpoint. */
 export function columnVars(
   all: Record<Breakpoint, Widths>,
   set: ColumnSet = LIBRARY_COLUMNS,
+  scale = 1,
 ): Record<string, string> {
   const vars: Record<string, string> = {};
   for (const bp of BREAKPOINTS) {
-    vars[`--cols-${bp}`] = gridTemplate(bp, all[bp], set);
-    vars[`--min-${bp}`] = `${tableMinWidth(bp, all[bp], set)}px`;
+    vars[`--cols-${bp}`] = gridTemplate(bp, all[bp], set, scale);
+    vars[`--min-${bp}`] = `${tableMinWidth(bp, all[bp], set, scale)}px`;
   }
   return vars;
 }

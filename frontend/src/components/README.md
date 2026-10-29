@@ -5,7 +5,7 @@ Shared UI.
 1. `icons.tsx`, `Logo.tsx`: own SVG icon set and the logo mark.
 2. `Tip.tsx`, `Buttons.tsx`: tooltips and icon or text buttons and links.
 3. `Chips.tsx`: status chip, level chips, cover and tempo.
-4. `Announcer.tsx`: announcement toasts (progress, success, warning, danger, info) in the bottom stack, with optional link, action buttons, a sticky flag and an onDismiss hook; `useWithdraw` removes one by key.
+4. `Announcer.tsx`: announcement toasts (progress, success, warning, danger, info) in the bottom stack, with optional link, action buttons, a sticky flag and an onDismiss hook; an input with `onOpen` renders as one row (`ToastRow.tsx`: icon, title, rounds, X) whose body opens the Jobs page; `useWithdraw` removes one by key.
 5. `FilterBodies.tsx`, `TextFilterBody.tsx`, `FilterPopover.tsx`, `MobileFilters.tsx`: column filters as popovers and as a fullscreen sheet.
    5a. `SectionTabs.tsx`: Library | BeatSaver | Jobs tabs in the page title slot, the Jobs tab with the active job count, and a visually hidden h1.
 6. `LibraryHeader.tsx`, `LibraryTable.tsx`, `LibraryRow.tsx`, `SkeletonRow.tsx`: the virtualised library table.
@@ -21,5 +21,5 @@ Shared UI.
 16. `MapFooter.tsx`: footer row on the map page: previous title, `index / total`, next title, from `GET /api/maps/{id}/neighbors` with the Library's last query (kept in sessionStorage); hidden when the request fails.
 17. `DropZone.tsx`: audio drop target and keyboard-reachable picker used by the generate page.
 18. `StepButtons.tsx`: up and down arrow column beside a number input; holding repeats (used by `RangeFilterBody.tsx`).
-19. `JobToasts.tsx`: restores toasts for running jobs (never queued ones) with a Cancel button, takes over jobs whose page unmounted, folds more than 4 into one summary.
-20. `JobsTable.tsx`, `JobsHeader.tsx`, `JobsRow.tsx`, `JobsFilterBody.tsx`: the Jobs tab table, its sortable filterable header, rows and multi-select filter body.
+19. `JobToasts.tsx`: restores one-row toasts for running jobs (never queued ones; no buttons, click opens the Jobs page), takes over jobs whose page unmounted, folds more than 4 into one summary.
+20. `JobsTable.tsx`, `JobsHeader.tsx`, `JobsRow.tsx`, `JobsFilterBody.tsx`, `JobStatusChip.tsx`: the Jobs tab table (columns mirror the library: Icon, Title, Length, Operation, Status chip, Queue #, Rounds, Actions with a trash Cancel job), its sortable filterable header, rows and multi-select filter body.

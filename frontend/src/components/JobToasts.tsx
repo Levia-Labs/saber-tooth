@@ -1,43 +1,24 @@
 // Restores job toasts after a refresh and takes over jobs whose page went away.
-import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useRef } from "react";
-import { useNavigate } from "react-router";
-import { cancelJob } from "../api/client";
+import { useEffect, useRef } from "react";
 import { useJobLists } from "../api/joblist";
 import { ownedJobs } from "../api/jobs";
-import { keys } from "../api/queries";
-import type { JobView } from "../api/types";
 import { planToasts, SUMMARY_KEY, type ToastPlan } from "../lib/jobtoasts";
+import { useOpenJobs } from "../lib/jobopen";
 import { useAnnounce, useWithdraw } from "./Announcer";
 
 export function JobToasts() {
   const lists = useJobLists();
   const announce = useAnnounce();
   const withdraw = useWithdraw();
-  const navigate = useNavigate();
   const prev = useRef<ToastPlan["next"]>(new Map());
   const summaryClosed = useRef(false);
   const dismissed = useRef(new Set<string>());
   const shownSummary = useRef<string | null>(null);
 
-  const client = useQueryClient();
-  const cancel = useCallback(
-    (job: JobView) => {
-      cancelJob(job.id)
-        .catch((err: unknown) =>
-          announce({
-            variant: "danger",
-            title: `Cancel ${job.title}`,
-            message: err instanceof Error ? err.message : String(err),
-          }),
-        )
-        .finally(() => void client.invalidateQueries({ queryKey: keys.jobs }));
-    },
-    [announce, client],
-  );
+  const open = useOpenJobs();
 
   useEffect(() => {
-    const plan = planToasts(prev.current, lists, ownedJobs, cancel, dismissed.current);
+    const plan = planToasts(prev.current, lists, ownedJobs, open, dismissed.current);
     prev.current = plan.next;
     for (const key of plan.withdraw) withdraw(key);
     for (const t of plan.show) {
@@ -49,18 +30,15 @@ export function JobToasts() {
       shownSummary.current = t.title;
       announce({
         ...t,
-        // The summary is a progress toast without a close button; its action is the only way to
-        // close it, so pressing it marks it closed until the count drops to 4 or fewer.
-        actions: [
-          {
-            label: "Show jobs",
-            icon: "playlist",
-            onClick: () => {
-              summaryClosed.current = true;
-              navigate("/jobs");
-            },
-          },
-        ],
+        // Opening the summary closes it until the count drops to 4 or fewer; so does its close button.
+        onOpen: () => {
+          summaryClosed.current = true;
+          withdraw(SUMMARY_KEY);
+          open();
+        },
+        onDismiss: () => {
+          summaryClosed.current = true;
+        },
       });
     }
     if (!plan.summary) {
@@ -68,7 +46,7 @@ export function JobToasts() {
       if (shownSummary.current !== null) withdraw(SUMMARY_KEY);
       shownSummary.current = null;
     }
-  }, [lists, announce, withdraw, navigate, cancel]);
+  }, [lists, announce, withdraw, open]);
 
   return null;
 }

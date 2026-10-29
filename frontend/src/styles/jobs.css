@@ -36,7 +36,6 @@
 .th-filters {
   display: inline-flex;
 }
-.jc-status,
 .jc-actions,
 .jc-length {
   display: flex;
@@ -44,14 +43,18 @@
   gap: 0.5rem;
   white-space: nowrap;
 }
-.jc-status {
-  flex-wrap: wrap;
-}
 .jc-length {
   flex-wrap: wrap;
   color: var(--muted);
   font-size: 0.9rem;
   font-variant-numeric: tabular-nums;
+}
+.jobs-num {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.jobs-rounds {
+  color: var(--amber);
 }
 .jc-title {
   display: flex;
@@ -71,27 +74,6 @@
   font-size: 0.9rem;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.jobs-badge {
-  padding: 0 0.5rem;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  font-size: 0.85rem;
-  line-height: 1.4rem;
-}
-.jobs-badge-running {
-  color: var(--blue);
-  border-color: var(--blue);
-}
-.jobs-badge-done {
-  color: var(--green);
-}
-.jobs-badge-failed {
-  color: var(--red);
-}
-.jobs-badge-cancelled,
-.jobs-badge-queued {
-  color: var(--muted);
 }
 .jobs-stale {
   color: var(--amber);

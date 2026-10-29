@@ -46,26 +46,35 @@ describe("planToasts", () => {
     expect(plan.show).toHaveLength(1);
   });
 
-  test("a running toast carries an iconed Cancel that calls the handler", () => {
-    const cancel = vi.fn();
-    const job = v("a", "running");
-    const plan = planToasts(new Map(), lists({ running: [job] }), none, cancel);
-    const action = plan.show[0]?.actions?.[0];
-    expect(action).toMatchObject({ label: "Cancel", icon: "stop", disabled: false });
-    action?.onClick();
-    expect(cancel).toHaveBeenCalledWith(job);
+  test("a running toast has no buttons, carries rounds when known and opens through open", () => {
+    const open = vi.fn();
+    const plan = planToasts(
+      new Map(),
+      lists({
+        running: [v("a", "running", { progress: "round 2 of 6" }), v("b", "running")],
+      }),
+      none,
+      open,
+    );
+    const [a, b] = plan.show;
+    expect(a?.actions).toBeUndefined();
+    expect(a?.rounds).toBe("2/6");
+    expect(b?.rounds).toBeUndefined();
+    a?.onOpen?.();
+    expect(open).toHaveBeenCalledTimes(1);
   });
 
-  test("cancel_requested shows Cancelling with a disabled button", () => {
-    const first = planToasts(new Map(), lists({ running: [v("a", "running")] }), none, vi.fn());
-    const again = planToasts(
+  test("outcome toasts open the Jobs page too", () => {
+    const open = vi.fn();
+    const first = planToasts(new Map(), lists({ running: [v("a", "running")] }), none, open);
+    const plan = planToasts(
       first.next,
-      lists({ running: [v("a", "running", { cancel_requested: true })] }),
+      lists({ recent: [v("a", "failed", { error: "x" })] }),
       none,
-      vi.fn(),
+      open,
     );
-    expect(again.show[0]?.message).toBe("Cancelling");
-    expect(again.show[0]?.actions?.[0]).toMatchObject({ label: "Cancelling", disabled: true });
+    plan.show[0]?.onOpen?.();
+    expect(open).toHaveBeenCalledTimes(1);
   });
 
   test("a dismissed progress toast stays closed across message changes; the outcome still shows", () => {
@@ -83,7 +92,7 @@ describe("planToasts", () => {
       first.next,
       lists({ running: [v("a", "running", { cancel_requested: true })] }),
       none,
-      vi.fn(),
+      undefined,
       dismissed,
     );
     expect(asked.show).toEqual([]);
@@ -92,7 +101,7 @@ describe("planToasts", () => {
       asked.next,
       lists({ recent: [v("a", "cancelled")] }),
       none,
-      vi.fn(),
+      undefined,
       dismissed,
     );
     expect(done.show.map((t) => [t.variant, t.message])).toEqual([["info", "Cancelled"]]);

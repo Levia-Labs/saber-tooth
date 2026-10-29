@@ -1,6 +1,6 @@
 # VR mode
 
-A layout of saber-tooth for use through a headset: the desktop pages at 2x scale (32 px text, 88 px targets, 32 px gaps, doubled table rows) in one centered column with high contrast. The functions and layout are the desktop ones: the Library table (`/vr`), the map page (`/vr/maps/:id`), BeatSaver (`/vr/beatsaver`) and Jobs (`/vr/jobs`). Other pages (About, New, BeatSaver playlists) keep their desktop path and get the VR styling. The immersive WebXR dashboard is a later phase with its own spec.
+A layout of saber-tooth for use through a headset: the desktop pages scaled up with the window (about 2x on a 1920 px wide window, 1.5x at 1280, never below the desktop size: a root font size of 8 px + 1.25vw, between 16 and 48 px) in one centered column with high contrast. The table switches columns at the width the desktop would have after the same zoom (the window width over the scale), so a 1440 px window gets the layout the desktop shows at about 900 px. The functions and layout are the desktop ones: the Library table (`/vr`), the map page (`/vr/maps/:id`), BeatSaver (`/vr/beatsaver`) and Jobs (`/vr/jobs`). Other pages (About, New, BeatSaver playlists) keep their desktop path and get the VR styling. The immersive WebXR dashboard is a later phase with its own spec.
 
 ## Opening it
 
@@ -37,7 +37,7 @@ Warning: saber-tooth has no login, so anyone on the network can fix, crop, downl
 
 ## Crop steps in VR
 
-VR mounts the desktop crop panel at 2x scale, so the chart handles, the 1 min and 2 min switch and the Save buttons work as on the desktop. There are no separate step buttons.
+VR mounts the desktop crop panel at the VR scale, so the chart handles, the 1 min and 2 min switch and the Save buttons work as on the desktop. There are no separate step buttons.
 
 ## Manual headset checklist
 

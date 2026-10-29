@@ -64,7 +64,7 @@ describe("toast keys include the map id", () => {
     await user.click(await screen.findByRole("button", { name: "Scan" }));
     await user.click(await toasts().findByRole("button", { name: "Try again" }));
     const stack = document.querySelector(".toast-stack") as HTMLElement;
-    await waitFor(() => expect(within(stack).getByText(/Queued|Running/)).toBeInTheDocument());
+    await waitFor(() => expect(within(stack).getByText("Scan")).toBeInTheDocument());
     expect(within(stack).queryByText("Scan failed")).toBeNull();
   });
 });

@@ -51,13 +51,13 @@ describe("job toast watcher", () => {
     expect(await toasts().findByText("Done", {}, { timeout: 5000 })).toBeInTheDocument();
   }, 15_000);
 
-  test("more than four active jobs fold into one summary with a Show jobs action", async () => {
+  test("more than four active jobs fold into one summary that opens the Jobs page on click", async () => {
     const more = Array.from({ length: 6 }, (_, i) => view(`q${i}`, "running", { map_id: `m${i}` }));
     api({ running: [view("r", "running", { map_id: "mr" }), ...more], queued: [], recent: [] });
     const { router } = renderApp("/");
     expect(await toasts().findByText("7 running")).toBeInTheDocument();
     expect(document.querySelectorAll(".toast-stack .alert")).toHaveLength(1);
-    await userEvent.setup().click(toasts().getByRole("button", { name: "Show jobs" }));
+    await userEvent.setup().click(toasts().getByText("7 running"));
     await waitFor(() => expect(router.state.location.pathname).toBe("/jobs"));
   });
 
@@ -70,7 +70,7 @@ describe("job toast watcher", () => {
     const { state, calls } = api({ running: [run, ...mk(5)], queued: [], recent: [] });
     const { router } = renderApp("/");
     expect(await toasts().findByText("6 running")).toBeInTheDocument();
-    await userEvent.setup().click(toasts().getByRole("button", { name: "Show jobs" }));
+    await userEvent.setup().click(toasts().getByText("6 running"));
     await waitFor(() => expect(router.state.location.pathname).toBe("/jobs"));
     const polls = () => calls.filter((u) => u.pathname === "/api/jobs").length;
     const before = polls();

@@ -1,15 +1,18 @@
 /* VR layout, active only under [data-ui="vr"]. The VR routes mount the desktop pages, so this file
-   only scales them: everything is 2x the desktop. The root font size is 32 px (desktop 16 px), so
-   every rem-sized rule (padding, gaps, icons in em) doubles with it; the table row and header
-   heights are the desktop --row-h and --head-h doubled. tests/vrcss.test.ts pins the values;
-   change the test with the design. */
+   only scales them. The root font size is fluid (about 2x the desktop at 1920 px wide), so every
+   rem-sized rule doubles with it; px-sized desktop values are multiplied by --ui-scale, which
+   src/vr/scale.ts keeps equal to the root size over 16 px. The same module scales every px media
+   query, so the desktop width tiers apply at the effective width. tests/vrcss.test.ts pins the
+   values; change the test with the design. */
 :root[data-ui="vr"] {
-  font-size: 32px;
-  --vr-text: 32px;
-  --vr-target: 88px;
-  --vr-gap: 32px;
-  --row-h: 144px;
-  --head-h: 88px;
+  /* About 2x the desktop at 1920 px wide, 1.5x at 1280, never below the desktop 16 px. */
+  font-size: clamp(16px, 8px + 1.25vw, 48px);
+  --vr-text: 1rem;
+  --vr-target: 2.75rem;
+  --vr-gap: 1rem;
+  --ui-scale: 2;
+  --row-h: calc(72px * var(--ui-scale));
+  --head-h: calc(44px * var(--ui-scale));
   --vr-focus: #ffd33d;
   --stage: #0b0818;
   --panel: #1c1738;
@@ -31,7 +34,7 @@
 /* One centered column: auto margins on both sides, wide enough for the 2x layout. */
 [data-ui="vr"] main {
   width: 100%;
-  max-width: 2800px;
+  max-width: 92.5rem;
   margin-inline: auto;
   padding-inline: var(--vr-gap);
 }
@@ -72,7 +75,7 @@
 }
 [data-ui="vr"] .toast-stack {
   bottom: calc(var(--vr-gap) * 3 + env(safe-area-inset-bottom, 0px));
-  width: min(100% - var(--vr-gap) * 2, 2800px);
+  width: min(100% - var(--vr-gap) * 2, 92.5rem);
   align-items: center;
 }
 [data-ui="vr"] .toast-stack .toast {
@@ -82,4 +85,72 @@
 /* The crop panel chart. */
 [data-ui="vr"] .nps-chart svg {
   height: 14rem;
+}
+
+/* The desktop row heights per tier. The media queries below are scaled with the root size by
+   src/vr/scale.ts, so each tier starts at the width the desktop tier starts at after the zoom. */
+@media (max-width: 1099px) {
+  :root[data-ui="vr"] {
+    --row-h: calc(92px * var(--ui-scale));
+  }
+}
+@media (max-width: 719px) {
+  :root[data-ui="vr"] {
+    --row-h: calc(232px * var(--ui-scale));
+  }
+}
+
+/* Table gaps and padding scale with the column widths (lib/columns.ts). */
+[data-ui="vr"] :where(.lib-grid, .jobs-grid) {
+  column-gap: calc(12px * var(--ui-scale));
+  padding-inline: calc(12px * var(--ui-scale));
+}
+
+/* Header cells hold a label, a sort button and a filter button inside a narrow column: the row is
+   already --head-h tall, so only the height is a target; the width follows the content. */
+[data-ui="vr"] .lib-head :where(button, .th-sort) {
+  min-width: 0;
+  padding-inline: 0.2rem;
+}
+[data-ui="vr"] .lib-head .filter-btn {
+  min-width: 1.75rem;
+}
+
+/* The desktop sets 40 and 44 px heights on selects and toggles with more specific selectors than
+   the target rule above; at VR size they clip the text, so they take the target height too. */
+[data-ui="vr"] :is(select, .order-toggle, .lib-mobile-bar .sort-select select, .kebab-item) {
+  min-height: var(--vr-target);
+}
+[data-ui="vr"] .order-toggle {
+  width: var(--vr-target);
+}
+
+/* Masthead: the desktop centers the brand and pins the actions to the right edge in a 1480 px
+   box; at VR size that box is too narrow for both. The box follows the column width and the
+   brand and actions share the row, wrapping when the window is narrow. */
+[data-ui="vr"] .masthead .masthead-inner {
+  max-width: 92.5rem;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: calc(var(--vr-gap) / 2) var(--vr-gap);
+}
+[data-ui="vr"] .masthead .masthead-actions {
+  position: static;
+  transform: none;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+/* The phone-size card row has a fixed 172 px height on the desktop; here it takes the VR token. */
+@media (max-width: 719px) {
+  [data-ui="vr"] .lib-row {
+    height: var(--row-h);
+    grid-template-columns: calc(56px * var(--ui-scale)) minmax(0, 1fr) auto;
+    row-gap: calc(6px * var(--ui-scale));
+    padding: calc(10px * var(--ui-scale)) calc(12px * var(--ui-scale));
+  }
+}
+[data-ui="vr"] .logo {
+  width: 2.5rem;
+  height: 2.5rem;
 }

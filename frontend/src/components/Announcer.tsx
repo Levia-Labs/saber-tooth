@@ -10,6 +10,7 @@ import {
 import { Link } from "react-router";
 import { Alert } from "./Alert";
 import { Icon } from "./icons";
+import { ToastRow } from "./ToastRow";
 
 type Announce = (input: AnnounceInput) => void;
 
@@ -50,44 +51,55 @@ export function AnnouncerProvider({ children }: { children: ReactNode }) {
       <WithdrawContext.Provider value={withdraw}>
         {children}
         <div className="toast-stack">
-          {banners.map((b) => (
-            <Alert
-              key={b.key}
-              className="toast"
-              variant={b.variant === "progress" ? "info" : b.variant}
-              progress={b.variant === "progress"}
-              title={b.title}
-              message={b.message}
-              {...(b.details ? { details: b.details } : {})}
-              actions={
-                (b.link || b.actions) && (
-                  <>
-                    {b.link && <Link to={b.link.to}>{b.link.label}</Link>}
-                    {b.actions?.map((a) => (
-                      <button
-                        key={a.label}
-                        type="button"
-                        className="btn"
-                        disabled={a.disabled === true}
-                        onClick={() => {
-                          // Dismiss first so a handler that re-announces this key keeps its toast.
-                          if (!a.keepOpen) setBanners((list) => dismissBanner(list, b.key));
-                          a.onClick();
-                        }}
-                      >
-                        {a.icon && <Icon name={a.icon} />}
-                        {a.label}
-                      </button>
-                    ))}
-                  </>
-                )
-              }
-              onDismiss={() => {
-                b.onDismiss?.();
-                withdraw(b.key);
-              }}
-            />
-          ))}
+          {banners.map((b) =>
+            b.onOpen ? (
+              <ToastRow
+                key={b.key}
+                banner={{ ...b, onOpen: b.onOpen }}
+                onClose={() => {
+                  b.onDismiss?.();
+                  withdraw(b.key);
+                }}
+              />
+            ) : (
+              <Alert
+                key={b.key}
+                className="toast"
+                variant={b.variant === "progress" ? "info" : b.variant}
+                progress={b.variant === "progress"}
+                title={b.title}
+                message={b.message}
+                {...(b.details ? { details: b.details } : {})}
+                actions={
+                  (b.link || b.actions) && (
+                    <>
+                      {b.link && <Link to={b.link.to}>{b.link.label}</Link>}
+                      {b.actions?.map((a) => (
+                        <button
+                          key={a.label}
+                          type="button"
+                          className="btn"
+                          disabled={a.disabled === true}
+                          onClick={() => {
+                            // Dismiss first so a handler that re-announces this key keeps its toast.
+                            if (!a.keepOpen) setBanners((list) => dismissBanner(list, b.key));
+                            a.onClick();
+                          }}
+                        >
+                          {a.icon && <Icon name={a.icon} />}
+                          {a.label}
+                        </button>
+                      ))}
+                    </>
+                  )
+                }
+                onDismiss={() => {
+                  b.onDismiss?.();
+                  withdraw(b.key);
+                }}
+              />
+            ),
+          )}
         </div>
       </WithdrawContext.Provider>
     </AnnounceContext.Provider>

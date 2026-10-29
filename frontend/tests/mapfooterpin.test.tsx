@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { screen, waitFor } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
+import { TIMELINE } from "./crophelpers";
 import { item, mockFetch, renderApp } from "./helpers";
 
 const css = (name: string) => readFileSync(resolve(__dirname, "../src/styles", name), "utf8");
@@ -22,6 +23,7 @@ function api(neighbors: () => unknown) {
   mockFetch((url) => {
     if (url.pathname.endsWith("/neighbors")) return neighbors();
     if (url.pathname === "/api/maps/id0000000002") return item(2);
+    if (url.pathname.endsWith("/timeline")) return TIMELINE;
     if (url.pathname.endsWith("/proposals")) return [];
     return { items: [], total: 0, offset: 0, limit: 40 };
   });

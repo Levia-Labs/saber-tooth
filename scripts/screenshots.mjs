@@ -1,6 +1,8 @@
 /* global document */
 // Captures product screenshots (PNG and WebP) of a running saber-tooth in headless Chrome or Edge.
 // Usage: node scripts/screenshots.mjs [--base URL] [--out DIR] [--width 1440 --height 900] [--path EXE]
+//        [--sizes 1280x720,1920x1080] [--only vr-library,vr-jobs]
+// --sizes captures every selected shot at each size, named NAME-WxH; --only keeps the named shots.
 // Read-only: every request that is not GET or HEAD is aborted, so no job ever starts.
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -20,6 +22,12 @@ const EXE = [
 const PNG_MAX = 1_500_000;
 const WEBP_MAX = 600_000;
 
+function parseSize(text) {
+  const [width, height] = text.split("x").map(Number);
+  if (!(width > 0 && height > 0)) throw new Error(`bad size ${text}, expected WIDTHxHEIGHT`);
+  return { width, height };
+}
+
 function parse(argv) {
   const out = {
     base: "http://127.0.0.1:8100",
@@ -27,6 +35,8 @@ function parse(argv) {
     width: 1440,
     height: 900,
     exe: "",
+    sizes: [],
+    only: [],
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -35,6 +45,8 @@ function parse(argv) {
     else if (a === "--width") out.width = Number(argv[++i]);
     else if (a === "--height") out.height = Number(argv[++i]);
     else if (a === "--path") out.exe = argv[++i];
+    else if (a === "--sizes") out.sizes = argv[++i].split(",").map(parseSize);
+    else if (a === "--only") out.only = argv[++i].split(",");
     else throw new Error(`unknown argument ${a}`);
   }
   return out;
@@ -76,7 +88,8 @@ async function pickMap(base) {
 }
 
 async function settle(page) {
-  await page.waitForNetworkIdle({ idleTime: 500, timeout: 30000 });
+  // Pages that poll (jobs, VR status) are never idle for long: wait a while, then shoot anyway.
+  await page.waitForNetworkIdle({ idleTime: 500, timeout: 8000 }).catch(() => undefined);
   await page.waitForFunction(() => !document.querySelector("[data-skeleton], .sk"), {
     timeout: 30000,
   });
@@ -113,9 +126,18 @@ async function main() {
     ["map-crop", `/maps/${crop.id}?tab=crop`, desktop, '[role="slider"][aria-label="Crop start"]'],
     ["beatsaver", "/beatsaver", desktop, null],
     ["new-map", "/new", desktop, null],
+    ["jobs", "/jobs", desktop, null],
     ["vr-library", "/vr", vr, null],
     ["vr-map", `/vr/maps/${status.id}`, vr, null],
+    ["vr-beatsaver", "/vr/beatsaver", vr, null],
+    ["vr-jobs", "/vr/jobs", vr, null],
   ];
+  const picked = shots.filter(([name]) => !opt.only.length || opt.only.includes(name));
+  const plan = opt.sizes.length
+    ? picked.flatMap(([name, path, , wait]) =>
+        opt.sizes.map((s) => [`${name}-${s.width}x${s.height}`, path, s, wait]),
+      )
+    : picked;
   mkdirSync(opt.out, { recursive: true });
   const profile = mkdtempSync(join(tmpdir(), "st-shots-"));
   const browser = await puppeteer.launch({
@@ -131,10 +153,10 @@ async function main() {
     page.on("request", (req) =>
       ["GET", "HEAD"].includes(req.method()) ? req.continue() : req.abort(),
     );
-    for (const [name, path, size, wait] of shots) {
+    for (const [name, path, size, wait] of plan) {
       try {
         await page.setViewport(size);
-        await page.goto(base + path, { waitUntil: "networkidle0" });
+        await page.goto(base + path, { waitUntil: "load", timeout: 30000 });
         if (wait) await page.waitForSelector(wait, { timeout: 30000 });
         await settle(page);
         await save(page, opt.out, name, base + path);

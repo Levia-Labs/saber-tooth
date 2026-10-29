@@ -37,18 +37,27 @@ function rules(): Rule[] {
     .map((m) => ({ selectors: splitList(m[1]!), body: m[2]! }));
 }
 
-const px = (name: string) => Number(new RegExp(`${name}:\\s*(\\d+)px`).exec(bare)?.[1]);
+const rem = (name: string) => Number(new RegExp(`${name}:\\s*([\\d.]+)rem`).exec(bare)?.[1]);
 
 describe("vr.css", () => {
-  test("sets the design sizes at 2x: 32 px text, 88 px targets, 32 px gaps", () => {
-    expect(px("--vr-text")).toBeGreaterThanOrEqual(32);
-    expect(px("--vr-target")).toBeGreaterThanOrEqual(88);
-    expect(px("--vr-gap")).toBeGreaterThanOrEqual(32);
+  test("sets the design sizes in rem: 1 rem text, 2.75 rem targets, 1 rem gaps", () => {
+    expect(rem("--vr-text")).toBeGreaterThanOrEqual(1);
+    expect(rem("--vr-target")).toBeGreaterThanOrEqual(2.75);
+    expect(rem("--vr-gap")).toBeGreaterThanOrEqual(1);
   });
 
-  test("rem-sized regular pages scale 2x and the column is centered", () => {
+  test("the root size is fluid: the desktop 16 px at the least, 2x at 1920 px wide", () => {
     const root = rules().find((r) => r.selectors.includes(':root[data-ui="vr"]'));
-    expect(root?.body).toMatch(/font-size:\s*32px/);
+    const m = /font-size:\s*clamp\((\d+)px,\s*(\d+)px \+ ([\d.]+)vw,\s*(\d+)px\)/.exec(
+      root?.body ?? "",
+    );
+    expect(m).not.toBeNull();
+    const [min, base, vw, max] = m!.slice(1).map(Number) as [number, number, number, number];
+    const at = (w: number) => Math.min(max, Math.max(min, base + (vw / 100) * w));
+    expect(min).toBe(16);
+    expect(at(1920)).toBe(32);
+    expect(at(1280)).toBeLessThan(at(1920));
+    expect(at(800)).toBeGreaterThanOrEqual(16);
     const main = rules().find((r) => r.selectors.includes('[data-ui="vr"] main'));
     expect(main?.body).toMatch(/margin-inline:\s*auto/);
   });
@@ -60,7 +69,7 @@ describe("vr.css", () => {
     expect(loose).toEqual([]);
   });
 
-  test("buttons, links styled as buttons, selects and inputs get 88 px targets", () => {
+  test("buttons, links styled as buttons, selects and inputs get 2.75 rem targets", () => {
     const rule = rules().find((r) => /min-height:\s*var\(--vr-target\)/.test(r.body));
     expect(rule).toBeDefined();
     const text = rule!.selectors.join(" ");
@@ -70,14 +79,14 @@ describe("vr.css", () => {
     expect(rule!.body).toMatch(/min-width:\s*var\(--vr-target\)/);
   });
 
-  test("base text is the 32 px token and no literal font size is smaller", () => {
+  test("base text is the 1 rem token and no literal font size is a px size", () => {
     const body = rules().find((r) => r.selectors.some((s) => s.endsWith(" body")));
     expect(body?.body).toMatch(/font-size:\s*var\(--vr-text\)/);
     const literals = [...bare.matchAll(/font-size:\s*(\d+(?:\.\d+)?)px/g)].map((m) => Number(m[1]));
-    expect(literals.every((n) => n >= 22)).toBe(true);
+    expect(literals).toEqual([]);
   });
 
-  test("gaps use the 32 px token and no literal gap is smaller", () => {
+  test("gaps use the 1 rem token and no literal px gap is under 16 px", () => {
     expect(rules().some((r) => /gap:\s*var\(--vr-gap\)/.test(r.body))).toBe(true);
     const literals = [...bare.matchAll(/(?<![-\w])gap:\s*(\d+(?:\.\d+)?)px/g)].map((m) =>
       Number(m[1]),
@@ -99,9 +108,18 @@ describe("vr.css", () => {
     expect(rule?.body).toMatch(/display:\s*none/);
   });
 
-  test("table rows and header are the desktop heights doubled", () => {
-    expect(px("--row-h")).toBe(144);
-    expect(px("--head-h")).toBe(88);
+  test("table rows and header are the desktop heights times --ui-scale, per width tier", () => {
+    expect(bare).toMatch(/--row-h:\s*calc\(72px \* var\(--ui-scale\)\)/);
+    expect(bare).toMatch(/--head-h:\s*calc\(44px \* var\(--ui-scale\)\)/);
+    expect(bare).toMatch(/max-width: 1099px\)[^@]*--row-h:\s*calc\(92px \* var\(--ui-scale\)\)/);
+    expect(bare).toMatch(/max-width: 719px\)[^@]*--row-h:\s*calc\(232px \* var\(--ui-scale\)\)/);
+  });
+
+  test("header buttons are not forced to the target width", () => {
+    const rule = rules().find((r) =>
+      r.selectors.some((s) => s.includes(".lib-head :where(button")),
+    );
+    expect(rule?.body).toMatch(/min-width:\s*0/);
   });
 
   test("high contrast tokens: white ink on a dark panel", () => {

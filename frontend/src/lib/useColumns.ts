@@ -14,6 +14,7 @@ import {
   type ColumnKey,
   type Widths,
 } from "./columns";
+import { scaledPx, unscaledPx, useUiScale } from "../vr/scale";
 import { useMediaQuery } from "./hooks";
 
 export interface ColumnsApi {
@@ -44,6 +45,7 @@ export function useColumns(
   style: CSSProperties;
 } {
   const bp = useBreakpoint();
+  const scale = useUiScale();
   const [all, setAll] = useState<All>(() => ({
     wide: loadWidths("wide", undefined, set),
     mid: loadWidths("mid", undefined, set),
@@ -52,13 +54,13 @@ export function useColumns(
 
   const preview = useCallback(
     (key: ColumnKey, px: number) => {
-      const next = { ...all[bp], [key]: clampWidth(key, px) };
+      const next = { ...all[bp], [key]: clampWidth(key, unscaledPx(px, scale)) };
       const el = table.current;
       if (!el) return;
-      el.style.setProperty(`--cols-${bp}`, gridTemplate(bp, next, set));
-      el.style.setProperty(`--min-${bp}`, `${tableMinWidth(bp, next, set)}px`);
+      el.style.setProperty(`--cols-${bp}`, gridTemplate(bp, next, set, scale));
+      el.style.setProperty(`--min-${bp}`, `${tableMinWidth(bp, next, set, scale)}px`);
     },
-    [all, bp, table, set],
+    [all, bp, table, set, scale],
   );
 
   const settle = useCallback(
@@ -69,8 +71,9 @@ export function useColumns(
     [bp, set],
   );
   const commit = useCallback(
-    (key: ColumnKey, px: number) => settle({ ...all[bp], [key]: clampWidth(key, px) }),
-    [all, bp, settle],
+    (key: ColumnKey, px: number) =>
+      settle({ ...all[bp], [key]: clampWidth(key, unscaledPx(px, scale)) }),
+    [all, bp, settle, scale],
   );
   const reset = useCallback(
     (key: ColumnKey) => settle({ ...all[bp], [key]: defaultWidths(bp, set)[key] }),
@@ -85,10 +88,21 @@ export function useColumns(
     });
   }, [set]);
 
-  const style = useMemo(() => columnVars(all, set) as CSSProperties, [all, set]);
+  const style = useMemo(() => columnVars(all, set, scale) as CSSProperties, [all, set, scale]);
+  const shown = useMemo(() => scaleWidths(all[bp], scale), [all, bp, scale]);
   const api = useMemo(
-    () => ({ bp, widths: all[bp], preview, commit, reset, resetAll }),
-    [bp, all, preview, commit, reset, resetAll],
+    () => ({ bp, widths: shown, preview, commit, reset, resetAll }),
+    [bp, shown, preview, commit, reset, resetAll],
   );
   return { api, style };
+}
+
+/** The widths as rendered at a VR scale, which is what a drag handle measures; identity at 1. */
+function scaleWidths(widths: Widths, scale: number): Widths {
+  if (scale === 1) return widths;
+  const out: Widths = {};
+  for (const [key, value] of Object.entries(widths) as [ColumnKey, number][]) {
+    out[key] = scaledPx(value, scale);
+  }
+  return out;
 }

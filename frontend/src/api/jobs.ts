@@ -2,8 +2,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAnnounce } from "../components/Announcer";
 import { capitalize } from "../lib/announcements";
-import { cancelAction } from "../lib/jobtoasts";
-import { cancelJob, getJob, isRetryable, type Started } from "./client";
+import { useOpenJobs } from "../lib/jobopen";
+import { roundsText } from "../lib/jobrounds";
+import { getJob, isRetryable, type Started } from "./client";
 import type { Job } from "./types";
 
 const MAX_FETCH_FAILS = 3;
@@ -55,7 +56,7 @@ export async function pollJob(
   try {
     let delay = FIRST_DELAY_MS;
     let fails = 0;
-    let last: Job | undefined; // the last job the server reported, kept so toasts keep their actions
+    let last: Job | undefined; // the last job the server reported, kept so a retry keeps the cancel_requested state
     while (!signal.aborted) {
       try {
         const job = await getJob(jobId);
@@ -104,6 +105,7 @@ export interface JobRunner {
 /** Runs one job at a time, announcing progress with the given label; `key` (default the label) names its toast, so give per-map jobs a key with the map id. */
 export function useJobRunner(label: string, key: string = label): JobRunner {
   const announce = useAnnounce();
+  const open = useOpenJobs();
   const [state, setState] = useState<RunState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [job, setJob] = useState<Job | null>(null);
@@ -137,19 +139,19 @@ export function useJobRunner(label: string, key: string = label): JobRunner {
             return;
           }
           const requested = polled?.cancel_requested === true;
+          const rounds = roundsText(polled?.progress);
           announce({
             key,
             variant: "progress",
             title: label,
             message: requested ? "Cancelling" : capitalize(s),
-            ...(polled && {
-              actions: [cancelAction(requested, () => void cancelJob(started.job).catch(() => {}))],
-            }),
+            onOpen: open,
+            ...(rounds && { rounds }),
           });
         });
         setJob(done);
         setState("done");
-        announce({ key, variant: "success", title: label, message: "Done" });
+        announce({ key, variant: "success", title: label, message: "Done", onOpen: open });
         return done;
       } catch (err) {
         // Ended by our own abort (the page unmounted): the job still runs; the toast watcher owns it.
@@ -164,13 +166,14 @@ export function useJobRunner(label: string, key: string = label): JobRunner {
           variant: cancelled ? "info" : "danger",
           title: label,
           message: cancelled ? "Cancelled" : message,
+          onOpen: open,
         });
         return null;
       } finally {
         running.current = false;
       }
     },
-    [announce, label, key],
+    [announce, label, key, open],
   );
 
   return { state, busy: state === "running", error, job, run };

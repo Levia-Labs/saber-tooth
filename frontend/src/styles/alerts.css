@@ -123,6 +123,46 @@
   pointer-events: auto;
   box-shadow: 0 6px 24px rgb(0 0 0 / 45%);
 }
+/* Job toast: one row, the body opens the Jobs page, the X only closes. */
+.toast-row {
+  align-items: center;
+  padding-block: 0.4rem;
+}
+.toast-row .toast-open {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.toast-row .alert-title {
+  overflow: hidden;
+  margin: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.toast-row .alert-dismiss {
+  margin: 0 0 0 0.4rem;
+}
+.toast-rounds {
+  flex: none;
+  color: var(--amber);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.toast-message {
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 @media (max-width: 640px) {
   .toast-stack {
     width: calc(100% - 2rem);

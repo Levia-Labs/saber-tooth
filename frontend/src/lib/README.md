@@ -17,6 +17,7 @@ Pure helpers and small hooks.
 13. `generate.ts`, `decisions.ts`: link and audio checks for the generate card, and which proposal decisions are still allowed.
 14. `clock.ts`: pure `parseClock` and `formatClock` for the "mm:ss" length filter inputs.
 15. `stepRange.ts`, `useHoldRepeat.ts`: clamped stepping of a range bound and the press-and-hold repeat hook of the arrow buttons.
-16. `jobtime.ts`: elapsed-time text and the stale-minutes check for the Jobs page.
-17. `jobtoasts.ts`: which job toasts to show from the server job list (keys, finish toasts, the more-than-4 summary); pure.
-18. `jobfilters.ts`, `jobkinds.ts`, `jobcolumns.ts`, `useJobsState.ts`: Jobs table URL state, whitelisted parsing, filter and sort; kind labels and icons; column set; the URL-state hook.
+16. `jobrounds.ts`, `jobstatus.ts`, `jobopen.ts`: "round n of m" to "n/m"; job state to library status chip; hook that opens /jobs (or /vr/jobs in VR).
+17. `jobtime.ts`: elapsed-time text and the stale-minutes check for the Jobs page.
+18. `jobtoasts.ts`: which job toasts to show from the server job list (keys, finish toasts, the more-than-4 summary); pure.
+19. `jobfilters.ts`, `jobkinds.ts`, `jobcolumns.ts`, `useJobsState.ts`: Jobs table URL state, whitelisted parsing, filter and sort; kind labels and icons; column set; the URL-state hook.

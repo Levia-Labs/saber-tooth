@@ -15,7 +15,7 @@ Plain CSS with custom properties; no framework.
 8. `alerts.css`: alert variants and the visually hidden helper.
 9. `preview.css`: the audio preview button and its progress ring.
 10. `crop.css`: the crop panel and its NPS chart.
-11. `vr.css`: the VR layout, active only under `[data-ui="vr"]`: 22 px text, 64 px targets, 16 px gaps, focus ring, one to three column grid, and the Library card and toggle layout.
+11. `vr.css`: the VR layout, active only under `[data-ui="vr"]`: a fluid root font size (about 2x at 1920 px wide), rem targets and gaps, row and header heights as desktop px times `--ui-scale`, focus ring and header cell fixes. the VR scale module scales the px media queries to match.
 12. `generate.css`: the generate card: "or" divider, audio drop zone, over and disabled states.
 13. `vrmode.css`: the masthead layout switch (VR / Desktop toggle group, shown in both layouts).
 14. `jobs.css`: the Jobs tab count badge and the Jobs page lists.

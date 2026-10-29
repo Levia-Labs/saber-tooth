@@ -20,6 +20,10 @@ export interface AnnounceInput {
   sticky?: boolean;
   /** Runs when the toast's close button is pressed. */
   onDismiss?: () => void;
+  /** Makes the toast one row whose body runs this on click; the close button only closes. */
+  onOpen?: () => void;
+  /** Fix rounds "x/y", shown in the one-row layout only when known. */
+  rounds?: string;
 }
 
 export interface BannerAction {
@@ -46,6 +50,8 @@ export interface Banner {
   actions?: BannerAction[];
   details?: string[];
   onDismiss?: () => void;
+  onOpen?: () => void;
+  rounds?: string;
   /** Epoch ms at which the banner goes away, or null when it stays until dismissed. */
   expiresAt: number | null;
 }
@@ -78,6 +84,8 @@ export function addBanner(list: Banner[], input: AnnounceInput, now: number): Ba
   if (input.actions !== undefined) banner.actions = input.actions;
   if (input.details !== undefined) banner.details = input.details;
   if (input.onDismiss !== undefined) banner.onDismiss = input.onDismiss;
+  if (input.onOpen !== undefined) banner.onOpen = input.onOpen;
+  if (input.rounds !== undefined) banner.rounds = input.rounds;
   const at = list.findIndex((b) => b.key === key);
   const next = at === -1 ? [...list, banner] : list.map((b, i) => (i === at ? banner : b));
   return trim(next, key);

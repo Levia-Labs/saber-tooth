@@ -1,40 +1,20 @@
 import { Link } from "react-router";
-import type { JobState, JobView } from "../api/types";
+import type { JobView } from "../api/types";
+import { JOB_COL } from "../lib/jobcolumns";
 import { jobLengthMs } from "../lib/jobfilters";
+import { roundsText } from "../lib/jobrounds";
 import { KIND_ICON, KIND_LABEL } from "../lib/jobkinds";
 import { duration, staleMinutes } from "../lib/jobtime";
 import { ActionButton } from "./Buttons";
 import { Cover } from "./Chips";
 import { Icon } from "./icons";
-
-const STATE_WORD: Record<JobState, string> = {
-  running: "Running",
-  queued: "Queued",
-  done: "Done",
-  failed: "Failed",
-  cancelled: "Cancelled",
-};
+import { JobStatusChip } from "./JobStatusChip";
 
 interface Props {
   job: JobView;
   index: number;
   now: number;
   onCancel: (job: JobView) => void;
-}
-
-function StatusCell({ job }: { job: JobView }) {
-  const word =
-    job.status === "queued" && job.position
-      ? `Queued #${job.position}`
-      : job.status === "running" && job.cancel_requested
-        ? "Cancelling"
-        : STATE_WORD[job.status];
-  return (
-    <div className="jc-status" role="cell">
-      <span className="jobs-kind">{KIND_LABEL[job.kind]}</span>
-      <span className={`jobs-badge jobs-badge-${job.status}`}>{word}</span>
-    </div>
-  );
 }
 
 function ActionsCell({ job, onCancel }: Pick<Props, "job" | "onCancel">) {
@@ -44,11 +24,10 @@ function ActionsCell({ job, onCancel }: Pick<Props, "job" | "onCancel">) {
     <div className="jc-actions" role="cell">
       {active && (
         <ActionButton
-          icon={requested ? "spinner" : "stop"}
-          label={requested ? "Cancelling" : "Cancel"}
-          tip={requested ? "Waiting for the job to stop" : "Cancel this job"}
-          text
-          aria-label={`${requested ? "Cancelling" : "Cancel"} ${job.title}`}
+          icon={requested ? "spinner" : "trash"}
+          label={requested ? "Cancelling job" : "Cancel job"}
+          tip={requested ? "Waiting for the job to stop" : "Cancel job"}
+          aria-label={requested ? "Cancelling job" : "Cancel job"}
           disabled={requested}
           onClick={() => onCancel(job)}
         />
@@ -61,7 +40,7 @@ function LengthCell({ job, now }: Pick<Props, "job" | "now">) {
   const ms = jobLengthMs(job, now);
   const stale = staleMinutes(job, now);
   return (
-    <div className="jc-length" role="cell">
+    <div className={`jc-${JOB_COL.length} jc-length`} role="cell">
       {ms !== null && (
         <>
           {duration(
@@ -77,12 +56,21 @@ function LengthCell({ job, now }: Pick<Props, "job" | "now">) {
 
 export function JobsRow({ job, index, now, onCancel }: Props) {
   const linked = job.map_exists && job.map_id;
-  const detail = job.status === "failed" && job.error ? job.error : job.progress;
+  const detail = job.status === "failed" && job.error ? job.error : null;
+  const rounds = roundsText(job.progress);
+  const cell = (col: string) => `jc-${col}`;
   return (
     <div className="jobs-row jobs-grid" role="row" aria-rowindex={index + 2} data-job={job.id}>
-      <StatusCell job={job} />
-      <ActionsCell job={job} onCancel={onCancel} />
-      <div className="jc-title" role="cell">
+      <div className={cell(JOB_COL.icon)} role="cell">
+        {linked ? (
+          <Cover url={`/api/maps/${encodeURIComponent(job.map_id ?? "")}/cover`} />
+        ) : (
+          <span className="cover cover-empty jobs-kind-icon">
+            <Icon name={KIND_ICON[job.kind]} />
+          </span>
+        )}
+      </div>
+      <div className={`${cell(JOB_COL.title)} jc-title`} role="cell">
         {linked ? (
           <Link className="jobs-title" to={`/maps/${job.map_id}`} title={job.title}>
             {job.title}
@@ -94,16 +82,20 @@ export function JobsRow({ job, index, now, onCancel }: Props) {
         )}
         {detail && <span className="jobs-detail">{detail}</span>}
       </div>
-      <div className="jc-cover" role="cell">
-        {linked ? (
-          <Cover url={`/api/maps/${encodeURIComponent(job.map_id ?? "")}/cover`} />
-        ) : (
-          <span className="cover cover-empty jobs-kind-icon">
-            <Icon name={KIND_ICON[job.kind]} />
-          </span>
-        )}
-      </div>
       <LengthCell job={job} now={now} />
+      <div className={`${cell(JOB_COL.operation)} jobs-kind`} role="cell">
+        {KIND_LABEL[job.kind]}
+      </div>
+      <div className={cell(JOB_COL.status)} role="cell">
+        <JobStatusChip job={job} />
+      </div>
+      <div className={`${cell(JOB_COL.queue)} jobs-num`} role="cell">
+        {job.status === "queued" && job.position ? job.position : ""}
+      </div>
+      <div className={`${cell(JOB_COL.rounds)} jobs-num jobs-rounds`} role="cell">
+        {rounds ?? ""}
+      </div>
+      <ActionsCell job={job} onCancel={onCancel} />
     </div>
   );
 }

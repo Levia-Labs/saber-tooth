@@ -19,6 +19,7 @@ import {
   writeStored,
   type Mode,
 } from "./mode";
+import { installScale, refreshScale } from "./scale";
 import { NO_VR, useVisible, useVrStatus, type VrStatus } from "./status";
 
 export interface VrModeValue {
@@ -30,6 +31,8 @@ export interface VrModeValue {
   choose: (mode: Mode) => void;
   dismissBanner: () => void;
 }
+
+installScale();
 
 const NEUTRAL: VrModeValue = {
   mode: "desktop",
@@ -66,8 +69,10 @@ export function VrModeProvider({ children }: { children: ReactNode }) {
     const root = document.documentElement;
     if (mode === "vr") root.dataset.ui = "vr";
     else delete root.dataset.ui;
+    refreshScale();
     return () => {
       delete root.dataset.ui;
+      refreshScale();
     };
   }, [mode]);
 

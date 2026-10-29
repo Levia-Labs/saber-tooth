@@ -1,8 +1,9 @@
 // Which job toasts to show, given the server's job list; pure so it is tested without React.
 // A job gets a toast only once it runs; queued jobs have none, only a row on the Jobs tab.
 import type { JobLists, JobView } from "../api/types";
-import { capitalize, type AnnounceInput, type BannerAction } from "./announcements";
+import { capitalize, type AnnounceInput } from "./announcements";
 import { fixKey } from "./fixToast";
+import { roundsText } from "./jobrounds";
 
 export const SUMMARY_KEY = "jobs-summary";
 export const SUMMARY_ABOVE = 4;
@@ -32,17 +33,6 @@ const toastTitle = (job: JobView): string =>
 const activeMessage = (job: JobView): string =>
   job.cancel_requested ? "Cancelling" : capitalize(job.progress ?? "running");
 
-/** The Cancel button of a running toast; while the stop is pending it reads Cancelling and is disabled. */
-export function cancelAction(requested: boolean, onClick: () => void): BannerAction {
-  return {
-    label: requested ? "Cancelling" : "Cancel",
-    icon: requested ? "spinner" : "stop",
-    disabled: requested,
-    keepOpen: true,
-    onClick,
-  };
-}
-
 export type Tracked = Map<string, { key: string; message: string }>;
 
 export interface ToastPlan {
@@ -56,7 +46,8 @@ export function planToasts(
   prev: ReadonlyMap<string, { key: string; message: string }>,
   lists: JobLists,
   owned: { has(id: string): boolean },
-  onCancel?: (job: JobView) => void,
+  /** Runs when a job toast body is clicked; the toast is then one row without buttons. */
+  open?: () => void,
   /** Ids whose progress toast the user closed; it stays closed across message changes, only the outcome shows. */
   dismissed?: Set<string>,
 ): ToastPlan {
@@ -75,8 +66,10 @@ export function planToasts(
       if (prev.get(job.id)?.message) withdraw.push(key);
     } else if (prev.get(job.id)?.message !== message) {
       const toast: AnnounceInput = { key, variant: "progress", title: toastTitle(job), message };
+      const rounds = roundsText(job.progress);
+      if (rounds) toast.rounds = rounds;
+      if (open) toast.onOpen = open;
       if (dismissed) toast.onDismiss = () => dismissed.add(job.id);
-      if (onCancel) toast.actions = [cancelAction(job.cancel_requested, () => onCancel(job))];
       show.push(toast);
     }
   }
@@ -88,7 +81,11 @@ export function planToasts(
       withdraw.push(last.key); // gone from every list: older than the recent window
       continue;
     }
-    const base = { key: toastKey(job), title: toastTitle(job) };
+    const base: { key: string; title: string; onOpen?: () => void } = {
+      key: toastKey(job),
+      title: toastTitle(job),
+    };
+    if (open) base.onOpen = open;
     if (job.status === "failed") {
       show.push({ ...base, variant: "danger", message: job.error ?? "failed" });
     } else if (job.status === "cancelled") {

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { JobKind, JobState, JobView } from "../api/types";
 import type { ColumnKey } from "../lib/columns";
+import { JOB_COL } from "../lib/jobcolumns";
 import { KIND_LABEL, KIND_ORDER } from "../lib/jobkinds";
 import { JOB_STATES, jobsFilterCount, type JobSort, type JobsState } from "../lib/jobfilters";
 import type { ColumnsApi } from "../lib/useColumns";
@@ -20,8 +21,6 @@ const STATE_LABEL: Record<JobState, string> = {
   failed: "Failed",
   cancelled: "Cancelled",
 };
-
-const HEADINGS: Partial<Record<ColumnKey, string>> = { cover: "Icon", length: "Length" };
 
 interface Props {
   state: JobsState;
@@ -48,7 +47,7 @@ function HeaderCell({ col, label, columns, state, update, sort, tip, filter }: C
   };
   return (
     <div
-      className={`th jc-${col}${col === "cover" ? " th-quiet" : ""}`}
+      className={`th jc-${col}${col === JOB_COL.icon ? " th-quiet" : ""}`}
       role="columnheader"
       aria-sort={sort ? aria : undefined}
     >
@@ -91,48 +90,12 @@ export function JobsHeader(props: Props) {
     disabled: n === 0,
     onClear: () => update(patch, true),
   });
-  const cell = (col: ColumnKey) => ({ ...props, col, label: HEADINGS[col] ?? col });
+  const cell = (col: ColumnKey) => ({ ...props, col, label: col });
   return (
     <div className="lib-head jobs-grid" role="row" aria-rowindex={1}>
+      <HeaderCell {...cell(JOB_COL.icon)} label="Icon" />
       <HeaderCell
-        {...cell("status")}
-        label="Status"
-        sort="status"
-        tip="Running first, then queued, then finished. Click again to reverse."
-        filter={
-          <div className="th-filters">
-            <FilterPopover label="Status" tip="Filter by status" count={counts.status}>
-              <JobsFilterBody<JobState>
-                label="Status"
-                options={JOB_STATES.map((value) => ({
-                  value,
-                  label: STATE_LABEL[value],
-                  count: countBy(jobs, (j) => j.status, value),
-                }))}
-                selected={state.status}
-                onChange={(status) => update({ status })}
-                rowClear={clear("Status", counts.status, { status: [] })}
-              />
-            </FilterPopover>
-            <FilterPopover label="Kind" tip="Filter by kind of job" count={counts.kind}>
-              <JobsFilterBody<JobKind>
-                label="Kind"
-                options={KIND_ORDER.map((value) => ({
-                  value,
-                  label: KIND_LABEL[value],
-                  count: countBy(jobs, (j) => j.kind, value),
-                }))}
-                selected={state.kind}
-                onChange={(kind) => update({ kind })}
-                rowClear={clear("Kind", counts.kind, { kind: [] })}
-              />
-            </FilterPopover>
-          </div>
-        }
-      />
-      <HeaderCell {...cell("actions")} label="Actions" />
-      <HeaderCell
-        {...cell("title")}
+        {...cell(JOB_COL.title)}
         label="Title"
         sort="title"
         filter={
@@ -147,9 +110,8 @@ export function JobsHeader(props: Props) {
           </FilterPopover>
         }
       />
-      <HeaderCell {...cell("cover")} label="Icon" />
       <HeaderCell
-        {...cell("length")}
+        {...cell(JOB_COL.length)}
         label="Length"
         sort="length"
         tip="Sort by how long the job ran"
@@ -172,6 +134,53 @@ export function JobsHeader(props: Props) {
           </Tip>
         }
       />
+      <HeaderCell
+        {...cell(JOB_COL.operation)}
+        label="Operation"
+        filter={
+          <div className="th-filters">
+            <FilterPopover label="Kind" tip="Filter by kind of job" count={counts.kind}>
+              <JobsFilterBody<JobKind>
+                label="Kind"
+                options={KIND_ORDER.map((value) => ({
+                  value,
+                  label: KIND_LABEL[value],
+                  count: countBy(jobs, (j) => j.kind, value),
+                }))}
+                selected={state.kind}
+                onChange={(kind) => update({ kind })}
+                rowClear={clear("Kind", counts.kind, { kind: [] })}
+              />
+            </FilterPopover>
+          </div>
+        }
+      />
+      <HeaderCell
+        {...cell(JOB_COL.status)}
+        label="Status"
+        sort="status"
+        tip="Running first, then queued, then finished. Click again to reverse."
+        filter={
+          <div className="th-filters">
+            <FilterPopover label="Status" tip="Filter by status" count={counts.status}>
+              <JobsFilterBody<JobState>
+                label="Status"
+                options={JOB_STATES.map((value) => ({
+                  value,
+                  label: STATE_LABEL[value],
+                  count: countBy(jobs, (j) => j.status, value),
+                }))}
+                selected={state.status}
+                onChange={(status) => update({ status })}
+                rowClear={clear("Status", counts.status, { status: [] })}
+              />
+            </FilterPopover>
+          </div>
+        }
+      />
+      <HeaderCell {...cell(JOB_COL.queue)} label="Queue #" />
+      <HeaderCell {...cell(JOB_COL.rounds)} label="Rounds" />
+      <HeaderCell {...cell(JOB_COL.actions)} label="Actions" />
     </div>
   );
 }
