@@ -27,3 +27,10 @@ status: done
 class: test
 
 frontend/tests/fixbutton.test.tsx 'a failed job shows a danger alert with the error' failed once in the full suite with 'Found multiple elements with the text: /Fix failed/' (job toast and inline alert both match) and passed in 3 isolated runs and a full-suite rerun. Scope the query to the toast stack or the alert region.
+
+## 6 Flaky vrshell suggestion-toast test
+
+status: open
+class: bug
+
+tests/vrshell.test.tsx 'suggestion toast > accepting switches to the VR layout and remembers it' failed once under st:gate load (element not found); passed alone and in a full vitest rerun on 2026-10-29. Likely a missing findBy/waitFor.

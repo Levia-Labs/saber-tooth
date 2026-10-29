@@ -176,8 +176,9 @@ folder and the original map is never changed.
 
 | Tag      | What it is                |
 | -------- | ------------------------- |
-| `1.1.0`  | The 1.1.0 release         |
-| `latest` | The same build as `1.1.0` |
+| `1.2.0`  | The 1.2.0 release         |
+| `latest` | The same build as `1.2.0` |
+| `1.1.0`  | The 1.1.0 release, kept   |
 | `1.0.0`  | The 1.0.0 release, kept   |
 
 ## Limits
