@@ -29,7 +29,9 @@ The service listens on `127.0.0.1:${SABER_PORT:-8100}`. There is no authenticati
 1. `GET /api/lightshow`: `{"source", "environments", "units", "learned_at"}` for the active lightshow set. `source` is `learned` when `/data/lightshow.json` exists (written by the Learn button, which then overrides the bundled set) and `bundled` otherwise; `learned_at` is the file modification time as an ISO 8601 UTC string, or null for the bundled set.
 1. `POST /api/lightshow/learn`: starts a `learn` job that learns from `/levels` and writes `/data/lightshow.json`, which replaces the bundled set from then on.
 1. `GET /api/vr/status`: `{"os", "runtime", "runtimes", "xr_runtime", "worn", "source"}`, the headset runtime. `source` is `agent` (the host helper at `VR_AGENT_URL`, 300 ms timeout), `local` (probed in-process on Windows or Linux) or `none`; with no helper and no probe it still answers 200 with `runtime` null and `runtimes` empty. Cached for 2 s. There is no MCP tool for it.
-1. `GET /api/jobs/{id}`: `id`, `kind`, `status`, `error` and `result`.
+1. `GET /api/jobs`: `{"running", "queued", "recent"}`, three lists of jobs. `queued` is in run order and each item carries its `position` (1 is next; null elsewhere); `recent` holds jobs that finished in the last day. Each item has `id`, `kind`, `status`, `map_id`, `title`, `map_exists`, `position`, `created_at`, `started_at`, `updated_at`, `progress`, `progress_at` and `error`. Queued jobs survive a restart; a job that was running when the service stopped is marked failed.
+1. `DELETE /api/jobs/{id}`: cancels a queued job and answers the job with `status` `cancelled`. 404 for an unknown job, 409 for a running job (it cannot be stopped) or one that already finished.
+1. `GET /api/jobs/{id}`: `id`, `kind`, `status`, `error` and `result`, plus `map_id`, `title`, `map_exists`, `position`, `created_at`, `started_at`, `updated_at`, `progress` and `progress_at`.
 1. BeatSaver routes, see [BeatSaver](#beatsaver).
 
 Routes that start work answer `{"job": "<id>"}`. Poll the job until `status` is `done` or `failed`.

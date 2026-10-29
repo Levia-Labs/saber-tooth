@@ -10,12 +10,32 @@ from typing import Any
 INTERRUPTED = "interrupted: the service restarted before the job finished"
 RECENT_HOURS = 24
 RECENT_LIMIT = 50
-_ORDER = "ORDER BY created_at, rowid"
-_LIST_SQL = (
+_DEDUPE_SQL = (
+    "SELECT id FROM jobs WHERE map_id=? AND kind=?"
+    " AND status IN ('queued','running') ORDER BY created_at, rowid LIMIT 1"
+)
+_CLAIM_NEXT_SQL = "SELECT id FROM jobs WHERE status='queued' ORDER BY created_at, rowid LIMIT 1"
+_RUNNING_SQL = (
     "SELECT j.id, j.kind, j.status, j.error, j.map_id, j.created_at, j.started_at,"
     " j.updated_at, j.progress, j.progress_at, j.args_json,"
     " m.title AS map_title, m.id IS NOT NULL AS map_exists"
     " FROM jobs j LEFT JOIN maps m ON m.id = j.map_id"
+    " WHERE j.status='running' ORDER BY j.started_at"
+)
+_QUEUED_SQL = (
+    "SELECT j.id, j.kind, j.status, j.error, j.map_id, j.created_at, j.started_at,"
+    " j.updated_at, j.progress, j.progress_at, j.args_json,"
+    " m.title AS map_title, m.id IS NOT NULL AS map_exists"
+    " FROM jobs j LEFT JOIN maps m ON m.id = j.map_id"
+    " WHERE j.status='queued' ORDER BY j.created_at, j.rowid"
+)
+_RECENT_SQL = (
+    "SELECT j.id, j.kind, j.status, j.error, j.map_id, j.created_at, j.started_at,"
+    " j.updated_at, j.progress, j.progress_at, j.args_json,"
+    " m.title AS map_title, m.id IS NOT NULL AS map_exists"
+    " FROM jobs j LEFT JOIN maps m ON m.id = j.map_id"
+    " WHERE j.status IN ('done','failed','cancelled')"
+    " AND j.updated_at >= ? ORDER BY j.updated_at DESC, j.rowid DESC LIMIT ?"
 )
 
 
@@ -53,11 +73,7 @@ class JobRows:
         """Queue a job; with `dedupe`, an active job of this kind on this map is returned."""
         with self._lock:
             if dedupe and map_id is not None:
-                row = self._db.execute(
-                    "SELECT id FROM jobs WHERE map_id=? AND kind=?"  # noqa: S608
-                    f" AND status IN ('queued','running') {_ORDER} LIMIT 1",
-                    (map_id, kind),
-                ).fetchone()
+                row = self._db.execute(_DEDUPE_SQL, (map_id, kind)).fetchone()
                 if row:
                     return row["id"]
             job_id = uuid.uuid4().hex
@@ -97,9 +113,7 @@ class JobRows:
     def claim_next_job(self) -> dict | None:
         """Move the oldest queued job to running and return it; None when the queue is empty."""
         with self._lock:
-            row = self._db.execute(
-                f"SELECT id FROM jobs WHERE status='queued' {_ORDER} LIMIT 1"  # noqa: S608
-            ).fetchone()
+            row = self._db.execute(_CLAIM_NEXT_SQL).fetchone()
             if row is None:
                 return None
             now = _now()
@@ -153,17 +167,9 @@ class JobRows:
     def job_lists(self, now: datetime | None = None) -> dict[str, list[dict]]:
         cutoff = ((now or datetime.now(UTC)) - timedelta(hours=RECENT_HOURS)).isoformat()
         with self._lock:
-            running = self._db.execute(
-                f"{_LIST_SQL} WHERE j.status='running' ORDER BY j.started_at"
-            ).fetchall()
-            queued = self._db.execute(
-                f"{_LIST_SQL} WHERE j.status='queued' ORDER BY j.created_at, j.rowid"
-            ).fetchall()
-            recent = self._db.execute(
-                f"{_LIST_SQL} WHERE j.status IN ('done','failed','cancelled')"
-                " AND j.updated_at >= ? ORDER BY j.updated_at DESC, j.rowid DESC LIMIT ?",
-                (cutoff, RECENT_LIMIT),
-            ).fetchall()
+            running = self._db.execute(_RUNNING_SQL).fetchall()
+            queued = self._db.execute(_QUEUED_SQL).fetchall()
+            recent = self._db.execute(_RECENT_SQL, (cutoff, RECENT_LIMIT)).fetchall()
         return {
             "running": [_listed(r) for r in running],
             "queued": [_listed(r) for r in queued],

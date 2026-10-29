@@ -26,7 +26,8 @@ Source, issues and full documentation: <https://github.com/Levia-Labs/saber-toot
 6. One-step generation from a YouTube link or a dropped audio file.
 7. BeatSaver search, presets, playlists and downloads.
 8. VR mode at `/vr`, with a host helper that detects the headset.
-9. MCP tools for agents.
+9. Jobs tab: what the server is running, what waits (with cancel) and what finished in the last day; queued jobs survive a restart.
+10. MCP tools for agents.
 
 ## Screenshots
 
