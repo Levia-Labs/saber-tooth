@@ -117,3 +117,16 @@ describe("filter popover scrolling", () => {
     expect(checks).toMatch(/padding-right:\s*0\.5rem/);
   });
 });
+
+describe("filter count badge", () => {
+  test("it sits above the neighbouring header cells and no header ancestor clips it", () => {
+    const badge = rule("library.css", ".filter-badge");
+    expect(badge).toMatch(/position:\s*absolute/);
+    expect(badge).toMatch(/z-index:\s*[1-9]/);
+    for (const selector of [".lib-head", ".th", ".th-row"]) {
+      expect(rule("library.css", selector)).not.toMatch(/overflow:\s*(hidden|clip)/);
+    }
+    // A header cell must not form its own stacking context, or it would trap the badge's z-index.
+    expect(rule("library.css", ".th")).not.toMatch(/z-index/);
+  });
+});

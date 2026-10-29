@@ -101,22 +101,25 @@ export function RangeFilterBody({
   rowClear,
 }: Props) {
   const duration = kind === "duration";
-  const hint = (v: number | null | undefined) =>
-    duration
-      ? v === null || v === undefined
-        ? "mm:ss"
-        : formatClock(v)
-      : v === null || v === undefined
-        ? "Any"
-        : String(v);
-  const noun = duration ? "length" : name;
   const stepped = duration || kind === "integer";
+  // Whole-number kinds round a fractional facet bound outward: min down, max up.
+  const edge = (which: "min" | "max") => {
+    const v = bounds?.[which];
+    if (v === null || v === undefined) return null;
+    return !stepped ? v : which === "min" ? Math.floor(v) : Math.ceil(v);
+  };
+  const hint = (which: "min" | "max") => {
+    const v = edge(which);
+    if (duration) return v === null ? "mm:ss" : formatClock(v);
+    return v === null ? "Any" : String(v);
+  };
+  const noun = duration ? "length" : name;
   const stepper = (which: "min" | "max") =>
     stepped
       ? {
           lo: which === "min" ? 0 : (min ?? 0),
           hi: which === "min" ? (max ?? limit) : limit,
-          start: (which === "min" ? bounds?.min : bounds?.max) ?? 0,
+          start: edge(which) ?? 0,
           noun: `${which === "min" ? "minimum" : "maximum"} ${noun}`,
         }
       : undefined;
@@ -128,7 +131,7 @@ export function RangeFilterBody({
           kind={kind}
           value={min}
           max={limit}
-          placeholder={hint(bounds?.min)}
+          placeholder={hint("min")}
           onCommit={(v) => onChange({ min: v }, true)}
           stepper={stepper("min")}
         />
@@ -140,7 +143,7 @@ export function RangeFilterBody({
           kind={kind}
           value={max}
           max={limit}
-          placeholder={hint(bounds?.max)}
+          placeholder={hint("max")}
           onCommit={(v) => onChange({ max: v }, true)}
           stepper={stepper("max")}
         />

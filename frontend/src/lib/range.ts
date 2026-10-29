@@ -31,3 +31,9 @@ export function parseBounded(text: string, min: number, max: number): number | n
 export function inverted(low: number | null, high: number | null): boolean {
   return low !== null && high !== null && low > high;
 }
+
+/** Length and BPM filters are whole numbers: a stale decimal link rounds out (min down, max up). */
+export function wholeBound(name: string, value: number | null): number | null {
+  if (value === null || !/^(duration|bpm)(Min|Max)$/.test(name)) return value;
+  return name.endsWith("Max") ? Math.ceil(value) : Math.floor(value);
+}
