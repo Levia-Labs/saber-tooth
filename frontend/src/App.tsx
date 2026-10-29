@@ -4,6 +4,7 @@ import { createBrowserRouter, Link, Outlet, useLocation, type RouteObject } from
 import { RouterProvider } from "react-router/dom";
 import { AnnouncerProvider } from "./components/Announcer";
 import { Icon } from "./components/icons";
+import { JobToasts } from "./components/JobToasts";
 import { Logo } from "./components/Logo";
 import { Tip, TipProvider } from "./components/Tip";
 import { PageBoundary } from "./components/ErrorPanel";
@@ -100,6 +101,7 @@ function ShellFrame() {
       </header>
       <AnnouncerProvider>
         <VrBanner />
+        <JobToasts />
         <main id="main" tabIndex={-1}>
           <PageBoundary resetKey={pathname}>
             <Suspense fallback={<PageSkeleton />}>

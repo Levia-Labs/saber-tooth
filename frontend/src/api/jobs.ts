@@ -116,6 +116,8 @@ export function useJobRunner(label: string, key: string = label): JobRunner {
         announce({ key, variant: "success", title: label, message: "Done" });
         return done;
       } catch (err) {
+        // Ended by our own abort (the page unmounted): the job still runs; the toast watcher owns it.
+        if (ctl.signal.aborted) return null;
         const message = err instanceof Error ? err.message : String(err);
         if (err instanceof JobFailed && err.job) setJob(err.job);
         setError(message);

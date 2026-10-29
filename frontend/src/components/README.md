@@ -20,3 +20,4 @@ Shared UI.
 15. `CropSave.tsx`: "Save as new map" and "Save over this map" (warning style, `ConfirmDialog` with the danger option; hidden while a job runs).
 16. `MapFooter.tsx`: footer row on the map page: previous title, `index / total`, next title, from `GET /api/maps/{id}/neighbors` with the Library's last query (kept in sessionStorage); hidden when the request fails.
 17. `DropZone.tsx`: audio drop target and keyboard-reachable picker used by the generate page.
+18. `JobToasts.tsx`: restores job toasts after a refresh, takes over jobs whose page unmounted, folds more than 4 into one summary.
