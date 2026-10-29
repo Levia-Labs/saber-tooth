@@ -5,10 +5,10 @@
   background: transparent;
   border: 0;
 }
+/* Full width, like the library table: edges line up with the tab bar and the mode toggle. */
 .about {
-  max-width: 72rem;
-  margin: 0 auto;
-  padding: 0.5rem 0.25rem 2.5rem;
+  padding-top: 0.5rem;
+  padding-bottom: 2.5rem;
   line-height: 1.6;
 }
 .about h2 {
