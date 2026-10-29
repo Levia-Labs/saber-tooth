@@ -34,3 +34,24 @@ status: open
 class: bug
 
 tests/vrshell.test.tsx 'suggestion toast > accepting switches to the VR layout and remembers it' failed once under st:gate load (element not found); passed alone and in a full vitest rerun on 2026-10-29. Likely a missing findBy/waitFor.
+
+## 7 Running-job toasts have no close button
+
+status: open
+class: bug
+
+frontend/src/components/Announcer.tsx passes no onDismiss for the progress variant, so the per-job dismissed set in planToasts (frontend/src/lib/jobtoasts.ts) is never fed from the UI.
+
+## 8 Non-progress job handlers ignore cancel
+
+status: open
+class: bug
+
+In src/saber_tooth/jobs.py terms: scan, apply, learn, generate, crop and bs-download never call progress or check(), so DELETE on a running one returns 200 with cancel_requested true and the job still ends done.
+
+## 9 CropSteps steps mode may be dead after VR card removal
+
+status: open
+class: cleanup
+
+frontend/src/components/CropSteps.tsx steps mode was used by the removed VR map page; docs/vr.md 'Crop steps in VR' still describes it. Confirm unused, then remove or rewire.
