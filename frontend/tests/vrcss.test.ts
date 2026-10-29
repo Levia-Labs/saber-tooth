@@ -100,6 +100,11 @@ describe("vr.css", () => {
     expect(bare).toMatch(/repeat\(3, 1fr\)/);
   });
 
+  test("filter toggles align to the top, so a one-line help does not sit lower than a two-line one", () => {
+    const rule = css.match(/\[data-ui="vr"\] \.vr-toggles \{([^}]*)\}/)?.[1] ?? "";
+    expect(rule).toMatch(/align-items:\s*flex-start/);
+  });
+
   test("high contrast tokens: white ink on a dark panel", () => {
     expect(bare).toMatch(/--ink:\s*#ffffff/);
     expect(bare).toMatch(/--panel:\s*#1c1738/);
