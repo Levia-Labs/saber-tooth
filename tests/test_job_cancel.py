@@ -96,7 +96,7 @@ def test_cancel_between_claim_and_start_is_not_lost(tmp_path):
     assert jobs.cancel_requested(job_id) is False
 
 
-def test_fix_map_checks_before_saving():
+def test_fix_map_checks_before_saving(tmp_path):
     from types import SimpleNamespace
 
     import pytest
@@ -106,7 +106,9 @@ def test_fix_map_checks_before_saving():
 
     original = object()
     svc = SimpleNamespace(
-        _folder=lambda m: "f",
+        data=tmp_path,
+        levels=tmp_path,
+        _folder=lambda m: tmp_path / "f",
         _load=lambda f: original,
         _analyse=lambda *a: None,
         _templates=lambda: None,

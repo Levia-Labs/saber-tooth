@@ -1,30 +1,19 @@
-"""One-click fix engine: verified fixes folded one at a time into an evolving map."""
+"""One-click fix: the batch engine of fixrun.py, saved as it goes into a saber-tooth copy."""
 
 import logging
 from collections.abc import Callable
-from dataclasses import dataclass, field, replace
+from dataclasses import replace
 
-from saber_tooth.analysis import Analysis
 from saber_tooth.checks import Finding, run_checks
-from saber_tooth.fixer import Proposal, apply_ops, propose_with_reason
-from saber_tooth.lightshow import Templates
-from saber_tooth.model import DIFFICULTIES, Beatmap
+from saber_tooth.safe_fs import LevelsWriter
+from saber_tooth.service.fixrun import MAX_ROUNDS, FixRun, complete, fix_beatmap
+from saber_tooth.service.fixsave import Checkpoint, source_stamp
 from saber_tooth.service.util import checkpoint, map_id_for
-from saber_tooth.service.writeout import write_fixed
+from saber_tooth.service.writeout import replace_fixed
 
-MAX_ROUNDS = 6
 SUFFIX = " [saber-tooth]"
 log = logging.getLogger(__name__)
-
-
-@dataclass
-class FixRun:
-    """What the engine did: the fixed map, the proposals folded in and what stayed open."""
-
-    fixed: Beatmap
-    steps: list[Proposal] = field(default_factory=list)
-    unfixed: list[dict] = field(default_factory=list)
-    rounds: int = 0
+__all__ = ["MAX_ROUNDS", "SUFFIX", "complete", "counts", "fix_beatmap", "fix_map"]
 
 
 def counts(findings: list[Finding]) -> dict[str, dict[str, dict[str, int]]]:
@@ -37,64 +26,49 @@ def counts(findings: list[Finding]) -> dict[str, dict[str, dict[str, int]]]:
     return out
 
 
-def _order(f: Finding) -> tuple:
-    return (f.rule != "missing-difficulty", f.severity != "error", f.difficulty, f.beat_start)
+class _Saver:
+    """Writes the working map to the saber-tooth copy and records the checkpoint."""
 
+    def __init__(self, svc, map_id: str, folder, analysis) -> None:
+        self.svc, self.map_id, self.folder, self.analysis = svc, map_id, folder, analysis
+        self.stamp = source_stamp(folder)
+        self.cp = Checkpoint(svc.data, map_id)
+        self.name: str | None = None
+        self.stored = 0  # steps of this run already in the store
+        self.base = 0  # steps applied by earlier, interrupted runs
 
-def complete(bm: Beatmap) -> bool:
-    return all(name in bm.difficulties for name in DIFFICULTIES)
+    def resume(self) -> tuple[FixRun, dict] | None:
+        saved = self.cp.load(self.stamp)
+        if not saved or not (self.svc.levels / saved["folder"]).is_dir():
+            return None
+        self.name, self.base = saved["folder"], saved["applied"]
+        run = FixRun(
+            self.svc._load(self.svc.levels / saved["folder"]),
+            unfixed=saved["unfixed"],
+            rounds=saved["rounds"],
+            completed=saved["completed"],
+        )
+        return run, saved["position"]
 
-
-def fix_beatmap(
-    original: Beatmap,
-    analysis: Analysis | None,
-    templates: Templates | None,
-    seed: int,
-    max_rounds: int = MAX_ROUNDS,
-    on_round: Callable[[int, int], None] | None = None,
-    check: Callable[[], None] | None = None,
-    on_finding: Callable[[int, int, int], None] | None = None,  # (round, nth finding, findings)
-) -> FixRun:
-    """Fix findings one by one, each verified against the map as the earlier fixes left it.
-
-    A proposal is built from the current map, so fixes never overlap-conflict. A round
-    ends when every finding was tried; rounds repeat while the previous one changed the map.
-    """
-    run = FixRun(original)
-    cur = original
-    for n in range(1, max_rounds + 1):
-        if on_round:
-            on_round(n, max_rounds)
-        run.rounds = n
-        findings = sorted(run_checks(cur, analysis), key=_order)
-        run.unfixed = []
-        progressed = False
-        for i, f in enumerate(findings, 1):
-            if on_finding and i % 25 == 1:
-                on_finding(n, i, len(findings))
-            if check:
-                check()  # raises to stop the run before any result is written
-            out = propose_with_reason(cur, f, analysis, templates, seed)
-            if out.proposal is None:
-                run.unfixed.append({"finding": f, "reason": out.reason})
-                continue
-            cur = apply_ops(cur, out.proposal.ops)
-            run.steps.append(out.proposal)
-            progressed = True
-        run.fixed = cur
-        if not progressed:
-            break
-    if run.steps:
-        # findings tried before a later fix may have vanished: report only what remains
-        now = run_checks(cur, analysis)
-        run.unfixed = [u for u in run.unfixed if any(_same(u["finding"], f) for f in now)]
-    return run
-
-
-def _same(a: Finding, b: Finding) -> bool:
-    return (a.rule, a.difficulty, a.severity) == (b.rule, b.difficulty, b.severity) and (
-        a.beat_start <= b.beat_end and b.beat_start <= a.beat_end
-    )
+    def __call__(self, run: FixRun, position: dict | None) -> None:
+        new = run.steps[self.stored :]
+        if new:
+            info = run.fixed.info
+            if not info.song_name.endswith(SUFFIX):
+                info = replace(info, song_name=info.song_name + SUFFIX)
+            if self.name is None:
+                self.name = LevelsWriter(self.svc.levels).unique_name(self.folder.name + SUFFIX)
+            replace_fixed(self.svc.levels, self.folder, replace(run.fixed, info=info), self.name)
+            with self.svc._lock:  # short store mutations only
+                ids = self.svc.store.add_proposals(self.map_id, [p.to_dict() for p in new])
+                self.svc.store.mark_applied(ids)
+            self.stored = len(run.steps)
+        if self.name is None:
+            return
+        if position is None:
+            self.cp.clear()
+        else:
+            self.cp.save(self.stamp, self.name, run, position, self.base + self.stored)
 
 
 def fix_map(
@@ -105,65 +79,69 @@ def fix_map(
 ) -> dict:
     """Fix a map into a new folder and report counts before and after, per difficulty and rule.
 
-    Every fix is verified against the map as earlier fixes left it, so overlapping fixes
-    cannot conflict. The written folder is loaded and checked again for the report.
+    The engine works one difficulty and one batch at a time and saves the copy after each
+    difficulty pass (and every few batches), so a cancel or failure keeps the finished work
+    and a retry resumes from the checkpoint. Every fix is verified against the map as earlier
+    fixes left it. The written folder is loaded and checked again for the report.
     """
     folder = svc._folder(map_id)
     original = svc._load(folder)
     checkpoint(progress, "analysing beats")
     analysis = svc._analyse(map_id, original, folder, progress)
     before = run_checks(original, analysis)
-    on_round = (lambda n, total: progress(f"round {n} of {total}")) if progress else None
-    on_finding = (
-        (lambda n, i, total: progress(f"round {n} of {max_rounds}: finding {i} of {total}"))
-        if progress
-        else None
-    )
-    run = fix_beatmap(
-        original,
-        analysis,
-        svc._templates(),
-        int(map_id[:8], 16),
-        max_rounds,
-        on_round,
-        getattr(progress, "check", None),
-        on_finding,
-    )
-    check = getattr(progress, "check", None)
-    if check:
-        check()  # a cancel during the last attempt must not save the result
+    saver = _Saver(svc, map_id, folder, analysis)
+    resume = saver.resume()
+    if resume:
+        checkpoint(progress, f"resuming at {resume[1]['difficulty'] or 'the map'}")
+
+    def on_batch(name: str, i: int, n: int, rnd: int) -> None:
+        if progress:
+            progress(f"{name}: batch {i} of {n}" + (f" (round {rnd})" if rnd > 1 else ""))
+
+    try:
+        run = fix_beatmap(
+            original,
+            analysis,
+            svc._templates(),
+            int(map_id[:8], 16),
+            max_rounds,
+            check=getattr(progress, "check", None),
+            on_batch=on_batch,
+            on_save=saver,
+            resume=resume,
+        )
+    finally:
+        if saver.name:  # the copy of an interrupted run is a real folder: show it
+            try:
+                svc.refresh_library()
+            except Exception:
+                log.exception("library refresh failed after fixing %s", map_id)
+    checkpoint(progress)  # a cancel during the last attempt is not a success
     report: dict = {
         "map_id": map_id,
         "folder": None,
         "fixed_id": None,
         "analysed": analysis is not None,
         "rounds": run.rounds,
-        "applied": len(run.steps),
+        "applied": saver.base + len(run.steps),
         "before": counts(before),
-        "unfixed": [{**u["finding"].to_dict(), "reason": u["reason"]} for u in run.unfixed],
+        "unfixed": run.unfixed,
+        "completed": run.completed,
+        "resumed": resume is not None,
     }
-    if not run.steps:
+    if saver.name is None:
         report["after"] = report["before"]
         report["difficulties"] = sorted(original.difficulties)
         return report
-    run.fixed.info = replace(run.fixed.info, song_name=run.fixed.info.song_name + SUFFIX)
-    target = write_fixed(svc.levels, folder, run.fixed, folder.name + SUFFIX)
-    with svc._lock:  # short store mutations only; the slow re-index runs outside it
-        ids = svc.store.add_proposals(map_id, [p.to_dict() for p in run.steps])
-        svc.store.mark_applied(ids)
-    try:
-        svc.refresh_library()
-    except Exception:
-        log.exception("library refresh failed after fixing %s", map_id)
-    written = svc._load(target)
+    written = svc._load(svc.levels / saver.name)
     after = run_checks(written, analysis)
-    fixed_id = map_id_for(target.name)
+    fixed_id = map_id_for(saver.name)
     project = analysis.audio.parent.name if analysis and analysis.audio else None
     scan = {"findings": [f.to_dict() for f in after], "analysis": project}
     with svc._lock:
         svc.store.replace_open_proposals(fixed_id, [], scan)
     report.update(
-        folder=target.name,
+        folder=saver.name,
         fixed_id=fixed_id,
         after=counts(after),
         difficulties=sorted(written.difficulties),

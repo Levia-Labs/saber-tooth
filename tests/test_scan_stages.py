@@ -55,7 +55,7 @@ def test_scan_reports_each_stage_in_order(tmp_path):
     svc = _svc(tmp_path, _ok([]))
     p = Progress()
     svc.run_scan(map_id_for(NAME), p)
-    wanted = ["decoding audio", "analysing beats", "checking rules", "storing findings"]
+    wanted = ["decoding audio", "analysing beats", "checking rules"]
     stages = [t for t in p.texts if t in wanted]
     assert stages == wanted
 
@@ -120,11 +120,11 @@ def test_changed_audio_is_analysed_again(tmp_path):
 def test_a_scan_stops_proposing_at_its_time_budget_and_still_stores_every_finding(
     tmp_path, monkeypatch
 ):
-    from saber_tooth.service import core
+    from saber_tooth.service import scan
 
     svc = _svc(tmp_path, _ok([]))
     mid = map_id_for(NAME)
-    monkeypatch.setattr(core, "PROPOSE_BUDGET_S", -1.0)
+    monkeypatch.setattr(scan, "PROPOSE_BUDGET_S", -1.0)
     p = Progress()
     out = svc.run_scan(mid, p)
     findings = svc.store.scan_info(mid)["findings"]

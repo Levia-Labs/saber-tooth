@@ -122,6 +122,27 @@ class Store(MapQueries, ProposalClaims, JobRows):
         """
         return self._insert(map_id, proposals, delete_open=True, scan=scan)
 
+    def add_scan_batch(self, map_id: str, proposals: list[dict], findings: list[dict]) -> None:
+        """Append one scan batch (its proposals and findings) to the scan already stored."""
+        now = _now()
+        rows = [self._row(map_id, p, now) for p in proposals]
+        with self._lock:
+            try:
+                got = self._db.execute(
+                    "SELECT keys_json FROM scans WHERE map_id=?", (map_id,)
+                ).fetchone()
+                keys = (json.loads(got["keys_json"]) if got else []) + findings
+                self._db.execute(
+                    "UPDATE scans SET keys_json=?, scanned_at=? WHERE map_id=?",
+                    (json.dumps(keys), now, map_id),
+                )
+                for row in rows:
+                    self._db.execute(self._INSERT, row)
+                self._db.commit()
+            except BaseException:
+                self._db.rollback()
+                raise
+
     _INSERT = (
         "INSERT INTO proposals(map_id, rule, difficulty, severity, summary,"
         " ops_json, before_json, after_json, status, created_at, finding_json, replaces)"

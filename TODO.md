@@ -55,3 +55,10 @@ status: done
 class: cleanup
 
 frontend/src/components/CropSteps.tsx steps mode was used by the removed VR map page; docs/vr.md 'Crop steps in VR' still describes it. Confirm unused, then remove or rewire.
+
+## 10 Checks are not incremental on large maps
+
+status: open
+class: perf
+
+Each fix proposal re-runs a full difficulty check (~0.17 s per finding on a 7102-finding map). Batched per-level scan/fix work is in progress; if checks stay whole-difficulty, make the rules incremental over a time window.

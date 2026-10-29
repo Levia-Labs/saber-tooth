@@ -26,6 +26,7 @@ from saber_tooth.checks import run_checks
 from saber_tooth.lightshow import BUNDLED
 from saber_tooth.mapio import load_map
 from saber_tooth.service import fix as fixmod
+from saber_tooth.service import fixrun
 from saber_tooth.service.lightshow_set import active_templates
 from saber_tooth.service.util import map_id_for
 from saber_tooth.service.writeout import write_fixed
@@ -109,8 +110,8 @@ class Recorder:
         return out, verify
 
 
-fixmod_propose = fixmod.propose_with_reason
-fixmod_apply = fixmod.apply_ops
+fixmod_propose = fixrun.propose_with_reason
+fixmod_apply = fixrun.apply_ops
 
 
 def run(source: Path, rounds: int, top: int, analysis_dir: Path | None) -> list[str]:
@@ -142,7 +143,7 @@ def run(source: Path, rounds: int, top: int, analysis_dir: Path | None) -> list[
         before = timed("initial checks", lambda: run_checks(original, analysis))
         templates = active_templates(data, BUNDLED)
         seed = int(map_id_for(folder.name)[:8], 16)
-        fixmod.run_checks, fixmod.propose_with_reason, fixmod.apply_ops = (
+        fixrun.run_checks, fixrun.propose_with_reason, fixrun.apply_ops = (
             rec.run_checks,
             rec.propose,
             rec.apply,
@@ -153,7 +154,7 @@ def run(source: Path, rounds: int, top: int, analysis_dir: Path | None) -> list[
                 lambda: fixmod.fix_beatmap(original, analysis, templates, seed, rounds),
             )
         finally:
-            fixmod.run_checks, fixmod.propose_with_reason, fixmod.apply_ops = (
+            fixrun.run_checks, fixrun.propose_with_reason, fixrun.apply_ops = (
                 run_checks,
                 fixmod_propose,
                 fixmod_apply,

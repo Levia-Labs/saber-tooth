@@ -2,7 +2,6 @@
 
 import logging
 import threading
-import time
 from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
@@ -10,8 +9,6 @@ from pathlib import Path
 from saber_tooth.analyser_client import AnalyserClient, AnalyserError, AnalyserTimeout
 from saber_tooth.analysis import Analysis
 from saber_tooth.audio import probe_tags
-from saber_tooth.checks import run_checks
-from saber_tooth.fixer import propose
 from saber_tooth.lightshow import BUNDLED, Templates
 from saber_tooth.lightshow import learn as learn_templates
 from saber_tooth.mapio import MapParseError, load_map
@@ -23,6 +20,7 @@ from saber_tooth.service.errors import ApplyConflict, MapNotFound, MapUnreadable
 from saber_tooth.service.lightshow_set import LEARNED, active_templates
 from saber_tooth.service.lightshow_set import info as lightshow_info
 from saber_tooth.service.ordered import Outcome, apply_in_order
+from saber_tooth.service.scan import scan_map
 from saber_tooth.service.util import checkpoint, map_id_for
 from saber_tooth.service.verify import stored_analysis, verify
 from saber_tooth.service.writeout import write_fixed
@@ -34,7 +32,6 @@ log = logging.getLogger(__name__)
 SUFFIX = " [saber-tooth]"
 APPLY_RETRIES = 3
 ANALYSIS_CACHE = 16  # analyser results kept so Scan and Fix do not analyse one song twice
-PROPOSE_BUDGET_S = 240.0  # a scan stops proposing fixes after this; every finding is stored
 
 
 class _Stale(Exception):
@@ -176,43 +173,15 @@ class Service(DeleteMixin):
         except (AnalyserError, ValueError, MapParseError, OSError, KeyError):
             return None
 
-    def _scan(self, map_id: str, progress=None) -> tuple[int, bool, int]:
-        checkpoint(progress, "decoding audio")
-        folder = self._folder(map_id)
-        bm = self._load(folder)
-        checkpoint(progress, "analysing beats")
-        analysis = self._analyse(map_id, bm, folder, progress)  # slow: the lock is not held
-        checkpoint(progress, "checking rules")
-        templates = self._templates()
-        seed = int(map_id[:8], 16)
-        findings = run_checks(bm, analysis)
-        proposals, skipped = [], 0
-        deadline = time.monotonic() + PROPOSE_BUDGET_S
-        todo = sorted(findings, key=lambda f: f.severity != "error")  # errors are fixed first
-        for n, finding in enumerate(todo, 1):
-            if time.monotonic() > deadline:
-                skipped = len(todo) - n + 1
-                checkpoint(progress, f"time budget reached: {skipped} findings left unproposed")
-                break
-            checkpoint(progress, f"proposing fixes {n} of {len(todo)}" if n % 10 == 1 else None)
-            p = propose(bm, finding, analysis, templates, seed)
-            if p is not None:
-                proposals.append({**p.to_dict(), "finding": finding.to_dict()})
-        project = analysis.audio.parent.name if analysis and analysis.audio else None
-        scan = {"findings": [f.to_dict() for f in findings], "analysis": project}
-        if skipped:
-            scan["unproposed"] = skipped
-        checkpoint(progress, "storing findings")
-        with self._lock:
-            self.store.replace_open_proposals(map_id, proposals, scan)
-        return len(proposals), analysis is not None, skipped
+    def _scan(self, map_id: str, progress=None) -> tuple[int, bool, int, list[dict]]:
+        return scan_map(self, map_id, progress)
 
     def scan(self, map_id: str) -> int:
         return self._scan(map_id)[0]
 
     def run_scan(self, map_id: str, progress=None) -> dict:
-        count, analysed, skipped = self._scan(map_id, progress)
-        out = {"map_id": map_id, "proposals": count, "analysis": analysed}
+        count, analysed, skipped, done = self._scan(map_id, progress)
+        out = {"map_id": map_id, "proposals": count, "analysis": analysed, "completed": done}
         return {**out, "unproposed": skipped} if skipped else out
 
     # apply -------------------------------------------------------------------

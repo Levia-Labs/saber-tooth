@@ -42,3 +42,27 @@ def commit_staged(levels: Path, staging: Path, base: str) -> Path:
     except BaseException:
         shutil.rmtree(partial, ignore_errors=True)
         raise
+
+
+def replace_fixed(levels: Path, original: Path, fixed: Beatmap, name: str) -> Path:
+    """Write `fixed` as folder `name`, replacing the folder of that name left by an earlier save.
+
+    The new copy is staged beside it first; the old one is only moved aside for the swap."""
+    writer = LevelsWriter(levels)
+    partial = writer.new_folder(name)
+    target, old = levels / name, levels / f".{name}.old"
+    try:
+        write_map(fixed, partial, original)
+        _copy_tree(writer, original, partial, skip_dat=True)
+        if old.exists():
+            shutil.rmtree(old)
+        if target.exists():
+            target.rename(old)
+        partial.rename(target)
+    except BaseException:
+        shutil.rmtree(partial, ignore_errors=True)
+        if old.exists() and not target.exists():
+            old.rename(target)
+        raise
+    shutil.rmtree(old, ignore_errors=True)
+    return target

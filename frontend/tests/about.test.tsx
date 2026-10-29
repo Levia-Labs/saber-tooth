@@ -41,6 +41,13 @@ describe("about page", () => {
       "VR mode",
       "MCP tools",
     ]);
+    for (const card of within(cards).getAllByRole("listitem")) {
+      const title = within(card).getByRole("heading", { level: 3 });
+      const head = title.parentElement as HTMLElement;
+      expect(head).toHaveClass("about-card-head");
+      expect(head.querySelector("svg.ic")).not.toBeNull();
+      expect(head.firstElementChild).toHaveClass("about-icon");
+    }
     expect(screen.getByText(/Chroma, Noodle Extensions or Vivify/)).toBeInTheDocument();
   });
 

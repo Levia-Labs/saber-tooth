@@ -5,21 +5,25 @@ from bisect import bisect_left, bisect_right
 from collections import Counter
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
+from functools import lru_cache
 
 from saber_tooth.analysis import Analysis
 from saber_tooth.checks import MAP_RULES, Finding, check_difficulty, run_checks
+from saber_tooth.fixer import window
 from saber_tooth.fixer.codec import note_to_dict
 from saber_tooth.fixer.ops import AddDifficulty, ApplyLightshow, Op, OpConflict, apply_ops
 from saber_tooth.fixer.summary import summarize
 from saber_tooth.lightshow import Templates
 from saber_tooth.model import Beatmap, Difficulty, Note
 from saber_tooth.profiles import PROFILES, Profile
+from saber_tooth.swings import build_swings
 from saber_tooth.timing import Timing
 
 EPS = 1e-6
 _RANK = {"warn": 0, "error": 1}
 
 
+@lru_cache(maxsize=1 << 16)  # findings are frozen; the same ones are keyed again and again
 def finding_key(f: Finding) -> tuple:
     """Identity of a finding: difficulty, rule and the hands and walls involved."""
     return (f.difficulty, f.rule, frozenset(int(n.color) for n in f.notes), f.walls)
@@ -108,11 +112,22 @@ class Context:
     d: Difficulty | None = field(init=False, default=None)
     profile: Profile | None = field(init=False, default=None)
     timing: Timing = field(init=False)
+    _swings: dict | None = field(init=False, default=None, repr=False)
 
     def __post_init__(self) -> None:
         self.d = self.beatmap.difficulties.get(self.finding.difficulty)
         self.profile = PROFILES.get(self.finding.difficulty)
         self.timing = map_timing(self.beatmap, self.d)
+
+    def swings(self) -> dict:
+        """Swings of the finding's difficulty, built once: strategies ask for them repeatedly."""
+        if self._swings is None:
+            d, f = self.d, self.finding
+            if d is not None and len(d.notes) >= window.WINDOW_MIN_NOTES:
+                self._swings = window.swings_near(d, self.timing, f.beat_start, f.beat_end)
+            else:
+                self._swings = build_swings(d.notes if d else [], self.timing)
+        return self._swings
 
 
 Strategy = Callable[[Context], Iterator[list[Op]]]
@@ -146,6 +161,27 @@ def findings_for(beatmap: Beatmap, names: set[str], analysis: Analysis | None) -
     return out + run_checks(beatmap, analysis, rules=set(MAP_RULES))
 
 
+def _judge(
+    beatmap: Beatmap, names: set[str], analysis: Analysis | None, span: tuple | None
+) -> list[Finding]:
+    """Findings to compare: the whole map, or only the span's window when the fix is local."""
+    if span is None:
+        return findings_for(beatmap, names, analysis)
+    return window.window_findings(beatmap, span[0], span[1], span[2], analysis)
+
+
+def _span(ctx: "Context", ops: list[Op]) -> tuple | None:
+    """(difficulty, first beat, last beat) when a window is enough to judge `ops`."""
+    got = window.op_span(ops)
+    d = ctx.beatmap.difficulties.get(ctx.finding.difficulty)
+    if got is None or d is None or got[0] != ctx.finding.difficulty:
+        return None
+    if len(d.notes) < window.WINDOW_MIN_NOTES:
+        return None
+    f = ctx.finding
+    return (got[0], min(got[1], f.beat_start), max(got[2], f.beat_end))
+
+
 def _target_remains(target: Finding, before: list[Finding], after: list[Finding]) -> bool:
     others = [b for b in before if b is not target]
     return any(_overlaps(a, target) and not any(_overlaps(a, o) for o in others) for a in after)
@@ -156,16 +192,19 @@ _BEFORE_KEPT = 6
 _BEFORE_LOCK = threading.Lock()
 
 
-def _before(beatmap: Beatmap, names: set[str], analysis: Analysis | None) -> list[Finding]:
+def _before(
+    beatmap: Beatmap, names: set[str], analysis: Analysis | None, span: tuple | None = None
+) -> list[Finding]:
     """Findings of the unchanged map: every candidate for every finding starts from the same
     map, so they are computed once per map and difficulty set instead of once per candidate."""
+    key = (frozenset(names), span)
     with _BEFORE_LOCK:
         for bm, an, nm, found in _BEFORE:
-            if bm is beatmap and an is analysis and nm == names:
+            if bm is beatmap and an is analysis and nm == key:
                 return found
-    found = findings_for(beatmap, names, analysis)
+    found = _judge(beatmap, names, analysis, span)
     with _BEFORE_LOCK:
-        _BEFORE.append((beatmap, analysis, frozenset(names), found))
+        _BEFORE.append((beatmap, analysis, key, found))
         del _BEFORE[:-_BEFORE_KEPT]
     return found
 
@@ -177,28 +216,33 @@ def accepts(ctx: Context, ops: list[Op]) -> list[Op] | None:
     except OpConflict:
         return None
     names = _touched(ops) | {ctx.finding.difficulty}
-    before = _before(ctx.beatmap, names, ctx.analysis)
-    after = findings_for(fixed, names, ctx.analysis)
+    span = _span(ctx, ops)
+    before = _before(ctx.beatmap, names, ctx.analysis, span)
+    after = _judge(fixed, names, ctx.analysis, span)
     target = next((b for b in before if _same(b, ctx.finding)), None)
     if target is None or _target_remains(target, before, after):
         return None
     return None if new_findings(after, before) else fixed
 
 
-def _changed(beatmap: Beatmap, fixed: Beatmap, names: set[str]) -> tuple[list[Note], list[Note]]:
+def _changed(
+    beatmap: Beatmap, fixed: Beatmap, names: set[str], span: tuple[float, float] | None = None
+) -> tuple[list[Note], list[Note]]:
+    """Notes gone and notes new; with a span (local ops) only that beat range is compared."""
+    keep = (lambda n: span[0] - EPS <= n.beat <= span[1] + EPS) if span else (lambda n: True)
     gone: Counter = Counter()
     new: Counter = Counter()
     for name in names:
-        old = (
-            Counter(beatmap.difficulties[name].notes) if name in beatmap.difficulties else Counter()
-        )
-        cur = Counter(fixed.difficulties[name].notes) if name in fixed.difficulties else Counter()
-        gone += old - cur
-        new += cur - old
+        old, cur = beatmap.difficulties.get(name), fixed.difficulties.get(name)
+        was = Counter(n for n in old.notes if keep(n)) if old else Counter()
+        now = Counter(n for n in cur.notes if keep(n)) if cur else Counter()
+        gone += was - now
+        new += now - was
     return sorted(gone.elements()), sorted(new.elements())
 
 
 def build_proposal(ctx: Context, ops: list[Op], fixed: Beatmap) -> Proposal:
-    before, after = _changed(ctx.beatmap, fixed, _touched(ops))
+    got = window.op_span(ops)
+    before, after = _changed(ctx.beatmap, fixed, _touched(ops), got[1:] if got else None)
     f = ctx.finding
     return Proposal(f.rule, f.difficulty, f.severity, summarize(ops), ops, before, after)

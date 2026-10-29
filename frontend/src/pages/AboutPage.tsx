@@ -110,10 +110,12 @@ export function AboutPage() {
           <ul className="about-grid" aria-label="Features">
             {FEATURES.map((f) => (
               <li key={f.title} className="about-card">
-                <span className="about-icon">
-                  <Icon name={f.icon} />
-                </span>
-                <h3>{f.title}</h3>
+                <div className="about-card-head">
+                  <span className="about-icon">
+                    <Icon name={f.icon} />
+                  </span>
+                  <h3>{f.title}</h3>
+                </div>
                 <p>{f.text}</p>
               </li>
             ))}

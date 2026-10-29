@@ -65,6 +65,10 @@ describe("section tabs and masthead", () => {
     expect(within(header).queryByRole("navigation")).toBeNull();
     expect(within(header).queryByRole("link", { name: "About" })).toBeNull();
     expect(within(header).getAllByRole("link")).toHaveLength(1);
+    const brand = within(header).getByRole("link", { name: /Saber Tooth/ });
+    expect(brand).toHaveAttribute("href", "/");
+    expect(brand.querySelector("svg, img")).not.toBeNull();
+    expect(brand).toHaveTextContent("Saber Tooth");
     const links = within(nav).getAllByRole("link");
     expect(links.at(-1)).toHaveAccessibleName("About");
     expect(links.at(-1)).toHaveAttribute("href", "/about");

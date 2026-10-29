@@ -45,7 +45,7 @@ def test_scan_job_and_proposals(client):
     assert started.status_code == 200
     job = _wait(client, started.json()["job"])
     assert job["status"] == "done" and job["kind"] == "scan"
-    assert set(job["result"]) == {"map_id", "proposals", "analysis"}
+    assert set(job["result"]) == {"map_id", "proposals", "analysis", "completed"}
     assert client.get("/api/maps").json()["items"][0]["errors"] >= 0
     assert isinstance(client.get(f"/api/maps/{MID}/proposals").json(), list)
 
