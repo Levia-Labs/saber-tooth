@@ -197,7 +197,7 @@ describe("tooltip copy", () => {
   test("keeps the promises the buttons make", () => {
     expect(TIPS.scan).toContain("Nothing is written yet.");
     expect(TIPS.apply).toContain("The original map is never changed.");
-    expect(TIPS.learn).toContain("Optional: saber-tooth already lights maps with its bundled set.");
+    expect(TIPS.learn).toContain("Optional: Saber Tooth already lights maps with its bundled set.");
     expect(TIPS.generate).toContain("all five difficulties");
     expect(TIPS.approve).toBe("Accept this fix. It is written when you click Apply.");
     expect(TIPS.reject).toBe("Discard this fix.");

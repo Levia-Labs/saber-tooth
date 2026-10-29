@@ -81,7 +81,7 @@ export function DownloadConfirm(props: {
 }
 
 function ExportDialog({ ids }: { ids: string[] }) {
-  const [title, setTitle] = useState("saber-tooth selection");
+  const [title, setTitle] = useState("Saber Tooth selection");
   const out = useMutation({ mutationFn: () => exportPlaylist(title.trim(), ids) });
   return (
     <Dialog.Root onOpenChange={() => out.reset()}>

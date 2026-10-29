@@ -95,6 +95,6 @@ export function useMediaQuery(query: string): boolean {
 
 export function useDocumentTitle(title: string): void {
   useEffect(() => {
-    document.title = title ? `${title} - saber-tooth` : "saber-tooth";
+    document.title = title ? `${title} - Saber Tooth` : "Saber Tooth";
   }, [title]);
 }

@@ -2,7 +2,7 @@ import { Logo } from "../components/Logo";
 import { useDocumentTitle } from "../lib/hooks";
 
 const LINKS = [
-  { href: "https://github.com/Levia-Labs/saber-tooth", label: "saber-tooth on GitHub" },
+  { href: "https://github.com/Levia-Labs/saber-tooth", label: "Saber Tooth on GitHub" },
   { href: "https://levialabs.net", label: "Levia Labs" },
   { href: "https://github.com/Levia-Labs/beat-analyser", label: "beat-analyser (companion)" },
   { href: "https://github.com/Levia-Labs/Crepidoma", label: "Crepidoma (companion)" },
@@ -14,10 +14,10 @@ export function AboutPage() {
     <section className="page about">
       <Logo size={72} />
       <h1 tabIndex={-1} data-page-heading>
-        About saber-tooth
+        About Saber Tooth
       </h1>
       <p className="about-lead">
-        saber-tooth is a local tool that makes Beat Saber custom maps playable. One Fix click adds
+        Saber Tooth is a local tool that makes Beat Saber custom maps playable. One Fix click adds
         missing difficulties (Easy to Expert+) and fixes impossible or uncomfortable patterns, then
         saves a new copy next to the original. Your original map is never changed.
       </p>
@@ -45,7 +45,7 @@ export function AboutPage() {
 
       <h2>Privacy</h2>
       <p>
-        saber-tooth runs on your computer. It only talks to BeatSaver when you search or download
+        Saber Tooth runs on your computer. It only talks to BeatSaver when you search or download
         there.
       </p>
 

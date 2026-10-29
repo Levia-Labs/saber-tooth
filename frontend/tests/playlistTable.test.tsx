@@ -111,7 +111,7 @@ describe("playlists table", () => {
     const { posts } = api();
     renderApp("/beatsaver/playlists");
     await screen.findByRole("link", { name: "Alpha" });
-    expect(screen.getByRole("link", { name: "Open Alpha in saber-tooth" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Open Alpha in Saber Tooth" })).toHaveAttribute(
       "href",
       "/beatsaver/playlists/p1",
     );

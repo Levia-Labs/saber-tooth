@@ -140,7 +140,7 @@ describe("masthead switch", () => {
     api();
     const user = userEvent.setup();
     const { router } = renderApp("/about");
-    await screen.findByRole("heading", { name: "About saber-tooth" });
+    await screen.findByRole("heading", { name: "About Saber Tooth" });
     await user.click(screen.getByRole("button", { name: "VR" }));
     await waitFor(() => expect(ui()).toBe("vr"));
     expect(router.state.location.pathname).toBe("/about");
