@@ -3,12 +3,11 @@
 import json
 import sqlite3
 import threading
-import uuid
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
 
 from saber_tooth.store_claims import ProposalClaims
+from saber_tooth.store_jobs import JobRows
 from saber_tooth.store_maps import MapQueries
 
 PROPOSAL_STATUSES = {"pending", "approved", "rejected", "applied", "superseded"}
@@ -19,7 +18,8 @@ CREATE TABLE IF NOT EXISTS maps(
     environment TEXT, parse_error TEXT, scanned_at TEXT, bpm REAL, duration_s REAL, levels INTEGER);
 CREATE TABLE IF NOT EXISTS jobs(
     id TEXT PRIMARY KEY, kind TEXT, status TEXT, error TEXT,
-    result_json TEXT, created_at TEXT, updated_at TEXT, map_id TEXT);
+    result_json TEXT, created_at TEXT, updated_at TEXT, map_id TEXT,
+    args_json TEXT, started_at TEXT, progress TEXT, progress_at TEXT);
 CREATE TABLE IF NOT EXISTS proposals(
     id INTEGER PRIMARY KEY AUTOINCREMENT, map_id TEXT, rule TEXT,
     difficulty TEXT, severity TEXT, summary TEXT, ops_json TEXT,
@@ -28,7 +28,10 @@ CREATE TABLE IF NOT EXISTS proposals(
 CREATE TABLE IF NOT EXISTS scans(
     map_id TEXT PRIMARY KEY, keys_json TEXT, analysis TEXT, scanned_at TEXT);
 """
-_INDEXES = "CREATE INDEX IF NOT EXISTS jobs_map ON jobs(map_id, status);"
+_INDEXES = (
+    "CREATE INDEX IF NOT EXISTS jobs_map ON jobs(map_id, status);"
+    "CREATE INDEX IF NOT EXISTS jobs_status ON jobs(status, created_at);"
+)
 # Columns added after the first release: (table, column, statement). Added in place when missing.
 _MIGRATIONS = (
     ("maps", "bpm", "ALTER TABLE maps ADD COLUMN bpm REAL"),
@@ -39,6 +42,10 @@ _MIGRATIONS = (
     ("proposals", "finding_json", "ALTER TABLE proposals ADD COLUMN finding_json TEXT"),
     ("proposals", "replaces", "ALTER TABLE proposals ADD COLUMN replaces INTEGER"),
     ("jobs", "map_id", "ALTER TABLE jobs ADD COLUMN map_id TEXT"),
+    ("jobs", "args_json", "ALTER TABLE jobs ADD COLUMN args_json TEXT"),
+    ("jobs", "started_at", "ALTER TABLE jobs ADD COLUMN started_at TEXT"),
+    ("jobs", "progress", "ALTER TABLE jobs ADD COLUMN progress TEXT"),
+    ("jobs", "progress_at", "ALTER TABLE jobs ADD COLUMN progress_at TEXT"),
 )
 
 
@@ -50,7 +57,7 @@ def _now() -> str:
     return datetime.now(UTC).isoformat()
 
 
-class Store(MapQueries, ProposalClaims):
+class Store(MapQueries, ProposalClaims, JobRows):
     def __init__(self, path: Path) -> None:
         self._lock = threading.Lock()
         self._db = sqlite3.connect(str(path), check_same_thread=False)
@@ -249,33 +256,3 @@ class Store(MapQueries, ProposalClaims):
 
     def approved(self, map_id: str) -> list[dict]:
         return [p for p in self.proposals(map_id) if p["status"] == "approved"]
-
-    def create_job(self, kind: str, map_id: str | None = None) -> str:
-        job_id = uuid.uuid4().hex
-        now = _now()
-        self._exec(
-            "INSERT INTO jobs(id, kind, status, created_at, updated_at, map_id)"
-            " VALUES(?,?,'queued',?,?,?)",
-            (job_id, kind, now, now, map_id),
-        )
-        return job_id
-
-    def update_job(
-        self, id: str, status: str, error: str | None = None, result: Any = None
-    ) -> None:
-        result_json = None if result is None else json.dumps(result)
-        cur = self._exec(
-            "UPDATE jobs SET status=?, error=?, result_json=?, updated_at=? WHERE id=?",
-            (status, error, result_json, _now(), id),
-        )
-        if cur.rowcount == 0:
-            raise KeyError(id)
-
-    def job(self, id: str) -> dict:
-        rows = self._query("SELECT * FROM jobs WHERE id=?", (id,))
-        if not rows:
-            raise KeyError(id)
-        d = dict(rows[0])
-        raw = d.pop("result_json")
-        d["result"] = None if raw is None else json.loads(raw)
-        return d

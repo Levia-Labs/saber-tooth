@@ -4,8 +4,7 @@ import pytest
 
 from saber_tooth.api import build_service
 from saber_tooth.store import Store
-
-MSG = "interrupted: the service restarted before the job finished"
+from saber_tooth.store_jobs import INTERRUPTED as MSG
 
 
 def _set(store: Store, job_id: str, status: str) -> None:
@@ -17,13 +16,13 @@ def test_fail_interrupted_jobs(tmp_path: Path) -> None:
     ids = {s: store.create_job("fix", "m1") for s in ("queued", "running", "done", "failed")}
     for s, i in ids.items():
         _set(store, i, s)
-    assert store.fail_interrupted_jobs() == 2
-    for s in ("queued", "running"):
-        j = store.job(ids[s])
-        assert j["status"] == "failed" and j["error"] == MSG and j["updated_at"] != "old"
+    assert store.fail_interrupted_jobs() == 1
+    j = store.job(ids["running"])
+    assert j["status"] == "failed" and j["error"] == MSG and j["updated_at"] != "old"
+    assert store.job(ids["queued"])["status"] == "queued"
     for s in ("done", "failed"):
         assert store.job(ids[s])["updated_at"] == "old"
-    assert not store.has_active_job("m1")
+    assert store.has_active_job("m1")  # the queued row stays
     assert store.fail_interrupted_jobs() == 0
 
 

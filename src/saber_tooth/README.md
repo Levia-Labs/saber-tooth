@@ -22,9 +22,10 @@ Top-level modules:
 4. `timing.py`, `swings.py`: beat and time conversion, swing geometry.
 5. `assemble.py`: builds a map from generator output.
 6. `store.py`, `store_maps.py`, `store_claims.py`, `jobs.py`: SQLite storage, map queries, proposal claims and background jobs.
-7. `safe_fs.py`: path safety helpers.
-8. `cli.py`: the `saber-tooth` command line.
-9. `autofix.py`: offline scan, approve-all, apply and re-check loop behind `saber-tooth autofix`.
-10. `songmeta.py`: song name, sub name and author from a video title (the analyser's project name) or audio tags.
+7. `store_jobs.py`: job rows, the durable queue: create (with per-map dedupe), claim oldest first, progress, cancel, lists, restart cleanup.
+8. `safe_fs.py`: path safety helpers.
+9. `cli.py`: the `saber-tooth` command line.
+10. `autofix.py`: offline scan, approve-all, apply and re-check loop behind `saber-tooth autofix`.
+11. `songmeta.py`: song name, sub name and author from a video title (the analyser's project name) or audio tags.
 
 Test with `task st:test`.
