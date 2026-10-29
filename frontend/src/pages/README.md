@@ -8,3 +8,4 @@ One component per route.
 4. `NotFoundPage.tsx`: any other path.
 5. `BeatSaverPage.tsx`: `/beatsaver`, search, filter and download BeatSaver maps.
 6. `BeatSaverPlaylistsPage.tsx`: `/beatsaver/playlists` and `/beatsaver/playlists/:id`, playlist search and their maps.
+7. `JobsPage.tsx`: `/jobs`, running, queued (with Cancel) and recent jobs with elapsed times and a stale warning.

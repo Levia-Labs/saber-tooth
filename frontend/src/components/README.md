@@ -7,7 +7,7 @@ Shared UI.
 3. `Chips.tsx`: status chip, level chips, cover and tempo.
 4. `Announcer.tsx`: announcement toasts (progress, success, warning, danger, info) in the bottom stack, with optional link, action buttons, a sticky flag and an onDismiss hook; `useWithdraw` removes one by key.
 5. `FilterBodies.tsx`, `TextFilterBody.tsx`, `FilterPopover.tsx`, `MobileFilters.tsx`: column filters as popovers and as a fullscreen sheet.
-   5a. `SectionTabs.tsx`: Library | BeatSaver tabs in the page title slot, with a visually hidden h1.
+   5a. `SectionTabs.tsx`: Library | BeatSaver | Jobs tabs in the page title slot, the Jobs tab with the active job count, and a visually hidden h1.
 6. `LibraryHeader.tsx`, `LibraryTable.tsx`, `LibraryRow.tsx`, `SkeletonRow.tsx`: the virtualised library table.
 7. `ProposalCard.tsx`, `ProposalGroups.tsx`, `TimelineCanvas.tsx`: proposed fixes with before and after note grids.
 8. `ConfirmDialog.tsx`, `JobOutcome.tsx`: confirmation dialog and the toast for a finished scan, apply or learn job (Try again, Review as toast actions).

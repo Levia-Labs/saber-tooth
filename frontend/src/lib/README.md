@@ -15,3 +15,4 @@ Pure helpers and small hooks.
 11. `fixreport.ts`, `fixToast.ts`: read the report of a finished fix job; build its toast (failed, incomplete, nothing to fix, fixed).
 12. `crop.ts`: pure crop helpers: snapping, stepping and re-picking the window edges, and `sectionStep` and `moveWindowToSection` (next or previous section start).
 13. `generate.ts`, `decisions.ts`: link and audio checks for the generate card, and which proposal decisions are still allowed.
+14. `jobtime.ts`: elapsed-time text and the stale-minutes check for the Jobs page.

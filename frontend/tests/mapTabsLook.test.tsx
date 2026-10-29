@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, within } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -22,12 +23,14 @@ function rule(sheet: string, selector: string): string {
 describe("map page tabs look like the Library and BeatSaver tabs", () => {
   test("the tablist uses the section tabs' pill class and each tab carries an icon", () => {
     const { container } = render(
-      <MemoryRouter>
-        <TipProvider delayDuration={0}>
-          <SectionTabs active="library" heading="Library" headingId="h" />
-        </TipProvider>
-        <MapTabList available={tabsFor(true)} active="status" onSelect={() => undefined} />
-      </MemoryRouter>,
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter>
+          <TipProvider delayDuration={0}>
+            <SectionTabs active="library" heading="Library" headingId="h" />
+          </TipProvider>
+          <MapTabList available={tabsFor(true)} active="status" onSelect={() => undefined} />
+        </MemoryRouter>
+      </QueryClientProvider>,
     );
     const section = container.querySelector("nav.mode-switch") as HTMLElement;
     const list = screen.getByRole("tablist", { name: "Map" });
@@ -57,14 +60,16 @@ describe("map page tabs look like the Library and BeatSaver tabs", () => {
 
   test("the section tabs, map tabs and length switch all carry the pill class", () => {
     const { container } = render(
-      <MemoryRouter>
-        <TipProvider delayDuration={0}>
-          <SectionTabs active="library" heading="Library" headingId="h" />
-        </TipProvider>
-        <MapTabList available={tabsFor(true)} active="status" onSelect={() => undefined} />
-      </MemoryRouter>,
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter>
+          <TipProvider delayDuration={0}>
+            <SectionTabs active="library" heading="Library" headingId="h" />
+          </TipProvider>
+          <MapTabList available={tabsFor(true)} active="status" onSelect={() => undefined} />
+        </MemoryRouter>
+      </QueryClientProvider>,
     );
-    expect(container.querySelectorAll("nav.mode-switch a.pill")).toHaveLength(2);
+    expect(container.querySelectorAll("nav.mode-switch a.pill")).toHaveLength(3);
     expect(container.querySelectorAll("[role=tablist] button.pill")).toHaveLength(3);
   });
 });

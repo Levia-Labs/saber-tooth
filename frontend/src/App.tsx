@@ -23,6 +23,7 @@ const BeatSaverPage = lazyRoute(() =>
 const BeatSaverPlaylistsPage = lazyRoute(() =>
   import("./pages/BeatSaverPlaylistsPage").then((m) => ({ default: m.BeatSaverPlaylistsPage })),
 );
+const JobsPage = lazyRoute(() => import("./pages/JobsPage").then((m) => ({ default: m.JobsPage })));
 const AboutPage = lazyRoute(() =>
   import("./pages/AboutPage").then((m) => ({ default: m.AboutPage })),
 );
@@ -121,6 +122,7 @@ export const routes: RouteObject[] = [
       { path: "/about", element: <AboutPage />, errorElement: <RouteError /> },
       { path: "/new", element: <NewPage />, errorElement: <RouteError /> },
       { path: "/beatsaver", element: <BeatSaverPage />, errorElement: <RouteError /> },
+      { path: "/jobs", element: <JobsPage />, errorElement: <RouteError /> },
       {
         path: "/beatsaver/playlists",
         element: <BeatSaverPlaylistsPage />,
