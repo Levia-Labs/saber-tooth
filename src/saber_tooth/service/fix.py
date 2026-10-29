@@ -1,6 +1,7 @@
 """One-click fix engine: verified fixes folded one at a time into an evolving map."""
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 
 from saber_tooth.analysis import Analysis
@@ -50,6 +51,7 @@ def fix_beatmap(
     templates: Templates | None,
     seed: int,
     max_rounds: int = MAX_ROUNDS,
+    on_round: Callable[[int, int], None] | None = None,
 ) -> FixRun:
     """Fix findings one by one, each verified against the map as the earlier fixes left it.
 
@@ -59,6 +61,8 @@ def fix_beatmap(
     run = FixRun(original)
     cur = original
     for n in range(1, max_rounds + 1):
+        if on_round:
+            on_round(n, max_rounds)
         run.rounds = n
         findings = sorted(run_checks(cur, analysis), key=_order)
         run.unfixed = []
@@ -87,7 +91,12 @@ def _same(a: Finding, b: Finding) -> bool:
     )
 
 
-def fix_map(svc, map_id: str, max_rounds: int = MAX_ROUNDS) -> dict:
+def fix_map(
+    svc,
+    map_id: str,
+    max_rounds: int = MAX_ROUNDS,
+    progress: Callable[[str], None] | None = None,
+) -> dict:
     """Fix a map into a new folder and report counts before and after, per difficulty and rule.
 
     Every fix is verified against the map as earlier fixes left it, so overlapping fixes
@@ -97,7 +106,10 @@ def fix_map(svc, map_id: str, max_rounds: int = MAX_ROUNDS) -> dict:
     original = svc._load(folder)
     analysis = svc._analyse(map_id, original, folder)
     before = run_checks(original, analysis)
-    run = fix_beatmap(original, analysis, svc._templates(), int(map_id[:8], 16), max_rounds)
+    on_round = (lambda n, total: progress(f"round {n} of {total}")) if progress else None
+    run = fix_beatmap(
+        original, analysis, svc._templates(), int(map_id[:8], 16), max_rounds, on_round
+    )
     report: dict = {
         "map_id": map_id,
         "folder": None,

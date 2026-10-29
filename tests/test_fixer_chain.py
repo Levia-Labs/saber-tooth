@@ -39,3 +39,12 @@ def test_midnight_demons_swing_run_reaches_zero_errors():
     run = fix_beatmap(m, None, None, 1)
     errors = [f for f in run_checks(run.fixed) if f.severity == "error"]
     assert not [f for f in errors if f.rule != "missing-difficulty"]
+
+
+def test_fix_beatmap_reports_each_round_it_runs():
+    calls: list[tuple[int, int]] = []
+    run = fix_beatmap(
+        _chain(4), None, None, 1, max_rounds=2, on_round=lambda n, t: calls.append((n, t))
+    )
+    assert calls[0] == (1, 2)
+    assert len(calls) == run.rounds

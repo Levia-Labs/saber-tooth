@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 
 from fastapi.responses import JSONResponse
 
+from saber_tooth.api.jobs_api import core_handlers
 from saber_tooth.api.library import (
     AUDIO_TYPES,
     COVER_TYPES,
@@ -78,6 +79,8 @@ class Api:
         self.service = service
         self.store = service.store
         self.jobs = Jobs(service.store)
+        for kind, handler in core_handlers(service).items():
+            self.jobs.register(kind, handler)
         self.extras = Extras()
 
     # ids ---------------------------------------------------------------------
@@ -221,41 +224,32 @@ class Api:
 
     def scan(self, map_id: str) -> dict:
         map_id = self.readable_map(map_id)
-        return {"job": self.jobs.submit("scan", self.service.run_scan, map_id, map_id=map_id)}
+        return {"job": self.jobs.submit("scan", {"map_id": map_id}, map_id=map_id, dedupe=True)}
 
     def apply(self, map_id: str) -> dict:
         self.map_id(map_id)
-        return {"job": self.jobs.submit("apply", self.service.run_apply, map_id, map_id=map_id)}
+        return {"job": self.jobs.submit("apply", {"map_id": map_id}, map_id=map_id, dedupe=True)}
 
     def fix(self, map_id: str) -> dict:
         map_id = self.readable_map(map_id)
-        return {"job": self.jobs.submit("fix", self.service.fix_map, map_id, map_id=map_id)}
+        return {"job": self.jobs.submit("fix", {"map_id": map_id}, map_id=map_id, dedupe=True)}
 
     def lightshow(self) -> dict:
         return self.service.lightshow_info()
 
     def learn(self) -> dict:
-        return {"job": self.jobs.submit("learn", lambda: {"units": self.service.learn()})}
+        return {"job": self.jobs.submit("learn")}
 
     def generate_url(self, url: object) -> dict:
         if not _is_youtube_url(url):
             raise ApiError(400, "only YouTube URLs are supported")
-        return {"job": self.jobs.submit("generate", self.service.run_generate, url)}
+        return {"job": self.jobs.submit("generate", {"url": url})}
 
     def generate_file(self, path: Path) -> dict:
-        def clean() -> None:
-            shutil.rmtree(path.parent, ignore_errors=True)
-
-        def run() -> dict:
-            try:
-                return self.service.run_generate(str(path))
-            finally:
-                clean()
-
         try:
-            return {"job": self.jobs.submit("generate", run)}
+            return {"job": self.jobs.submit("generate", {"upload": str(path)})}
         except BaseException:
-            clean()
+            shutil.rmtree(path.parent, ignore_errors=True)
             raise
 
     def job(self, raw: str) -> dict:

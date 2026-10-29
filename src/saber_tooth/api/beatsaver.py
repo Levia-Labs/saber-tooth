@@ -85,6 +85,7 @@ class BeatSaverApi:
         self.cache, self.presets = BsCache(db), Presets(db)
         self.playlists_dir = Path(playlists_dir) if playlists_dir else None
         self._meta: dict[int, BsPlaylist] = {}
+        api.jobs.register("bs-download", lambda a, p: self._download_job(a["ids"]))
 
     # views ---------------------------------------------------------------------
 
@@ -217,7 +218,7 @@ class BeatSaverApi:
 
     def download(self, body: object) -> dict:
         ids = self._ids(body, MAX_DOWNLOAD)
-        return {"job": self.api.jobs.submit("bs-download", self._download_job, ids)}
+        return {"job": self.api.jobs.submit("bs-download", {"ids": ids})}
 
     def _download_job(self, ids: list[str]) -> dict:
         found, reasons = self._resolve(ids)

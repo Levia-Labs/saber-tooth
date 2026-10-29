@@ -71,7 +71,5 @@ class CropApi:
             raise ApiError(422, str(exc)) from None
         if not isinstance(replace, bool):
             raise ApiError(422, "replace must be true or false")
-        run = self.service.crop_map  # type: ignore[attr-defined]
-        args = (map_id, start, end, *((True,) if replace else ()))
-        job = self.api.jobs.submit("crop", run, *args, map_id=map_id)
-        return {"job": job}
+        args = {"map_id": map_id, "start": start, "end": end, "replace": replace}
+        return {"job": self.api.jobs.submit("crop", args, map_id=map_id)}
