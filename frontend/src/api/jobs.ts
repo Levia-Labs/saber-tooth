@@ -28,33 +28,48 @@ export class JobFailed extends Error {
   }
 }
 
-/** Poll a job until done or failed with backoff to 3 s; gives up after 30 minutes. */
+const watched = new Set<string>();
+/** Ids a live pollJob is polling; the toast watcher leaves these to their page. */
+export const watchedJobs: ReadonlySet<string> = watched;
+
+/** Poll a job to its end with backoff to 3 s; gives up 30 minutes after it starts running, never while queued. */
 export async function pollJob(
   jobId: string,
   signal: AbortSignal,
   onStatus: (status: string) => void,
 ): Promise<Job> {
-  const deadline = Date.now() + MAX_JOB_MS;
-  let delay = FIRST_DELAY_MS;
-  let fails = 0;
-  while (Date.now() < deadline && !signal.aborted) {
-    try {
-      const job = await getJob(jobId);
-      fails = 0;
-      if (job.status === "done") return job;
-      if (job.status === "failed") throw new JobFailed(job.error ?? "job failed", job);
-      onStatus(job.status);
-    } catch (err) {
-      if (err instanceof JobFailed) throw err;
-      fails += 1;
-      if (!isRetryable(err) || fails >= MAX_FETCH_FAILS) throw err;
-      onStatus(`retrying (${fails}/${MAX_FETCH_FAILS})`);
+  watched.add(jobId);
+  try {
+    let deadline = Number.POSITIVE_INFINITY; // the 30 minutes start once the job runs
+    let delay = FIRST_DELAY_MS;
+    let fails = 0;
+    while (Date.now() < deadline && !signal.aborted) {
+      try {
+        const job = await getJob(jobId);
+        fails = 0;
+        if (job.status === "done") return job;
+        if (job.status === "failed") throw new JobFailed(job.error ?? "job failed", job);
+        if (job.status === "cancelled") throw new JobFailed("cancelled", job);
+        if (job.status !== "queued" && deadline === Number.POSITIVE_INFINITY) {
+          deadline = Date.now() + MAX_JOB_MS;
+        }
+        onStatus(
+          job.status === "queued" && job.position ? `queued, position ${job.position}` : job.status,
+        );
+      } catch (err) {
+        if (err instanceof JobFailed) throw err;
+        fails += 1;
+        if (!isRetryable(err) || fails >= MAX_FETCH_FAILS) throw err;
+        onStatus(`retrying (${fails}/${MAX_FETCH_FAILS})`);
+      }
+      await sleep(delay, signal);
+      delay = Math.min(delay * 1.5, MAX_DELAY_MS);
     }
-    await sleep(delay, signal);
-    delay = Math.min(delay * 1.5, MAX_DELAY_MS);
+    if (signal.aborted) throw new JobFailed("cancelled");
+    throw new JobFailed("timed out after 30 minutes");
+  } finally {
+    watched.delete(jobId);
   }
-  if (signal.aborted) throw new JobFailed("cancelled");
-  throw new JobFailed("timed out after 30 minutes");
 }
 
 export type RunState = "idle" | "running" | "done" | "failed";

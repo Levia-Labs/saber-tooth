@@ -24,6 +24,7 @@ import {
 import type { Job, MapItem, MapPage } from "./types";
 
 export const keys = {
+  jobs: ["jobs"] as const,
   maps: ["maps"] as const,
   library: (state: LibraryState) => ["maps", "library", state] as const,
   facets: ["maps", "facets"] as const,

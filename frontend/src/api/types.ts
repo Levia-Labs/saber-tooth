@@ -16,8 +16,8 @@ export type StatusKey = (typeof STATUS_KEYS)[number];
 export const LEVEL_KEYS = ["Easy", "Normal", "Hard", "Expert", "ExpertPlus"] as const;
 export type LevelKey = (typeof LEVEL_KEYS)[number];
 
-export type JobState = "queued" | "running" | "done" | "failed";
-export type JobKind = "scan" | "apply" | "fix" | "generate" | "learn" | "crop";
+export type JobState = "queued" | "running" | "done" | "failed" | "cancelled";
+export type JobKind = "scan" | "apply" | "fix" | "generate" | "learn" | "crop" | "bs-download";
 
 export type CropLength = "60" | "120";
 export type EndKind = "section" | "phrase" | "bar4" | "bar";
@@ -147,12 +147,31 @@ export interface Facets {
   total: number;
 }
 
-export interface Job {
+export interface JobView {
   id: string;
   kind: JobKind;
   status: JobState;
+  map_id: string | null;
+  title: string;
+  map_exists: boolean;
+  created_at: string;
+  started_at: string | null;
+  updated_at: string;
+  progress: string | null;
+  progress_at: string | null;
   error: string | null;
-  result: Record<string, unknown> | null;
+  position: number | null;
+}
+
+export type Job = Pick<JobView, "id" | "kind" | "status" | "error"> &
+  Partial<Omit<JobView, "id" | "kind" | "status" | "error">> & {
+    result: Record<string, unknown> | null;
+  };
+
+export interface JobLists {
+  running: JobView[];
+  queued: JobView[];
+  recent: JobView[];
 }
 
 export interface Note {

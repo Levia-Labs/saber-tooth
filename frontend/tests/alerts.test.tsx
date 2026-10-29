@@ -196,3 +196,12 @@ describe("JobOutcome", () => {
     expect(container.querySelector(".alert")).toBeNull();
   });
 });
+
+describe("bs-download alerts", () => {
+  test("pins the done and failed titles", () => {
+    expect(toAlert(job("bs-download"))?.title).toBe("Downloaded");
+    expect(toAlert(job("bs-download", { status: "failed", error: "boom" }))?.title).toBe(
+      "Download failed",
+    );
+  });
+});

@@ -23,6 +23,7 @@ const FAILED_TITLE: Record<JobKind, string> = {
   generate: "Generation failed",
   learn: "Learning failed",
   crop: "Crop failed",
+  "bs-download": "Download failed",
 };
 
 const DONE_TITLE: Record<JobKind, string> = {
@@ -32,6 +33,7 @@ const DONE_TITLE: Record<JobKind, string> = {
   generate: "Map generated",
   learn: "Lightshows learned",
   crop: "Cropped",
+  "bs-download": "Downloaded",
 };
 
 const RETRY = { kind: "retry", label: "Try again" } as const;
@@ -172,6 +174,12 @@ function success(job: Job, result: Record<string, unknown>): AlertSpec {
         variant: "success",
         title: DONE_TITLE.crop,
         message: where || "The cropped map was written.",
+      };
+    case "bs-download":
+      return {
+        variant: "success",
+        title: DONE_TITLE["bs-download"],
+        message: where || "The map was downloaded to your library.",
       };
   }
 }

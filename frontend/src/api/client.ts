@@ -98,6 +98,9 @@ export const getProposals = (id: string): Promise<Proposal[]> =>
   request("GET", `/api/maps/${seg(id)}/proposals`);
 
 export const getJob = (id: string): Promise<Job> => request("GET", `/api/jobs/${seg(id)}`);
+export const listJobs = (signal?: AbortSignal): Promise<unknown> =>
+  request("GET", "/api/jobs", undefined, signal);
+export const cancelJob = (id: string): Promise<Job> => request("DELETE", `/api/jobs/${seg(id)}`);
 
 export interface Started {
   job: string;
