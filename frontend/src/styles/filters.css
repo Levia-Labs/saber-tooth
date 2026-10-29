@@ -11,6 +11,8 @@
 .filter-body .checks {
   min-height: 0;
   overflow: auto;
+  scrollbar-gutter: stable;
+  padding-right: 0.5rem;
 }
 .popover .filter-body + .filter-body {
   margin-top: 0.75rem;
@@ -55,4 +57,40 @@
 .filter-row > input[type="text"] {
   flex: 1;
   min-width: 0;
+}
+.range-field {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+.range-field .range-input {
+  flex: 1;
+  min-width: 0;
+}
+.steps {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+}
+.step-btn {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 16px;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+}
+.step-btn:hover {
+  color: var(--ink);
+}
+.step-btn .ic {
+  width: 14px;
+  height: 14px;
 }

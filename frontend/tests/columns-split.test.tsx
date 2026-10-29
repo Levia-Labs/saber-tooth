@@ -207,7 +207,7 @@ describe("Library range filters", () => {
     expect(screen.getByRole("button", { name: "Sort by Length" })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /^Filter Length/ }));
     const min = await screen.findByLabelText("Minimum length");
-    expect(min).toHaveAttribute("placeholder", "mm:ss");
+    expect(min).toHaveAttribute("placeholder", "01:01");
     await userEvent.type(min, "2:00");
     await waitFor(() => expect(router.state.location.search).toContain("duration_min=120"));
     await waitFor(() =>
@@ -228,8 +228,8 @@ describe("Library range filters", () => {
     await userEvent.click(screen.getByRole("button", { name: /^Filter BPM/ }));
     const max = await screen.findByLabelText("BPM, at most");
     expect(max).toHaveAttribute("placeholder", "220");
-    await userEvent.type(max, "9x9");
-    expect(max).toHaveAttribute("aria-invalid", "true");
+    await userEvent.type(max, "9x.9");
+    expect(max).toHaveValue("99");
     await userEvent.clear(max);
     await userEvent.type(max, "180");
     await waitFor(() => expect(router.state.location.search).toContain("bpm_max=180"));

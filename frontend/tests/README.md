@@ -17,3 +17,4 @@ Vitest suites run with `task st:web:test`.
 13. `vrhelpers.tsx`, `vrpresets.test.ts`, `vrlibrary.test.tsx`: the VR render and observer helpers, the pure presets and sorts, and the `/vr` Library screen (cards, presets, sort, scroll loading). `vrbeatsaver.test.tsx`: the `/vr/beatsaver` screen. `vrroutes.test.tsx`: the three lazy VR routes.
 14. `generate.test.tsx`, `proposalbuttons.test.tsx`: the one-step generate card (link, drop, toasts, navigation) and the Approve and Reject button states.
 15. `clock.test.ts`, `filterpopovers.test.tsx`: the mm:ss helper (invalid input, round trip) and the filter popover bodies (one Author input, mm:ss Length row, clear at the row end, lists that scroll).
+16. `holdrepeat.test.tsx`, `rangesteppers.test.tsx`: the hold-repeat hook and `stepBound` (fake timers), and the Length and BPM inputs (placeholders from facets, integer-only BPM, arrows and arrow keys).

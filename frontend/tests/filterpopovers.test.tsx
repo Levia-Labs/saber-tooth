@@ -113,5 +113,7 @@ describe("filter popover scrolling", () => {
     const checks = rule("filters.css", ".filter-body .checks");
     expect(checks).toMatch(/overflow(-y)?:\s*auto/);
     expect(checks).toMatch(/min-height:\s*0/);
+    expect(checks).toMatch(/scrollbar-gutter:\s*stable/);
+    expect(checks).toMatch(/padding-right:\s*0\.5rem/);
   });
 });

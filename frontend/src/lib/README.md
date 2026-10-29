@@ -16,3 +16,4 @@ Pure helpers and small hooks.
 12. `crop.ts`: pure crop helpers: snapping, stepping and re-picking the window edges, and `sectionStep` and `moveWindowToSection` (next or previous section start).
 13. `generate.ts`, `decisions.ts`: link and audio checks for the generate card, and which proposal decisions are still allowed.
 14. `clock.ts`: pure `parseClock` and `formatClock` for the "mm:ss" length filter inputs.
+15. `stepRange.ts`, `useHoldRepeat.ts`: clamped stepping of a range bound and the press-and-hold repeat hook of the arrow buttons.

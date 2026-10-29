@@ -193,7 +193,7 @@ export function MobileFilters({ state, facets, update, clear, matchCount }: Prop
               rangeSummary(state.bpmMin, state.bpmMax, String),
               <RangeFilterBody
                 name="BPM"
-                kind="number"
+                kind="integer"
                 min={state.bpmMin}
                 max={state.bpmMax}
                 bounds={facets?.bpm}

@@ -1,9 +1,14 @@
 import { useId, useState } from "react";
 import { formatClock, parseClock } from "../lib/clock";
 import { inverted, parseBounded } from "../lib/range";
+import { stepBound } from "../lib/stepRange";
 import { ClearFilterButton, type RowClear } from "./ClearFilterButton";
+import { StepButtons } from "./StepButtons";
 
-export type RangeKind = "duration" | "number";
+/** "duration" is mm:ss; "integer" whole numbers only; "number" allows two decimals. */
+export type RangeKind = "duration" | "number" | "integer";
+
+const STEP_FAST = 5;
 
 interface FieldProps {
   label: string;
@@ -13,39 +18,61 @@ interface FieldProps {
   max: number;
   placeholder: string;
   onCommit: (next: number | null) => void;
+  /** Arrow stepping (duration and integer kinds): allowed span, start when unset, accessible noun. */
+  stepper?: { lo: number; hi: number; start: number; noun: string };
 }
 
-function RangeField({ label, kind, value, max, placeholder, onCommit }: FieldProps) {
+function parseKind(kind: RangeKind, text: string, max: number) {
+  if (kind === "duration") return parseClock(text);
+  if (kind === "integer" && !/^\d{0,4}$/.test(text)) return undefined;
+  return parseBounded(text, 0, max);
+}
+
+function RangeField({ label, kind, value, max, placeholder, onCommit, stepper }: FieldProps) {
   const id = useId();
-  const parse = (text: string) =>
-    kind === "duration" ? parseClock(text) : parseBounded(text, 0, max);
+  const parse = (text: string) => parseKind(kind, text, max);
   const shown = kind === "duration" ? formatClock(value) : value === null ? "" : String(value);
   const [draft, setDraft] = useState(shown);
   const parsed = parse(draft);
   const bad = parsed === undefined || (parsed ?? 0) > max;
   const [seen, setSeen] = useState(value);
   if (seen !== value) {
-    // A change from outside (Clear, a preset, the URL) replaces whatever is typed.
+    // A change from outside (Clear, a preset, the URL, an arrow) replaces whatever is typed.
     setSeen(value);
     if (parse(draft) !== value) setDraft(shown);
   }
+  const step = (direction: 1 | -1, fast: boolean) => {
+    if (!stepper) return;
+    const delta = direction * (fast ? STEP_FAST : 1);
+    onCommit(stepBound(value, delta, stepper.lo, stepper.hi, stepper.start));
+  };
   return (
-    <input
-      id={id}
-      className="range-input"
-      type="text"
-      inputMode={kind === "duration" ? "numeric" : "decimal"}
-      autoComplete="off"
-      aria-label={label}
-      placeholder={placeholder}
-      aria-invalid={bad}
-      value={draft}
-      onChange={(e) => {
-        setDraft(e.target.value);
-        const next = parse(e.target.value);
-        if (next !== undefined && (next ?? 0) <= max) onCommit(next);
-      }}
-    />
+    <span className="range-field">
+      <input
+        id={id}
+        className="range-input"
+        type="text"
+        inputMode={kind === "number" ? "decimal" : "numeric"}
+        autoComplete="off"
+        aria-label={label}
+        placeholder={placeholder}
+        aria-invalid={bad}
+        value={draft}
+        onKeyDown={(e) => {
+          if (!stepper || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
+          e.preventDefault();
+          step(e.key === "ArrowUp" ? 1 : -1, false);
+        }}
+        onChange={(e) => {
+          // Integer inputs refuse the whole edit when it holds a point or a letter.
+          if (kind === "integer" && !/^\d*$/.test(e.target.value)) return;
+          setDraft(e.target.value);
+          const next = parse(e.target.value);
+          if (next !== undefined && (next ?? 0) <= max) onCommit(next);
+        }}
+      />
+      {stepper && <StepButtons noun={stepper.noun} onStep={step} />}
+    </span>
   );
 }
 
@@ -55,7 +82,7 @@ interface Props {
   kind: RangeKind;
   min: number | null;
   max: number | null;
-  /** Known smallest and largest value, shown as placeholders. */
+  /** Known smallest and largest value, shown as placeholders and as the arrows' start. */
   bounds?: { min: number | null; max: number | null };
   limit: number;
   onChange: (patch: { min?: number | null; max?: number | null }, replace?: boolean) => void;
@@ -75,7 +102,24 @@ export function RangeFilterBody({
 }: Props) {
   const duration = kind === "duration";
   const hint = (v: number | null | undefined) =>
-    duration ? "mm:ss" : v === null || v === undefined ? "Any" : String(v);
+    duration
+      ? v === null || v === undefined
+        ? "mm:ss"
+        : formatClock(v)
+      : v === null || v === undefined
+        ? "Any"
+        : String(v);
+  const noun = duration ? "length" : name;
+  const stepped = duration || kind === "integer";
+  const stepper = (which: "min" | "max") =>
+    stepped
+      ? {
+          lo: which === "min" ? 0 : (min ?? 0),
+          hi: which === "min" ? (max ?? limit) : limit,
+          start: (which === "min" ? bounds?.min : bounds?.max) ?? 0,
+          noun: `${which === "min" ? "minimum" : "maximum"} ${noun}`,
+        }
+      : undefined;
   return (
     <div className="filter-body">
       <div className="filter-row">
@@ -86,6 +130,7 @@ export function RangeFilterBody({
           max={limit}
           placeholder={hint(bounds?.min)}
           onCommit={(v) => onChange({ min: v }, true)}
+          stepper={stepper("min")}
         />
         <span className="range-sep" aria-hidden="true">
           -
@@ -97,6 +142,7 @@ export function RangeFilterBody({
           max={limit}
           placeholder={hint(bounds?.max)}
           onCommit={(v) => onChange({ max: v }, true)}
+          stepper={stepper("max")}
         />
         {rowClear && <ClearFilterButton {...rowClear} />}
       </div>

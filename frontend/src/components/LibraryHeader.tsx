@@ -168,7 +168,7 @@ export function LibraryHeader({ state, facets, update, columns }: Props) {
           <FilterPopover label="BPM" tip="Filter by beats per minute." count={counts.bpm}>
             <RangeFilterBody
               name="BPM"
-              kind="number"
+              kind="integer"
               min={state.bpmMin}
               max={state.bpmMax}
               bounds={facets?.bpm}
