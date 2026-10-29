@@ -1,5 +1,6 @@
 import { useId, useState } from "react";
-import { durationInput, inverted, parseBounded, parseDuration } from "../lib/range";
+import { formatClock, parseClock } from "../lib/clock";
+import { inverted, parseBounded } from "../lib/range";
 import { ClearFilterButton, type RowClear } from "./ClearFilterButton";
 
 export type RangeKind = "duration" | "number";
@@ -17,10 +18,11 @@ interface FieldProps {
 function RangeField({ label, kind, value, max, placeholder, onCommit }: FieldProps) {
   const id = useId();
   const parse = (text: string) =>
-    kind === "duration" ? parseDuration(text) : parseBounded(text, 0, max);
-  const shown = kind === "duration" ? durationInput(value) : value === null ? "" : String(value);
+    kind === "duration" ? parseClock(text) : parseBounded(text, 0, max);
+  const shown = kind === "duration" ? formatClock(value) : value === null ? "" : String(value);
   const [draft, setDraft] = useState(shown);
-  const bad = parse(draft) === undefined || (parse(draft) ?? 0) > max;
+  const parsed = parse(draft);
+  const bad = parsed === undefined || (parsed ?? 0) > max;
   const [seen, setSeen] = useState(value);
   if (seen !== value) {
     // A change from outside (Clear, a preset, the URL) replaces whatever is typed.
@@ -28,23 +30,22 @@ function RangeField({ label, kind, value, max, placeholder, onCommit }: FieldPro
     if (parse(draft) !== value) setDraft(shown);
   }
   return (
-    <div className="filter-body">
-      <label htmlFor={id}>{label}</label>
-      <input
-        id={id}
-        type="text"
-        inputMode={kind === "duration" ? "numeric" : "decimal"}
-        autoComplete="off"
-        placeholder={placeholder}
-        aria-invalid={bad}
-        value={draft}
-        onChange={(e) => {
-          setDraft(e.target.value);
-          const next = parse(e.target.value);
-          if (next !== undefined && (next ?? 0) <= max) onCommit(next);
-        }}
-      />
-    </div>
+    <input
+      id={id}
+      className="range-input"
+      type="text"
+      inputMode={kind === "duration" ? "numeric" : "decimal"}
+      autoComplete="off"
+      aria-label={label}
+      placeholder={placeholder}
+      aria-invalid={bad}
+      value={draft}
+      onChange={(e) => {
+        setDraft(e.target.value);
+        const next = parse(e.target.value);
+        if (next !== undefined && (next ?? 0) <= max) onCommit(next);
+      }}
+    />
   );
 }
 
@@ -61,7 +62,7 @@ interface Props {
   rowClear?: RowClear;
 }
 
-/** Minimum and maximum inputs of a numeric column filter; the same body serves popover and sheet. */
+/** Minimum and maximum inputs on one row, "min - max", with the clear button at its right end. */
 export function RangeFilterBody({
   name,
   kind,
@@ -72,32 +73,33 @@ export function RangeFilterBody({
   onChange,
   rowClear,
 }: Props) {
-  const text = (v: number | null | undefined) =>
-    v === null || v === undefined ? "Any" : kind === "duration" ? durationInput(v) : String(v);
-  const unit = kind === "duration" ? " (m:ss)" : "";
+  const duration = kind === "duration";
+  const hint = (v: number | null | undefined) =>
+    duration ? "mm:ss" : v === null || v === undefined ? "Any" : String(v);
   return (
     <div className="filter-body">
-      {rowClear && (
-        <div className="filter-actions">
-          <ClearFilterButton {...rowClear} />
-        </div>
-      )}
-      <RangeField
-        label={`${name}, at least${unit}`}
-        kind={kind}
-        value={min}
-        max={limit}
-        placeholder={text(bounds?.min)}
-        onCommit={(v) => onChange({ min: v }, true)}
-      />
-      <RangeField
-        label={`${name}, at most${unit}`}
-        kind={kind}
-        value={max}
-        max={limit}
-        placeholder={text(bounds?.max)}
-        onCommit={(v) => onChange({ max: v }, true)}
-      />
+      <div className="filter-row">
+        <RangeField
+          label={duration ? "Minimum length" : `${name}, at least`}
+          kind={kind}
+          value={min}
+          max={limit}
+          placeholder={hint(bounds?.min)}
+          onCommit={(v) => onChange({ min: v }, true)}
+        />
+        <span className="range-sep" aria-hidden="true">
+          -
+        </span>
+        <RangeField
+          label={duration ? "Maximum length" : `${name}, at most`}
+          kind={kind}
+          value={max}
+          max={limit}
+          placeholder={hint(bounds?.max)}
+          onCommit={(v) => onChange({ max: v }, true)}
+        />
+        {rowClear && <ClearFilterButton {...rowClear} />}
+      </div>
       {inverted(min, max) && (
         <p className="err" role="alert">
           The minimum is above the maximum, so this filter is ignored.

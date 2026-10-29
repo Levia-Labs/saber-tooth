@@ -169,8 +169,8 @@ describe("BeatSaver columns", () => {
     const { router } = renderApp("/beatsaver");
     await screen.findByText("Song 1");
     await userEvent.click(screen.getByRole("button", { name: /^Filter Length/ }));
-    await userEvent.type(await screen.findByLabelText("Length, at least (m:ss)"), "1:30");
-    await userEvent.type(screen.getByLabelText("Length, at most (m:ss)"), "3:00");
+    await userEvent.type(await screen.findByLabelText("Minimum length"), "1:30");
+    await userEvent.type(screen.getByLabelText("Maximum length"), "3:00");
     await waitFor(() => expect(router.state.location.search).toContain("duration_max=180"));
     expect(router.state.location.search).toContain("duration_min=90");
     await waitFor(() => expect(urls.at(-1)?.searchParams.get("duration_min")).toBe("90"));
@@ -206,8 +206,8 @@ describe("Library range filters", () => {
     await screen.findByRole("link", { name: "Song 1" });
     expect(screen.getByRole("button", { name: "Sort by Length" })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /^Filter Length/ }));
-    const min = await screen.findByLabelText("Length, at least (m:ss)");
-    expect(min).toHaveAttribute("placeholder", "1:01");
+    const min = await screen.findByLabelText("Minimum length");
+    expect(min).toHaveAttribute("placeholder", "mm:ss");
     await userEvent.type(min, "2:00");
     await waitFor(() => expect(router.state.location.search).toContain("duration_min=120"));
     await waitFor(() =>

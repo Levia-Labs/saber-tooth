@@ -147,12 +147,6 @@ export function MobileFilters({ state, facets, update, clear, matchCount }: Prop
               "Author",
               counts.author ? String(counts.author) : "",
               <>
-                <TextFilterBody
-                  label="Name contains"
-                  placeholder="Mapper"
-                  q={state.qField === "mapper" ? state.q : ""}
-                  onChange={(q, replace) => update({ q, qField: "mapper" }, replace)}
-                />
                 <MapperListBody
                   selected={state.mapper}
                   facets={facets}

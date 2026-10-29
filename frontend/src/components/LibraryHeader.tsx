@@ -96,17 +96,6 @@ export function LibraryHeader({ state, facets, update, columns }: Props) {
         {...cell}
         filter={
           <FilterPopover label="Author" tip="Filter by mapper." count={counts.author}>
-            <TextFilterBody
-              label="Name contains"
-              placeholder="Mapper"
-              q={state.qField === "mapper" ? state.q : ""}
-              onChange={(q, replace) => update({ q, qField: "mapper" }, replace)}
-              rowClear={{
-                column: "Author",
-                disabled: !counts.author,
-                onClear: () => update({ q: "", qField: "mapper", mapper: [] }),
-              }}
-            />
             <MapperListBody
               selected={state.mapper}
               facets={facets}

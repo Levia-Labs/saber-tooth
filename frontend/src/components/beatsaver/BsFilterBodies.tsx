@@ -122,29 +122,12 @@ export function TagsBody({ state, update }: Props) {
   return (
     <div className="filter-body">
       <p className="muted">Maps with any of the ticked tags.</p>
-      <div className="filter-actions">
-        <button type="button" className="btn plain" onClick={() => update({ tags: [] })}>
-          <Icon name="filter-x" />
-          <span className="label-hide-mobile">Clear</span>
-        </button>
-      </div>
-      <div role="group" aria-label="Tags" className="checks bs-tag-checks">
-        {names.map((tag, i) => (
-          <Box
-            key={tag}
-            id={`${base}-${i}`}
-            checked={state.tags.includes(tag)}
-            onToggle={() => update({ tags: toggle(state.tags, tag) })}
-          >
-            {tag}
-          </Box>
-        ))}
-      </div>
-      <label htmlFor={`${base}-new`}>Other tag</label>
-      <div className="filter-actions">
+      <div className="filter-row">
         <input
           id={`${base}-new`}
           type="text"
+          aria-label="Other tag"
+          placeholder="Other tag"
           value={draft}
           maxLength={40}
           autoComplete="off"
@@ -166,6 +149,22 @@ export function TagsBody({ state, update }: Props) {
             <Icon name="tag-plus" />
           </button>
         </Tip>
+        <button type="button" className="btn plain" onClick={() => update({ tags: [] })}>
+          <Icon name="filter-x" />
+          <span className="label-hide-mobile">Clear</span>
+        </button>
+      </div>
+      <div role="group" aria-label="Tags" className="checks bs-tag-checks">
+        {names.map((tag, i) => (
+          <Box
+            key={tag}
+            id={`${base}-${i}`}
+            checked={state.tags.includes(tag)}
+            onToggle={() => update({ tags: toggle(state.tags, tag) })}
+          >
+            {tag}
+          </Box>
+        ))}
       </div>
     </div>
   );

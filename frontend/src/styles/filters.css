@@ -1,0 +1,58 @@
+/* Filter popover bodies: the first row stays put, only the lists scroll. */
+.filter-body {
+  display: grid;
+  gap: 0.5rem;
+}
+.popover .filter-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.filter-body .checks {
+  min-height: 0;
+  overflow: auto;
+}
+.popover .filter-body + .filter-body {
+  margin-top: 0.75rem;
+}
+.segmented {
+  display: flex;
+  gap: 0.4rem;
+}
+.segmented .btn[aria-pressed="true"] {
+  color: var(--blue);
+  border-color: var(--blue);
+}
+.filter-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.filter-row .field {
+  flex: 1;
+  min-width: 0;
+}
+.filter-row .segmented {
+  flex: 1;
+}
+.filter-row .clear-filter {
+  flex: none;
+}
+.filter-actions:has(.clear-filter) {
+  justify-content: space-between;
+}
+.filter-actions.end {
+  justify-content: flex-end;
+}
+.filter-row .range-input {
+  flex: 1;
+  min-width: 0;
+}
+.filter-row .range-sep {
+  flex: none;
+  color: var(--muted);
+}
+.filter-row > input[type="text"] {
+  flex: 1;
+  min-width: 0;
+}

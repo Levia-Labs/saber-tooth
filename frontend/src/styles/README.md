@@ -8,6 +8,7 @@ Plain CSS with custom properties; no framework.
 4. `rows.css`: library rows, cover, skeletons and the responsive and mobile card layouts.
 5. `chips.css`: status and level chips.
 6. `overlays.css`: tooltip, popovers, checkboxes and the fullscreen filter sheet.
+   `filters.css`: filter popover and sheet bodies (rows, lists that scroll, range inputs).
    `pill.css`: the pill switch (`.mode-switch`, `.pill`) shared by the section tabs, map tabs and crop length switch.
 7. `beatsaver.css`: header mode switch, presets, selection bar and the BeatSaver table layouts.
    `barslot.css`: the toolbar slot at the right end of the BeatSaver title row.
