@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { cancelJob } from "../api/client";
 import { useJobLists } from "../api/joblist";
+import { retryJob } from "../api/jobs";
 import { keys } from "../api/queries";
 import type { JobView } from "../api/types";
 import { useAnnounce } from "../components/Announcer";
@@ -35,6 +36,22 @@ export function JobsPage() {
     }
     await client.invalidateQueries({ queryKey: keys.jobs });
   };
+  const [retrying, setRetrying] = useState<ReadonlySet<string>>(new Set());
+  const retry = async (job: JobView) => {
+    setRetrying((ids) => new Set(ids).add(job.id));
+    try {
+      await retryJob(job.id);
+    } catch (err) {
+      announce({ variant: "danger", title: `Retry ${job.title}`, message: errorText(err) });
+    } finally {
+      setRetrying((ids) => {
+        const next = new Set(ids);
+        next.delete(job.id);
+        return next;
+      });
+    }
+    await client.invalidateQueries({ queryKey: keys.jobs });
+  };
   const filtered = Object.values(jobsFilterCount(state)).some((n) => n > 0);
   const empty =
     all.length > 0 && filtered ? (
@@ -65,6 +82,8 @@ export function JobsPage() {
         update={update}
         now={now}
         onCancel={(j) => void cancel(j)}
+        onRetry={(j) => void retry(j)}
+        retrying={retrying}
         empty={empty}
       />
     </section>

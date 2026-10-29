@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 
 from fastapi.responses import JSONResponse
 
-from saber_tooth.api.jobs_api import core_handlers, job_detail, list_jobs
+from saber_tooth.api.jobs_api import core_handlers, job_detail, list_jobs, upload_path
 from saber_tooth.api.library import (
     AUDIO_TYPES,
     COVER_TYPES,
@@ -265,6 +265,21 @@ class Api:
 
     def jobs_list(self) -> dict:
         return list_jobs(self.store, self.jobs.cancel_requested)
+
+    def retry_job(self, raw: str) -> dict:
+        """Queue a copy of a failed job (same kind, map and stored args); the old row stays."""
+        try:
+            old = self.store.job(self._job_id(raw))
+        except KeyError:
+            raise ApiError(404, f"unknown job: {raw}") from None
+        if old["status"] != "failed":
+            raise ApiError(409, "only a failed job can be retried")
+        if old["kind"] == "generate" and "upload" in old["args"]:  # the only temp input
+            path = upload_path(self.service.data, old["args"]["upload"])
+            if path is None or not path.is_file():
+                raise ApiError(409, "the uploaded audio is gone; upload it again")
+        new_id = self.jobs.submit(old["kind"], old["args"], old["map_id"])
+        return self.job(new_id)
 
     def cancel_job(self, raw: str) -> dict:
         try:

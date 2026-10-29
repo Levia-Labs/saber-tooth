@@ -10,6 +10,28 @@ from typing import Any
 INTERRUPTED = "interrupted: the service restarted before the job finished"
 RECENT_HOURS = 24
 RECENT_LIMIT = 50
+# Finished rows kept in total. Per-map retention already bounds the table to roughly one row per
+# map; this caps libraries with thousands of maps so the jobs table cannot grow without limit.
+FINISHED_CAP = 200
+# Finished jobs kept per kind when they have no map (generate, learn, downloads before a map).
+NO_MAP_KEPT = 5
+_FIN = "status IN ('done','failed','cancelled')"
+_NEWER = (
+    "(n.updated_at > jobs.updated_at OR (n.updated_at = jobs.updated_at AND n.rowid > jobs.rowid))"
+)
+_PRUNE_MAP_SQL = (
+    f"DELETE FROM jobs WHERE {_FIN} AND map_id IS NOT NULL AND EXISTS ("  # noqa: S608
+    f"SELECT 1 FROM jobs n WHERE n.map_id = jobs.map_id AND n.{_FIN} AND {_NEWER})"
+)
+_PRUNE_NO_MAP_SQL = (
+    f"DELETE FROM jobs WHERE {_FIN} AND map_id IS NULL AND ("  # noqa: S608
+    f"SELECT COUNT(*) FROM jobs n WHERE n.map_id IS NULL AND n.kind = jobs.kind"
+    f" AND n.{_FIN} AND {_NEWER}) >= ?"
+)
+_PRUNE_CAP_SQL = (
+    f"DELETE FROM jobs WHERE {_FIN} AND id NOT IN ("  # noqa: S608
+    f"SELECT id FROM jobs WHERE {_FIN} ORDER BY updated_at DESC, rowid DESC LIMIT ?)"
+)
 _DEDUPE_SQL = (
     "SELECT id FROM jobs WHERE map_id=? AND kind=?"
     " AND status IN ('queued','running') ORDER BY created_at, rowid LIMIT 1"
@@ -95,9 +117,25 @@ class JobRows:
                 "UPDATE jobs SET status=?, error=?, result_json=?, updated_at=? WHERE id=?",
                 (status, error, result_json, _now(), id),
             )
+            if cur.rowcount and status in ("done", "failed", "cancelled"):
+                self._prune_finished()
             self._db.commit()
         if cur.rowcount == 0:
             raise KeyError(id)
+
+    def _prune_finished(self) -> None:
+        """Keep each map's latest finished job, a few per kind without a map, and a global cap."""
+        self._db.execute(_PRUNE_MAP_SQL)
+        self._db.execute(_PRUNE_NO_MAP_SQL, (NO_MAP_KEPT,))
+        self._db.execute(_PRUNE_CAP_SQL, (FINISHED_CAP,))
+
+    def prune_finished_jobs(self) -> int:
+        """Apply retention to existing rows (startup); idempotent, never touches active jobs."""
+        with self._lock:
+            before = self._db.total_changes
+            self._prune_finished()
+            self._db.commit()
+            return self._db.total_changes - before
 
     def job(self, id: str) -> dict:
         with self._lock:
@@ -150,6 +188,7 @@ class JobRows:
             self._db.execute(
                 "UPDATE jobs SET status='cancelled', updated_at=? WHERE id=?", (_now(), id)
             )
+            self._prune_finished()
             self._db.commit()
             return "cancelled"
 

@@ -6,3 +6,8 @@ export function roundsText(progress: string | null | undefined): string | null {
   const hit = ROUND.exec(progress ?? "");
   return hit ? `${Number(hit[1])}/${Number(hit[2])}` : null;
 }
+
+/** Rounds of a job for display: none once it is done (done means all of them), else how far it got. */
+export function jobRounds(job: { status: string; progress: string | null }): string | null {
+  return job.status === "done" ? null : roundsText(job.progress);
+}

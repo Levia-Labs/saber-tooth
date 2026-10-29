@@ -178,8 +178,6 @@ export function JobsHeader(props: Props) {
           </div>
         }
       />
-      <HeaderCell {...cell(JOB_COL.queue)} label="Queue #" />
-      <HeaderCell {...cell(JOB_COL.rounds)} label="Rounds" />
       <HeaderCell {...cell(JOB_COL.actions)} label="Actions" />
     </div>
   );

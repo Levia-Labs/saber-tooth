@@ -2,7 +2,6 @@ import { Link } from "react-router";
 import type { JobView } from "../api/types";
 import { JOB_COL } from "../lib/jobcolumns";
 import { jobLengthMs } from "../lib/jobfilters";
-import { roundsText } from "../lib/jobrounds";
 import { KIND_ICON, KIND_LABEL } from "../lib/jobkinds";
 import { duration, staleMinutes } from "../lib/jobtime";
 import { ActionButton } from "./Buttons";
@@ -15,13 +14,26 @@ interface Props {
   index: number;
   now: number;
   onCancel: (job: JobView) => void;
+  onRetry: (job: JobView) => void;
+  /** Ids whose retry request is in flight. */
+  retrying: ReadonlySet<string>;
 }
 
-function ActionsCell({ job, onCancel }: Pick<Props, "job" | "onCancel">) {
+function ActionsCell({ job, onCancel, onRetry, retrying }: Omit<Props, "index" | "now">) {
   const active = job.status === "queued" || job.status === "running";
   const requested = job.status === "running" && job.cancel_requested;
   return (
     <div className="jc-actions" role="cell">
+      {job.status === "failed" && (
+        <ActionButton
+          icon="reset"
+          label="Retry job"
+          tip="Retry job"
+          aria-label="Retry job"
+          disabled={retrying.has(job.id)}
+          onClick={() => onRetry(job)}
+        />
+      )}
       {active && (
         <ActionButton
           icon={requested ? "spinner" : "trash"}
@@ -54,10 +66,9 @@ function LengthCell({ job, now }: Pick<Props, "job" | "now">) {
   );
 }
 
-export function JobsRow({ job, index, now, onCancel }: Props) {
+export function JobsRow({ job, index, now, onCancel, onRetry, retrying }: Props) {
   const linked = job.map_exists && job.map_id;
   const detail = job.status === "failed" && job.error ? job.error : null;
-  const rounds = roundsText(job.progress);
   const cell = (col: string) => `jc-${col}`;
   return (
     <div className="jobs-row jobs-grid" role="row" aria-rowindex={index + 2} data-job={job.id}>
@@ -89,13 +100,7 @@ export function JobsRow({ job, index, now, onCancel }: Props) {
       <div className={cell(JOB_COL.status)} role="cell">
         <JobStatusChip job={job} />
       </div>
-      <div className={`${cell(JOB_COL.queue)} jobs-num`} role="cell">
-        {job.status === "queued" && job.position ? job.position : ""}
-      </div>
-      <div className={`${cell(JOB_COL.rounds)} jobs-num jobs-rounds`} role="cell">
-        {rounds ?? ""}
-      </div>
-      <ActionsCell job={job} onCancel={onCancel} />
+      <ActionsCell job={job} onCancel={onCancel} onRetry={onRetry} retrying={retrying} />
     </div>
   );
 }

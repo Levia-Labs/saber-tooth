@@ -180,6 +180,10 @@ def create_app(
     def cancel_job(job_id: str):
         return api.cancel_job(job_id)
 
+    @app.post("/api/jobs/{job_id}/retry")
+    def retry_job(job_id: str):
+        return api.retry_job(job_id)
+
     @app.get("/api/jobs/{job_id}")
     def job(job_id: str):
         return api.job(job_id)
@@ -203,6 +207,8 @@ def build_service() -> Service:
     store = Store(data / "saber-tooth.db")
     if interrupted := store.fail_interrupted_jobs():  # their worker threads died with the process
         log.warning("marked %d interrupted job(s) failed after restart", interrupted)
+    if pruned := store.prune_finished_jobs():  # one finished entry per map; history cannot pile up
+        log.info("pruned %d superseded finished job row(s)", pruned)
     service = Service(
         Path(os.environ.get("LEVELS_DIR", "/levels")),
         data,

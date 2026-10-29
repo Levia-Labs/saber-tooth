@@ -57,3 +57,37 @@ describe("job status icons", () => {
     expect(new Set(icons).size).toBe(5);
   });
 });
+
+describe("jobRounds", () => {
+  test("a done job shows no rounds; running, failed and cancelled show how far they got", async () => {
+    const { jobRounds } = await import("../src/lib/jobrounds");
+    const progress = "round 3 of 6";
+    expect(jobRounds({ status: "done", progress })).toBeNull();
+    for (const status of ["running", "failed", "cancelled"] as const) {
+      expect(jobRounds({ status, progress })).toBe("3/6");
+    }
+    expect(jobRounds({ status: "running", progress: null })).toBeNull();
+  });
+});
+
+describe("jobTag", () => {
+  test("queued gets #n in info; running, failed and cancelled get x/y in warning; done none", async () => {
+    const { jobTag } = await import("../src/lib/jobstatus");
+    const base = { cancel_requested: false, position: null, progress: null };
+    expect(jobTag({ ...base, status: "queued", position: 3 })).toEqual({
+      text: "#3",
+      tone: "info",
+      label: "position 3",
+    });
+    for (const status of ["running", "failed", "cancelled"] as const) {
+      expect(jobTag({ ...base, status, progress: "round 2 of 6" })).toEqual({
+        text: "2/6",
+        tone: "warning",
+        label: "round 2 of 6",
+      });
+    }
+    expect(jobTag({ ...base, status: "done", progress: "round 6 of 6" })).toBeNull();
+    expect(jobTag({ ...base, status: "running" })).toBeNull();
+    expect(jobTag({ ...base, status: "queued" })).toBeNull();
+  });
+});

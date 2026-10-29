@@ -16,11 +16,23 @@ interface Props {
   update: JobsPatch;
   now: number;
   onCancel: (job: JobView) => void;
+  onRetry: (job: JobView) => void;
+  retrying: ReadonlySet<string>;
   empty: ReactNode;
 }
 
 /** One table of every job: sort and filter in the header, one row per job. */
-export function JobsTable({ rows, all, state, update, now, onCancel, empty }: Props) {
+export function JobsTable({
+  rows,
+  all,
+  state,
+  update,
+  now,
+  onCancel,
+  onRetry,
+  retrying,
+  empty,
+}: Props) {
   const table = useRef<HTMLDivElement>(null);
   const columns = useColumns(table, JOB_COLUMNS);
   return (
@@ -36,7 +48,15 @@ export function JobsTable({ rows, all, state, update, now, onCancel, empty }: Pr
         <JobsHeader state={state} update={update} columns={columns.api} jobs={all} />
         <div role="rowgroup">
           {rows.map((job, i) => (
-            <JobsRow key={job.id} job={job} index={i} now={now} onCancel={onCancel} />
+            <JobsRow
+              key={job.id}
+              job={job}
+              index={i}
+              now={now}
+              onCancel={onCancel}
+              onRetry={onRetry}
+              retrying={retrying}
+            />
           ))}
         </div>
       </div>

@@ -135,9 +135,9 @@ def test_lists_positions_titles_and_recent_limits(store: Store) -> None:
 
 
 def test_recent_keeps_24_hours_and_at_most_50(store: Store) -> None:
-    for _ in range(RECENT_LIMIT + 5):
-        store.update_job(store.create_job("scan", None, {}), "done")
-    last = store.create_job("scan", None, {})
+    for i in range(RECENT_LIMIT + 5):
+        store.update_job(store.create_job("scan", f"m{i}", {}), "done")
+    last = store.create_job("scan", "last", {})
     store.update_job(last, "failed", error="x")
     later = datetime.now(UTC) + timedelta(hours=25)
     assert store.job_lists(now=later)["recent"] == []

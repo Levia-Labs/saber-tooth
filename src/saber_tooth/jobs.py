@@ -36,6 +36,19 @@ class _Progress:
 
 
 Progress = Callable[[str], None]  # the object handed in also has `.check()`
+
+
+def error_text(exc: Exception) -> str:
+    """The text a failed job shows: a KeyError becomes `internal error: missing entry for
+    Cut.ANY` instead of the bare repr `<Cut.ANY: 8>`."""
+    if isinstance(exc, KeyError) and exc.args:
+        key = exc.args[0]
+        name = getattr(key, "name", None)
+        label = f"{type(key).__name__}.{name}" if name else repr(key)
+        return f"internal error: missing entry for {label}"
+    return str(exc) or type(exc).__name__
+
+
 Handler = Callable[[dict, Progress], Any]
 IDLE_WAIT_S = 5.0  # fallback poll when no submit wakes the worker
 FINISHED = ("done", "failed", "cancelled")
@@ -132,7 +145,8 @@ class Jobs:
         except JobCancelled:
             self._store.update_job(job_id, "cancelled")
         except Exception as exc:
-            self._mark_failed(job_id, str(exc), getattr(exc, "result", None))
+            log.exception("job %s (%s) failed", job_id, job["kind"])
+            self._mark_failed(job_id, error_text(exc), getattr(exc, "result", None))
 
     def request_cancel(self, job_id: str) -> None:
         """Ask a running job to stop at its next checkpoint; other jobs are ignored."""

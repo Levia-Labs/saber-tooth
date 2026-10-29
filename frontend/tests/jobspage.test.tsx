@@ -62,48 +62,78 @@ describe("Jobs page", () => {
     expect(screen.queryByRole("heading", { name: "Running" })).toBeNull();
     expect(screen.queryByRole("heading", { name: "Queued" })).toBeNull();
     expect(screen.getByRole("link", { name: "Acid Rain" }).getAttribute("href")).toBe("/maps/m1");
-    expect(within(rowOf("r1")).getByText("2/6")).toBeTruthy();
+    expect(rowOf("r1").querySelector(".jobs-tag-warning")?.textContent).toBe("2/6");
     expect(screen.getByText("boom")).toBeTruthy();
     const tabs = screen.getByRole("navigation", { name: "Section" });
     expect(within(tabs).getByText("3")).toBeTruthy();
   });
 
-  test("columns mirror the library: Icon, Title, Length, Operation, Status, Queue #, Rounds, Actions", async () => {
+  test("columns: Icon, Title, Length, Operation, Status, Actions", async () => {
     serve(FULL);
     renderApp("/jobs");
     await loaded();
     const heads = screen.getAllByRole("columnheader").map((h) => h.textContent);
-    expect(heads).toEqual([
-      "Icon",
-      "Title",
-      "Length",
-      "Operation",
-      "Status",
-      "Queue #",
-      "Rounds",
-      "Actions",
-    ]);
+    expect(heads).toEqual(["Icon", "Title", "Length", "Operation", "Status", "Actions"]);
     const cells = within(rowOf("r1")).getAllByRole("cell");
-    expect(cells).toHaveLength(8);
+    expect(cells).toHaveLength(6);
     expect(cells[3]?.textContent).toBe("Fix");
-    expect(cells[6]?.textContent).toBe("2/6");
   });
 
-  test("status cells are library chips with a tooltip name; queue # only when queued", async () => {
+  test("the status widget is a library chip; queued adds #n in info, running adds x/y in warning", async () => {
     serve(FULL);
     renderApp("/jobs");
     await loaded();
     const chip = (id: string) => rowOf(id).querySelector(".chip") as HTMLElement;
     expect(chip("r1").className).toContain("chip-fixing");
-    expect(chip("r1").getAttribute("aria-label")).toBe("Running");
+    expect(chip("r1").getAttribute("aria-label")).toBe("Running, round 2 of 6");
+    expect(chip("r1").querySelector(".jobs-tag-warning")?.textContent).toBe("2/6");
     expect(chip("q2").className).toContain("chip-queued");
-    expect(chip("q2").getAttribute("aria-label")).toBe("Queued");
+    expect(chip("q2").getAttribute("aria-label")).toBe("Queued, position 2");
+    expect(chip("q2").querySelector(".jobs-tag-info")?.textContent).toBe("#2");
     expect(chip("d1").className).toContain("chip-error");
     expect(chip("d1").getAttribute("aria-label")).toBe("Failed");
-    expect(within(rowOf("q2")).getAllByRole("cell")[5]?.textContent).toBe("2");
-    expect(within(rowOf("r1")).getAllByRole("cell")[5]?.textContent).toBe("");
+    expect(chip("d1").querySelector(".jobs-tag-warning")).toBeNull();
     expect(within(rowOf("q2")).getAllByRole("cell")[3]?.textContent).toBe("Scan");
-    expect(within(rowOf("q1")).getAllByRole("cell")[6]?.textContent).toBe("");
+  });
+
+  test("a done job shows no rounds; a failed one shows how far it got", async () => {
+    serve({
+      running: [],
+      queued: [],
+      recent: [
+        job("a", { status: "done", progress: "round 6 of 6" }),
+        job("b", { status: "failed", progress: "round 2 of 6", error: "boom" }),
+      ],
+    });
+    renderApp("/jobs");
+    await loaded();
+    expect(within(rowOf("a")).queryByText("6/6")).toBeNull();
+    expect(rowOf("a").querySelector(".jobs-tag")).toBeNull();
+    expect(within(rowOf("b")).getByText("2/6")).toBeTruthy();
+  });
+
+  test("Retry shows on failed rows only, posts to the retry endpoint and is disabled meanwhile", async () => {
+    const posts: string[] = [];
+    let release: () => void = () => undefined;
+    mockFetch(async (url, init) => {
+      if (init?.method === "POST") {
+        posts.push(url.pathname);
+        await new Promise<void>((r) => (release = r));
+        return job("n1", { status: "queued" });
+      }
+      return url.pathname === "/api/jobs" ? FULL : {};
+    });
+    renderApp("/jobs");
+    await loaded();
+    expect(within(rowOf("r1")).queryByRole("button", { name: "Retry job" })).toBeNull();
+    expect(within(rowOf("q1")).queryByRole("button", { name: "Retry job" })).toBeNull();
+    const retry = within(rowOf("d1")).getByRole("button", { name: "Retry job" });
+    expect(retry.querySelector("svg")).not.toBeNull();
+    fireEvent.click(retry);
+    await waitFor(() => expect(posts).toEqual(["/api/jobs/d1/retry"]));
+    await waitFor(() => expect((retry as HTMLButtonElement).disabled).toBe(true));
+    release();
+    await waitFor(() => expect((retry as HTMLButtonElement).disabled).toBe(false));
   });
 
   test("a queued row has no waiting counter and no length", async () => {

@@ -4,8 +4,8 @@ import { useAnnounce } from "../components/Announcer";
 import { capitalize } from "../lib/announcements";
 import { useOpenJobs } from "../lib/jobopen";
 import { roundsText } from "../lib/jobrounds";
-import { getJob, isRetryable, type Started } from "./client";
-import type { Job } from "./types";
+import { getJob, request, isRetryable, type Started } from "./client";
+import type { Job, JobView } from "./types";
 
 const MAX_FETCH_FAILS = 3;
 const FIRST_DELAY_MS = 1000;
@@ -178,3 +178,7 @@ export function useJobRunner(label: string, key: string = label): JobRunner {
 
   return { state, busy: state === "running", error, job, run };
 }
+
+/** Re-queue a failed job; resolves with the new queued job's view (409 when it is not failed). */
+export const retryJob = (id: string): Promise<JobView> =>
+  request("POST", `/api/jobs/${encodeURIComponent(id)}/retry`);

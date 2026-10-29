@@ -22,12 +22,19 @@ class GenerationError(Exception):
 @dataclass(frozen=True)
 class Link:
     secs: float
-    vec: tuple[float, float]
+    vec: tuple[float, float] | None  # None for a dot note: no direction, so no parity limit
     pos: tuple[int, int]
 
 
 def _link(note: Note, secs: float) -> Link:
-    return Link(secs, CUT_VECTORS[note.cut], (note.x, note.y))
+    return Link(secs, CUT_VECTORS.get(note.cut), (note.x, note.y))
+
+
+def _parity_clash(a: tuple[float, float] | None, b: tuple[float, float] | None) -> bool:
+    """Two swings that point the same way in a row; a dot has no direction and never clashes."""
+    if a is None or b is None:
+        return False
+    return a[0] * b[0] + a[1] * b[1] > MAX_PARITY_DOT
 
 
 def is_vision_spot(x: int, y: int) -> bool:
@@ -88,7 +95,7 @@ class Placer:
             return False
         # after a long pause the swing direction is free; only used when no alternating step fits
         free = relaxed and dt >= warn.reset_window_s + GAP_MARGIN_S
-        if not free and a.vec[0] * b.vec[0] + a.vec[1] * b.vec[1] > MAX_PARITY_DOT:
+        if not free and _parity_clash(a.vec, b.vec):
             return False
         return cells_per_second(a.pos, b.pos, dt) <= warn.max_hand_speed * SPEED_MARGIN
 

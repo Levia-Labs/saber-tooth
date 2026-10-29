@@ -95,6 +95,9 @@ def view(
 
 def list_jobs(store, cancelling: Callable[[str], bool] = _never) -> dict:
     lists = store.job_lists()
+    active = {r["map_id"] for k in ("running", "queued") for r in lists[k] if r.get("map_id")}
+    # an active job on a map hides that map's finished entry: one entry per song
+    lists["recent"] = [r for r in lists["recent"] if r.get("map_id") not in active]
     return {
         "running": [view(r, None, cancelling) for r in lists["running"]],
         "queued": [view(r, n, cancelling) for n, r in enumerate(lists["queued"], start=1)],

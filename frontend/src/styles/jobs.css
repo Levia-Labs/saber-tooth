@@ -49,11 +49,15 @@
   font-size: 0.9rem;
   font-variant-numeric: tabular-nums;
 }
-.jobs-num {
-  color: var(--muted);
+.jobs-tag {
+  font-size: 0.85rem;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
-.jobs-rounds {
+.jobs-tag-info {
+  color: var(--blue);
+}
+.jobs-tag-warning {
   color: var(--amber);
 }
 .jobs-row .jc-title {
