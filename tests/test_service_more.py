@@ -81,8 +81,9 @@ def test_conflict_failure_job_carries_conflict_ids(tmp_path):
     p1 = _propose(svc, mid, [Move("Hard", a, 2, 2, Cut(1))])
     p2 = _propose(svc, mid, [Move("Hard", b, 2, 2, Cut(1))])
     jobs = Jobs(svc.store)
-    jid = jobs.submit("apply", svc.run_apply, mid)
-    jobs.future(jid).result(timeout=10)
+    jobs.register("apply", lambda args, progress: svc.run_apply(args["map_id"]))
+    jid = jobs.submit("apply", {"map_id": mid})
+    jobs.wait(jid)
     job = svc.store.job(jid)
     jobs.shutdown()
     assert job["status"] == "failed" and job["result"] == {"conflict": [p1, p2]}

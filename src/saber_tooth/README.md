@@ -21,11 +21,12 @@ Top-level modules:
 3. `analysis.py`, `analyser_client.py`, `audio.py`: beat-analyser output, its HTTP client, audio conversion, cutting and tag reading.
 4. `timing.py`, `swings.py`: beat and time conversion, swing geometry.
 5. `assemble.py`: builds a map from generator output.
-6. `store.py`, `store_maps.py`, `store_claims.py`, `jobs.py`: SQLite storage, map queries, proposal claims and background jobs.
-7. `store_jobs.py`: job rows, the durable queue: create (with per-map dedupe), claim oldest first, progress, cancel, lists, restart cleanup.
-8. `safe_fs.py`: path safety helpers.
-9. `cli.py`: the `saber-tooth` command line.
-10. `autofix.py`: offline scan, approve-all, apply and re-check loop behind `saber-tooth autofix`.
-11. `songmeta.py`: song name, sub name and author from a video title (the analyser's project name) or audio tags.
+6. `store.py`, `store_maps.py`, `store_claims.py`: SQLite storage, map queries and proposal claims.
+7. `jobs.py`: one worker thread drains the `jobs` table oldest first through handlers registered per kind; queued jobs survive a restart.
+8. `store_jobs.py`: job rows, the durable queue: create (with per-map dedupe), claim oldest first, progress, cancel, lists, restart cleanup.
+9. `safe_fs.py`: path safety helpers.
+10. `cli.py`: the `saber-tooth` command line.
+11. `autofix.py`: offline scan, approve-all, apply and re-check loop behind `saber-tooth autofix`.
+12. `songmeta.py`: song name, sub name and author from a video title (the analyser's project name) or audio tags.
 
 Test with `task st:test`.
