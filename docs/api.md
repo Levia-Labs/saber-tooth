@@ -83,7 +83,7 @@ Local playlists are JSON files under `<data>/playlists`; the `.bplist` written i
 
 1. `GET /api/playlists/config`: `{"export_enabled", "live"}`.
 2. `GET /api/playlists`: `{"items"}`; item `id`, `title`, `author`, `description`, `folder` (export subfolder), `sync`, `sync_url`, `exported` (path relative to `PLAYLISTS_DIR`), `updated_at`, `songs_count`, `missing_count`, `cover_url`.
-3. `GET /api/playlists/{id}`: the item plus `songs`: `[{"map_id", "hash", "key", "song_name", "mapper", "missing", "cover_url"}]`.
+3. `GET /api/playlists/{id}`: the item plus `songs`: `[{"map_id", "hash", "key", "song_name", "mapper", "missing", "cover_url", "map"}]`; `map` is the library item (as in `GET /api/maps`) or null.
 4. `POST /api/playlists`, `POST` or `PUT /api/playlists/{id}`: body `{"title", "author", "description", "folder", "sync", "songs", "cover"}`; a song is `{"map_id"}` or `{"hash", "key", "song_name", "mapper"}`, up to 2000; `cover` is `{"map_id"}`, `{"data": <base64 PNG or JPEG, up to 2 MB>}` or `{"clear": true}` (absent keeps it). 400 invalid, 404 unknown map or playlist. `DELETE /api/playlists/{id}` answers `{"deleted"}`.
 5. `GET /api/playlists/{id}/cover`: the image.
 6. `POST /api/playlists/from-maps`: body as above with `map_ids`, `job_id` (the job's output map; a fix job gives the fixed copy) and `source` (`latest-generated` or `latest-fixed`) instead of `songs`, plus `export`. Creates the playlist, writes it when `export` is true, answers `{"playlist", "path", "relative"}`.

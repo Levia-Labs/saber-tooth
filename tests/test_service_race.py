@@ -20,7 +20,7 @@ class SlowAnalyser:
     def __init__(self) -> None:
         self.started, self.release = threading.Event(), threading.Event()
 
-    def analyse_file(self, path, name):
+    def analyse_file(self, path, name, cancel=None):
         self.started.set()
         self.release.wait(10)
         raise AnalyserError("stop")
@@ -48,7 +48,7 @@ def test_analyser_side_failures_degrade_to_no_analysis(svc, exc):
     class Broken:
         uploads = None
 
-        def analyse_file(self, path, name):
+        def analyse_file(self, path, name, cancel=None):
             raise exc
 
     svc.client = Broken()

@@ -24,6 +24,9 @@ const BeatSaverPlaylistsPage = lazyRoute(() =>
   import("./pages/BeatSaverPlaylistsPage").then((m) => ({ default: m.BeatSaverPlaylistsPage })),
 );
 const JobsPage = lazyRoute(() => import("./pages/JobsPage").then((m) => ({ default: m.JobsPage })));
+const PlaylistPage = lazyRoute(() =>
+  import("./pages/PlaylistPage").then((m) => ({ default: m.PlaylistPage })),
+);
 const PlaylistsPage = lazyRoute(() =>
   import("./pages/PlaylistsPage").then((m) => ({ default: m.PlaylistsPage })),
 );
@@ -110,6 +113,8 @@ export const routes: RouteObject[] = [
       { path: "/beatsaver", element: <BeatSaverPage />, errorElement: <RouteError /> },
       { path: "/jobs", element: <JobsPage />, errorElement: <RouteError /> },
       { path: "/playlists", element: <PlaylistsPage />, errorElement: <RouteError /> },
+      { path: "/playlists/new", element: <PlaylistPage />, errorElement: <RouteError /> },
+      { path: "/playlists/:id", element: <PlaylistPage />, errorElement: <RouteError /> },
       {
         path: "/beatsaver/playlists",
         element: <BeatSaverPlaylistsPage />,
@@ -126,6 +131,8 @@ export const routes: RouteObject[] = [
       { path: "/vr/beatsaver", element: <BeatSaverPage />, errorElement: <RouteError /> },
       { path: "/vr/jobs", element: <JobsPage />, errorElement: <RouteError /> },
       { path: "/vr/playlists", element: <PlaylistsPage />, errorElement: <RouteError /> },
+      { path: "/vr/playlists/new", element: <PlaylistPage />, errorElement: <RouteError /> },
+      { path: "/vr/playlists/:id", element: <PlaylistPage />, errorElement: <RouteError /> },
       { path: "*", element: <NotFoundPage />, errorElement: <RouteError /> },
     ],
   },

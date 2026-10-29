@@ -168,3 +168,93 @@
   justify-content: flex-start;
   text-align: left;
 }
+.lp-page {
+  display: block;
+}
+.lp-name-h {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+}
+.lp-name-text {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: text;
+}
+.lp-name-input {
+  width: min(32rem, 100%);
+  padding: 0 0 2px;
+  border: 0;
+  border-bottom: 2px solid var(--blue);
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+.lp-cover-edit {
+  position: relative;
+  display: inline-flex;
+}
+.lp-cover-btn {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: rgb(0 0 0 / 0.45);
+  color: #fff;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.lp-cover-btn .ic {
+  width: 2rem;
+  height: 2rem;
+}
+.lp-cover-edit:hover .lp-cover-btn,
+.lp-cover-btn:focus-visible {
+  opacity: 1;
+}
+@media (hover: none) {
+  .lp-cover-btn {
+    opacity: 1;
+    background: rgb(0 0 0 / 0.3);
+  }
+}
+.lp-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+.lp-songs-scroll {
+  flex: none;
+  max-height: none;
+  overflow-x: auto;
+  overflow-y: visible;
+}
+.lp-page .lp-picker {
+  margin: 0.5rem 0 1rem;
+}
+.lp-export {
+  margin-bottom: 1.5rem;
+}
+.lp-gone .title-link {
+  color: var(--amber);
+}
+.lp-name-h .lp-name-text {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}

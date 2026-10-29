@@ -9,6 +9,7 @@ import {
 } from "../api/beatsaver";
 import { BsResults } from "../components/beatsaver/BsResults";
 import { BarSlotProvider } from "../components/BarSlot";
+import { Spinner } from "../components/Spinner";
 import { BsTabs } from "../components/beatsaver/BsTabs";
 import type { Downloads } from "../components/beatsaver/downloads";
 import { PlaylistList } from "../components/beatsaver/PlaylistList";
@@ -50,10 +51,8 @@ function DownloadAll({ query, downloads }: { query: Query; downloads: Downloads 
           disabled={loading || downloads.runner.busy}
           onClick={() => void begin()}
         >
-          <Icon name="download" />
-          <span className="label-hide-mobile">
-            {loading ? "Loading matches" : "Download all matching"}
-          </span>
+          {loading ? <Spinner label="Loading matches" /> : <Icon name="download" />}
+          <span className="label-hide-mobile">Download all matching</span>
         </button>
       </Tip>
       <DownloadConfirm

@@ -113,4 +113,22 @@ describe("BeatSaver playlists tab", () => {
     expect(within(dialog).getByText(/2 new maps will be downloaded/)).toBeInTheDocument();
     expect(calls.filter((u) => u.searchParams.get("cursor") === "2").length).toBeGreaterThan(0);
   });
+
+  test("Download all matching shows the spinner, not loading text, while pages load", async () => {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((r) => (release = r));
+    api({
+      maps: (url) =>
+        url.searchParams.get("cursor")
+          ? gate.then(() => ({ playlist: PLAYLISTS[0], items: [], cursor: null }))
+          : { playlist: PLAYLISTS[0], items: [bsMap(1)], cursor: "2", scanned: 5, matched: 1 },
+    });
+    renderApp("/beatsaver/playlists/p1");
+    await screen.findByText("Song 1");
+    await userEvent.click(screen.getByRole("button", { name: "Download all matching" }));
+    const spinner = await screen.findByRole("status", { name: "Loading matches" });
+    expect(spinner.querySelector(".alert-spin")).not.toBeNull();
+    expect(screen.queryByText(/loading/i)).toBeNull();
+    release();
+  });
 });

@@ -32,11 +32,12 @@ function manualChunks(id: string): string | undefined {
   return "react";
 }
 
-const APP_VERSION = (
-  JSON.parse(readFileSync(fileURLToPath(new URL("./package.json", import.meta.url)), "utf8")) as {
-    version: string;
-  }
-).version;
+// The release version lives in pyproject.toml; frontend/package.json stays 0.0.0 and is never released.
+const PYPROJECT = readFileSync(
+  fileURLToPath(new URL("../pyproject.toml", import.meta.url)),
+  "utf8",
+);
+const APP_VERSION = /^version\s*=\s*"([^"]+)"/m.exec(PYPROJECT)?.[1] ?? "unknown";
 
 const proxy = { target: BACKEND, changeOrigin: true, headers: { Host: "127.0.0.1:8100" } };
 

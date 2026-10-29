@@ -264,7 +264,7 @@ def test_upload_title_is_sanitised_filename_stem(svc):
     class Client:
         uploads = None
 
-        def analyse_file(self, path, name):
+        def analyse_file(self, path, name, cancel=None):
             seen.append(name)
             raise AnalyserError("stop")
 

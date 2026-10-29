@@ -65,7 +65,8 @@ def test_create_hash_missing_and_rewrite(client, svc):
     songs = made["songs"]
     folder = svc.levels / client.get(f"/api/maps/{mid}").json()["folder"]
     assert songs[0]["hash"] == songcore_hash(folder) and not songs[0]["missing"]
-    assert songs[1]["missing"]
+    assert songs[1]["missing"] and songs[1]["map"] is None
+    assert songs[0]["map"]["id"] == mid and songs[0]["map"]["difficulties"]
     # rewriting a difficulty file changes the hash at the next read
     diff = next(p for p in folder.glob("*.dat") if p.name.lower() != "info.dat")
     diff.write_bytes(diff.read_bytes() + b" ")
@@ -124,6 +125,8 @@ def test_live_routes_and_export_disabled(client, svc):
 def test_spa_routes(client):
     assert client.get("/playlists").status_code == 200
     assert client.get("/vr/playlists").status_code == 200
+    assert client.get("/playlists/new").status_code == 200
+    assert client.get("/vr/playlists/" + "a" * 32).status_code == 200
 
 
 def test_name_unused():

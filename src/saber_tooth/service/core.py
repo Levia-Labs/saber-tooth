@@ -2,11 +2,12 @@
 
 import logging
 import threading
+import time
 from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
 
-from saber_tooth.analyser_client import AnalyserClient, AnalyserError
+from saber_tooth.analyser_client import AnalyserClient, AnalyserError, AnalyserTimeout
 from saber_tooth.analysis import Analysis
 from saber_tooth.audio import probe_tags
 from saber_tooth.checks import run_checks
@@ -32,6 +33,8 @@ log = logging.getLogger(__name__)
 
 SUFFIX = " [saber-tooth]"
 APPLY_RETRIES = 3
+ANALYSIS_CACHE = 16  # analyser results kept so Scan and Fix do not analyse one song twice
+PROPOSE_BUDGET_S = 240.0  # a scan stops proposing fixes after this; every finding is stored
 
 
 class _Stale(Exception):
@@ -58,6 +61,8 @@ class Service(DeleteMixin):
         self.encode = encode
         self.uploads = Path(uploads) if uploads else getattr(client, "uploads", None)
         self._lock = threading.Lock()
+        self._analysis_lock = threading.Lock()
+        self._analyses: dict[tuple, Analysis] = {}
         self._refresh_lock = threading.Lock()  # one re-index at a time; readers never wait on it
         self._seen: frozenset[str] = frozenset()
 
@@ -143,43 +148,72 @@ class Service(DeleteMixin):
 
     # scan --------------------------------------------------------------------
 
-    def _analyse(self, map_id: str, bm: Beatmap, folder: Path) -> Analysis | None:
+    def _analyse(self, map_id: str, bm: Beatmap, folder: Path, progress=None) -> Analysis | None:
+        """The analyser's result for the map's audio; one call per audio file while it is unchanged.
+
+        An analyser that is down or refuses gives None (checks run without it); one that takes
+        longer than the stage timeout raises AnalyserTimeout so the job fails with a clear error."""
         try:
             audio = folder / safe_name(bm.info.song_file)
             if not audio.is_file():
                 return None
-            return self.client.analyse_file(audio, f"{map_id}.ogg")
+            stat = audio.stat()
+            key = (str(audio.resolve()), stat.st_size, stat.st_mtime_ns)
+            with self._analysis_lock:
+                hit = self._analyses.get(key)
+            if hit is not None and (hit.audio is None or hit.audio.exists()):
+                return hit
+            found = self.client.analyse_file(
+                audio, f"{map_id}.ogg", getattr(progress, "check", None)
+            )
+            with self._analysis_lock:
+                self._analyses[key] = found
+                while len(self._analyses) > ANALYSIS_CACHE:
+                    self._analyses.pop(next(iter(self._analyses)))
+            return found
+        except AnalyserTimeout:
+            raise
         except (AnalyserError, ValueError, MapParseError, OSError, KeyError):
             return None
 
-    def _scan(self, map_id: str, progress=None) -> tuple[int, bool]:
+    def _scan(self, map_id: str, progress=None) -> tuple[int, bool, int]:
+        checkpoint(progress, "decoding audio")
         folder = self._folder(map_id)
         bm = self._load(folder)
-        checkpoint(progress, "analysing audio")
-        analysis = self._analyse(map_id, bm, folder)  # slow HTTP call: the lock is not held
-        checkpoint(progress, "checking the map")
+        checkpoint(progress, "analysing beats")
+        analysis = self._analyse(map_id, bm, folder, progress)  # slow: the lock is not held
+        checkpoint(progress, "checking rules")
         templates = self._templates()
         seed = int(map_id[:8], 16)
         findings = run_checks(bm, analysis)
-        proposals = []
-        for finding in findings:
-            checkpoint(progress)
+        proposals, skipped = [], 0
+        deadline = time.monotonic() + PROPOSE_BUDGET_S
+        todo = sorted(findings, key=lambda f: f.severity != "error")  # errors are fixed first
+        for n, finding in enumerate(todo, 1):
+            if time.monotonic() > deadline:
+                skipped = len(todo) - n + 1
+                checkpoint(progress, f"time budget reached: {skipped} findings left unproposed")
+                break
+            checkpoint(progress, f"proposing fixes {n} of {len(todo)}" if n % 10 == 1 else None)
             p = propose(bm, finding, analysis, templates, seed)
             if p is not None:
                 proposals.append({**p.to_dict(), "finding": finding.to_dict()})
         project = analysis.audio.parent.name if analysis and analysis.audio else None
         scan = {"findings": [f.to_dict() for f in findings], "analysis": project}
-        checkpoint(progress)
+        if skipped:
+            scan["unproposed"] = skipped
+        checkpoint(progress, "storing findings")
         with self._lock:
             self.store.replace_open_proposals(map_id, proposals, scan)
-        return len(proposals), analysis is not None
+        return len(proposals), analysis is not None, skipped
 
     def scan(self, map_id: str) -> int:
         return self._scan(map_id)[0]
 
     def run_scan(self, map_id: str, progress=None) -> dict:
-        count, analysed = self._scan(map_id, progress)
-        return {"map_id": map_id, "proposals": count, "analysis": analysed}
+        count, analysed, skipped = self._scan(map_id, progress)
+        out = {"map_id": map_id, "proposals": count, "analysis": analysed}
+        return {**out, "unproposed": skipped} if skipped else out
 
     # apply -------------------------------------------------------------------
 

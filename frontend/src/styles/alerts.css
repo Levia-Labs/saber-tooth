@@ -207,3 +207,8 @@
   white-space: nowrap;
   border: 0;
 }
+.spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}

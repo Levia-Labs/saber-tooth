@@ -166,6 +166,7 @@ const ICONS = {
   pause: <path d="M8 5v14M16 5v14" />,
   playlist: <path d="M4 6h12M4 11h12M4 16h7M17 14v6l5-3z" />,
   plus: <path d="M12 5v14M5 12h14" />,
+  edit: <path d="M4 20h4L19.5 8.5l-4-4L4 16zM13.5 6.5l4 4" />,
   "tag-plus": (
     <>
       <path d="M3.5 12.5V4.5a1 1 0 0 1 1-1h8l8 8-8.5 8.5z" />
@@ -201,7 +202,9 @@ interface IconProps extends Omit<SVGProps<SVGSVGElement>, "name"> {
 }
 
 export function Icon({ name, filled = false, className, ...rest }: IconProps) {
-  const cls = ["ic", filled ? "ic-filled" : "", className ?? ""].filter(Boolean).join(" ");
+  // A spinner always turns: callers passing it as a plain icon name once rendered it frozen.
+  const spin = name === "spinner" && !className?.includes("alert-spin") ? "alert-spin" : "";
+  const cls = ["ic", filled ? "ic-filled" : "", spin, className ?? ""].filter(Boolean).join(" ");
   return (
     <svg viewBox="0 0 24 24" className={cls} aria-hidden="true" focusable="false" {...rest}>
       {ICONS[name]}

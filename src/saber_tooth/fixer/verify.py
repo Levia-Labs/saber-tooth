@@ -1,5 +1,7 @@
 """Proposal model and the acceptance check every candidate must pass."""
 
+import threading
+from bisect import bisect_left, bisect_right
 from collections import Counter
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
@@ -44,12 +46,33 @@ def find_same(findings: list[Finding], target: Finding) -> Finding | None:
 
 def new_findings(after: list[Finding], before: list[Finding]) -> list[Finding]:
     """Findings in `after` that match no `before` finding or are more severe than all matches."""
+    buckets: dict[tuple, list[Finding]] = {}
+    for b in before:
+        buckets.setdefault(finding_key(b), []).append(b)
+    index = {k: _Bucket(v) for k, v in buckets.items()}
     out = []
     for a in after:
-        rank = [_RANK[b.severity] for b in before if _same(a, b)]
-        if not rank or _RANK[a.severity] > max(rank):
+        bucket = index.get(finding_key(a))
+        top = bucket.top_rank(a) if bucket else None
+        if top is None or _RANK[a.severity] > top:
             out.append(a)
     return out
+
+
+class _Bucket:
+    """Findings of one identity sorted by start beat: range lookups without a pairwise scan."""
+
+    def __init__(self, findings: list[Finding]) -> None:
+        self.items = sorted(findings, key=lambda f: f.beat_start)
+        self.starts = [f.beat_start for f in self.items]
+        self.longest = max((f.beat_end - f.beat_start for f in self.items), default=0.0)
+
+    def top_rank(self, a: Finding) -> int | None:
+        """The highest severity rank among findings whose range overlaps or touches `a`'s."""
+        hi = bisect_right(self.starts, a.beat_end + EPS)
+        lo = bisect_left(self.starts, a.beat_start - EPS - self.longest)
+        ranks = [_RANK[b.severity] for b in self.items[lo:hi] if b.beat_end >= a.beat_start - EPS]
+        return max(ranks) if ranks else None
 
 
 @dataclass(frozen=True)
@@ -128,6 +151,25 @@ def _target_remains(target: Finding, before: list[Finding], after: list[Finding]
     return any(_overlaps(a, target) and not any(_overlaps(a, o) for o in others) for a in after)
 
 
+_BEFORE: list[tuple] = []  # (beatmap, analysis, names, findings), newest last
+_BEFORE_KEPT = 6
+_BEFORE_LOCK = threading.Lock()
+
+
+def _before(beatmap: Beatmap, names: set[str], analysis: Analysis | None) -> list[Finding]:
+    """Findings of the unchanged map: every candidate for every finding starts from the same
+    map, so they are computed once per map and difficulty set instead of once per candidate."""
+    with _BEFORE_LOCK:
+        for bm, an, nm, found in _BEFORE:
+            if bm is beatmap and an is analysis and nm == names:
+                return found
+    found = findings_for(beatmap, names, analysis)
+    with _BEFORE_LOCK:
+        _BEFORE.append((beatmap, analysis, frozenset(names), found))
+        del _BEFORE[:-_BEFORE_KEPT]
+    return found
+
+
 def accepts(ctx: Context, ops: list[Op]) -> list[Op] | None:
     """The fixed map must lose the target finding and gain no new one."""
     try:
@@ -135,7 +177,7 @@ def accepts(ctx: Context, ops: list[Op]) -> list[Op] | None:
     except OpConflict:
         return None
     names = _touched(ops) | {ctx.finding.difficulty}
-    before = findings_for(ctx.beatmap, names, ctx.analysis)
+    before = _before(ctx.beatmap, names, ctx.analysis)
     after = findings_for(fixed, names, ctx.analysis)
     target = next((b for b in before if _same(b, ctx.finding)), None)
     if target is None or _target_remains(target, before, after):

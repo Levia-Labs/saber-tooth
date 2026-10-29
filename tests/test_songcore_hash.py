@@ -1,7 +1,7 @@
 import hashlib
 import json
 
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from saber_tooth.playlists.songcore import HashCache, songcore_hash
@@ -78,6 +78,7 @@ def test_cache_follows_rewrite(tmp_path):
     assert cache.get(folder) != HAND
 
 
+@settings(deadline=None)  # file IO under load
 @given(
     a=st.binary(min_size=1, max_size=40),
     b=st.binary(min_size=1, max_size=40),

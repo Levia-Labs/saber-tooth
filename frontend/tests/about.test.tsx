@@ -44,6 +44,21 @@ describe("about page", () => {
     expect(screen.getByText(/Chroma, Noodle Extensions or Vivify/)).toBeInTheDocument();
   });
 
+  test("the tab bar stays put and only the content region scrolls, like the Library page", async () => {
+    mockFetch(() => ({}));
+    renderApp("/about");
+    const nav = await screen.findByRole("navigation", { name: "Section" });
+    const region = screen.getByRole("region", { name: "About content" });
+    expect(region).toHaveClass("lib-scroll");
+    expect(region).toHaveAttribute("tabindex", "0");
+    expect(region.contains(nav)).toBe(false);
+    expect(region.contains(screen.getByRole("list", { name: "Features" }))).toBe(true);
+    const page = region.closest("section") as HTMLElement;
+    expect(page).toHaveClass("library");
+    expect(page).not.toHaveClass("page");
+    expect(page.contains(nav)).toBe(true);
+  });
+
   test("explains how to use it as ordered steps", async () => {
     mockFetch(() => ({}));
     renderApp("/about");

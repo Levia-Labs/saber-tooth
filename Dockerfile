@@ -4,6 +4,8 @@ WORKDIR /build/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci
 COPY frontend ./
+# vite.config.ts reads the release version from pyproject.toml.
+COPY pyproject.toml /build/pyproject.toml
 RUN npm run build
 
 FROM python:3.12-slim

@@ -92,26 +92,15 @@ describe("local playlists", () => {
     await screen.findByText("Alpha");
   });
 
-  test("create flow: name, add a library song, save and export", async () => {
-    const created: unknown[] = [];
-    const { calls } = serve(created);
-    renderApp("/playlists");
+  test("New playlist and a row open the playlist page", async () => {
+    serve();
+    const { router } = renderApp("/playlists");
     await screen.findByText("Alpha");
-    fireEvent.click(screen.getByRole("button", { name: "New playlist" }));
-    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Mine" } });
-    expect(screen.getAllByText(/PlaylistManager refreshes/).length).toBeGreaterThan(0);
-    fireEvent.click(await screen.findByRole("button", { name: "Add Song 1" }));
-    fireEvent.change(screen.getByLabelText(/Subfolder/), { target: { value: "saber-tooth" } });
-    fireEvent.click(screen.getByRole("button", { name: "Save and export" }));
-    await waitFor(() => expect(created).toHaveLength(1));
-    expect(created[0]).toMatchObject({
-      title: "Mine",
-      folder: "saber-tooth",
-      songs: [{ map_id: item(1).id, song_name: "Song 1" }],
-    });
-    await waitFor(() =>
-      expect(calls.some((u) => u.pathname === "/api/playlists/n/export")).toBe(true),
-    );
+    fireEvent.click(screen.getByRole("link", { name: "New playlist" }));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/playlists/new"));
+    await router.navigate("/playlists");
+    fireEvent.click(await screen.findByRole("button", { name: "Alpha" }));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/playlists/a"));
   });
 
   test("delete asks first", async () => {

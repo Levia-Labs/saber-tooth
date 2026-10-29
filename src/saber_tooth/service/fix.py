@@ -9,7 +9,7 @@ from saber_tooth.checks import Finding, run_checks
 from saber_tooth.fixer import Proposal, apply_ops, propose_with_reason
 from saber_tooth.lightshow import Templates
 from saber_tooth.model import DIFFICULTIES, Beatmap
-from saber_tooth.service.util import map_id_for
+from saber_tooth.service.util import checkpoint, map_id_for
 from saber_tooth.service.writeout import write_fixed
 
 MAX_ROUNDS = 6
@@ -53,6 +53,7 @@ def fix_beatmap(
     max_rounds: int = MAX_ROUNDS,
     on_round: Callable[[int, int], None] | None = None,
     check: Callable[[], None] | None = None,
+    on_finding: Callable[[int, int, int], None] | None = None,  # (round, nth finding, findings)
 ) -> FixRun:
     """Fix findings one by one, each verified against the map as the earlier fixes left it.
 
@@ -68,7 +69,9 @@ def fix_beatmap(
         findings = sorted(run_checks(cur, analysis), key=_order)
         run.unfixed = []
         progressed = False
-        for f in findings:
+        for i, f in enumerate(findings, 1):
+            if on_finding and i % 25 == 1:
+                on_finding(n, i, len(findings))
             if check:
                 check()  # raises to stop the run before any result is written
             out = propose_with_reason(cur, f, analysis, templates, seed)
@@ -107,9 +110,15 @@ def fix_map(
     """
     folder = svc._folder(map_id)
     original = svc._load(folder)
-    analysis = svc._analyse(map_id, original, folder)
+    checkpoint(progress, "analysing beats")
+    analysis = svc._analyse(map_id, original, folder, progress)
     before = run_checks(original, analysis)
     on_round = (lambda n, total: progress(f"round {n} of {total}")) if progress else None
+    on_finding = (
+        (lambda n, i, total: progress(f"round {n} of {max_rounds}: finding {i} of {total}"))
+        if progress
+        else None
+    )
     run = fix_beatmap(
         original,
         analysis,
@@ -118,6 +127,7 @@ def fix_map(
         max_rounds,
         on_round,
         getattr(progress, "check", None),
+        on_finding,
     )
     check = getattr(progress, "check", None)
     if check:

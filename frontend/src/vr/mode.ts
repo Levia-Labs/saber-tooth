@@ -81,7 +81,8 @@ export function vrPath(pathname: string): string {
   if (/^\/?$/.test(pathname)) return "/vr";
   if (/^\/beatsaver\/?$/i.test(pathname)) return "/vr/beatsaver";
   if (/^\/jobs\/?$/i.test(pathname)) return "/vr/jobs";
-  if (/^\/playlists\/?$/i.test(pathname)) return "/vr/playlists";
+  const pl = /^\/playlists(\/[^/]+)?\/?$/i.exec(pathname);
+  if (pl) return `/vr/playlists${pl[1] ?? ""}`;
   const map = /^\/maps\/([^/]+)\/?$/i.exec(pathname);
   return map ? `/vr/maps/${map[1]}` : pathname;
 }
@@ -91,7 +92,8 @@ export function desktopPath(pathname: string): string {
   if (/^\/vr\/?$/i.test(pathname)) return "/";
   if (/^\/vr\/beatsaver\/?$/i.test(pathname)) return "/beatsaver";
   if (/^\/vr\/jobs\/?$/i.test(pathname)) return "/jobs";
-  if (/^\/vr\/playlists\/?$/i.test(pathname)) return "/playlists";
+  const vpl = /^\/vr\/playlists(\/[^/]+)?\/?$/i.exec(pathname);
+  if (vpl) return `/playlists${vpl[1] ?? ""}`;
   const map = /^\/vr\/maps\/([^/]+)\/?$/i.exec(pathname);
   return map ? `/maps/${map[1]}` : pathname;
 }

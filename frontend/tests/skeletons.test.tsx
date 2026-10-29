@@ -12,9 +12,7 @@ describe("skeleton loading states", () => {
     await vi.waitFor(() => expect(container.querySelector(".card-skeleton")).not.toBeNull());
     expect(container.querySelectorAll(".card-skeleton").length).toBeGreaterThan(0);
     expect(container.querySelector(".maphead[aria-busy='true']")).not.toBeNull();
-    for (const el of container.querySelectorAll(".sr-only")) {
-      expect(el).toHaveTextContent("Loading");
-    }
+    expect(screen.getAllByRole("status", { name: "Loading" }).length).toBeGreaterThan(0);
     const visible = [...container.querySelectorAll("p, span, div")].filter(
       (el) => !el.closest(".sr-only") && !el.classList.contains("sr-only"),
     );
@@ -33,7 +31,7 @@ describe("skeleton loading states", () => {
     );
     expect(container.querySelectorAll("[aria-busy='true']")).toHaveLength(3);
     expect(container.querySelectorAll(".card-skeleton")).toHaveLength(3);
-    expect(screen.getAllByText("Loading")).toHaveLength(3);
-    expect(screen.getAllByText("Loading")[0]).toHaveClass("sr-only");
+    expect(screen.getAllByRole("status", { name: "Loading" })).toHaveLength(3);
+    expect(container).not.toHaveTextContent(/loading/i);
   });
 });

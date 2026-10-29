@@ -1,12 +1,15 @@
-/** Loading placeholders shaped like the final layout, so nothing shifts when data arrives. */
-function Loading() {
-  return <span className="sr-only">Loading</span>;
-}
+/** Shimmering placeholders shaped like the final layout; the status role carries the name. */
 
 /** Map page header: cover, title, mapper line, chips and the tempo row. */
 export function MapHeadSkeleton() {
   return (
-    <div className="maphead" aria-busy="true" data-skeleton="true">
+    <div
+      className="maphead"
+      role="status"
+      aria-label="Loading"
+      aria-busy="true"
+      data-skeleton="true"
+    >
       <span className="sk cover cover-big" />
       <div className="mapmeta" aria-hidden="true">
         <span className="sk sk-title" />
@@ -17,7 +20,6 @@ export function MapHeadSkeleton() {
           <span className="sk sk-bar short sk-tempo" />
         </div>
       </div>
-      <Loading />
     </div>
   );
 }
@@ -25,7 +27,7 @@ export function MapHeadSkeleton() {
 /** Toolbar buttons plus collapsed proposal-card rows, same height as real collapsed cards. */
 export function FixesSkeleton({ count = 4 }: { count?: number }) {
   return (
-    <div aria-busy="true" data-skeleton="true">
+    <div role="status" aria-label="Loading" aria-busy="true" data-skeleton="true">
       <div className="map-toolbar" aria-hidden="true">
         <span className="sk sk-tool" />
         <span className="sk sk-tool" />
@@ -46,7 +48,6 @@ export function FixesSkeleton({ count = 4 }: { count?: number }) {
           </article>
         ))}
       </div>
-      <Loading />
     </div>
   );
 }
@@ -54,10 +55,9 @@ export function FixesSkeleton({ count = 4 }: { count?: number }) {
 /** Generic page fallback while a route chunk loads. */
 export function PageSkeleton() {
   return (
-    <div className="page" aria-busy="true" data-skeleton="true">
+    <div className="page" role="status" aria-label="Loading" aria-busy="true" data-skeleton="true">
       <span className="sk sk-title" aria-hidden="true" />
       <span className="sk sk-bar" aria-hidden="true" />
-      <Loading />
     </div>
   );
 }

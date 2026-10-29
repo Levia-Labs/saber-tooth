@@ -75,78 +75,87 @@ const STEPS = [
 export function AboutPage() {
   useDocumentTitle("About");
   return (
-    <section className="page about">
+    <section className="library about-page" aria-labelledby="about-heading">
       <div className="lib-bar">
         <div className="lib-title">
           <SectionTabs active="about" heading="About Saber Tooth" headingId="about-heading" />
         </div>
       </div>
+      <div
+        className="lib-scroll about-scroll"
+        role="region"
+        aria-label="About content"
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scroll region must take focus so the keyboard can scroll it
+        tabIndex={0}
+      >
+        <div className="about">
+          <header className="about-hero">
+            <Logo size={72} />
+            <div>
+              <p className="about-name">Saber Tooth</p>
+              <p className="about-lead">
+                A local tool that makes Beat Saber custom maps playable. One Fix click adds missing
+                difficulties and repairs impossible or uncomfortable patterns, then saves a new copy
+                next to the original.
+              </p>
+              <ul className="about-badges" aria-label="Highlights">
+                <li>Runs on your computer</li>
+                <li>Original maps untouched</li>
+                <li>Vanilla features only</li>
+              </ul>
+            </div>
+          </header>
 
-      <header className="about-hero">
-        <Logo size={72} />
-        <div>
-          <p className="about-name">Saber Tooth</p>
-          <p className="about-lead">
-            A local tool that makes Beat Saber custom maps playable. One Fix click adds missing
-            difficulties and repairs impossible or uncomfortable patterns, then saves a new copy
-            next to the original.
-          </p>
-          <ul className="about-badges" aria-label="Highlights">
-            <li>Runs on your computer</li>
-            <li>Original maps untouched</li>
-            <li>Vanilla features only</li>
+          <h2>What it does</h2>
+          <ul className="about-grid" aria-label="Features">
+            {FEATURES.map((f) => (
+              <li key={f.title} className="about-card">
+                <span className="about-icon">
+                  <Icon name={f.icon} />
+                </span>
+                <h3>{f.title}</h3>
+                <p>{f.text}</p>
+              </li>
+            ))}
           </ul>
+
+          <h2>How to use it</h2>
+          <ol className="about-steps" aria-label="How to use it">
+            {STEPS.map((s) => (
+              <li key={s}>{s}</li>
+            ))}
+          </ol>
+
+          <h2>Good to know</h2>
+          <ul className="about-notes">
+            <li>
+              <strong>Vanilla only.</strong> Chroma, Noodle Extensions or Vivify are never required;
+              lighting uses the vanilla environments.
+            </li>
+            <li>
+              <strong>Private.</strong> Saber Tooth only talks to BeatSaver when you search or
+              download there, and to the beat-analyser when it needs the audio.
+            </li>
+            <li>
+              <strong>Your maps are safe.</strong> Fix, Apply and Crop write new folders. Only Save
+              over this map in Crop and Delete change an existing folder, and both ask first.
+            </li>
+          </ul>
+
+          <h2>Links</h2>
+          <ul className="about-links">
+            {LINKS.map((l) => (
+              <li key={l.href}>
+                <a href={l.href} target="_blank" rel="noopener noreferrer">
+                  {l.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+
+          <p className="muted about-version">Version {__APP_VERSION__}</p>
         </div>
-      </header>
-
-      <h2>What it does</h2>
-      <ul className="about-grid" aria-label="Features">
-        {FEATURES.map((f) => (
-          <li key={f.title} className="about-card">
-            <span className="about-icon">
-              <Icon name={f.icon} />
-            </span>
-            <h3>{f.title}</h3>
-            <p>{f.text}</p>
-          </li>
-        ))}
-      </ul>
-
-      <h2>How to use it</h2>
-      <ol className="about-steps" aria-label="How to use it">
-        {STEPS.map((s) => (
-          <li key={s}>{s}</li>
-        ))}
-      </ol>
-
-      <h2>Good to know</h2>
-      <ul className="about-notes">
-        <li>
-          <strong>Vanilla only.</strong> Chroma, Noodle Extensions or Vivify are never required;
-          lighting uses the vanilla environments.
-        </li>
-        <li>
-          <strong>Private.</strong> Saber Tooth only talks to BeatSaver when you search or download
-          there, and to the beat-analyser when it needs the audio.
-        </li>
-        <li>
-          <strong>Your maps are safe.</strong> Fix, Apply and Crop write new folders. Only Save over
-          this map in Crop and Delete change an existing folder, and both ask first.
-        </li>
-      </ul>
-
-      <h2>Links</h2>
-      <ul className="about-links">
-        {LINKS.map((l) => (
-          <li key={l.href}>
-            <a href={l.href} target="_blank" rel="noopener noreferrer">
-              {l.label}
-            </a>
-          </li>
-        ))}
-      </ul>
-
-      <p className="muted about-version">Version {__APP_VERSION__}</p>
+      </div>
     </section>
   );
 }

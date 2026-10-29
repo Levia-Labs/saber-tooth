@@ -33,10 +33,15 @@ const LENGTHS: { key: Choice; label: string }[] = [
 
 function CropSkeleton() {
   return (
-    <div className="crop-skeleton" aria-busy="true" data-skeleton="true">
+    <div
+      className="crop-skeleton"
+      role="status"
+      aria-label="Loading"
+      aria-busy="true"
+      data-skeleton="true"
+    >
       <span className="sk sk-bar short" />
       <span className="sk crop-skeleton-chart" />
-      <span className="sr-only">Loading</span>
     </div>
   );
 }

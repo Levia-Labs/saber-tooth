@@ -87,6 +87,46 @@ async function pickMap(base) {
   return { crop, status: usable[0] ?? crop };
 }
 
+/** A canned playlist for the edit page shots: real library maps plus one missing song; nothing is written. */
+async function demoPlaylist(base) {
+  const items = (await getJson(`${base}/api/maps?limit=8`)).items ?? [];
+  const songs = items.map((m) => ({
+    map_id: m.id,
+    hash: m.id.toUpperCase().padEnd(40, "0"),
+    key: null,
+    song_name: m.title,
+    mapper: m.mapper,
+    missing: false,
+    cover_url: m.cover_url,
+    map: m,
+  }));
+  songs.push({
+    map_id: null,
+    hash: "B".repeat(40),
+    key: "1a2b",
+    song_name: "A song that is not installed",
+    mapper: "Somebody",
+    missing: true,
+    cover_url: null,
+    map: null,
+  });
+  return {
+    id: "screenshot",
+    title: "Late night drive",
+    author: "saber-tooth",
+    description: "",
+    folder: "saber-tooth",
+    sync: true,
+    sync_url: `${base}/api/playlists/screenshot/bplist`,
+    exported: "",
+    updated_at: "t",
+    songs_count: songs.length,
+    missing_count: 1,
+    cover_url: items[0]?.cover_url ?? null,
+    songs,
+  };
+}
+
 async function settle(page) {
   // Pages that poll (jobs, VR status) are never idle for long: wait a while, then shoot anyway.
   await page.waitForNetworkIdle({ idleTime: 500, timeout: 8000 }).catch(() => undefined);
@@ -120,6 +160,7 @@ async function main() {
   const { crop, status } = await pickMap(base);
   const desktop = { width: opt.width, height: opt.height };
   const vr = { width: 1920, height: 1080 };
+  const demo = JSON.stringify(await demoPlaylist(base));
   const shots = [
     ["library", "/", desktop, null],
     ["map-status", `/maps/${status.id}`, desktop, null],
@@ -137,6 +178,8 @@ async function main() {
     ["vr-about", "/about?mode=vr", vr, null],
     ["vr-playlists", "/beatsaver/playlists?mode=vr", vr, null],
     ["vr-local-playlists", "/vr/playlists", vr, null],
+    ["playlist-edit", "/playlists/screenshot", desktop, null],
+    ["vr-playlist-edit", "/vr/playlists/screenshot", vr, null],
   ];
   const picked = shots.filter(([name]) => !opt.only.length || opt.only.includes(name));
   const plan = opt.sizes.length
@@ -156,9 +199,12 @@ async function main() {
   try {
     const page = await browser.newPage();
     await page.setRequestInterception(true);
-    page.on("request", (req) =>
-      ["GET", "HEAD"].includes(req.method()) ? req.continue() : req.abort(),
-    );
+    page.on("request", (req) => {
+      if (new URL(req.url()).pathname === "/api/playlists/screenshot") {
+        void req.respond({ status: 200, contentType: "application/json", body: demo });
+      } else if (["GET", "HEAD"].includes(req.method())) void req.continue();
+      else void req.abort();
+    });
     for (const [name, path, size, wait] of plan) {
       try {
         await page.setViewport(size);

@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 
 from saber_tooth.api.core import JOB_ID, MAP_ID, Api, ApiError
-from saber_tooth.api.library import MAX_COVER_BYTES
+from saber_tooth.api.library import MAX_COVER_BYTES, shape_item
 from saber_tooth.api.web_routes import read_cover
 from saber_tooth.beatsaver.playlists import (
     BadSubfolder,
@@ -102,6 +102,13 @@ class PlaylistsApi:
                 s.pop("hash", None)
         return fields
 
+    def _item(self, map_id: str | None) -> dict | None:
+        """The song's library item, shaped as in GET /api/maps, or None."""
+        row = self.api.store.get_map(map_id) if map_id else None
+        if row is None:
+            return None
+        return shape_item(row, self.api.service.levels, self.api.extras)
+
     def view(self, rec: dict, lib: Library, base: str, full: bool = False) -> dict:
         songs = resolve_all(rec, lib)
         has_cover = self.store.cover(rec["id"]) is not None
@@ -120,6 +127,7 @@ class PlaylistsApi:
         if full:
             for s in songs:
                 s["cover_url"] = f"/api/maps/{s['map_id']}/cover" if s["map_id"] else None
+                s["map"] = self._item(s["map_id"])
             out["songs"] = songs
         return out
 

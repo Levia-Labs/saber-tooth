@@ -1,5 +1,10 @@
 /* About page: a hero, a grid of feature cards, numbered steps and notes. Sizes are rem or em so the
    VR scale (vr.css) carries through; the grid wraps on its own from phone to 2560 px wide. */
+.about-scroll {
+  min-height: 0;
+  background: transparent;
+  border: 0;
+}
 .about {
   max-width: 72rem;
   margin: 0 auto;

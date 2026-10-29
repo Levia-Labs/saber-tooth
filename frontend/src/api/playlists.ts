@@ -1,6 +1,7 @@
 // Local playlists: the saved .bplist sources, built from library maps and job output.
 import { useQuery } from "@tanstack/react-query";
 import { request } from "./client";
+import type { MapItem } from "./types";
 import { retry } from "./queries";
 
 export interface PlaylistSong {
@@ -12,6 +13,8 @@ export interface PlaylistSong {
   /** No installed map matches the song's hash. */
   missing: boolean;
   cover_url?: string | null;
+  /** The library item of an installed song; null when missing. */
+  map?: MapItem | null;
 }
 
 export interface Playlist {
