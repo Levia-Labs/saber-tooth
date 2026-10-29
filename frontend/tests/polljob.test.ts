@@ -56,4 +56,20 @@ describe("pollJob", () => {
     await p;
     expect(watchedJobs.has("j1")).toBe(false);
   });
+
+  test("two polls on one id: aborting the first keeps the id watched", async () => {
+    const first = new AbortController();
+    const p1 = pollJob("j1", first.signal, () => {});
+    const p2 = pollJob("j1", new AbortController().signal, () => {});
+    const s1 = expect(p1).rejects.toThrow("cancelled");
+    await vi.advanceTimersByTimeAsync(10);
+    first.abort();
+    await vi.advanceTimersByTimeAsync(10);
+    await s1;
+    expect(watchedJobs.has("j1")).toBe(true);
+    state = { status: "done" };
+    await vi.advanceTimersByTimeAsync(5000);
+    await p2;
+    expect(watchedJobs.has("j1")).toBe(false);
+  });
 });

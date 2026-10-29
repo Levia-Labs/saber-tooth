@@ -28,9 +28,9 @@ export class JobFailed extends Error {
   }
 }
 
-const watched = new Set<string>();
+const watched = new Map<string, number>(); // live pollJob calls per id
 /** Ids a live pollJob is polling; the toast watcher leaves these to their page. */
-export const watchedJobs: ReadonlySet<string> = watched;
+export const watchedJobs: { has(id: string): boolean } = { has: (id) => watched.has(id) };
 
 /** Poll a job to its end with backoff to 3 s; gives up 30 minutes after it starts running, never while queued. */
 export async function pollJob(
@@ -38,7 +38,7 @@ export async function pollJob(
   signal: AbortSignal,
   onStatus: (status: string) => void,
 ): Promise<Job> {
-  watched.add(jobId);
+  watched.set(jobId, (watched.get(jobId) ?? 0) + 1);
   try {
     let deadline = Number.POSITIVE_INFINITY; // the 30 minutes start once the job runs
     let delay = FIRST_DELAY_MS;
@@ -68,7 +68,9 @@ export async function pollJob(
     if (signal.aborted) throw new JobFailed("cancelled");
     throw new JobFailed("timed out after 30 minutes");
   } finally {
-    watched.delete(jobId);
+    const left = (watched.get(jobId) ?? 1) - 1;
+    if (left > 0) watched.set(jobId, left);
+    else watched.delete(jobId);
   }
 }
 
