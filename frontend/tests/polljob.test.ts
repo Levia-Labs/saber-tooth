@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { JobFailed, pollJob, watchedJobs } from "../src/api/jobs";
+import { JobFailed, ownedJobs, pollJob, watchedJobs } from "../src/api/jobs";
 import { mockFetch } from "./helpers";
 
 const MIN = 60_000;
@@ -55,6 +55,28 @@ describe("pollJob", () => {
     await vi.advanceTimersByTimeAsync(5000);
     await p;
     expect(watchedJobs.has("j1")).toBe(false);
+  });
+
+  test("ownedJobs keeps a job whose poll settled from the server, not one that was aborted", async () => {
+    state = { status: "done" };
+    const p = pollJob("j7", new AbortController().signal, () => {});
+    await vi.advanceTimersByTimeAsync(10);
+    await p;
+    expect(watchedJobs.has("j7")).toBe(false);
+    expect(ownedJobs.has("j7")).toBe(true);
+    state = { status: "failed" };
+    const bad = expect(pollJob("j8", new AbortController().signal, () => {})).rejects.toThrow();
+    await vi.advanceTimersByTimeAsync(10);
+    await bad;
+    expect(ownedJobs.has("j8")).toBe(true);
+    state = { status: "running" };
+    const ctl = new AbortController();
+    const gone = expect(pollJob("j9", ctl.signal, () => {})).rejects.toThrow("cancelled");
+    await vi.advanceTimersByTimeAsync(10);
+    ctl.abort();
+    await vi.advanceTimersByTimeAsync(10);
+    await gone;
+    expect(ownedJobs.has("j9")).toBe(false);
   });
 
   test("two polls on one id: aborting the first keeps the id watched", async () => {

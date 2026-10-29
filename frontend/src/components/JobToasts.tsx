@@ -2,7 +2,7 @@
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import { useJobLists } from "../api/joblist";
-import { watchedJobs } from "../api/jobs";
+import { ownedJobs } from "../api/jobs";
 import { planToasts, SUMMARY_KEY, type ToastPlan } from "../lib/jobtoasts";
 import { useAnnounce, useWithdraw } from "./Announcer";
 
@@ -16,7 +16,7 @@ export function JobToasts() {
   const shownSummary = useRef<string | null>(null);
 
   useEffect(() => {
-    const plan = planToasts(prev.current, lists, watchedJobs);
+    const plan = planToasts(prev.current, lists, ownedJobs);
     prev.current = plan.next;
     for (const key of plan.withdraw) withdraw(key);
     for (const t of plan.show) {
@@ -28,10 +28,17 @@ export function JobToasts() {
       shownSummary.current = t.title;
       announce({
         ...t,
-        actions: [{ label: "Show jobs", onClick: () => navigate("/jobs") }],
-        onDismiss: () => {
-          summaryClosed.current = true;
-        },
+        // The summary is a progress toast without a close button; its action is the only way to
+        // close it, so pressing it marks it closed until the count drops to 4 or fewer.
+        actions: [
+          {
+            label: "Show jobs",
+            onClick: () => {
+              summaryClosed.current = true;
+              navigate("/jobs");
+            },
+          },
+        ],
       });
     }
     if (!plan.summary) {

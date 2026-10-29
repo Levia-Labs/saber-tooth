@@ -55,9 +55,10 @@ export function planToasts(
   for (const job of active) {
     const key = toastKey(job);
     const message = activeMessage(job);
-    next.set(job.id, { key, message });
+    // A folded job is tracked with an empty message so it is announced again once the summary unfolds.
+    next.set(job.id, { key, message: folded ? "" : message });
     if (folded) {
-      if (prev.has(job.id)) withdraw.push(key);
+      if (prev.get(job.id)?.message) withdraw.push(key);
     } else if (prev.get(job.id)?.message !== message) {
       show.push({ key, variant: "progress", title: toastTitle(job), message });
     }

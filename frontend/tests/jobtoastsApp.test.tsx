@@ -62,6 +62,77 @@ describe("job toast watcher", () => {
     await waitFor(() => expect(router.state.location.pathname).toBe("/jobs"));
   });
 
+  test("a closed summary stays closed while folded and returns after the count drops and rises", async () => {
+    const mk = (n: number) =>
+      Array.from({ length: n }, (_, i) =>
+        view(`q${i}`, "queued", { map_id: `m${i}`, title: `Song ${i}`, position: i + 1 }),
+      );
+    const run = view("r", "running", { map_id: "mr", title: "Song r" });
+    const { state, calls } = api({ running: [run], queued: mk(5), recent: [] });
+    const { router } = renderApp("/");
+    expect(await toasts().findByText("1 running, 5 waiting")).toBeInTheDocument();
+    await userEvent.setup().click(toasts().getByRole("button", { name: "Show jobs" }));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/jobs"));
+    const polls = () => calls.filter((u) => u.pathname === "/api/jobs").length;
+    const before = polls();
+    state.jobs = { running: [run], queued: mk(6), recent: [] };
+    await waitFor(() => expect(polls()).toBeGreaterThan(before + 1), { timeout: 8000 });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 100));
+    });
+    expect(toasts().queryByText(/waiting/)).toBeNull();
+    state.jobs = { running: [], queued: mk(3), recent: [] };
+    await waitFor(() => expect(toasts().getAllByText(/^Fix Song \d$/)).toHaveLength(3), {
+      timeout: 8000,
+    });
+    state.jobs = { running: [run], queued: mk(5), recent: [] };
+    expect(await toasts().findByText("1 running, 5 waiting", {}, { timeout: 8000 })).toBeVisible();
+  }, 40_000);
+
+  test("a page-finished job is not adopted from a stale running list", async () => {
+    const report = {
+      map_id: "id0000000001",
+      folder: "Folder 1 [saber-tooth]",
+      fixed_id: "id0000000099",
+      applied: 7,
+      errors: 0,
+      before: {},
+      after: {},
+      unfixed: [],
+    };
+    report.before = { Easy: { errors: { "missing-difficulty": 1 }, warnings: {} } };
+    // An unrelated running job keeps the jobs list polling every 2 s.
+    const other = view("jx", "running", { kind: "scan", map_id: "mx", progress: "busy" });
+    const { state, calls } = api({ running: [other], queued: [], recent: [] }, (url) =>
+      url.pathname === "/api/jobs/jf"
+        ? { id: "jf", kind: "fix", error: null, status: "done", result: report }
+        : undefined,
+    );
+    renderApp("/");
+    const link = await screen.findByRole("link", { name: "Song 1" });
+    await userEvent.setup().click(
+      within(link.closest("[role=row]") as HTMLElement).getByRole("button", {
+        name: "Fix Song 1",
+      }),
+    );
+    // The cached list still shows the finished job as running.
+    state.jobs = { running: [other, view("jf", "running")], queued: [], recent: [] };
+    await toasts().findByText("Fixed: written to Folder 1 [saber-tooth]", {}, { timeout: 5000 });
+    const polls = () => calls.filter((u) => u.pathname === "/api/jobs").length;
+    const before = polls();
+    await waitFor(() => expect(polls()).toBeGreaterThan(before), { timeout: 4000 });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 300));
+    });
+    expect(toasts().getByText("Fixed: written to Folder 1 [saber-tooth]")).toBeInTheDocument();
+    expect(toasts().queryByText("Running")).toBeNull();
+    state.jobs = { running: [other], queued: [], recent: [view("jf", "done")] };
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 2500));
+    });
+    expect(toasts().queryByText("Done")).toBeNull();
+  }, 40_000);
+
   test("a stub that answers {} for everything raises no job toast", async () => {
     const { calls } = api({});
     renderApp("/");

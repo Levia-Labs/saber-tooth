@@ -100,6 +100,19 @@ describe("planToasts", () => {
     expect(finished.map((t) => [t.key, t.variant])).toEqual([["Fix:m-b", "danger"]]);
   });
 
+  test("per-job toasts come back when the summary unfolds with unchanged messages", () => {
+    const six = Array.from({ length: 6 }, (_, i) => v(`q${i}`, "queued", { position: i + 1 }));
+    const folded = planToasts(new Map(), lists({ queued: six }), none);
+    expect(folded.summary).not.toBeNull();
+    const back = planToasts(folded.next, lists({ queued: six.slice(0, 3) }), none);
+    expect(back.summary).toBeNull();
+    expect(back.show.map((t) => [t.key, t.variant])).toEqual([
+      ["Fix:m-q0", "progress"],
+      ["Fix:m-q1", "progress"],
+      ["Fix:m-q2", "progress"],
+    ]);
+  });
+
   test("keys match the page keys", () => {
     expect(toastKey(v("a", "running"))).toBe("Fix:m-a");
     expect(toastKey(v("g", "queued", { kind: "generate", map_id: null }))).toBe("generate-job-g");

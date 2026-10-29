@@ -32,6 +32,12 @@ const watched = new Map<string, number>(); // live pollJob calls per id
 /** Ids a live pollJob is polling; the toast watcher leaves these to their page. */
 export const watchedJobs: { has(id: string): boolean } = { has: (id) => watched.has(id) };
 
+const settled = new Set<string>(); // ids whose poll ended on a server verdict, for this session
+/** Ids the toast watcher must not adopt: being polled now, or already finished by their page. */
+export const ownedJobs: { has(id: string): boolean } = {
+  has: (id) => watched.has(id) || settled.has(id),
+};
+
 /** Poll a job to its end with backoff to 3 s; gives up 30 minutes after it starts running, never while queued. */
 export async function pollJob(
   jobId: string,
@@ -47,6 +53,9 @@ export async function pollJob(
       try {
         const job = await getJob(jobId);
         fails = 0;
+        if (job.status === "done" || job.status === "failed" || job.status === "cancelled") {
+          settled.add(jobId); // the page announces this end; a stale list must not re-announce it
+        }
         if (job.status === "done") return job;
         if (job.status === "failed") throw new JobFailed(job.error ?? "job failed", job);
         if (job.status === "cancelled") throw new JobFailed("cancelled", job);
