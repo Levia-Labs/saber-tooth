@@ -95,9 +95,8 @@ def test_the_new_folders_have_a_readme_listing_their_modules():
     for name in ("model.py", "openxr.py", "probe.py", "readers.py", "worn.py"):
         assert name in py
     ts = read("frontend/src/vr/README.md")
-    for name in ("status.ts", "mode.ts", "VrMode.tsx", "VrLibraryPage.tsx", "VrMapPage.tsx"):
+    for name in ("status.ts", "mode.ts", "VrMode.tsx", "VrBanner.tsx", "ModeSwitch.tsx"):
         assert name in ts
-    assert "VrBeatSaverPage.tsx" in ts and "ModeSwitch.tsx" in ts
 
 
 def test_the_spec_amendment_records_the_shipped_changes():

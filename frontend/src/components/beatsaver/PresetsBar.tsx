@@ -105,7 +105,9 @@ export function PresetsBar({ state, onApply }: Props) {
         return (
           <span key={p.id} className={`preset${active ? " active" : ""}`}>
             <Tip
-              text={`${describePreset(p.filters)} ${active ? "Click to clear." : "Click to apply."}`}
+              text={`${describePreset(p.filters)} ${
+                active ? "Click to clear." : "Click to apply."
+              }`}
             >
               <button
                 type="button"

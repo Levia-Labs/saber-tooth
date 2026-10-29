@@ -80,6 +80,7 @@ export function writeDismissed(storage: Storage | null = area("session")): void 
 export function vrPath(pathname: string): string {
   if (/^\/?$/.test(pathname)) return "/vr";
   if (/^\/beatsaver\/?$/i.test(pathname)) return "/vr/beatsaver";
+  if (/^\/jobs\/?$/i.test(pathname)) return "/vr/jobs";
   const map = /^\/maps\/([^/]+)\/?$/i.exec(pathname);
   return map ? `/vr/maps/${map[1]}` : pathname;
 }
@@ -88,6 +89,7 @@ export function vrPath(pathname: string): string {
 export function desktopPath(pathname: string): string {
   if (/^\/vr\/?$/i.test(pathname)) return "/";
   if (/^\/vr\/beatsaver\/?$/i.test(pathname)) return "/beatsaver";
+  if (/^\/vr\/jobs\/?$/i.test(pathname)) return "/jobs";
   const map = /^\/vr\/maps\/([^/]+)\/?$/i.exec(pathname);
   return map ? `/maps/${map[1]}` : pathname;
 }

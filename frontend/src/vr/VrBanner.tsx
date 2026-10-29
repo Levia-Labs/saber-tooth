@@ -24,7 +24,9 @@ export function VrBanner() {
       sticky: true,
       onDismiss: () => latest.current.dismissBanner(),
       title: "Headset in use: switch to VR layout?",
-      message: `${runtime ?? "A headset runtime"} is running. The VR layout has large buttons and text for the headset.`,
+      message: `${
+        runtime ?? "A headset runtime"
+      } is running. The VR layout has large buttons and text for the headset.`,
       actions: [
         { label: "Switch", onClick: () => latest.current.choose("vr") },
         { label: "Not now", onClick: () => latest.current.dismissBanner() },

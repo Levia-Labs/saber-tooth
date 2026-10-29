@@ -7,6 +7,7 @@ function api() {
   return mockFetch((url) => {
     if (url.pathname === "/api/maps") return { items: [item(1)], total: 1, offset: 0, limit: 40 };
     if (url.pathname === "/api/maps/id0000000001") return item(1);
+    if (url.pathname.endsWith("/proposals")) return [];
     if (url.pathname === "/api/beatsaver/search") return page([bsMap(1)]);
     if (url.pathname === "/api/beatsaver/presets") return [SEEDED];
     return {};
@@ -14,28 +15,29 @@ function api() {
 }
 
 describe("VR routes", () => {
-  test("/vr is the VR library inside the shell", async () => {
+  test("/vr is the desktop library table under the VR styling", async () => {
     api();
     renderApp("/vr");
     expect(await screen.findByRole("heading", { name: "Library", level: 1 })).toBeInTheDocument();
-    expect(await screen.findByRole("heading", { name: "Song 1" })).toBeInTheDocument();
+    expect(await screen.findByText("Song 1")).toBeInTheDocument();
     expect(screen.getByRole("banner")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Fix Song 1" })).toBeInTheDocument();
+    expect(document.documentElement.dataset.ui).toBe("vr");
   });
 
-  test("/vr/maps/:id is the VR map screen", async () => {
+  test("/vr/maps/:id is the desktop map page", async () => {
     api();
     renderApp("/vr/maps/id0000000001");
-    expect(await screen.findByRole("heading", { name: "Song 1", level: 1 })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "Crop to a highlight" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Song 1" })).toBeInTheDocument();
+    expect(document.documentElement.dataset.ui).toBe("vr");
   });
 
-  test("/vr/beatsaver is the VR BeatSaver screen", async () => {
+  test("/vr/beatsaver is the desktop BeatSaver page", async () => {
     api();
     renderApp("/vr/beatsaver");
-    expect(await screen.findByRole("heading", { name: "BeatSaver", level: 1 })).toBeInTheDocument();
-    expect(await screen.findByRole("button", { name: "Download Song 1" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("navigation", { name: "BeatSaver sections" }),
+    ).toBeInTheDocument();
+    expect(document.documentElement.dataset.ui).toBe("vr");
   });
 
   test("an unknown VR path still reaches the not-found page", async () => {

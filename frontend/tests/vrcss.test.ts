@@ -40,10 +40,17 @@ function rules(): Rule[] {
 const px = (name: string) => Number(new RegExp(`${name}:\\s*(\\d+)px`).exec(bare)?.[1]);
 
 describe("vr.css", () => {
-  test("sets the design sizes: 22 px text, 64 px targets, 16 px gaps", () => {
-    expect(px("--vr-text")).toBeGreaterThanOrEqual(22);
-    expect(px("--vr-target")).toBeGreaterThanOrEqual(64);
-    expect(px("--vr-gap")).toBeGreaterThanOrEqual(16);
+  test("sets the design sizes at 2x: 32 px text, 88 px targets, 32 px gaps", () => {
+    expect(px("--vr-text")).toBeGreaterThanOrEqual(32);
+    expect(px("--vr-target")).toBeGreaterThanOrEqual(88);
+    expect(px("--vr-gap")).toBeGreaterThanOrEqual(32);
+  });
+
+  test("rem-sized regular pages scale 2x and the column is centered", () => {
+    const root = rules().find((r) => r.selectors.includes(':root[data-ui="vr"]'));
+    expect(root?.body).toMatch(/font-size:\s*32px/);
+    const main = rules().find((r) => r.selectors.includes('[data-ui="vr"] main'));
+    expect(main?.body).toMatch(/margin-inline:\s*auto/);
   });
 
   test("every rule is scoped under [data-ui=vr]", () => {
@@ -53,7 +60,7 @@ describe("vr.css", () => {
     expect(loose).toEqual([]);
   });
 
-  test("buttons, links styled as buttons, selects and inputs get 64 px targets", () => {
+  test("buttons, links styled as buttons, selects and inputs get 88 px targets", () => {
     const rule = rules().find((r) => /min-height:\s*var\(--vr-target\)/.test(r.body));
     expect(rule).toBeDefined();
     const text = rule!.selectors.join(" ");
@@ -63,14 +70,14 @@ describe("vr.css", () => {
     expect(rule!.body).toMatch(/min-width:\s*var\(--vr-target\)/);
   });
 
-  test("base text is the 22 px token and no literal font size is smaller", () => {
+  test("base text is the 32 px token and no literal font size is smaller", () => {
     const body = rules().find((r) => r.selectors.some((s) => s.endsWith(" body")));
     expect(body?.body).toMatch(/font-size:\s*var\(--vr-text\)/);
     const literals = [...bare.matchAll(/font-size:\s*(\d+(?:\.\d+)?)px/g)].map((m) => Number(m[1]));
     expect(literals.every((n) => n >= 22)).toBe(true);
   });
 
-  test("gaps use the 16 px token and no literal gap is smaller", () => {
+  test("gaps use the 32 px token and no literal gap is smaller", () => {
     expect(rules().some((r) => /gap:\s*var\(--vr-gap\)/.test(r.body))).toBe(true);
     const literals = [...bare.matchAll(/(?<![-\w])gap:\s*(\d+(?:\.\d+)?)px/g)].map((m) =>
       Number(m[1]),
@@ -92,17 +99,9 @@ describe("vr.css", () => {
     expect(rule?.body).toMatch(/display:\s*none/);
   });
 
-  test("the card grid has one to three columns by container width", () => {
-    expect(bare).toMatch(/container-type:\s*inline-size/);
-    expect(bare).toMatch(/@container \(min-width: 900px\)/);
-    expect(bare).toMatch(/@container \(min-width: 1500px\)/);
-    expect(bare).toMatch(/repeat\(2, 1fr\)/);
-    expect(bare).toMatch(/repeat\(3, 1fr\)/);
-  });
-
-  test("filter toggles align to the top, so a one-line help does not sit lower than a two-line one", () => {
-    const rule = css.match(/\[data-ui="vr"\] \.vr-toggles \{([^}]*)\}/)?.[1] ?? "";
-    expect(rule).toMatch(/align-items:\s*flex-start/);
+  test("table rows and header are the desktop heights doubled", () => {
+    expect(px("--row-h")).toBe(144);
+    expect(px("--head-h")).toBe(88);
   });
 
   test("high contrast tokens: white ink on a dark panel", () => {
@@ -113,5 +112,26 @@ describe("vr.css", () => {
   test("main.tsx imports vr.css last so it wins over the desktop rules", () => {
     const imports = [...read("../src/main.tsx").matchAll(/import "\.\/styles\/([\w-]+\.css)";/g)];
     expect(imports.at(-1)?.[1]).toBe("vr.css");
+  });
+});
+
+describe("toast stack", () => {
+  const alerts = read("../src/styles/alerts.css");
+  const block = (sel: string) =>
+    alerts.match(new RegExp(`(?:^|\\n)${sel.replace(/[.]/g, "\\.")} \\{([^}]*)\\}`))?.[1] ?? "";
+
+  test("is centered and each toast fits its content up to a cap", () => {
+    expect(block(".toast-stack")).toMatch(/margin:\s*0 auto/);
+    expect(block(".toast-stack")).toMatch(/align-items:\s*center/);
+    expect(block(".toast-stack .toast")).toMatch(/width:\s*fit-content/);
+    expect(block(".toast-stack .toast")).toMatch(/max-width:/);
+  });
+
+  test("keeps a 16 px side gutter on a phone", () => {
+    expect(alerts).toMatch(/max-width: 640px\)[^@]*width:\s*calc\(100% - 2rem\)/);
+  });
+
+  test("the VR stack centers its toasts too", () => {
+    expect(bare).toMatch(/\.toast-stack \{[^}]*align-items:\s*center/);
   });
 });

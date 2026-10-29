@@ -1,6 +1,6 @@
 # VR mode
 
-A layout of saber-tooth for use through a headset: large cards and buttons, 22 px text, 64 px targets, 16 px gaps and high contrast. It has three screens: the Library (`/vr`), a map with Fix, Delete and crop (`/vr/maps/:id`) and BeatSaver (`/vr/beatsaver`). Map review and New map stay in the desktop layout. The immersive WebXR dashboard is a later phase with its own spec.
+A layout of saber-tooth for use through a headset: the desktop pages at 2x scale (32 px text, 88 px targets, 32 px gaps, doubled table rows) in one centered column with high contrast. The functions and layout are the desktop ones: the Library table (`/vr`), the map page (`/vr/maps/:id`), BeatSaver (`/vr/beatsaver`) and Jobs (`/vr/jobs`). Other pages (About, New, BeatSaver playlists) keep their desktop path and get the VR styling. The immersive WebXR dashboard is a later phase with its own spec.
 
 ## Opening it
 
@@ -11,7 +11,7 @@ The layout is chosen in this order, first match wins:
 3. a standalone headset browser (Meta Quest Browser, Pico, Wolvic) is VR;
 4. otherwise desktop. If the host helper reports a headset runtime, a toast titled "Headset in use: switch to VR layout?" stays at the bottom with Switch and Not now. Switch changes the layout and remembers the choice; Not now (or closing the toast) hides it for the session.
 
-The VR / Desktop switch in the masthead, next to About, changes the layout and remembers it. Pages without a VR twin (About, New, playlists on the desktop BeatSaver page) keep their desktop content in either layout.
+The VR / Desktop switch in the masthead, next to About, changes the layout and remembers it. Pages without a `/vr` path (About, New, BeatSaver playlists) keep their desktop path in either layout.
 
 ## Runtime detection: the host helper
 

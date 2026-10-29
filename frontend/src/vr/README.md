@@ -5,8 +5,6 @@ The VR layout: mode decision, headset status, screens and the CSS hooks they use
 1. `status.ts`: `GET /api/vr/status` client, query options and the 5 s visibility-aware poll.
 2. `mode.ts`: the pure mode decision (URL, remembered choice, headset browser, default), storage helpers, `/vr` path mapping and the WebXR probe.
 3. `VrMode.tsx`: `VrModeProvider` and `useVrMode`: the decided mode, headset status, banner state, `choose`, the `data-ui` attribute and the redirects between desktop and VR paths.
-4. `presets.ts`, `VrNav.tsx`, `useNearEnd.ts`, `VrCard.tsx`, `VrLibraryPage.tsx`: the `/vr` Library screen (presets map onto the library query, state in the address, more cards on scroll).
-5. `VrMapPage.tsx`: the `/vr/maps/:id` screen; it reuses `CropPanel` with `steps` (the large step buttons of `../components/CropSteps.tsx`).
-6. `VrBsCard.tsx`, `VrBsPlaylists.tsx`, `VrBeatSaverPage.tsx`: the `/vr/beatsaver` screen (preset toggles, sort, cursor paging on scroll, playlists, large Download per card, the shared download summary toast; no text search).
-7. Routes: `/vr`, `/vr/maps/:id` and `/vr/beatsaver` are lazy routes in `App.tsx`; the server answers them with `index.html` on reload.
-8. `VrBanner.tsx`, `ModeSwitch.tsx`: the headset suggestion (a sticky info toast in the bottom stack with Switch and Not now) and the VR / Desktop toggle group in the masthead; `Shell` in `../App.tsx` mounts `VrModeProvider` around the page. Their styles are in `../styles/vrmode.css`.
+4. No VR-specific pages: VR is the desktop pages at 2x scale, with the same functions and layout. `../styles/vr.css` doubles the root font size, row and header heights, targets and gaps, and centers the column.
+5. Routes in `App.tsx`: `/vr` mounts `LibraryPage`, `/vr/maps/:id` `MapPage`, `/vr/beatsaver` `BeatSaverPage` and `/vr/jobs` `JobsPage`; the server answers them with `index.html` on reload. `mode.ts` maps each desktop path to its `/vr` twin. BeatSaver playlists keep their desktop path and get the VR styling.
+6. `VrBanner.tsx`, `ModeSwitch.tsx`: the headset suggestion (a sticky info toast in the bottom stack with Switch and Not now) and the VR / Desktop toggle group in the masthead; `Shell` in `../App.tsx` mounts `VrModeProvider` around the page. Their styles are in `../styles/vrmode.css`.

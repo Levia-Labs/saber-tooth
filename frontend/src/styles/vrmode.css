@@ -4,7 +4,12 @@
   gap: 0.75rem;
 }
 [data-ui="vr"] .masthead-actions {
-  gap: 16px;
+  gap: var(--vr-gap);
+}
+/* The 64 px+ toggle is centered on the header row (about.css), so the row must be at least as
+   tall as the toggle; the .masthead top padding then stays the desktop 0.7rem above it. */
+[data-ui="vr"] .masthead-inner {
+  min-height: var(--vr-target);
 }
 .mode-pick {
   display: inline-flex;
@@ -25,7 +30,7 @@
   color: #08051a;
 }
 [data-ui="vr"] .mode-pick-btn {
-  min-height: 64px;
-  padding-inline: 20px;
-  font-size: 22px;
+  min-height: var(--vr-target);
+  padding-inline: calc(var(--vr-gap) * 1.25);
+  font-size: var(--vr-text);
 }

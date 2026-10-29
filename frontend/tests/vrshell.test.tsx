@@ -151,7 +151,7 @@ describe("masthead switch", () => {
     api();
     const { router } = renderApp("/");
     await waitFor(() => expect(router.state.location.pathname).toBe("/vr"));
-    expect(await screen.findByRole("heading", { name: "Song 1" })).toBeInTheDocument();
+    expect(await screen.findByText("Song 1")).toBeInTheDocument();
     expect(ui()).toBe("vr");
   });
 
@@ -162,5 +162,37 @@ describe("masthead switch", () => {
     await screen.findByRole("banner");
     expect(router.state.location.pathname).toBe("/");
     expect(ui()).toBeUndefined();
+  });
+});
+
+describe("VR jobs", () => {
+  test("/vr/jobs renders the regular jobs page and stays in VR", async () => {
+    mockFetch((url) =>
+      url.pathname === "/api/jobs" ? { running: [], queued: [], recent: [] } : {},
+    );
+    const { router } = renderApp("/vr/jobs");
+    expect(await screen.findByRole("heading", { name: "Jobs" })).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe("/vr/jobs");
+    expect(ui()).toBe("vr");
+  });
+
+  test("the VR library shows the section tabs with Jobs, and the toggle maps /jobs to its VR twin", async () => {
+    mockFetch((url) => {
+      if (url.pathname === "/api/jobs") return { running: [], queued: [], recent: [] };
+      if (url.pathname === "/api/maps") return { items: [item(1)], total: 1, offset: 0, limit: 40 };
+      if (url.pathname === "/api/maps/facets") return FACETS;
+      return {};
+    });
+    const user = userEvent.setup();
+    const { router } = renderApp("/vr");
+    expect(await screen.findByRole("link", { name: "Jobs" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Desktop" }));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/"));
+    await router.navigate("/jobs");
+    await waitFor(() => expect(router.state.location.pathname).toBe("/jobs"));
+    // The router state changes before React re-renders; wait for the page so the toggle sees /jobs.
+    expect(await screen.findByRole("heading", { name: "Jobs" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "VR" }));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/vr/jobs"));
   });
 });
