@@ -108,7 +108,7 @@ def test_cancel_status_codes(client, jobs_api, gate) -> None:
     waiting = api.jobs.submit("block")
     assert client.delete(f"/api/jobs/{waiting}").json()["status"] == "cancelled"
     r = client.delete(f"/api/jobs/{running}")
-    assert r.status_code == 409 and "a running job cannot be stopped" in r.text
+    assert r.status_code == 200 and r.json()["cancel_requested"] is True
     gate.set()
     api.jobs.wait(running)
     r = client.delete(f"/api/jobs/{running}")

@@ -259,12 +259,12 @@ class Api:
 
     def job(self, raw: str) -> dict:
         try:
-            return job_detail(self.store, self._job_id(raw))
+            return job_detail(self.store, self._job_id(raw), self.jobs.cancel_requested)
         except KeyError:
             raise ApiError(404, f"unknown job: {raw}") from None
 
     def jobs_list(self) -> dict:
-        return list_jobs(self.store)
+        return list_jobs(self.store, self.jobs.cancel_requested)
 
     def cancel_job(self, raw: str) -> dict:
         try:
@@ -272,7 +272,7 @@ class Api:
         except KeyError:
             raise ApiError(404, f"unknown job: {raw}") from None
         if outcome == "running":
-            raise ApiError(409, "a running job cannot be stopped")
-        if outcome != "cancelled":
+            self.jobs.request_cancel(self._job_id(raw))
+        elif outcome != "cancelled":
             raise ApiError(409, "the job already finished")
         return self.job(raw)

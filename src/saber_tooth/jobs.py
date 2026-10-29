@@ -15,7 +15,27 @@ from saber_tooth.store import Store
 
 log = logging.getLogger(__name__)
 
-Progress = Callable[[str], None]
+
+class JobCancelled(Exception):
+    """Raised at a checkpoint when the running job was asked to stop."""
+
+
+class _Progress:
+    """Progress callback handed to handlers; every call is a cancellation checkpoint."""
+
+    def __init__(self, jobs: "Jobs", job_id: str) -> None:
+        self._jobs, self._id = jobs, job_id
+
+    def check(self) -> None:
+        if self._jobs.cancel_requested(self._id):
+            raise JobCancelled
+
+    def __call__(self, text: str) -> None:
+        self.check()
+        self._jobs._store.set_job_progress(self._id, text)
+
+
+Progress = Callable[[str], None]  # the object handed in also has `.check()`
 Handler = Callable[[dict, Progress], Any]
 IDLE_WAIT_S = 5.0  # fallback poll when no submit wakes the worker
 FINISHED = ("done", "failed", "cancelled")
@@ -29,6 +49,8 @@ class Jobs:
         self._stop = threading.Event()
         self._start_lock = threading.Lock()
         self._thread: threading.Thread | None = None
+        self._cancel_lock = threading.Lock()
+        self._cancel_ids: set[str] = set()  # running jobs asked to stop
 
     def register(self, kind: str, handler: Handler) -> None:
         self._handlers[kind] = handler
@@ -83,6 +105,13 @@ class Jobs:
             self._run(job)
 
     def _run(self, job: dict) -> None:
+        try:
+            self._execute(job)
+        finally:
+            with self._cancel_lock:
+                self._cancel_ids.discard(job["id"])
+
+    def _execute(self, job: dict) -> None:
         job_id = job["id"]
         handler = self._handlers.get(job["kind"])
         if handler is None:
@@ -95,11 +124,29 @@ class Jobs:
         except ValueError as exc:
             self._mark_failed(job_id, f"unreadable job arguments: {exc}")
             return
+        progress = _Progress(self, job_id)
         try:
-            result = handler(args, lambda text: self._store.set_job_progress(job_id, text))
+            progress.check()  # cancelled between claim and start
+            result = handler(args, progress)
             self._store.update_job(job_id, "done", result=result)
+        except JobCancelled:
+            self._store.update_job(job_id, "cancelled")
         except Exception as exc:
             self._mark_failed(job_id, str(exc), getattr(exc, "result", None))
+
+    def request_cancel(self, job_id: str) -> None:
+        """Ask a running job to stop at its next checkpoint; other jobs are ignored."""
+        try:
+            running = self._store.job(job_id)["status"] == "running"
+        except KeyError:
+            return
+        if running:
+            with self._cancel_lock:
+                self._cancel_ids.add(job_id)
+
+    def cancel_requested(self, job_id: str) -> bool:
+        with self._cancel_lock:
+            return job_id in self._cancel_ids
 
     def _mark_failed(self, job_id: str, error: str, result: Any = None) -> None:
         try:

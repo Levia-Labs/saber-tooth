@@ -226,6 +226,8 @@ data/
 
 # Claude Code per-machine overrides
 .claude/settings.local.json
+# Subagent worktrees the harness creates per agent
+.claude/worktrees/
 
 # Node tooling
 node_modules/

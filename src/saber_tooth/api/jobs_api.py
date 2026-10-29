@@ -1,6 +1,7 @@
 """Job handlers per kind, and the job list, view and cancel behind /api/jobs."""
 
 import shutil
+from collections.abc import Callable
 from pathlib import Path
 
 from saber_tooth.jobs import Handler
@@ -67,6 +68,10 @@ VIEW_FIELDS = (
 )
 
 
+def _never(job_id: str) -> bool:
+    return False
+
+
 def _title(row: dict) -> str:
     if row.get("map_title"):
         return row["map_title"]
@@ -75,29 +80,32 @@ def _title(row: dict) -> str:
     return KIND_LABELS.get(row["kind"], row["kind"])
 
 
-def view(row: dict, position: int | None = None) -> dict:
+def view(
+    row: dict, position: int | None = None, cancelling: Callable[[str], bool] = _never
+) -> dict:
     out = {k: row.get(k) for k in VIEW_FIELDS}
+    out["cancel_requested"] = row["status"] == "running" and cancelling(row["id"])
     out["title"] = _title(row)
     out["map_exists"] = bool(row.get("map_exists"))
     out["position"] = position
     return out
 
 
-def list_jobs(store) -> dict:
+def list_jobs(store, cancelling: Callable[[str], bool] = _never) -> dict:
     lists = store.job_lists()
     return {
-        "running": [view(r) for r in lists["running"]],
-        "queued": [view(r, n) for n, r in enumerate(lists["queued"], start=1)],
-        "recent": [view(r) for r in lists["recent"]],
+        "running": [view(r, None, cancelling) for r in lists["running"]],
+        "queued": [view(r, n, cancelling) for n, r in enumerate(lists["queued"], start=1)],
+        "recent": [view(r, None, cancelling) for r in lists["recent"]],
     }
 
 
-def job_detail(store, job_id: str) -> dict:
+def job_detail(store, job_id: str, cancelling: Callable[[str], bool] = _never) -> dict:
     """One job with its result; raises KeyError for an unknown id."""
     row = store.job(job_id)
     found = store.get_map(row["map_id"]) if row.get("map_id") else None
     row["map_title"] = found["title"] if found else None
     row["map_exists"] = found is not None
-    out = view(row, store.queue_position(job_id))
+    out = view(row, store.queue_position(job_id), cancelling)
     out["result"] = row["result"]
     return out

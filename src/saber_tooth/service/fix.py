@@ -52,6 +52,7 @@ def fix_beatmap(
     seed: int,
     max_rounds: int = MAX_ROUNDS,
     on_round: Callable[[int, int], None] | None = None,
+    check: Callable[[], None] | None = None,
 ) -> FixRun:
     """Fix findings one by one, each verified against the map as the earlier fixes left it.
 
@@ -68,6 +69,8 @@ def fix_beatmap(
         run.unfixed = []
         progressed = False
         for f in findings:
+            if check:
+                check()  # raises to stop the run before any result is written
             out = propose_with_reason(cur, f, analysis, templates, seed)
             if out.proposal is None:
                 run.unfixed.append({"finding": f, "reason": out.reason})
@@ -108,8 +111,17 @@ def fix_map(
     before = run_checks(original, analysis)
     on_round = (lambda n, total: progress(f"round {n} of {total}")) if progress else None
     run = fix_beatmap(
-        original, analysis, svc._templates(), int(map_id[:8], 16), max_rounds, on_round
+        original,
+        analysis,
+        svc._templates(),
+        int(map_id[:8], 16),
+        max_rounds,
+        on_round,
+        getattr(progress, "check", None),
     )
+    check = getattr(progress, "check", None)
+    if check:
+        check()  # a cancel during the last attempt must not save the result
     report: dict = {
         "map_id": map_id,
         "folder": None,
