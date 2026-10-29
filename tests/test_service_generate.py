@@ -123,10 +123,10 @@ def test_the_fix_engine_runs_on_the_new_map_and_its_result_is_written(svc, monke
     calls = []
     real = generate.fix_beatmap
 
-    def spy(bm, analysis, templates, seed):
+    def spy(bm, analysis, templates, seed, **kw):
         calls.append(sorted(bm.difficulties))
         bm.info.environment = "BigMirrorEnvironment"
-        run = real(bm, analysis, templates, seed)
+        run = real(bm, analysis, templates, seed, **kw)
         run.steps.append(object())  # a recorded step makes the result be written back
         return run
 

@@ -37,10 +37,7 @@ Warning: saber-tooth has no login, so anyone on the network can fix, crop, downl
 
 ## Crop steps in VR
 
-The crop panel under the chart has four large buttons, each with its help as text below it:
-
-1. Previous section and Next section move the whole window to the previous or next section start, keeping its length; the song end shortens it, never below the minimum length. With no such section the window stays put.
-2. End 1 s earlier and End 1 s later move the end by one second; at the limits the end stays put.
+VR mounts the desktop crop panel at 2x scale, so the chart handles, the 1 min and 2 min switch and the Save buttons work as on the desktop. There are no separate step buttons.
 
 ## Manual headset checklist
 
@@ -50,7 +47,7 @@ Run it for each of Oculus Dash, SteamVR Desktop and Virtual Desktop, with `task 
 2. Point the controller laser at a card and press the trigger. The Preview, Fix and Open buttons respond.
 3. Scroll the list with the thumbstick. More cards load near the end.
 4. Open a map and press Fix. The progress banner shows at the top at VR size; the Fixed copy appears.
-5. Open the crop panel, switch 1 min and 2 min, press Previous section, Next section, End 1 s earlier and End 1 s later, then Save as new map (Save over this map asks for a confirmation first). "Cropped map written" appears with the new folder.
+5. Open the crop panel, switch 1 min and 2 min, drag the chart handles, then Save as new map (Save over this map asks for a confirmation first). "Cropped map written" appears with the new folder.
 6. Open BeatSaver, press a preset and press Download on one map. It shows Installed afterwards.
 7. With SteamVR running and `pyopenvr` installed, take the headset off and on: `worn` in `/api/vr/status` turns false and true.
 8. Close the helper. The toast does not return after you chose Not now, `/vr` keeps working and the status shows no runtime.

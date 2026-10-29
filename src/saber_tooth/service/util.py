@@ -10,6 +10,18 @@ EPS = 1e-6
 Span = tuple[str, float, float]
 
 
+def checkpoint(progress, text: str | None = None) -> None:
+    """A cancellation checkpoint; with `text` it also reports progress. No progress: no-op."""
+    if progress is None:
+        return
+    if text is not None:
+        progress(text)
+        return
+    check = getattr(progress, "check", None)
+    if check:
+        check()
+
+
 def map_id_for(folder: str) -> str:
     return hashlib.sha256(folder.encode("utf-8")).hexdigest()[:12]
 

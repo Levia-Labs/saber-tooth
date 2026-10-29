@@ -4,7 +4,9 @@ import { useEffect } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { AnnouncerProvider, useAnnounce, useWithdraw } from "../src/components/Announcer";
+import type { JobView } from "../src/api/types";
 import type { AnnounceInput } from "../src/lib/announcements";
+import { planToasts } from "../src/lib/jobtoasts";
 
 let sendFn: (input: AnnounceInput) => void = () => undefined;
 let withdrawFn: (key: string) => void = () => undefined;
@@ -32,11 +34,11 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe("Announcer banners", () => {
-  test("progress shows a spinner and no dismiss, then success replaces it and fades", () => {
+  test("progress shows a spinner and a close button, then success replaces it and fades", () => {
     show({ variant: "progress", title: "Fix Acid Rain", message: "Running" });
     const banner = screen.getByRole("status");
     expect(banner.querySelector(".alert-spin")).not.toBeNull();
-    expect(screen.queryByRole("button", { name: "Dismiss" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Dismiss" })).toBeTruthy();
 
     show({ variant: "success", title: "Fix Acid Rain", message: "Done" });
     expect(screen.getAllByRole("status")).toHaveLength(1);
@@ -132,5 +134,40 @@ describe("Announcer withdraw and close hook", () => {
     show({ key: "k", variant: "warning", title: "Stays" });
     act(() => withdrawFn("k"));
     expect(screen.queryByText("Stays")).toBeNull();
+  });
+
+  test("a closed running-job toast stays closed across message changes until the outcome", () => {
+    const job = (progress: string): JobView => ({
+      id: "j1",
+      kind: "fix",
+      status: "running",
+      map_id: "m1",
+      title: "Song",
+      map_exists: true,
+      created_at: "",
+      started_at: null,
+      updated_at: "",
+      progress,
+      progress_at: null,
+      error: null,
+      position: null,
+      cancel_requested: false,
+    });
+    const dismissed = new Set<string>();
+    const run = (progress: string, prev: Parameters<typeof planToasts>[0]) => {
+      const lists = { running: [job(progress)], queued: [], recent: [] };
+      const plan = planToasts(prev, lists, new Set(), undefined, dismissed);
+      act(() => plan.show.forEach(sendFn));
+      return plan.next;
+    };
+    const tracked = run("one", new Map());
+    expect(screen.getByText("Fix Song")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
+    expect(screen.queryByText("Fix Song")).toBeNull();
+    expect(dismissed.has("j1")).toBe(true);
+    run("two", tracked);
+    expect(screen.queryByText("Fix Song")).toBeNull();
+    show({ key: "fix:m1", variant: "success", title: "Fix Song", message: "Done" });
+    expect(screen.getByText("Done")).toBeTruthy();
   });
 });

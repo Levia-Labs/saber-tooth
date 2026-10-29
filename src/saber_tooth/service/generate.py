@@ -11,7 +11,7 @@ from saber_tooth.assemble import assemble_new, folder_name
 from saber_tooth.checks import run_checks
 from saber_tooth.mapio import load_map, write_map
 from saber_tooth.service.fix import complete, fix_beatmap
-from saber_tooth.service.util import map_id_for
+from saber_tooth.service.util import checkpoint, map_id_for
 from saber_tooth.service.writeout import commit_staged
 from saber_tooth.songmeta import SongMeta, file_meta, project_meta
 
@@ -30,31 +30,37 @@ def _meta(svc, source: str, a: Analysis) -> SongMeta:
     return file_meta(path.name, svc.probe_tags(path))
 
 
-def _fix_in_place(svc, staging: Path, a: Analysis, seed: int) -> int:
+def _fix_in_place(svc, staging: Path, a: Analysis, seed: int, progress=None) -> int:
     """Run the Fix engine on the staged map and write the result back; the fixes applied."""
-    run = fix_beatmap(load_map(staging), a, svc._templates(), seed)
+    check = getattr(progress, "check", None)
+    run = fix_beatmap(load_map(staging), a, svc._templates(), seed, check=check)
+    checkpoint(progress)
     if run.steps:
         write_map(run.fixed, staging, None)
     return len(run.steps)
 
 
-def generate_map(svc, source: str) -> dict:
+def generate_map(svc, source: str, progress=None) -> dict:
     """Generate a map from a YouTube URL or an audio file path into a new levels folder.
 
     The map is built and fixed in a staging folder, then moved into the levels folder under a
     numbered name when one exists already; staging is removed on success and on any failure."""
+    checkpoint(progress, "analysing the song")
     if _is_url(source):
         a = svc.client.analyse_url(source)
     else:
         a = svc.client.analyse_file(Path(source), Path(source).name)
+    checkpoint(progress, "building the map")
     meta = _meta(svc, source, a)
     staging = svc.data / "staging" / uuid.uuid4().hex
     staging.parent.mkdir(parents=True, exist_ok=True)
     seed = int(hashlib.sha256(a.name.encode("utf-8")).hexdigest()[:8], 16)
     try:
         assemble_new(a, svc._templates(), staging, seed, svc.encode, meta)
-        fixes = _fix_in_place(svc, staging, a, seed)
+        checkpoint(progress, "fixing the map")
+        fixes = _fix_in_place(svc, staging, a, seed, progress)
         written = load_map(staging)
+        checkpoint(progress, "saving the map")  # staging is removed below on a cancel
         with svc._lock:
             target = commit_staged(svc.levels, staging, folder_name(meta.song))
     finally:

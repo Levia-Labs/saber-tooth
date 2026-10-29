@@ -19,7 +19,7 @@ from saber_tooth.crop.write import stage_cropped, write_cropped
 from saber_tooth.mapio import load_map
 from saber_tooth.model import Beatmap
 from saber_tooth.service.duration import audio_path, folder_duration
-from saber_tooth.service.util import map_id_for
+from saber_tooth.service.util import checkpoint, map_id_for
 from saber_tooth.service.verify import stored_analysis
 
 log = logging.getLogger(__name__)
@@ -52,11 +52,14 @@ def crop_beats(svc, map_id: str, start_s: float, end_s: float) -> tuple[float, f
     return timing.to_beats(start_s), timing.to_beats(end_s)
 
 
-def _replace(svc, map_id: str, folder: Path, audio: Path, cropped, label: str) -> Path:
+def _replace(
+    svc, map_id: str, folder: Path, audio: Path, cropped, label: str, progress=None
+) -> Path:
     """Stage the crop, check it reads back, then swap it in for the original folder."""
     partial, _ = stage_cropped(svc.levels, folder, audio, cropped, label)
     try:
         load_map(partial)
+        checkpoint(progress)  # the staged copy goes; the original is still untouched
     except BaseException:
         shutil.rmtree(partial, ignore_errors=True)
         raise
@@ -65,7 +68,14 @@ def _replace(svc, map_id: str, folder: Path, audio: Path, cropped, label: str) -
     return target
 
 
-def crop_map(svc, map_id: str, start_beat: float, end_beat: float, replace: bool = False) -> dict:
+def crop_map(
+    svc,
+    map_id: str,
+    start_beat: float,
+    end_beat: float,
+    replace: bool = False,
+    progress=None,
+) -> dict:
     """Crop a map into a new `<map> [label]` folder; the original is never changed.
 
     With `replace` the cropped map takes the original folder's place instead and the map's store
@@ -76,9 +86,11 @@ def crop_map(svc, map_id: str, start_beat: float, end_beat: float, replace: bool
     if audio is None:
         raise CropError("the map has no readable song file")
     label = window_label(tl, win.length_s)
+    checkpoint(progress, "cropping the map")
     cropped = crop_beatmap(beatmap, tl.timing, win.start_beat, win.end_beat)
+    checkpoint(progress, "writing the cropped map")  # last stop before anything is written
     if replace:
-        target = _replace(svc, map_id, folder, audio, cropped, label)
+        target = _replace(svc, map_id, folder, audio, cropped, label, progress)
     else:
         target = write_cropped(svc.levels, folder, audio, cropped, label)
     try:

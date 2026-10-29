@@ -62,7 +62,7 @@ def test_rejected_during_apply_is_skipped_not_applied(tmp_path, monkeypatch):
     dropped = _propose(svc, mid, [Flip("Hard", extra, Cut(0))])
     real, calls = svc._apply_fixes, []
 
-    def racing(map_id, approved, unchanged):
+    def racing(map_id, approved, unchanged, progress=None):
         if not calls:
             svc.store.set_status(dropped, "rejected")  # the reviewer rejects mid-apply
         calls.append([p["id"] for p in approved])

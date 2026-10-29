@@ -98,27 +98,6 @@ export function nudgeEdge(
   return moveEdge(span, edge, at + dir * (big ? NUDGE_BIG_S : NUDGE_S), min, duration);
 }
 
-/** The next (`dir` 1) or previous (-1) section start from `at`, or null when there is none. */
-export function sectionStep(starts: readonly number[], at: number, dir: 1 | -1): number | null {
-  const ahead = starts.filter((s) => dir * (s - at) > 1e-3).sort((a, b) => dir * (a - b));
-  return ahead[0] ?? null;
-}
-
-/** Move the whole window to the next or previous section start, keeping its length; the song end
- * shortens it, never below `min`. Stays put when there is no such section. */
-export function moveWindowToSection(
-  span: Span,
-  starts: readonly number[],
-  dir: 1 | -1,
-  min: number,
-  duration: number,
-): Span {
-  const to = sectionStep(starts, span.start_s, dir);
-  if (to === null) return span;
-  const start = tidy(Math.min(to, Math.floor((duration - min) * 1000) / 1000));
-  return { start_s: start, end_s: tidy(Math.min(start + span.end_s - span.start_s, duration)) };
-}
-
 /** Move the whole window so it starts at `start`, keeping its length, inside the song. */
 export function shiftWindow(span: Span, start: number, duration: number): Span {
   const length = span.end_s - span.start_s;

@@ -82,14 +82,10 @@ export function AnnouncerProvider({ children }: { children: ReactNode }) {
                   </>
                 )
               }
-              onDismiss={
-                b.variant === "progress"
-                  ? undefined
-                  : () => {
-                      b.onDismiss?.();
-                      withdraw(b.key);
-                    }
-              }
+              onDismiss={() => {
+                b.onDismiss?.();
+                withdraw(b.key);
+              }}
             />
           ))}
         </div>

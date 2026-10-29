@@ -124,7 +124,7 @@ def test_unreadable_map_scan_is_409(client, svc):
 def test_generate_url_job(client, svc, monkeypatch):
     seen = []
     monkeypatch.setattr(
-        svc, "run_generate", lambda u: seen.append(u) or {"map_id": "m", "folder": "F"}
+        svc, "run_generate", lambda u, p=None: seen.append(u) or {"map_id": "m", "folder": "F"}
     )
     resp = client.post("/api/generate", json={"url": "https://youtu.be/abc"})
     job = _wait(client, resp.json()["job"])
@@ -157,7 +157,7 @@ def test_generate_rejects_non_youtube(client, body):
     ],
 )  # fmt: skip
 def test_generate_allows_youtube_hosts(client, svc, monkeypatch, url):
-    monkeypatch.setattr(svc, "run_generate", lambda u: {"map_id": "m", "folder": "F"})
+    monkeypatch.setattr(svc, "run_generate", lambda u, p=None: {"map_id": "m", "folder": "F"})
     assert "job" in client.post("/api/generate", json={"url": url}).json()
 
 
@@ -169,7 +169,7 @@ def test_generate_bad_json(client):
 def test_generate_multipart_stores_under_data(client, svc, monkeypatch):
     seen = []
 
-    def fake(path):
+    def fake(path, progress=None):
         seen.append((Path(path), Path(path).read_bytes()))
         return {"map_id": "m", "folder": "F"}
 

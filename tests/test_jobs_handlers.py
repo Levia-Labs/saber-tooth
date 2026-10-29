@@ -18,7 +18,7 @@ def _service(tmp_path: Path, calls: list):
         run_scan=record("scan"),
         run_apply=record("apply"),
         fix_map=record("fix"),
-        learn=lambda: 3,
+        learn=lambda p=None: 3,
         run_generate=record("generate"),
         crop_map=record("crop"),
     )
@@ -34,10 +34,10 @@ def test_handlers_call_the_service_with_stored_args(tmp_path: Path) -> None:
     h["crop"]({"map_id": "m1", "start": 4.0, "end": 68.0, "replace": True}, noop)
     h["generate"]({"url": "https://youtu.be/x"}, noop)
     assert h["learn"]({}, noop) == {"units": 3}
-    assert calls[0] == ("scan", ("m1",), {})
+    assert calls[0] == ("scan", ("m1", noop), {})
     assert calls[2] == ("fix", ("m1",), {"progress": noop})
-    assert calls[3] == ("crop", ("m1", 4.0, 68.0, True), {})
-    assert calls[4] == ("generate", ("https://youtu.be/x",), {})
+    assert calls[3] == ("crop", ("m1", 4.0, 68.0, True), {"progress": noop})
+    assert calls[4] == ("generate", ("https://youtu.be/x", noop), {})
 
 
 def test_generate_from_upload_runs_and_removes_the_folder(tmp_path: Path) -> None:
@@ -46,8 +46,9 @@ def test_generate_from_upload_runs_and_removes_the_folder(tmp_path: Path) -> Non
     song = box / "song.mp3"
     song.write_bytes(b"x")
     calls: list = []
-    core_handlers(_service(tmp_path, calls))["generate"]({"upload": str(song)}, lambda t: None)
-    assert calls == [("generate", (str(song.resolve()),), {})]
+    sink = lambda t: None  # noqa: E731
+    core_handlers(_service(tmp_path, calls))["generate"]({"upload": str(song)}, sink)
+    assert calls == [("generate", (str(song.resolve()), sink), {})]
     assert not box.exists()
 
 

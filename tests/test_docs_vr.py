@@ -78,7 +78,7 @@ def test_the_manual_checklist_covers_the_three_dashboards():
     for needle in ("Oculus Dash", "SteamVR Desktop", "Virtual Desktop", "laser", "thumbstick"):
         assert needle in page
     checklist = page.split("## Manual headset checklist")[1]
-    for step in ("Fix", "crop", "BeatSaver", "Previous section", "End 1 s later"):
+    for step in ("Fix", "crop", "BeatSaver", "chart handles", "Save as new map"):
         assert step in checklist
 
 

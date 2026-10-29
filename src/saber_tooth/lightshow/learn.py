@@ -80,12 +80,17 @@ def _densest(m: Beatmap) -> Difficulty | None:
     return max(m.difficulties.values(), key=lambda d: len(d.notes), default=None)
 
 
-def learn(levels: Path) -> Templates:
-    """Learn one-bar vanilla lighting units from map folders (read-only)."""
+def learn(levels: Path, progress=None) -> Templates:
+    """Learn one-bar vanilla lighting units from map folders (read-only).
+
+    `progress` is called with a text before each map, which is a cancellation checkpoint."""
     if not Path(levels).is_dir():
         raise FileNotFoundError(f"levels directory not found: {levels}")
     t = Templates()
-    for folder in sorted(p for p in Path(levels).iterdir() if p.is_dir()):
+    folders = sorted(p for p in Path(levels).iterdir() if p.is_dir())
+    for n, folder in enumerate(folders, 1):
+        if progress is not None:
+            progress(f"reading map {n} of {len(folders)}")
         try:
             m = load_map(folder)
         except (MapParseError, OSError):

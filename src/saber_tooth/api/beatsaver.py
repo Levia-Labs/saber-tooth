@@ -16,6 +16,7 @@ from saber_tooth.beatsaver.playlists import PlaylistsDisabled, export_bplist
 from saber_tooth.beatsaver.presets import PresetConflict, PresetError, Presets
 from saber_tooth.beatsaver.search import SearchResult, search
 from saber_tooth.safe_fs import LevelsWriter
+from saber_tooth.service.util import checkpoint
 
 MAX_DOWNLOAD = 100
 DOWNLOAD_DEADLINE = 600.0
@@ -85,7 +86,7 @@ class BeatSaverApi:
         self.cache, self.presets = BsCache(db), Presets(db)
         self.playlists_dir = Path(playlists_dir) if playlists_dir else None
         self._meta: dict[int, BsPlaylist] = {}
-        api.jobs.register("bs-download", lambda a, p: self._download_job(a["ids"]))
+        api.jobs.register("bs-download", lambda a, p: self._download_job(a["ids"], p))
 
     # views ---------------------------------------------------------------------
 
@@ -220,15 +221,25 @@ class BeatSaverApi:
         ids = self._ids(body, MAX_DOWNLOAD)
         return {"job": self.api.jobs.submit("bs-download", {"ids": ids})}
 
-    def _download_job(self, ids: list[str]) -> dict:
+    def _download_job(self, ids: list[str], progress=None) -> dict:
+        checkpoint(progress, "looking the maps up")
         found, reasons = self._resolve(ids)
+        checkpoint(progress)  # before the staging dir exists
         tmp = self.service.data / "bs-tmp"
         tmp.mkdir(parents=True, exist_ok=True)
-        writer = LevelsWriter(self.service.levels)
-        results = []
-        deadline = self.client.deadline_in(DOWNLOAD_DEADLINE)
+        ctx = (tmp, LevelsWriter(self.service.levels), self.client.deadline_in(DOWNLOAD_DEADLINE))
+        results: list[dict] = []
+        try:
+            self._download_each(ids, found, reasons, results, ctx, progress)
+        finally:
+            self.service.refresh_if_changed()  # maps installed before a cancel still get listed
+        return {"results": results}
+
+    def _download_each(self, ids, found, reasons, results, ctx, progress) -> None:
+        tmp, writer, deadline = ctx
         limited = False
-        for i in ids:
+        for n, i in enumerate(ids, 1):
+            checkpoint(progress, f"downloading map {n} of {len(ids)}")  # one map is atomic
             if limited:
                 results.append({"id": i, "status": "skipped", "reason": RATE_SKIP, "folder": None})
                 continue
@@ -246,8 +257,6 @@ class BeatSaverApi:
             except Exception as exc:  # one map must never abort the batch
                 row = {"status": "failed", "reason": type(exc).__name__, "folder": None}
             results.append({"id": i, **row})
-        self.service.refresh_if_changed()
-        return {"results": results}
 
     def export(self, body: object) -> dict:
         if not self.playlists_enabled():

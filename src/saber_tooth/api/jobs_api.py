@@ -21,28 +21,30 @@ def upload_path(data: Path, raw: object) -> Path | None:
     return path if path.parent.parent == root else None
 
 
-def _generate(service, args: dict) -> dict:
+def _generate(service, args: dict, progress) -> dict:
     if "url" in args:
-        return service.run_generate(args["url"])
+        return service.run_generate(args["url"], progress)
     path = upload_path(service.data, args.get("upload"))
     if path is None:
         raise FileNotFoundError(UPLOAD_GONE)
     try:
         if not path.is_file():
             raise FileNotFoundError(UPLOAD_GONE)
-        return service.run_generate(str(path))
+        return service.run_generate(str(path), progress)
     finally:
         shutil.rmtree(path.parent, ignore_errors=True)
 
 
 def core_handlers(service) -> dict[str, Handler]:
     return {
-        "scan": lambda a, p: service.run_scan(a["map_id"]),
-        "apply": lambda a, p: service.run_apply(a["map_id"]),
+        "scan": lambda a, p: service.run_scan(a["map_id"], p),
+        "apply": lambda a, p: service.run_apply(a["map_id"], p),
         "fix": lambda a, p: service.fix_map(a["map_id"], progress=p),
-        "learn": lambda a, p: {"units": service.learn()},
-        "generate": lambda a, p: _generate(service, a),
-        "crop": lambda a, p: service.crop_map(a["map_id"], a["start"], a["end"], a["replace"]),
+        "learn": lambda a, p: {"units": service.learn(p)},
+        "generate": lambda a, p: _generate(service, a, p),
+        "crop": lambda a, p: service.crop_map(
+            a["map_id"], a["start"], a["end"], a["replace"], progress=p
+        ),
     }
 
 

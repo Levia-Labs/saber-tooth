@@ -22,7 +22,7 @@ from saber_tooth.service.errors import ApplyConflict, MapNotFound, MapUnreadable
 from saber_tooth.service.lightshow_set import LEARNED, active_templates
 from saber_tooth.service.lightshow_set import info as lightshow_info
 from saber_tooth.service.ordered import Outcome, apply_in_order
-from saber_tooth.service.util import map_id_for
+from saber_tooth.service.util import checkpoint, map_id_for
 from saber_tooth.service.verify import stored_analysis, verify
 from saber_tooth.service.writeout import write_fixed
 from saber_tooth.store import Store
@@ -114,8 +114,9 @@ class Service(DeleteMixin):
     def lightshow_info(self) -> dict:
         return lightshow_info(self.data, self.bundled)
 
-    def learn(self) -> int:
-        templates = learn_templates(self.levels)
+    def learn(self, progress=None) -> int:
+        templates = learn_templates(self.levels, progress)
+        checkpoint(progress)
         self.data.mkdir(parents=True, exist_ok=True)
         tmp = self.data / f"{LEARNED}.tmp"
         templates.save(tmp)
@@ -151,20 +152,24 @@ class Service(DeleteMixin):
         except (AnalyserError, ValueError, MapParseError, OSError, KeyError):
             return None
 
-    def _scan(self, map_id: str) -> tuple[int, bool]:
+    def _scan(self, map_id: str, progress=None) -> tuple[int, bool]:
         folder = self._folder(map_id)
         bm = self._load(folder)
+        checkpoint(progress, "analysing audio")
         analysis = self._analyse(map_id, bm, folder)  # slow HTTP call: the lock is not held
+        checkpoint(progress, "checking the map")
         templates = self._templates()
         seed = int(map_id[:8], 16)
         findings = run_checks(bm, analysis)
         proposals = []
         for finding in findings:
+            checkpoint(progress)
             p = propose(bm, finding, analysis, templates, seed)
             if p is not None:
                 proposals.append({**p.to_dict(), "finding": finding.to_dict()})
         project = analysis.audio.parent.name if analysis and analysis.audio else None
         scan = {"findings": [f.to_dict() for f in findings], "analysis": project}
+        checkpoint(progress)
         with self._lock:
             self.store.replace_open_proposals(map_id, proposals, scan)
         return len(proposals), analysis is not None
@@ -172,8 +177,8 @@ class Service(DeleteMixin):
     def scan(self, map_id: str) -> int:
         return self._scan(map_id)[0]
 
-    def run_scan(self, map_id: str) -> dict:
-        count, analysed = self._scan(map_id)
+    def run_scan(self, map_id: str, progress=None) -> dict:
+        count, analysed = self._scan(map_id, progress)
         return {"map_id": map_id, "proposals": count, "analysis": analysed}
 
     # apply -------------------------------------------------------------------
@@ -181,7 +186,7 @@ class Service(DeleteMixin):
     def apply(self, map_id: str) -> Path:
         return self._apply(map_id)[0]
 
-    def _apply(self, map_id: str) -> tuple[Path, Outcome]:
+    def _apply(self, map_id: str, progress=None) -> tuple[Path, Outcome]:
         with self._lock:
             self._folder(map_id)
             for _ in range(APPLY_RETRIES):
@@ -190,7 +195,7 @@ class Service(DeleteMixin):
                     raise ApplyConflict("no approved proposals to apply", [])
                 ids = [p["id"] for p in approved]
                 try:
-                    target, outcome = self._write(map_id, approved)
+                    target, outcome = self._write(map_id, approved, progress)
                 except _Stale:  # a proposal was rejected mid-apply: redo without it
                     continue
                 except BaseException:
@@ -206,24 +211,30 @@ class Service(DeleteMixin):
                 log.exception("library refresh failed after applying %s", map_id)
             return target, outcome
 
-    def _write(self, map_id: str, approved: list[dict]) -> tuple[Path, Outcome]:
+    def _write(self, map_id: str, approved: list[dict], progress=None) -> tuple[Path, Outcome]:
         def unchanged(ids: list[int]) -> None:
+            checkpoint(progress)  # before the claim, so a cancel leaves nothing to release
             if {p["id"] for p in self.store.approved(map_id)} != set(ids):
                 raise _Stale
             if not self.store.claim(ids):  # from here a reject gets 409 until written
                 raise _Stale
 
-        return self._apply_fixes(map_id, approved, unchanged)
+        return self._apply_fixes(map_id, approved, unchanged, progress)
 
-    def run_apply(self, map_id: str) -> dict:
-        target, outcome = self._apply(map_id)
+    def run_apply(self, map_id: str, progress=None) -> dict:
+        target, outcome = self._apply(map_id, progress)
         return {"map_id": map_id, "folder": target.name, **outcome.to_dict()}
 
     def _apply_fixes(
-        self, map_id: str, approved: list[dict], unchanged: Callable[[list[int]], None]
+        self,
+        map_id: str,
+        approved: list[dict],
+        unchanged: Callable[[list[int]], None],
+        progress=None,
     ) -> tuple[Path, Outcome]:
         folder = self._folder(map_id)
         original = self._load(folder)
+        checkpoint(progress, "applying approved fixes")
         analysis = stored_analysis(self.uploads, self.store.scan_info(map_id))
         seed, templates = int(map_id[:8], 16), self._templates()
         fixed, kept, outcome = apply_in_order(
@@ -232,6 +243,7 @@ class Service(DeleteMixin):
         if not kept:
             msg = "every approved proposal was superseded; review the new proposals"
             raise ApplyConflict(msg, outcome.superseded)
+        checkpoint(progress, "verifying the result")
         verify(self.store, self.uploads, map_id, original, fixed, kept)
         fixed.info = replace(fixed.info, song_name=fixed.info.song_name + SUFFIX)
         unchanged(outcome.applied)
