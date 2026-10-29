@@ -109,6 +109,10 @@ describe("masthead switch", () => {
     renderApp("/");
     const header = await screen.findByRole("banner");
     const group = within(header).getByRole("group", { name: "Layout" });
+    for (const name of ["VR", "Desktop"]) {
+      const button = within(group).getByRole("button", { name });
+      expect(button.firstElementChild).toHaveClass("ic");
+    }
     expect(within(group).getByRole("button", { name: "Desktop" })).toHaveAttribute(
       "aria-pressed",
       "true",
@@ -118,7 +122,7 @@ describe("masthead switch", () => {
       "false",
     );
     expect(within(header).queryByRole("navigation")).toBeNull();
-    expect(within(header).getAllByRole("link")).toHaveLength(2);
+    expect(within(header).getAllByRole("link")).toHaveLength(1);
   });
 
   test("VR opens the VR twin of a map page and Desktop comes back to it", async () => {

@@ -23,6 +23,9 @@ from saber_tooth.api.hosts import (
     trusted_proxies,
 )
 from saber_tooth.api.mcp_tools import build_mcp
+from saber_tooth.api.playlists_api import PlaylistsApi
+from saber_tooth.api.playlists_routes import register as register_playlists
+from saber_tooth.api.relight_api import environments, start_relight
 from saber_tooth.api.static import WebFiles
 from saber_tooth.api.upload import _save_upload
 from saber_tooth.api.vr_routes import register as register_vr
@@ -116,6 +119,7 @@ def create_app(
         return {"status": "ok"}
 
     register_beatsaver(app, bs)
+    register_playlists(app, PlaylistsApi(api, bs.playlists_dir))
     register_crop(app, crop_api)
     register_vr(app, vr_status or VrStatusClient())
 
@@ -152,6 +156,18 @@ def create_app(
     @app.post("/api/maps/{map_id}/apply")
     def apply(map_id: str):
         return api.apply(map_id)
+
+    @app.post("/api/maps/{map_id}/relight")
+    async def relight(map_id: str, request: Request):
+        try:
+            body = await request.json()
+        except ValueError:
+            raise ApiError(400, 'send JSON {"environment"}') from None
+        return start_relight(api, map_id, body)
+
+    @app.get("/api/lightshow/environments")
+    def lightshow_environments():
+        return environments(api)
 
     @app.post("/api/generate")
     async def generate(request: Request):

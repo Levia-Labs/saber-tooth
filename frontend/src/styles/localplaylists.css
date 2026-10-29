@@ -1,0 +1,144 @@
+.lp-grid {
+  display: grid;
+  grid-template-columns: 56px minmax(160px, 1fr) 150px minmax(110px, 160px) 90px 132px;
+  column-gap: 12px;
+  align-items: center;
+  padding: 0 12px;
+}
+.lp-grid > div {
+  min-width: 0;
+}
+.lp-table {
+  position: relative;
+  min-width: 720px;
+}
+.lp-table .lib-head {
+  display: grid;
+}
+.lp-row {
+  min-height: 64px;
+  padding-block: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.lp-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.lp-name {
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.lp-name:hover,
+.lp-name:focus-visible {
+  text-decoration: underline;
+}
+.lp-sub {
+  display: block;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.lp-songs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-variant-numeric: tabular-nums;
+}
+.lp-missing {
+  color: var(--amber);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.lp-sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--blue);
+  font-weight: 700;
+}
+.lp-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.lp-hint {
+  margin: 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.lp-editor {
+  margin: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.lp-heading {
+  margin: 12px 0 8px;
+  font-size: 1.1rem;
+}
+.lp-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+.lp-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.lp-wide {
+  grid-column: 1 / -1;
+}
+.lp-cover {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.lp-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lp-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+.lp-song-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lp-gone .lp-song-name {
+  color: var(--amber);
+}
+.lp-picker {
+  margin-top: 8px;
+}
+.lp-tabs,
+.lp-live,
+.lp-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block: 8px;
+}
+.lp-tabs .active {
+  font-weight: 700;
+  text-decoration: underline;
+}

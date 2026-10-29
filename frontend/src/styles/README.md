@@ -19,3 +19,4 @@ Plain CSS with custom properties; no framework.
 12. `generate.css`: the generate card: "or" divider, audio drop zone, over and disabled states.
 13. `vrmode.css`: the masthead layout switch (VR / Desktop toggle group, shown in both layouts).
 14. `jobs.css`: the Jobs tab count badge and the Jobs page lists.
+15. `localplaylists.css`: the Playlists table grid, editor panel and song lists.

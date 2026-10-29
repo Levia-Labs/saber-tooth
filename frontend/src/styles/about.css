@@ -1,32 +1,141 @@
+/* About page: a hero, a grid of feature cards, numbered steps and notes. Sizes are rem or em so the
+   VR scale (vr.css) carries through; the grid wraps on its own from phone to 2560 px wide. */
 .about {
-  max-width: 70ch;
+  max-width: 72rem;
   margin: 0 auto;
-  padding: 1.5rem 0.25rem 2rem;
+  padding: 0.5rem 0.25rem 2.5rem;
   line-height: 1.6;
 }
-.about h1 {
-  margin: 0.8rem 0 0.6rem;
-}
 .about h2 {
-  margin: 1.6rem 0 0.4rem;
+  margin: 2rem 0 0.8rem;
+  font-size: 1.25rem;
+  letter-spacing: 0.01em;
 }
-.about ol,
-.about ul {
-  padding-left: 1.4rem;
-  margin: 0.4rem 0;
-}
-.about li + li {
-  margin-top: 0.3rem;
-}
-.about-lead {
-  color: var(--ink);
+.about h3 {
+  margin: 0;
+  font-size: 1.05rem;
 }
 .about a {
   color: var(--blue);
 }
-.about-links {
+.about-hero {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 1rem;
+  padding: 1.5rem 1.75rem;
+  background: linear-gradient(135deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) * 1.5);
+}
+.about-hero > .logo {
+  flex: none;
+}
+.about-name {
+  margin: 0;
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.about-lead {
+  margin: 0.4rem 0 0;
+  max-width: 60ch;
+  color: var(--ink);
+}
+.about-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.9rem 0 0;
+  padding: 0;
   list-style: none;
+}
+.about-badges li {
+  padding: 0.15rem 0.75rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.about-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.about-card {
+  display: grid;
+  align-content: start;
+  gap: 0.4rem;
+  padding: 1.1rem 1.2rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) * 1.5);
+}
+.about-card p {
+  margin: 0;
+  color: var(--muted);
+}
+.about-icon {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-bottom: 0.3rem;
+  color: var(--blue);
+  background: var(--panel-2);
+  border-radius: var(--radius);
+}
+.about-steps {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+.about-steps li {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.7rem 1rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  counter-increment: step;
+}
+.about-steps li::before {
+  content: counter(step);
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  color: #08051a;
+  font-weight: 700;
+  background: var(--blue);
+  border-radius: 999px;
+}
+.about-notes,
+.about-links {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+.about-notes li + li,
+.about-links li + li {
+  margin-top: 0.4rem;
+}
+.about-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
   padding-left: 0;
+  list-style: none;
+}
+.about-links li + li {
+  margin-top: 0;
 }
 .about-version {
   margin-top: 2rem;
@@ -37,26 +146,14 @@
   right: 1.25rem;
   transform: translateY(-50%);
 }
-.about-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-height: 40px;
-  padding: 0 0.6rem;
-  color: var(--muted);
-  text-decoration: none;
-  font-weight: 600;
-}
-.about-link:hover,
-.about-link[aria-current="page"] {
-  color: var(--ink);
-}
 @media (max-width: 719px) {
   .masthead .masthead-actions {
     right: 0.75rem;
   }
-  .about-label {
-    display: none;
+  .about-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1.1rem;
   }
 }
 @media (max-width: 419px) {
@@ -70,4 +167,8 @@
     width: 100%;
     justify-content: center;
   }
+}
+.about-hero .logo {
+  width: 4.5rem;
+  height: 4.5rem;
 }

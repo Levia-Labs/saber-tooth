@@ -1,38 +1,27 @@
-import { Link } from "react-router";
-import { Icon, type IconName } from "../icons";
-import { Tip } from "../Tip";
+import { PillTabs, type PillTab } from "../PillTabs";
 
 const TABS = [
-  {
-    key: "maps",
-    label: "Maps",
-    icon: "maps" as IconName,
-    to: "/beatsaver",
-    tip: "Search BeatSaver maps.",
-  },
+  { key: "maps", label: "Maps", icon: "maps", path: "/beatsaver", tip: "Search BeatSaver maps." },
   {
     key: "playlists",
     label: "Playlists",
-    icon: "playlist" as IconName,
-    to: "/beatsaver/playlists",
+    icon: "playlist",
+    path: "/beatsaver/playlists",
     tip: "Search playlists.",
   },
-] as const;
+] as const satisfies readonly PillTab[];
 
 export type BsTab = "maps" | "playlists";
 
-/** The Maps | Playlists switch, the right end of the toolbar row. */
+/** The Maps | Playlists switch, the right end of the toolbar row: the section tab bar, reused. */
 export function BsSectionTabs({ tab }: { tab: BsTab }) {
   return (
-    <nav className="bs-tabs" aria-label="BeatSaver sections">
-      {TABS.map((t) => (
-        <Tip key={t.key} text={t.tip}>
-          <Link to={t.to} className="btn plain" aria-current={t.key === tab ? "page" : undefined}>
-            <Icon name={t.icon} />
-            <span className="label-hide-mobile">{t.label}</span>
-          </Link>
-        </Tip>
-      ))}
-    </nav>
+    <PillTabs
+      label="BeatSaver sections"
+      tabs={TABS}
+      active={tab}
+      className="bs-tabs"
+      iconOnlyOnMobile
+    />
   );
 }

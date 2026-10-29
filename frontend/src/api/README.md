@@ -10,3 +10,4 @@ Everything that talks to the HTTP API; field names live here only.
 6. `fix.ts`: the one-click Fix: starts the job, follows it and keeps its outcomes for the alerts.
 7. `generate.ts`: `useGenerate`, the one-step generate job: keyed progress, success and failure toasts, then opens the new map.
 8. `joblist.ts`: the shared job list query, polling 2 s while jobs are active and 10 s when idle.
+9. `playlists.ts`: local playlist types, request functions and hooks (the /api/playlists contract).

@@ -12,7 +12,9 @@ The FastAPI app: JSON routes for the review UI, with the built frontend in [web]
 8. `upload.py`: streams multipart uploads to a temp file under `DATA_DIR/uploads`, enforcing `MAX_UPLOAD_MB`.
 9. `beatsaver.py`, `beatsaver_routes.py`: BeatSaver search, download, playlist and preset routes (see [api.md](../../../docs/api.md#beatsaver)); `mcp_tools.py` adds `beatsaver_search` and `beatsaver_download`.
 10. `crop_api.py`, `crop_routes.py`: `CropApi` (timeline and crop job, 409 before 422) and the `GET /timeline` and `POST /crop` routes (see [api.md](../../../docs/api.md#routes)); `mcp_tools.py` adds `map_timeline` (read-only) and `crop_map` (starts a crop job; a broken window rule is an error naming the rule).
-11. `vr_status.py`, `vr_routes.py`: `VrStatusClient` (host helper over HTTP with a 300 ms timeout and a 2 s cache, or an in-process probe) and the `GET /api/vr/status` route; not an MCP tool. `tests/vr_fake_agent.py` fakes the helper.
-12. `jobs_api.py`: the handler for each job kind (scan, apply, fix, learn, generate, crop), upload path checks, and job views with titles and queue positions, `GET /api/jobs`, cancel of queued jobs.
+11. `relight_api.py`: `start_relight` (queues the `relight` job, 422 for an environment without templates) and `environments` for `GET /api/lightshow/environments`.
+12. `vr_status.py`, `vr_routes.py`: `VrStatusClient` (host helper over HTTP with a 300 ms timeout and a 2 s cache, or an in-process probe) and the `GET /api/vr/status` route; not an MCP tool. `tests/vr_fake_agent.py` fakes the helper.
+13. `jobs_api.py`: the handler for each job kind (scan, apply, fix, learn, generate, crop), upload path checks, and job views with titles and queue positions, `GET /api/jobs`, cancel of queued jobs.
+14. `playlists_api.py`, `playlists_routes.py`: local playlists: CRUD, build from library maps or job output, export with a validated subfolder, live `.bplist` and `syncURL` routes (see [api.md](../../../docs/api.md#playlists)).
 
 Tests: `task st:test -- tests/test_api.py` or `tests/test_api_library.py` or `tests/test_mcp.py`, `tests/test_web_cache.py`, `tests/test_vr_status.py`.

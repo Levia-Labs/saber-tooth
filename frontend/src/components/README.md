@@ -7,7 +7,7 @@ Shared UI.
 3. `Chips.tsx`: status chip, level chips, cover and tempo.
 4. `Announcer.tsx`: announcement toasts (progress, success, warning, danger, info) in the bottom stack, with optional link, action buttons, a sticky flag and an onDismiss hook; an input with `onOpen` renders as one row (`ToastRow.tsx`: icon, title, rounds, X) whose body opens the Jobs page; `useWithdraw` removes one by key.
 5. `FilterBodies.tsx`, `TextFilterBody.tsx`, `FilterPopover.tsx`, `MobileFilters.tsx`: column filters as popovers and as a fullscreen sheet.
-   5a. `SectionTabs.tsx`: Library | BeatSaver | Jobs tabs in the page title slot, the Jobs tab with the active job count, and a visually hidden h1.
+   5a. `PillTabs.tsx`, `SectionTabs.tsx`: the segmented tab bar (icon and label per tab, arrow keys move focus, optional count badge) and the section tabs built on it: Library, BeatSaver, Jobs, Playlists, About (one `ITEMS` array of path, label, icon), the Jobs tab with the active job count, and a visually hidden h1. The BeatSaver Maps / Playlists tabs reuse `PillTabs`.
 6. `LibraryHeader.tsx`, `LibraryTable.tsx`, `LibraryRow.tsx`, `SkeletonRow.tsx`: the virtualised library table.
 7. `ProposalCard.tsx`, `ProposalGroups.tsx`, `TimelineCanvas.tsx`: proposed fixes with before and after note grids.
 8. `ConfirmDialog.tsx`, `JobOutcome.tsx`: confirmation dialog and the toast for a finished scan, apply or learn job (Try again, Review as toast actions).
@@ -23,3 +23,4 @@ Shared UI.
 18. `StepButtons.tsx`: up and down arrow column beside a number input; holding repeats (used by `RangeFilterBody.tsx`).
 19. `JobToasts.tsx`: restores one-row toasts for running jobs (never queued ones; no buttons, click opens the Jobs page), takes over jobs whose page unmounted, folds more than 4 into one summary.
 20. `JobsTable.tsx`, `JobsHeader.tsx`, `JobsRow.tsx`, `JobsFilterBody.tsx`, `JobStatusChip.tsx`: the Jobs tab table (columns mirror the library: Icon, Title, Length, Operation, Status chip, Queue #, Rounds, Actions with a trash Cancel job), its sortable filterable header, rows and multi-select filter body.
+21. `playlists/`: `LpTable.tsx` (the Playlists table: Icon, Title, Songs, Folder, Sync, Actions; sort and filter in the header), `LpEditor.tsx` (name, author, description, cover, songs, subfolder, sync and the PlaylistManager refresh hint) and `LpSongPicker.tsx` (library search, job output, latest generated or fixed).

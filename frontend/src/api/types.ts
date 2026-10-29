@@ -17,7 +17,8 @@ export const LEVEL_KEYS = ["Easy", "Normal", "Hard", "Expert", "ExpertPlus"] as 
 export type LevelKey = (typeof LEVEL_KEYS)[number];
 
 export type JobState = "queued" | "running" | "done" | "failed" | "cancelled";
-export type JobKind = "scan" | "apply" | "fix" | "generate" | "learn" | "crop" | "bs-download";
+export type JobKind =
+  "scan" | "apply" | "fix" | "generate" | "learn" | "crop" | "relight" | "bs-download";
 
 export type CropLength = "60" | "120";
 export type EndKind = "section" | "phrase" | "bar4" | "bar";

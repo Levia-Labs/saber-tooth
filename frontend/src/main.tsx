@@ -19,6 +19,7 @@ import "./styles/crop.css";
 import "./styles/alerts.css";
 import "./styles/about.css";
 import "./styles/jobs.css";
+import "./styles/localplaylists.css";
 import "./styles/vrmode.css";
 import "./styles/vr.css";
 

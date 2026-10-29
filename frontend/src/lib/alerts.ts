@@ -23,6 +23,7 @@ const FAILED_TITLE: Record<JobKind, string> = {
   generate: "Generation failed",
   learn: "Learning failed",
   crop: "Crop failed",
+  relight: "Relight failed",
   "bs-download": "Download failed",
 };
 
@@ -33,6 +34,7 @@ const DONE_TITLE: Record<JobKind, string> = {
   generate: "Map generated",
   learn: "Lightshows learned",
   crop: "Cropped",
+  relight: "Relit",
   "bs-download": "Downloaded",
 };
 
@@ -173,6 +175,12 @@ function success(job: Job, result: Record<string, unknown>): AlertSpec {
         variant: "success",
         title: DONE_TITLE.crop,
         message: where || "The cropped map was written.",
+      };
+    case "relight":
+      return {
+        variant: "success",
+        title: DONE_TITLE.relight,
+        message: where || "The relit copy was written.",
       };
     case "bs-download":
       return {

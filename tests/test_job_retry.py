@@ -29,8 +29,8 @@ def test_retrying_a_failed_job_queues_a_new_one_with_the_same_kind_and_args(clie
     done = jobs_api.jobs.wait(view["id"])
     with pytest.raises(KeyError):  # the retry's result supersedes the failed row for that map
         jobs_api.store.job(failed)
-    assert done["status"] == "done" and done["result"]["args"] == {"n": 1}
-    assert attempts == [{"n": 1}, {"n": 1}]
+    assert done["status"] == "done" and done["result"]["args"] == {"n": 1, "map_id": "abc123def456"}
+    assert [a["n"] for a in attempts] == [1, 1]  # the handler also sees the row's map_id
 
 
 def test_only_a_failed_job_can_be_retried(client, jobs_api):  # noqa: F811

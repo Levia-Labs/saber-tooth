@@ -137,6 +137,8 @@ class Jobs:
         except ValueError as exc:
             self._mark_failed(job_id, f"unreadable job arguments: {exc}")
             return
+        if job.get("map_id") and "map_id" not in args:
+            args["map_id"] = job["map_id"]  # a row queued without args still knows its map
         progress = _Progress(self, job_id)
         try:
             progress.check()  # cancelled between claim and start

@@ -1,12 +1,4 @@
 /* BeatSaver view. The table reuses the library's scroll region, grid, header and row styles. */
-.bs-tabs {
-  display: flex;
-  gap: 0.4rem;
-}
-.bs-tabs a[aria-current="page"] {
-  color: var(--blue);
-  border-color: var(--blue);
-}
 .bs-toolbar {
   display: flex;
   align-items: center;

@@ -5,6 +5,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from saber_tooth.jobs import Handler
+from saber_tooth.service.relight import relight_map
 
 UPLOAD_GONE = "the uploaded file is no longer available; upload it again"
 
@@ -40,6 +41,7 @@ def core_handlers(service) -> dict[str, Handler]:
         "scan": lambda a, p: service.run_scan(a["map_id"], p),
         "apply": lambda a, p: service.run_apply(a["map_id"], p),
         "fix": lambda a, p: service.fix_map(a["map_id"], progress=p),
+        "relight": lambda a, p: relight_map(service, a["map_id"], a["environment"], p),
         "learn": lambda a, p: {"units": service.learn(p)},
         "generate": lambda a, p: _generate(service, a, p),
         "crop": lambda a, p: service.crop_map(
@@ -53,6 +55,7 @@ KIND_LABELS = {
     "fix": "Fix",
     "apply": "Apply",
     "crop": "Crop",
+    "relight": "Relight",
     "learn": "Learn lightshows",
     "bs-download": "Download maps",
 }

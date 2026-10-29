@@ -24,6 +24,19 @@
   color: var(--muted);
   font-size: 0.9rem;
 }
+.env-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: 0.6rem;
+}
+.env-pick-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
 .metarow {
   display: flex;
   gap: 0.75rem;

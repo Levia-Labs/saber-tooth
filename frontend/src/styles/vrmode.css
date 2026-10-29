@@ -18,6 +18,9 @@
   overflow: hidden;
 }
 .mode-pick-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   padding: 0.3rem 0.8rem;
   border: 0;
   background: transparent;

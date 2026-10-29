@@ -15,7 +15,6 @@ import { TextFilterBody } from "../FilterBodies";
 import { Icon } from "../icons";
 import { Tip } from "../Tip";
 import { InBar } from "../BarSlot";
-import { BsSectionTabs } from "./BsSectionTabs";
 import {
   PlCreatedBody,
   PlLengthBody,
@@ -148,7 +147,6 @@ export function PlaylistToolbar({ state, update, clear, narrow }: Props) {
             </Tip>
           )}
         </div>
-        <BsSectionTabs tab="playlists" />
       </div>
     </InBar>
   );

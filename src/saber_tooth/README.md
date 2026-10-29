@@ -13,6 +13,7 @@ Subpackages:
 7. [web/](web/README.md): build output of the browser UI from [frontend](../../frontend/README.md).
 8. [crop/](crop/README.md): crop a map to a 1 or 2 minute highlight.
 9. [vr/](vr/README.md): VR headset runtime detection, standard library only.
+10. [playlists/](playlists/README.md): local playlists, SongCore level hashes and their .bplist documents.
 
 Top-level modules:
 

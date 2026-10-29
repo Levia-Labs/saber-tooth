@@ -3,10 +3,9 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { createBrowserRouter, Link, Outlet, useLocation, type RouteObject } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import { AnnouncerProvider } from "./components/Announcer";
-import { Icon } from "./components/icons";
 import { JobToasts } from "./components/JobToasts";
 import { Logo } from "./components/Logo";
-import { Tip, TipProvider } from "./components/Tip";
+import { TipProvider } from "./components/Tip";
 import { PageBoundary } from "./components/ErrorPanel";
 import { PageSkeleton } from "./components/Skeletons";
 import { RouteError } from "./components/RouteError";
@@ -25,6 +24,9 @@ const BeatSaverPlaylistsPage = lazyRoute(() =>
   import("./pages/BeatSaverPlaylistsPage").then((m) => ({ default: m.BeatSaverPlaylistsPage })),
 );
 const JobsPage = lazyRoute(() => import("./pages/JobsPage").then((m) => ({ default: m.JobsPage })));
+const PlaylistsPage = lazyRoute(() =>
+  import("./pages/PlaylistsPage").then((m) => ({ default: m.PlaylistsPage })),
+);
 const AboutPage = lazyRoute(() =>
   import("./pages/AboutPage").then((m) => ({ default: m.AboutPage })),
 );
@@ -78,17 +80,6 @@ function ShellFrame() {
           </Link>
           <div className="masthead-actions">
             <ModeSwitch />
-            <Tip text="What Saber Tooth is">
-              <Link
-                className="about-link"
-                to="/about"
-                aria-label="About"
-                aria-current={pathname === "/about" ? "page" : undefined}
-              >
-                <Icon name="info" />
-                <span className="about-label">About</span>
-              </Link>
-            </Tip>
           </div>
         </div>
       </header>
@@ -118,6 +109,7 @@ export const routes: RouteObject[] = [
       { path: "/new", element: <NewPage />, errorElement: <RouteError /> },
       { path: "/beatsaver", element: <BeatSaverPage />, errorElement: <RouteError /> },
       { path: "/jobs", element: <JobsPage />, errorElement: <RouteError /> },
+      { path: "/playlists", element: <PlaylistsPage />, errorElement: <RouteError /> },
       {
         path: "/beatsaver/playlists",
         element: <BeatSaverPlaylistsPage />,
@@ -133,6 +125,7 @@ export const routes: RouteObject[] = [
       { path: "/vr/maps/:id", element: <MapPage />, errorElement: <RouteError /> },
       { path: "/vr/beatsaver", element: <BeatSaverPage />, errorElement: <RouteError /> },
       { path: "/vr/jobs", element: <JobsPage />, errorElement: <RouteError /> },
+      { path: "/vr/playlists", element: <PlaylistsPage />, errorElement: <RouteError /> },
       { path: "*", element: <NotFoundPage />, errorElement: <RouteError /> },
     ],
   },

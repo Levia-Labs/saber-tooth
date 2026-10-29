@@ -13,6 +13,7 @@ const LABEL: Record<string, string> = {
   fix: "Fix",
   apply: "Apply",
   crop: "Crop",
+  relight: "Relight",
   generate: "Generating",
   learn: "Learn lightshows",
   "bs-download": "Download maps",
@@ -20,7 +21,7 @@ const LABEL: Record<string, string> = {
 
 export function toastKey(job: JobView): string {
   if (job.kind === "fix" && job.map_id) return fixKey(job.map_id);
-  if (job.map_id && ["scan", "apply", "crop"].includes(job.kind)) {
+  if (job.map_id && ["scan", "apply", "crop", "relight"].includes(job.kind)) {
     return `${LABEL[job.kind]}:${job.map_id}`;
   }
   if (job.kind === "generate") return `generate-job-${job.id}`;

@@ -21,3 +21,4 @@ Pure helpers and small hooks.
 17. `jobtime.ts`: elapsed-time text and the stale-minutes check for the Jobs page.
 18. `jobtoasts.ts`: which job toasts to show from the server job list (keys, finish toasts, the more-than-4 summary); pure.
 19. `jobfilters.ts`, `jobkinds.ts`, `jobcolumns.ts`, `useJobsState.ts`: Jobs table URL state, whitelisted parsing, filter and sort; kind labels and icons; column set; the URL-state hook.
+20. `lpfilters.ts`, `lpedit.ts`: Playlists table sort and filter and the export hints; the editor draft and request body (pure).

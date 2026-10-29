@@ -14,7 +14,6 @@ import { useAnnounce } from "../Announcer";
 import { Icon } from "../icons";
 import { Tip } from "../Tip";
 import { BsTable } from "./BsTable";
-import type { BsTab } from "./BsSectionTabs";
 import { BsToolbar } from "./BsToolbar";
 import { useDownloads, tally, type Downloads } from "./downloads";
 import { SelectionBar } from "./SelectionBar";
@@ -25,8 +24,6 @@ type Query = UseInfiniteQueryResult<InfiniteData<BsPage>, unknown>;
 interface Props {
   query: Query;
   controls: BsControls;
-  /** Which section tab is current; the tabs sit in the toolbar row. */
-  tab?: BsTab;
   /** Rendered between the toolbar and the list, e.g. the playlist's "Download all matching". */
   extra?: (ctx: { items: BsMap[]; downloads: Downloads; selection: Selection }) => ReactNode;
 }
@@ -47,7 +44,7 @@ export function DownloadSummary({ downloads }: { downloads: Downloads }) {
 }
 
 /** Toolbar, selection, banners, the list and the scan footer; shared by maps and playlists. */
-export function BsResults({ query, controls, extra, tab }: Props) {
+export function BsResults({ query, controls, extra }: Props) {
   const { state, update, set, clearFilters } = controls;
   const table = useRef<HTMLDivElement>(null);
   const columns = useColumns(table, BS_COLUMNS);
@@ -82,14 +79,7 @@ export function BsResults({ query, controls, extra, tab }: Props) {
   const failedFirst = query.isError && !query.data;
   return (
     <>
-      <BsToolbar
-        state={state}
-        update={update}
-        set={set}
-        clear={clearFilters}
-        narrow={narrow}
-        tab={tab}
-      />
+      <BsToolbar state={state} update={update} set={set} clear={clearFilters} narrow={narrow} />
       {extra?.({ items, downloads, selection })}
       <DownloadSummary downloads={downloads} />
       <SelectionBar

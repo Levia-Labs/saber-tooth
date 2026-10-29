@@ -136,6 +136,30 @@ const ICONS = {
   spinner: <path d="M12 3a9 9 0 1 0 9 9" />,
   chevron: <path d="M6 9l6 6 6-6" />,
   upload: <path d="M12 16V4M7 9l5-5 5 5M4 17v3h16v-3" />,
+  library: (
+    <>
+      <path d="M5 4v16M10 4v16" />
+      <path d="M15 5.5l4-1 3.5 14.5-4 1z" />
+    </>
+  ),
+  queue: (
+    <>
+      <path d="M9 6h12M9 12h12M9 18h12" />
+      <path d="M3.5 6h.1M3.5 12h.1M3.5 18h.1" />
+    </>
+  ),
+  headset: (
+    <>
+      <path d="M3 9.5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-3.5l-1.7-2.5h-3.6L8.5 17.5H5a2 2 0 0 1-2-2z" />
+      <path d="M3 12.5H2M21 12.5h1" />
+    </>
+  ),
+  monitor: (
+    <>
+      <rect x="3" y="4.5" width="18" height="12" rx="1.5" />
+      <path d="M9 20h6M12 16.5V20" />
+    </>
+  ),
   download: <path d="M12 4v12M7 11l5 5 5-5M4 17v3h16v-3" />,
   play: <path d="M8 5l11 7-11 7z" />,
   stop: <rect x="6" y="6" width="12" height="12" rx="1.5" />,

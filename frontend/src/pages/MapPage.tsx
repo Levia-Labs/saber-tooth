@@ -1,8 +1,7 @@
-import { formatEnvironment } from "../lib/environment";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
-import { ApiError, applyMap, approveAll, scanMap, deleteMap } from "../api/client";
+import { ApiError, applyMap, approveAll, relightMap, scanMap, deleteMap } from "../api/client";
 import { Alert, SpecAlert } from "../components/Alert";
 import { useAnnounce } from "../components/Announcer";
 import { FixesSkeleton, MapHeadSkeleton } from "../components/Skeletons";
@@ -10,6 +9,7 @@ import { errorToAlert } from "../lib/alerts";
 import { specToInput } from "../lib/announcements";
 import { FixedCopyLink, FixedCopyOf } from "../components/FixedCopyLink";
 import { CropPanel } from "../components/CropPanel";
+import { EnvironmentPicker } from "../components/EnvironmentPicker";
 import { DeletePanel } from "../components/DeletePanel";
 import { FixToolbar } from "../components/FixToolbar";
 import { MapFooter } from "../components/MapFooter";
@@ -47,6 +47,7 @@ export function MapPage() {
     });
   const scan = useJobRunner("Scan", `Scan:${id}`);
   const apply = useJobRunner("Apply", `Apply:${id}`);
+  const relight = useJobRunner("Relight", `Relight:${id}`);
   useLiveRows(map.data ? [map.data] : []);
   const name = map.data ? mapName(map.data) : "Map";
   useDocumentTitle(map.isError ? "Map not found" : name);
@@ -92,7 +93,7 @@ export function MapPage() {
   const approved = list.filter((p) => p.status === "approved").length;
   const clean = map.data ? isCleanCopy(map.data) : false;
   const canCrop = map.data != null && map.data.status !== "unreadable";
-  const running = map.data?.job != null || scan.busy || apply.busy;
+  const running = map.data?.job != null || scan.busy || apply.busy || relight.busy;
   const available = tabsFor(canCrop);
   const tab = parseTab(params.get("tab"), available);
   if (tab === "crop" && !cropSeen) setCropSeen(true);
@@ -131,7 +132,13 @@ export function MapPage() {
             </h1>
             <p className="sub">
               {map.data.mapper || "Unknown mapper"}
-              {map.data.environment ? ` - ${formatEnvironment(map.data.environment)}` : ""}
+              {map.data.status !== "unreadable" && (
+                <EnvironmentPicker
+                  current={map.data.environment}
+                  busy={running}
+                  onPick={(env) => void relight.run(() => relightMap(id, env)).then(refresh)}
+                />
+              )}
             </p>
             <div className="metarow">
               <StatusChip item={map.data} />
@@ -160,6 +167,7 @@ export function MapPage() {
             error={scan.error}
             onRetry={() => void scan.run(() => scanMap(id)).then(refresh)}
           />
+          <JobOutcome toastKey={`Relight:${id}`} job={relight.job} error={relight.error} />
           {approved === 0 && pendingCount > 0 && (
             <Alert
               variant="info"

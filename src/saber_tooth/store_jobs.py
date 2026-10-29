@@ -15,6 +15,8 @@ RECENT_LIMIT = 50
 FINISHED_CAP = 200
 # Finished jobs kept per kind when they have no map (generate, learn, downloads before a map).
 NO_MAP_KEPT = 5
+# Kinds that always act on one map: a finished row without a map is junk, so only the latest stays.
+MAP_KINDS = "('scan','fix','apply','crop')"
 _FIN = "status IN ('done','failed','cancelled')"
 _NEWER = (
     "(n.updated_at > jobs.updated_at OR (n.updated_at = jobs.updated_at AND n.rowid > jobs.rowid))"
@@ -26,7 +28,7 @@ _PRUNE_MAP_SQL = (
 _PRUNE_NO_MAP_SQL = (
     f"DELETE FROM jobs WHERE {_FIN} AND map_id IS NULL AND ("  # noqa: S608
     f"SELECT COUNT(*) FROM jobs n WHERE n.map_id IS NULL AND n.kind = jobs.kind"
-    f" AND n.{_FIN} AND {_NEWER}) >= ?"
+    f" AND n.{_FIN} AND {_NEWER}) >= CASE WHEN jobs.kind IN {MAP_KINDS} THEN 1 ELSE ? END"
 )
 _PRUNE_CAP_SQL = (
     f"DELETE FROM jobs WHERE {_FIN} AND id NOT IN ("  # noqa: S608

@@ -78,12 +78,12 @@ function PlaylistDetail({ id }: { id: string }) {
         <BsTabs
           heading={name}
           headingId="bs-heading"
+          tab="playlists"
           note={playlist ? `${name} - ${playlist.owner}` : undefined}
         />
         <BsResults
           query={query}
           controls={controls}
-          tab="playlists"
           extra={({ downloads }) => (
             <div className="bs-playlist-actions">
               <Link className="btn plain" to="/beatsaver/playlists">
@@ -106,7 +106,7 @@ function PlaylistSearch() {
   return (
     <section className="library" aria-labelledby="bs-heading">
       <BarSlotProvider>
-        <BsTabs heading="BeatSaver playlists" headingId="bs-heading" />
+        <BsTabs heading="BeatSaver playlists" headingId="bs-heading" tab="playlists" />
         <PlaylistList query={query} controls={controls} />
       </BarSlotProvider>
     </section>

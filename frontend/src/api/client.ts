@@ -114,6 +114,14 @@ export const applyMap = (id: string): Promise<Started> =>
 
 export const fixMap = (id: string): Promise<Started> => request("POST", `/api/maps/${seg(id)}/fix`);
 
+/** Vanilla environments the lightshow templates can light. */
+export const getEnvironments = (): Promise<{ environments: string[] }> =>
+  request("GET", "/api/lightshow/environments");
+
+/** Start a relight job: a copy of the map in `environment` with a regenerated lightshow. */
+export const relightMap = (id: string, environment: string): Promise<Started> =>
+  request("POST", `/api/maps/${seg(id)}/relight`, { environment });
+
 export const getTimeline = (id: string, signal?: AbortSignal): Promise<Timeline> =>
   request("GET", `/api/maps/${seg(id)}/timeline`, undefined, signal);
 

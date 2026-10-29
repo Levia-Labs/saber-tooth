@@ -18,7 +18,7 @@ function follows(a: Element, b: Element) {
 }
 
 describe("BeatSaver title row", () => {
-  test("maps: section tabs, saved searches, More filters and Maps/Playlists tabs share one row", async () => {
+  test("maps: section tabs, Maps/Playlists tabs and the site button, then saved searches and More filters, share one row", async () => {
     api();
     renderApp("/beatsaver");
     const section = await screen.findByRole("navigation", { name: "Section" });
@@ -26,22 +26,29 @@ describe("BeatSaver title row", () => {
     const saved = await within(row).findByRole("group", { name: "Saved filters" });
     const more = within(row).getByRole("button", { name: /More filters/ });
     const tabs = within(row).getByRole("navigation", { name: "BeatSaver sections" });
-    expect(follows(section, saved)).toBe(true);
+    const site = within(row).getByRole("link", { name: "Open BeatSaver website" });
+    expect(follows(section, tabs)).toBe(true);
+    expect(follows(tabs, site)).toBe(true);
+    expect(follows(site, saved)).toBe(true);
     expect(follows(saved, more)).toBe(true);
-    expect(follows(more, tabs)).toBe(true);
+    expect(tabs.closest(".bs-toolbar")).toBeNull();
     expect(document.querySelectorAll(".bs-toolbar")).toHaveLength(1);
     expect(row.contains(document.querySelector(".bs-toolbar"))).toBe(true);
   });
 
-  test("playlists: section tabs, More filters and Maps/Playlists tabs share one row", async () => {
+  test("playlists: section tabs and Maps/Playlists tabs, then More filters, share one row", async () => {
     api();
     renderApp("/beatsaver/playlists");
     const section = await screen.findByRole("navigation", { name: "Section" });
     const row = section.closest(".lib-bar") as HTMLElement;
     const more = await within(row).findByRole("button", { name: /More filters/ });
     const tabs = within(row).getByRole("navigation", { name: "BeatSaver sections" });
-    expect(follows(section, more)).toBe(true);
-    expect(follows(more, tabs)).toBe(true);
+    expect(follows(section, tabs)).toBe(true);
+    expect(follows(tabs, more)).toBe(true);
+    expect(within(tabs).getByRole("link", { name: "Playlists" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
     expect(row.contains(document.querySelector(".bs-toolbar"))).toBe(true);
   });
 

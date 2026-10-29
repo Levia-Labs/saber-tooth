@@ -11,7 +11,7 @@ The layout is chosen in this order, first match wins:
 3. a standalone headset browser (Meta Quest Browser, Pico, Wolvic) is VR;
 4. otherwise desktop. If the host helper reports a headset runtime, a toast titled "Headset in use: switch to VR layout?" stays at the bottom with Switch and Not now. Switch changes the layout and remembers the choice; Not now (or closing the toast) hides it for the session.
 
-The VR / Desktop switch in the masthead, next to About, changes the layout and remembers it. Pages without a `/vr` path (About, New, BeatSaver playlists) keep their desktop path in either layout.
+The VR / Desktop switch in the masthead (each button has an icon: headset, monitor) changes the layout and remembers it. Pages without a `/vr` path (About, New, BeatSaver playlists) keep their desktop path in either layout.
 
 ## Runtime detection: the host helper
 

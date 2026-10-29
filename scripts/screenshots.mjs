@@ -126,12 +126,14 @@ async function main() {
     ["map-crop", `/maps/${crop.id}?tab=crop`, desktop, '[role="slider"][aria-label="Crop start"]'],
     ["beatsaver", "/beatsaver", desktop, null],
     ["new-map", "/new", desktop, null],
+    ["about", "/about", desktop, null],
     ["jobs", "/jobs", desktop, null],
     ["playlists", "/beatsaver/playlists", desktop, null],
     ["vr-library", "/vr", vr, null],
     ["vr-map", `/vr/maps/${status.id}`, vr, null],
     ["vr-beatsaver", "/vr/beatsaver", vr, null],
     ["vr-jobs", "/vr/jobs", vr, null],
+    ["vr-about", "/about?mode=vr", vr, null],
     ["vr-playlists", "/beatsaver/playlists?mode=vr", vr, null],
   ];
   const picked = shots.filter(([name]) => !opt.only.length || opt.only.includes(name));

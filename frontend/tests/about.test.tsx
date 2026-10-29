@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
 import { mockFetch, renderApp } from "./helpers";
 
@@ -22,10 +22,32 @@ describe("about page", () => {
     expect(screen.getByText(/^Version /)).toBeInTheDocument();
   });
 
-  test("header has an About link", async () => {
+  test("describes the current features, each in its own card", async () => {
     mockFetch(() => ({}));
     renderApp("/about");
-    const link = await screen.findByRole("link", { name: "About" });
-    expect(link).toHaveAttribute("href", "/about");
+    await screen.findByRole("heading", { name: "About Saber Tooth" });
+    const cards = screen.getByRole("list", { name: "Features" });
+    const titles = within(cards)
+      .getAllByRole("heading", { level: 3 })
+      .map((h) => h.textContent);
+    expect(titles).toEqual([
+      "Quality checker",
+      "One-click Fix",
+      "Generate from a song",
+      "Lightshows",
+      "Crop",
+      "BeatSaver",
+      "Jobs",
+      "VR mode",
+      "MCP tools",
+    ]);
+    expect(screen.getByText(/Chroma, Noodle Extensions or Vivify/)).toBeInTheDocument();
+  });
+
+  test("explains how to use it as ordered steps", async () => {
+    mockFetch(() => ({}));
+    renderApp("/about");
+    const steps = await screen.findByRole("list", { name: "How to use it" });
+    expect(within(steps).getAllByRole("listitem").length).toBeGreaterThanOrEqual(4);
   });
 });

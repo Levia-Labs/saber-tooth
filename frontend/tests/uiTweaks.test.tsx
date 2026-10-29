@@ -5,28 +5,30 @@ import { cropApi } from "./crophelpers";
 import { mockFetch, renderApp } from "./helpers";
 
 describe("BeatSaver toolbar row", () => {
-  test("holds saved searches, More filters and the Maps/Playlists tabs in that order", async () => {
+  test("the Maps/Playlists tabs sit by the section tabs, before saved searches and More filters", async () => {
     mockFetch(() => ({ maps: [], docs: [], presets: [] }));
     renderApp("/beatsaver");
     const filters = await screen.findByRole("button", { name: /More filters/ });
-    const row = filters.closest(".bs-toolbar") as HTMLElement;
-    const saved = within(row).getByRole("group", { name: "Saved filters" });
+    const toolbar = filters.closest(".bs-toolbar") as HTMLElement;
+    const row = toolbar.closest(".lib-bar") as HTMLElement;
+    const saved = within(toolbar).getByRole("group", { name: "Saved filters" });
     const tabs = within(row).getByRole("navigation", { name: "BeatSaver sections" });
+    expect(within(toolbar).queryByRole("navigation", { name: "BeatSaver sections" })).toBeNull();
     expect(within(tabs).getByRole("link", { name: "Maps" })).toBeInTheDocument();
     expect(within(tabs).getByRole("link", { name: "Playlists" })).toBeInTheDocument();
     const follows = Node.DOCUMENT_POSITION_FOLLOWING;
     expect(saved.compareDocumentPosition(filters) & follows).toBeTruthy();
-    expect(filters.compareDocumentPosition(tabs) & follows).toBeTruthy();
+    expect(tabs.compareDocumentPosition(saved) & follows).toBeTruthy();
   });
 });
 
 describe("masthead", () => {
-  test("About link sits inside the content-width container", async () => {
+  test("the mode switch sits inside the content-width container", async () => {
     mockFetch(() => ({}));
     renderApp("/about");
-    const link = await screen.findByRole("link", { name: "About" });
-    expect(link.closest(".masthead-inner")).not.toBeNull();
-    expect(link.closest(".masthead-inner")?.parentElement).toHaveClass("masthead");
+    const toggle = await screen.findByRole("group", { name: /layout/i });
+    expect(toggle.closest(".masthead-inner")).not.toBeNull();
+    expect(toggle.closest(".masthead-inner")?.parentElement).toHaveClass("masthead");
   });
 });
 
