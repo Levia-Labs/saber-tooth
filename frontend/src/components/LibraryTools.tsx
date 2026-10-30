@@ -3,7 +3,7 @@ import { useState } from "react";
 import { learnLightshows } from "../api/client";
 import type { JobRunner } from "../api/jobs";
 import { useMediaQuery } from "../lib/hooks";
-import { COMPACT_QUERY, TINY_QUERY } from "../lib/breakpoint";
+import { TINY_QUERY } from "../lib/breakpoint";
 import { TIPS } from "../lib/tips";
 import { InBar } from "./BarSlot";
 import { ActionButton, ActionLink } from "./Buttons";
@@ -16,11 +16,10 @@ interface Props {
 }
 
 /**
- * Header actions. Wide: text buttons. Below 1100px: icon buttons with the same labels and Tips.
+ * Header actions. Text buttons whose labels collapse to icons when the row runs out of room.
  * Below 480px: Generate stays and the rest move into a kebab menu with the same Tips.
  */
 function ToolsBody({ learn, onResetColumns }: Props) {
-  const iconOnly = useMediaQuery(COMPACT_QUERY);
   const tight = useMediaQuery(TINY_QUERY);
   const [open, setOpen] = useState(false);
   const generate = (
@@ -29,16 +28,15 @@ function ToolsBody({ learn, onResetColumns }: Props) {
       label="Generate map"
       tip={TIPS.generate}
       to="/new"
-      text={!iconOnly}
-      variant={iconOnly ? undefined : "primary"}
-      className={iconOnly ? "primary tap" : undefined}
+      text
+      variant="primary"
     />
   );
   const run = () => void learn.run(learnLightshows);
 
   if (tight) {
     return (
-      <div className="lib-tools">
+      <div className="lib-tools" data-label-row>
         {generate}
         <Popover.Root open={open} onOpenChange={setOpen}>
           <Tip text="More actions.">
@@ -83,14 +81,13 @@ function ToolsBody({ learn, onResetColumns }: Props) {
   }
 
   return (
-    <div className="lib-tools">
+    <div className="lib-tools" data-label-row>
       {generate}
       <ActionButton
         icon="learn"
         label="Learn lightshows"
         tip={TIPS.learn}
-        text={!iconOnly}
-        className={iconOnly ? "tap" : undefined}
+        text
         disabled={learn.busy}
         onClick={run}
       />
@@ -98,7 +95,6 @@ function ToolsBody({ learn, onResetColumns }: Props) {
         icon="reset"
         label="Reset column widths"
         tip={TIPS.resetColumns}
-        className={iconOnly ? "tap" : undefined}
         onClick={onResetColumns}
       />
     </div>

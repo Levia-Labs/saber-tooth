@@ -7,8 +7,7 @@ import { BS_COLUMNS } from "../../lib/bscolumns";
 import { BS_TIPS } from "../../lib/bstips";
 import { isBsDefault } from "../../lib/bsfilters";
 import { batchSummary } from "../../lib/announcements";
-import { useMediaQuery } from "../../lib/hooks";
-import { COMPACT_QUERY } from "../../lib/breakpoint";
+import { useNarrow } from "../../lib/breakpoint";
 import { useListScroll } from "../../lib/listscroll";
 import { sortLoaded } from "../../lib/bsrating";
 import { useColumns } from "../../lib/useColumns";
@@ -51,7 +50,7 @@ export function BsResults({ query, controls, extra }: Props) {
   const { state, update, set, clearFilters } = controls;
   const table = useRef<HTMLDivElement>(null);
   const columns = useColumns(table, BS_COLUMNS);
-  const narrow = useMediaQuery(COMPACT_QUERY);
+  const narrow = useNarrow();
   const config = useBsConfig();
   const downloads = useDownloads();
   const selection = useSelection();
@@ -100,7 +99,7 @@ export function BsResults({ query, controls, extra }: Props) {
           <Tip text={BS_TIPS.retry}>
             <button type="button" className="btn plain" onClick={retry}>
               <Icon name="reset" />
-              <span className="label-hide-mobile">Try again</span>
+              <span className="label-collapsible">Try again</span>
             </button>
           </Tip>
         </div>
@@ -115,7 +114,7 @@ export function BsResults({ query, controls, extra }: Props) {
               <Tip text={BS_TIPS.retry}>
                 <button type="button" className="btn plain" onClick={retry}>
                   <Icon name="reset" />
-                  <span className="label-hide-mobile">Retry</span>
+                  <span className="label-collapsible">Retry</span>
                 </button>
               </Tip>
             </div>
@@ -144,7 +143,7 @@ export function BsResults({ query, controls, extra }: Props) {
                   filtered ? (
                     <button type="button" className="btn plain" onClick={clearFilters}>
                       <Icon name="filter-x" />
-                      <span className="label-hide-mobile">Clear filters</span>
+                      <span className="label-collapsible">Clear filters</span>
                     </button>
                   ) : undefined
                 }
@@ -156,7 +155,7 @@ export function BsResults({ query, controls, extra }: Props) {
               <p className="err">Could not load more maps: {errorMessage(query.error)}</p>
               <button type="button" className="btn plain" onClick={retry}>
                 <Icon name="expand" />
-                <span className="label-hide-mobile">Load more</span>
+                <span className="label-collapsible">Load more</span>
               </button>
             </div>
           )}

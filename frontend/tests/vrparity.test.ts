@@ -86,11 +86,11 @@ describe("one VR height for every control", () => {
 });
 
 describe("VR icon-only buttons reuse the mobile label mechanism", () => {
-  test("the VR rule hides .label-hide-mobile like the mobile breakpoint does", () => {
+  test("the VR rule hides .label-collapsible like the mobile breakpoint does", () => {
     const mobile = rules(read("../src/styles/overlays.css")).find(
-      (r) => r.selector === ".label-hide-mobile",
+      (r) => r.selector === ".label-collapsible[data-collapsed]",
     );
-    const vr = vrRules.find((r) => r.selector === '[data-ui="vr"] .label-hide-mobile');
+    const vr = vrRules.find((r) => r.selector === '[data-ui="vr"] .label-collapsible');
     expect(vr?.body.replace(/\s+/g, "")).toBe(mobile?.body.replace(/\s+/g, ""));
   });
 });
@@ -111,11 +111,7 @@ describe("VR header icons and tabs", () => {
   });
 
   test("tabs with a hidden label are square-ish at the target size in VR", () => {
-    const rule = vrRules.find((r) => r.selector.includes(".pill:has(> .label-hide-mobile)"));
+    const rule = vrRules.find((r) => r.selector.includes(".pill:has(> .label-collapsible)"));
     expect(rule?.body).toMatch(/min-width:\s*var\(--vr-target\)/);
-  });
-
-  test("the mobile rule has an opt-out class that keeps a label", () => {
-    expect(read("../src/styles/overlays.css")).toMatch(/\.btn\.keep-label > \.label-hide-mobile/);
   });
 });

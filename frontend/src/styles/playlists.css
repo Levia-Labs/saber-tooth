@@ -44,7 +44,7 @@
   }
 }
 
-@media (max-width: 1299.98px) {
+@media (max-width: 719.98px) {
   .pl-table .col-length {
     display: flex;
   }
@@ -53,12 +53,11 @@
   }
   .pl-table .lib-row {
     height: auto;
-    min-height: 150px;
+    min-height: 132px;
     grid-template-columns: 56px minmax(0, 1fr) auto auto;
     grid-template-areas:
       "cover title title title"
       "cover sub sub sub"
-      "maps rating length length"
-      "actions actions actions actions";
+      "maps rating length actions";
   }
 }

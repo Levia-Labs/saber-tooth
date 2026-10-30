@@ -40,7 +40,7 @@ function MoreFilters({ state, update, clear }: Omit<Props, "set" | "narrow">) {
       <Tip text={BS_TIPS.moreFilters}>
         <Dialog.Trigger className="btn plain filters-btn">
           <Icon name="filter" filled={total > 0} />
-          <span className="label-hide-mobile">More filters</span>
+          <span className="label-collapsible">More filters</span>
           {total > 0 && <span className="filter-badge static">{total}</span>}
         </Dialog.Trigger>
       </Tip>
@@ -51,7 +51,7 @@ function MoreFilters({ state, update, clear }: Omit<Props, "set" | "narrow">) {
             <Dialog.Title>Filters</Dialog.Title>
             <button type="button" className="btn plain" disabled={!total} onClick={clear}>
               <Icon name="filter-x" />
-              <span className="label-hide-mobile">Clear all</span>
+              <span className="label-collapsible">Clear all</span>
             </button>
           </div>
           <div className="sheet-body">

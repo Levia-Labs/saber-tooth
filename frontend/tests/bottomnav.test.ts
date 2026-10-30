@@ -38,10 +38,12 @@ test("the bar tabs share the full width equally, with centered icons and a full-
   expect(tab).toMatch(/gap:\s*0/);
   expect(tab).toMatch(/margin:\s*0/);
   const bar = /\.mode-switch\.section-tabs \{([^}]*)\}/.exec(block)?.[1] ?? "";
-  expect(bar).not.toMatch(/(?<![a-z-])padding(-inline)?:/);
-  expect(bar).toMatch(/padding-left:\s*env\(safe-area-inset-left/);
-  expect(bar).toMatch(/padding-right:\s*env\(safe-area-inset-right/);
-  expect(bar).toMatch(/gap:\s*0/);
+  expect(bar).toMatch(/padding-left:\s*max\(6px, env\(safe-area-inset-left/);
+  expect(bar).toMatch(/padding-right:\s*max\(6px, env\(safe-area-inset-right/);
+  expect(bar).toMatch(/max-width:\s*none/);
+  // Regular buttons: bordered and rounded like the other buttons, spaced by the bar's gap.
+  expect(tab).toMatch(/border:\s*1px solid var\(--line\)/);
+  expect(tab).toMatch(/border-radius:\s*var\(--radius\)/);
   expect(block).toMatch(
     /\.section-tabs \.pill\[aria-current="page"\] \{[^}]*box-shadow:[^}]*inset 0 -3px/,
   );

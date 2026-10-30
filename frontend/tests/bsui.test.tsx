@@ -30,7 +30,7 @@ describe("icon-only row actions and icons", () => {
     await screen.findByText("Song 1");
     const save = screen.getByRole("button", { name: /Save filters/ });
     expect(save.querySelector("svg")).not.toBeNull();
-    expect(save.querySelector(".label-hide-mobile")).not.toBeNull();
+    expect(save.querySelector(".label-collapsible")).not.toBeNull();
   });
 
   test("Add tag is an icon button with a tooltip", async () => {

@@ -151,7 +151,6 @@ export const LIBRARY_COLUMNS: ColumnSet = {
 const GAP = 12;
 const PAD = 24;
 const MAIN_PAD = 40;
-const MAIN_MAX = 1480;
 const SCROLL_BORDER = 2;
 const SCROLLBAR = 17;
 export const STEP = 16;
@@ -159,7 +158,7 @@ export const BIG_STEP = 64;
 
 /** Width of the list's scroll content at a viewport width: page padding, border and scrollbar off. */
 export function availableWidth(viewport: number): number {
-  return Math.min(viewport, MAIN_MAX) - MAIN_PAD - SCROLL_BORDER - SCROLLBAR;
+  return viewport - MAIN_PAD - SCROLL_BORDER - SCROLLBAR;
 }
 
 /** Rendered Title width at a viewport width: whatever the fixed tracks leave over. */

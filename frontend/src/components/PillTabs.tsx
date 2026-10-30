@@ -50,6 +50,7 @@ export function PillTabs({ label, tabs, active, className }: Props) {
     <nav
       className={["mode-switch", className].filter(Boolean).join(" ")}
       aria-label={label}
+      data-label-row
       onKeyDown={arrows}
     >
       {tabs.map((t) => (
@@ -61,7 +62,7 @@ export function PillTabs({ label, tabs, active, className }: Props) {
             aria-label={t.label}
           >
             <Icon name={t.icon} />
-            <span className="label-hide-mobile">{t.label}</span>
+            <span className="label-collapsible">{t.label}</span>
             {t.badge !== undefined && t.badge > 0 && (
               <span className="tab-count" aria-label={`${t.badge} active`}>
                 {t.badge}

@@ -55,7 +55,7 @@ describe("header actions on narrow screens", () => {
       const learn = screen.getByRole("button", { name: "Learn lightshows" });
       const reset = screen.getByRole("button", { name: "Reset column widths" });
       for (const el of [generate, learn, reset]) {
-        expect(el.querySelector(".sr")).not.toBeNull();
+        expect(el.querySelector(".sr, .label-collapsible")).not.toBeNull();
         expect(el.querySelector("svg")).not.toBeNull();
       }
       expect(css("library.css")).toMatch(/\.lib-tools \.btn\.tap\s*\{[^}]*width:\s*44px/);
@@ -183,7 +183,6 @@ describe("fitting columns", () => {
     const fixed = tableMinWidth(bp, widths) - (widths.title ?? 0);
     expect(fixed + title).toBe(availableWidth(w));
     expect(title).toBeGreaterThanOrEqual(widths.title ?? 0);
-    expect(title).toBeLessThanOrEqual(520);
   });
 
   test("mid and compact defaults also fit at their narrowest viewports", () => {
@@ -193,8 +192,8 @@ describe("fitting columns", () => {
     );
   });
 
-  test("the page is capped at 1480px so 1920 matches the cap", () => {
-    expect(availableWidth(1920)).toBe(availableWidth(1480));
+  test("the page is not capped: the available width grows with the viewport", () => {
+    expect(availableWidth(1920)).toBeGreaterThan(availableWidth(1480));
   });
 
   test("every breakpoint lists the same keys as its defaults", () => {

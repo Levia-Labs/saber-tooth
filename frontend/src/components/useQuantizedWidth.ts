@@ -1,9 +1,9 @@
 import { useLayoutEffect, useRef } from "react";
 import { quantize, TOAST_STEP_PX } from "../lib/quantize";
-import { MOBILE_QUERY } from "../lib/breakpoint";
+import { CARD_QUERY } from "../lib/breakpoint";
 
-/** The mobile breakpoint (lib/breakpoint.ts), where toasts take the full stack width instead. */
-export { MOBILE_QUERY };
+/** The card breakpoint (lib/breakpoint.ts), where toasts take the full stack width instead. */
+export { CARD_QUERY };
 
 /**
  * Snaps the element's width up to a multiple of 50 px (times `--ui-scale` in VR) measured from its
@@ -15,7 +15,7 @@ export function useQuantizedWidth<T extends HTMLElement>(deps: readonly unknown[
     const el = ref.current;
     if (!el) return undefined;
     const fit = () => {
-      if (window.matchMedia(MOBILE_QUERY).matches) {
+      if (window.matchMedia(CARD_QUERY).matches) {
         el.style.width = "";
         return;
       }

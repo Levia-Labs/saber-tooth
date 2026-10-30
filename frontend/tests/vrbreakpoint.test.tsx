@@ -34,8 +34,10 @@ function window_(width: number, vr: boolean) {
 
 describe("the layout by window width", () => {
   test.each([
-    [1000, "compact", 180],
-    [1299, "compact", 180],
+    [600, "compact", 140],
+    [1000, "compact", 92],
+    [1250, "mid", 72],
+    [1299, "wide", 72],
     [1400, "wide", 72],
   ])("non-VR at %i px: %s tier, row estimate %i", (width, tier, rows) => {
     window_(width, false);
@@ -48,11 +50,11 @@ describe("the layout by window width", () => {
     [2560, "compact"],
     [3600, "mid"],
     [4200, "wide"],
-  ])("VR at %i px keeps table rows (never the 180 px card) in the %s tier", (width, tier) => {
+  ])("VR at %i px keeps table rows (never the 140 px card) in the %s tier", (width, tier) => {
     window_(width, true);
     expect(renderHook(() => useBreakpoint()).result.current).toBe(tier);
     const rows = renderHook(() => useRowEstimate()).result.current;
-    expect(rows).not.toBe(180);
+    expect(rows).not.toBe(140);
     expect(rows).toBe(tier === "compact" ? 92 : 72);
   });
 });

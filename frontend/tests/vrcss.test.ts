@@ -114,7 +114,7 @@ describe("vr.css", () => {
     expect(bare).toMatch(/max-width: 1099.98px\)[^@]*--row-h:\s*calc\(92px \* var\(--ui-scale\)\)/);
     // VR never uses the phone card rows, so it has no card row height.
     expect(bare).not.toMatch(/232px/);
-    expect(bare).not.toMatch(/max-width: 1299.98px/);
+    expect(bare).not.toMatch(/max-width: 719.98px/);
   });
 
   test("header buttons are not forced to the target width", () => {
@@ -143,7 +143,7 @@ describe("toast stack", () => {
   });
 
   test("keeps a 16 px side gutter on a phone", () => {
-    expect(alerts).toMatch(/max-width: 1299.98px\)[^@]*width:\s*calc\(100% - 2rem\)/);
+    expect(alerts).toMatch(/max-width: 719.98px\)[^@]*width:\s*calc\(100% - 2rem\)/);
   });
 
   test("the VR stack centers its toasts too", () => {

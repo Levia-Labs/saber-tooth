@@ -44,7 +44,7 @@ function SavePreset({ state }: { state: BsState }) {
       <Tip text={BS_TIPS.savePreset}>
         <Dialog.Trigger className="btn plain preset-save">
           <Icon name="bookmark-plus" />
-          <span className="label-hide-mobile">Save filters</span>
+          <span className="label-collapsible">Save filters</span>
         </Dialog.Trigger>
       </Tip>
       <Dialog.Portal>
@@ -71,7 +71,7 @@ function SavePreset({ state }: { state: BsState }) {
             <div className="row">
               <Dialog.Close className="btn plain" type="button">
                 <Icon name="reject" />
-                <span className="label-hide-mobile">Cancel</span>
+                <span className="label-collapsible">Cancel</span>
               </Dialog.Close>
               <button
                 type="submit"
@@ -79,7 +79,7 @@ function SavePreset({ state }: { state: BsState }) {
                 disabled={!name.trim() || save.isPending}
               >
                 <Icon name="approve" />
-                <span className="label-hide-mobile">Save</span>
+                <span className="label-collapsible">Save</span>
               </button>
             </div>
           </form>

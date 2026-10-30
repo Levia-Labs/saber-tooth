@@ -8,7 +8,7 @@ const read = (rel: string) =>
     "",
   );
 const css = read("../src/styles/jobs.css");
-const phone = css.slice(css.lastIndexOf("@media (max-width: 1299.98px)"));
+const phone = css.slice(css.lastIndexOf("@media (max-width: 719.98px)"));
 
 test("on a phone the Jobs table drops Image, Length and Operation and never forces a minimum width", () => {
   for (const col of ["jc-cover", "jc-length", "jc-operation"]) {

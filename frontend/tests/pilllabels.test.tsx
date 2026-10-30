@@ -17,7 +17,7 @@ test("every tab hides its label visually, keeps it as the name and keeps the bad
       </Tooltip.Provider>
     </MemoryRouter>,
   );
-  expect(container.querySelectorAll(".pill > .label-hide-mobile")).toHaveLength(2);
+  expect(container.querySelectorAll(".pill > .label-collapsible")).toHaveLength(2);
   expect(screen.getByRole("link", { name: "Library" })).toBeTruthy();
   expect(screen.getByLabelText("3 active").textContent).toBe("3");
 });

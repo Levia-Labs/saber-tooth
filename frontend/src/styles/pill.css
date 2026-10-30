@@ -36,13 +36,13 @@
   cursor: not-allowed;
   opacity: 0.45;
 }
-/* In mobile view (below 1300 px, lib/breakpoint.ts) the section tabs are the bottom navigation
-   bar: the same nav, fixed to the bottom, icons only (the labels are .label-hide-mobile). The tabs
-   share the full bar width equally, each icon centered in its button; the page and the toasts
-   clear the bar. */
+/* Below 1300 px (lib/breakpoint.ts) the section tabs are the bottom navigation bar: the same nav,
+   fixed to the bottom, the labels hidden by design (the one place a width, not the room, decides).
+   The tabs are regular buttons that share the bar width equally, each icon centered in its
+   button; the page and the toasts clear the bar. */
 @media (max-width: 1299.98px) {
   :root:not([data-ui="vr"]) {
-    --bottom-nav-h: calc(56px + env(safe-area-inset-bottom, 0px));
+    --bottom-nav-h: calc(60px + env(safe-area-inset-bottom, 0px));
   }
   :root:not([data-ui="vr"]) .mode-switch.section-tabs {
     position: fixed;
@@ -51,13 +51,24 @@
     bottom: 0;
     z-index: 45;
     display: flex;
-    gap: 0;
+    gap: 6px;
+    max-width: none;
     border-width: 1px 0 0;
     border-radius: 0;
-    padding-left: env(safe-area-inset-left, 0px);
-    padding-right: env(safe-area-inset-right, 0px);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding: 6px;
+    padding-left: max(6px, env(safe-area-inset-left, 0px));
+    padding-right: max(6px, env(safe-area-inset-right, 0px));
+    padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
     overflow: visible;
+  }
+  :root:not([data-ui="vr"]) .section-tabs .label-collapsible {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
   :root:not([data-ui="vr"]) .section-tabs .pill {
     position: relative;
@@ -67,18 +78,22 @@
     align-items: center;
     justify-content: center;
     gap: 0;
-    min-height: 56px;
+    min-height: 48px;
     margin: 0;
     padding: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--panel-2);
   }
   :root:not([data-ui="vr"]) .section-tabs .pill[aria-current="page"] {
+    border-color: var(--blue);
     box-shadow: inset 0 -3px 0 var(--blue);
   }
   /* The Jobs count sits on the icon's top right; the icon is centered, so the offset is from the
      middle of the button. */
   :root:not([data-ui="vr"]) .section-tabs .pill .tab-count {
     position: absolute;
-    top: 6px;
+    top: 4px;
     left: calc(50% + 6px);
     min-width: 1.1rem;
     padding: 0 0.3rem;

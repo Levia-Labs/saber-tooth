@@ -9,6 +9,7 @@ import { TipProvider } from "./components/Tip";
 import { PageBoundary } from "./components/ErrorPanel";
 import { PageSkeleton } from "./components/Skeletons";
 import { RouteError } from "./components/RouteError";
+import { installLabelCollapse } from "./lib/labelCollapse";
 import { lazyRoute } from "./lib/lazyRoute";
 import { ModeSwitch } from "./vr/ModeSwitch";
 import { VrBanner } from "./vr/VrBanner";
@@ -44,6 +45,11 @@ export function makeQueryClient(): QueryClient {
   });
 }
 
+/** Collapse button labels to icons in every row that runs out of room (lib/labelCollapse.ts). */
+function useLabelCollapse() {
+  useEffect(() => installLabelCollapse(), []);
+}
+
 /** Move focus to the page heading after client-side navigation (not on first load). */
 function useFocusHeading() {
   const { pathname } = useLocation();
@@ -68,6 +74,7 @@ export function Shell() {
 
 function ShellFrame() {
   useFocusHeading();
+  useLabelCollapse();
   const { pathname } = useLocation();
   return (
     <div className="app">

@@ -242,38 +242,32 @@
   -webkit-user-select: text;
   user-select: text;
 }
-@media (max-width: 1299.98px) {
-  .label-hide-mobile {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-  }
-  .btn:has(> .label-hide-mobile) {
-    min-width: 44px;
-    min-height: 44px;
-    padding: 0;
-    justify-content: center;
-  }
-  /* The opt-out: a button that must keep its text. */
-  .btn.keep-label > .label-hide-mobile {
-    position: static;
-    width: auto;
-    height: auto;
-    margin: 0;
-    overflow: visible;
-    clip: auto;
-  }
-  .btn.keep-label:has(> .label-hide-mobile) {
-    min-width: 0;
-    padding: 0.45rem 0.9rem;
-  }
-  .mode-switch .pill:has(> .label-hide-mobile) {
-    min-width: 44px;
-    padding: 0 0.9rem;
-    justify-content: center;
-  }
+/* A label hides when its row runs out of room, not at a width: lib/labelCollapse.ts sets
+   data-collapsed on the labels that do not fit, last in the row first. The label stays in the
+   accessibility tree as the button's name. */
+.label-collapsible[data-collapsed] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.btn:has(> .label-collapsible[data-collapsed]) {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  justify-content: center;
+}
+.mode-switch .pill:has(> .label-collapsible[data-collapsed]) {
+  min-width: 44px;
+  padding: 0 0.9rem;
+  justify-content: center;
+}
+/* A row that collapses labels shrinks to its space and stays on one line. */
+[data-label-row] {
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: nowrap;
 }

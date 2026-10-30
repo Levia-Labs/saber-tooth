@@ -116,7 +116,7 @@ a.jobs-title:focus-visible {
 }
 /* A phone has no room for six tracks: Length and Operation drop out, Icon, Title, Status and
    Actions remain with Title taking the rest, and the table never scrolls sideways. */
-@media (max-width: 1299.98px) {
+@media (max-width: 719.98px) {
   .jobs-table.lib-table {
     min-width: 0;
   }

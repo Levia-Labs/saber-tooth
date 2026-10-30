@@ -17,7 +17,7 @@ function content({ icon, label, text, children }: Common) {
   return (
     <>
       <Icon name={icon} />
-      <span className={text ? "label-hide-mobile" : "sr"}>{label}</span>
+      <span className={text ? "label-collapsible" : "sr"}>{label}</span>
       {children}
     </>
   );

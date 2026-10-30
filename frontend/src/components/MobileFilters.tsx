@@ -95,7 +95,7 @@ export function MobileFilters({ state, facets, update, clear, matchCount }: Prop
       <Tip text="Filter the library by title, author, levels, length, BPM, environment and status.">
         <Dialog.Trigger className="btn plain filters-btn">
           <Icon name="filter" filled={total > 0} />
-          <span className="label-hide-mobile">Filters</span>
+          <span className="label-collapsible">Filters</span>
           {total > 0 && <span className="filter-badge static">{total}</span>}
         </Dialog.Trigger>
       </Tip>

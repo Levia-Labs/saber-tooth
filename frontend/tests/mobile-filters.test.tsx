@@ -194,10 +194,8 @@ describe("icon-only actions on mobile", () => {
       </TipProvider>,
     );
     const button = screen.getByRole("button", { name: "Scan Song" });
-    expect(button.querySelector("span.label-hide-mobile")?.textContent).toBe("Scan Song");
-    expect(css("overlays.css")).toMatch(
-      /@media \(max-width: 1299.98px\) \{\s*\.label-hide-mobile \{[^}]*clip/,
-    );
+    expect(button.querySelector("span.label-collapsible")?.textContent).toBe("Scan Song");
+    expect(css("overlays.css")).toMatch(/\.label-collapsible\[data-collapsed\] \{[^}]*clip/);
   });
 
   test("card actions no longer render short text labels", async () => {
@@ -221,7 +219,7 @@ describe("icon-only actions on mobile", () => {
       screen.getByRole("link", { name: `Open map: Unreadable: ${reason}` }),
     ).toBeInTheDocument();
     expect(css("rows.css")).toMatch(
-      /@media \(max-width: 1299.98px\) \{\s*\.sub-unreadable \{\s*display: none/,
+      /@media \(max-width: 719.98px\) \{\s*\.sub-unreadable \{\s*display: none/,
     );
     expect(css("rows.css")).toMatch(/\.sub-unreadable \{[^}]*text-overflow: ellipsis/);
     expect(css("chips.css")).toMatch(/\.chip \{\s*max-width: 100%;\s*white-space: nowrap/);

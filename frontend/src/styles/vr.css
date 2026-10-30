@@ -56,7 +56,7 @@
   ):not(.checkbox, .filter-btn, .th-sort, .step-btn, .field-clear) {
   min-height: var(--vr-target);
 }
-:root[data-ui="vr"] .btn:is(.icon, .tap, :has(> .label-hide-mobile)):not(.checkbox) {
+:root[data-ui="vr"] .btn:is(.icon, .tap, :has(> .label-collapsible)):not(.checkbox) {
   min-width: var(--vr-target);
   padding-inline: 0;
   justify-content: center;
@@ -71,7 +71,7 @@
 }
 /* Icon-only buttons: the mobile breakpoint hides the label of a button that has an icon
    (overlays.css); VR does the same at every width. */
-[data-ui="vr"] .label-hide-mobile {
+[data-ui="vr"] .label-collapsible {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -80,7 +80,7 @@
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
-:root[data-ui="vr"] .mode-switch .pill:has(> .label-hide-mobile) {
+:root[data-ui="vr"] .mode-switch .pill:has(> .label-collapsible) {
   min-width: var(--vr-target);
   padding-inline: var(--vr-gap);
   justify-content: center;

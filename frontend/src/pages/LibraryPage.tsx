@@ -9,8 +9,8 @@ import { SectionTabs } from "../components/SectionTabs";
 import { LibraryTable } from "../components/LibraryTable";
 import { LibraryMobileBar } from "../components/LibraryMobileBar";
 import { LibraryTools } from "../components/LibraryTools";
-import { useDocumentTitle, useLibraryState, useMediaQuery } from "../lib/hooks";
-import { COMPACT_QUERY } from "../lib/breakpoint";
+import { useDocumentTitle, useLibraryState } from "../lib/hooks";
+import { useNarrow } from "../lib/breakpoint";
 import { useListScroll } from "../lib/listscroll";
 import { useColumns } from "../lib/useColumns";
 import { filterCounts, totalFilters } from "../lib/urlstate";
@@ -22,7 +22,7 @@ export function LibraryPage() {
   const facets = useFacets();
   const table = useRef<HTMLDivElement>(null);
   const columns = useColumns(table);
-  const narrow = useMediaQuery(COMPACT_QUERY);
+  const narrow = useNarrow();
   const learn = useJobRunner("Learn lightshows");
   const { fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError } = library;
 

@@ -1,37 +1,47 @@
+import { useMediaQuery } from "./hooks";
+
 /**
- * The one mobile breakpoint. Below 1300 px the app is in mobile view: the bottom navigation bar,
- * icon-only buttons and tabs, card rows in the lists, the filter sheet, full-width toasts.
+ * The responsive tiers. Each CSS rule uses the query text verbatim; media queries cannot read a
+ * variable, so tests/breakpoint.test.ts keeps the stylesheets in step with this file.
  *
- * Every CSS rule of that view uses MOBILE_QUERY verbatim (`@media (max-width: 1299.98px)`), and
- * the desktop-only rules use DESKTOP_QUERY; tests/breakpoint.test.ts keeps the stylesheets in
- * step with this file. Media queries cannot read a variable, so the text is the shared value.
+ *   - MOBILE_QUERY, below 1300 px: the mobile chrome. The bottom navigation bar and the filter
+ *     sheet; the desktop side sheet starts at DESKTOP_QUERY.
+ *   - MID_QUERY and COMPACT_QUERY: the table tiers. The lists stay tables below 1300 px and drop
+ *     columns by the width they have (lib/columns.ts).
+ *   - CARD_QUERY, below 720 px: the lists turn into card rows, because not even the compact column
+ *     set fits. CARD_MAX_PX comes from the compact column minimums; tests/cardswitch.test.ts
+ *     fails when they and this value disagree.
  *
- * VR never enters the mobile view: it keeps the desktop table rows at any size, only bigger. The
- * table tiers (MID_QUERY, COMPACT_QUERY) are what adapts its columns by effective width. Both the
- * stylesheets and `matchMedia` are rewritten by src/vr/scale.ts (see `mediaFor`):
+ * Button labels do not follow a width: they collapse when their row overflows (labelCollapse.ts).
  *
- *   - outside VR the tier queries become MOBILE_QUERY (the tiers are part of the mobile view);
- *   - in VR MOBILE_QUERY never matches, the tiers scale by the UI scale, and DESKTOP_QUERY starts
- *     at 1100 px (the side sheet of the wide and mid tiers).
+ * VR never enters the mobile chrome or the cards: it keeps the desktop table rows at any size,
+ * only bigger. src/vr/scale.ts rewrites the stylesheets and `matchMedia` through `mediaFor`: in
+ * VR the mobile and card queries never match, the tiers scale by the UI scale, and
+ * DESKTOP_QUERY starts at 1100 px.
  */
 export const MOBILE_MAX_PX = 1299.98;
 export const MOBILE_QUERY = `(max-width: ${MOBILE_MAX_PX}px)`;
 export const DESKTOP_QUERY = "(min-width: 1300px)";
-/** The table tiers: the old 1279 and 1099 px tiers, spelled apart from the content tiers. */
 export const MID_QUERY = "(max-width: 1279.98px)";
 export const COMPACT_QUERY = "(max-width: 1099.98px)";
+export const CARD_MAX_PX = 719.98;
+export const CARD_QUERY = `(max-width: ${CARD_MAX_PX}px)`;
 /** DESKTOP_QUERY in VR. */
 export const VR_DESKTOP_QUERY = "(min-width: 1100px)";
 /** Genuinely tiny phones: the toolbar folds into a kebab menu. */
 export const TINY_QUERY = "(max-width: 479px)";
 
-/** The query to evaluate for `query` outside or inside VR; any other query passes through. */
+/** The query to evaluate for `query` inside or outside VR; any other query passes through. */
 export function mediaFor(query: string, vr: boolean): string {
+  if (!vr) return query;
   const q = query.trim();
-  if (vr) {
-    if (q === MOBILE_QUERY) return "not all";
-    if (q === DESKTOP_QUERY) return VR_DESKTOP_QUERY;
-    return query;
-  }
-  return q === MID_QUERY || q === COMPACT_QUERY ? MOBILE_QUERY : query;
+  if (q === MOBILE_QUERY || q === CARD_QUERY) return "not all";
+  return q === DESKTOP_QUERY ? VR_DESKTOP_QUERY : query;
+}
+
+/** True where the filter sheet replaces the popovers: below 1300 px, and in VR the compact tier. */
+export function useNarrow(): boolean {
+  const mobile = useMediaQuery(MOBILE_QUERY);
+  const compact = useMediaQuery(COMPACT_QUERY);
+  return mobile || compact;
 }

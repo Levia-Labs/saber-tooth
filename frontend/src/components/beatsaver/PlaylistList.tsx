@@ -10,8 +10,7 @@ import {
 } from "../../api/beatsaver";
 import { DEFAULT_BS_STATE } from "../../lib/bsfilters";
 import { errorToAlert } from "../../lib/alerts";
-import { useMediaQuery } from "../../lib/hooks";
-import { COMPACT_QUERY } from "../../lib/breakpoint";
+import { useNarrow } from "../../lib/breakpoint";
 import { PL_COLUMNS } from "../../lib/plcolumns";
 import { isPlDefault, viewPlaylists } from "../../lib/plfilters";
 import { PL_TIPS } from "../../lib/pltips";
@@ -48,7 +47,7 @@ export function PlaylistList({ query, controls }: { query: Query; controls: PlCo
   const { state, update, clearFilters } = controls;
   const table = useRef<HTMLDivElement>(null);
   const columns = useColumns(table, PL_COLUMNS);
-  const narrow = useMediaQuery(COMPACT_QUERY);
+  const narrow = useNarrow();
   const downloads = useDownloads();
   const [fetching, setFetching] = useState(false);
   const [failure, setFailure] = useState<unknown>(null);
@@ -127,7 +126,7 @@ export function PlaylistList({ query, controls }: { query: Query; controls: PlCo
                     <Tip text={PL_TIPS.clearFilters}>
                       <button type="button" className="btn plain" onClick={clearFilters}>
                         <Icon name="filter-x" />
-                        <span className="label-hide-mobile">Clear filters</span>
+                        <span className="label-collapsible">Clear filters</span>
                       </button>
                     </Tip>
                   ) : undefined

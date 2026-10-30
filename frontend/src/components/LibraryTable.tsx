@@ -3,7 +3,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import type { Facets, MapItem } from "../api/types";
 import { useMediaQuery } from "../lib/hooks";
-import { COMPACT_QUERY, MOBILE_QUERY } from "../lib/breakpoint";
+import { CARD_QUERY, COMPACT_QUERY } from "../lib/breakpoint";
 import { useColumns } from "../lib/useColumns";
 import type { LibraryState } from "../lib/urlstate";
 import { Alert } from "./Alert";
@@ -35,9 +35,9 @@ interface Props {
 }
 
 export function useRowEstimate(): number {
-  const mobile = useMediaQuery(MOBILE_QUERY);
+  const mobile = useMediaQuery(CARD_QUERY);
   const compact = useMediaQuery(COMPACT_QUERY);
-  if (mobile) return 180;
+  if (mobile) return 140;
   return compact ? 92 : 72;
 }
 

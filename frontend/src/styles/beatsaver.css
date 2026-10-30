@@ -225,16 +225,15 @@ button.bs-tag[aria-pressed="true"] {
   }
 }
 
-@media (max-width: 1299.98px) {
+@media (max-width: 719.98px) {
   .bs-table .lib-row {
     height: auto;
-    min-height: 172px;
+    min-height: 132px;
     grid-template-columns: 32px 56px minmax(0, 1fr) auto;
     grid-template-areas:
       "select cover title title"
       "select cover sub sub"
-      "rating upvotes status status"
-      "actions actions actions actions";
+      "rating upvotes status actions";
   }
 }
 .col-title:has(> .bs-title) {

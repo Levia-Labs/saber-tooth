@@ -152,7 +152,7 @@ export function TagsBody({ state, update }: Props) {
         </Tip>
         <button type="button" className="btn plain" onClick={() => update({ tags: [] })}>
           <Icon name="filter-x" />
-          <span className="label-hide-mobile">Clear</span>
+          <span className="label-collapsible">Clear</span>
         </button>
       </div>
       <div role="group" aria-label="Tags" className="checks bs-tag-checks">

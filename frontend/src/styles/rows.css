@@ -188,7 +188,7 @@
   }
 }
 
-@media (max-width: 1299.98px) {
+@media (max-width: 719.98px) {
   .lib-table {
     min-width: 0;
   }
@@ -208,13 +208,13 @@
     padding-bottom: 8px;
   }
   .lib-row {
-    height: 172px;
+    height: 132px;
     grid-template-columns: 56px minmax(0, 1fr) auto;
     grid-template-areas:
       "cover title title"
       "cover sub sub"
-      "status status status"
-      "actions actions actions";
+      "status status actions";
+    align-items: center;
     row-gap: 6px;
     padding: 10px 12px;
     background: var(--panel);
@@ -251,7 +251,7 @@
   white-space: nowrap;
   vertical-align: bottom;
 }
-@media (max-width: 1299.98px) {
+@media (max-width: 719.98px) {
   .sub-unreadable {
     display: none;
   }

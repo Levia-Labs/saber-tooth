@@ -160,7 +160,7 @@
     min-width: var(--min-compact, 0);
   }
 }
-@media (max-width: 1299.98px) {
+@media (max-width: 719.98px) {
   .lp-table.lib-table {
     min-width: var(--min-compact, 0);
   }

@@ -63,7 +63,7 @@ export function DownloadConfirm(props: {
           <div className="row">
             <Dialog.Close className="btn plain">
               <Icon name="reject" />
-              <span className="label-hide-mobile">Cancel</span>
+              <span className="label-collapsible">Cancel</span>
             </Dialog.Close>
             <Dialog.Close
               className="btn primary"
@@ -71,7 +71,7 @@ export function DownloadConfirm(props: {
               onClick={() => props.onConfirm(batch.map((m) => m.id))}
             >
               <Icon name="download" />
-              <span className="label-hide-mobile">{`Download ${batch.length} new`}</span>
+              <span className="label-collapsible">{`Download ${batch.length} new`}</span>
             </Dialog.Close>
           </div>
         </Dialog.Content>
@@ -88,7 +88,7 @@ function ExportDialog({ ids }: { ids: string[] }) {
       <Tip text={BS_TIPS.export}>
         <Dialog.Trigger className="btn plain">
           <Icon name="playlist" />
-          <span className="label-hide-mobile">Export playlist</span>
+          <span className="label-collapsible">Export playlist</span>
         </Dialog.Trigger>
       </Tip>
       <Dialog.Portal>
@@ -110,7 +110,7 @@ function ExportDialog({ ids }: { ids: string[] }) {
           <div className="row">
             <Dialog.Close className="btn plain">
               <Icon name="reject" />
-              <span className="label-hide-mobile">Close</span>
+              <span className="label-collapsible">Close</span>
             </Dialog.Close>
             <button
               type="button"
@@ -119,7 +119,7 @@ function ExportDialog({ ids }: { ids: string[] }) {
               onClick={() => out.mutate()}
             >
               <Icon name="playlist" />
-              <span className="label-hide-mobile">Export {plural(ids.length, "map")}</span>
+              <span className="label-collapsible">Export {plural(ids.length, "map")}</span>
             </button>
           </div>
         </Dialog.Content>
@@ -152,7 +152,7 @@ export function SelectionBar({ selection, downloads, playlistsEnabled }: Props) 
           onClick={() => setOpen(true)}
         >
           <Icon name="download" />
-          <span className="label-hide-mobile">{`Download ${n}`}</span>
+          <span className="label-collapsible">{`Download ${n}`}</span>
         </button>
       </Tip>
       <DownloadConfirm
@@ -168,7 +168,7 @@ export function SelectionBar({ selection, downloads, playlistsEnabled }: Props) 
       <Tip text={BS_TIPS.clearSelection}>
         <button type="button" className="btn plain" onClick={selection.clear}>
           <Icon name="reject" />
-          <span className="label-hide-mobile">Clear selection</span>
+          <span className="label-collapsible">Clear selection</span>
         </button>
       </Tip>
     </div>

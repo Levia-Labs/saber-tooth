@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, test } from "vitest";
 import {
+  CARD_QUERY,
   COMPACT_QUERY,
   DESKTOP_QUERY,
   MID_QUERY,
@@ -47,11 +48,12 @@ describe("the shared breakpoint", () => {
     expect(Number(/(\d+)px/.exec(TINY_QUERY)![1])).toBeLessThan(MOBILE_MAX_PX);
   });
 
-  test("outside VR the table tiers are the mobile view; in VR mobile never matches", () => {
-    expect(mediaFor(MID_QUERY, false)).toBe(MOBILE_QUERY);
-    expect(mediaFor(COMPACT_QUERY, false)).toBe(MOBILE_QUERY);
-    expect(mediaFor(MOBILE_QUERY, false)).toBe(MOBILE_QUERY);
+  test("outside VR the queries are as written; in VR mobile and cards never match", () => {
+    for (const q of [MOBILE_QUERY, CARD_QUERY, MID_QUERY, COMPACT_QUERY, DESKTOP_QUERY]) {
+      expect(mediaFor(q, false)).toBe(q);
+    }
     expect(mediaFor(MOBILE_QUERY, true)).toBe("not all");
+    expect(mediaFor(CARD_QUERY, true)).toBe("not all");
     expect(mediaFor(MID_QUERY, true)).toBe(MID_QUERY);
     expect(mediaFor(COMPACT_QUERY, true)).toBe(COMPACT_QUERY);
     expect(mediaFor(DESKTOP_QUERY, true)).toBe("(min-width: 1100px)");
@@ -66,6 +68,7 @@ describe("the shared breakpoint", () => {
     for (const { name, text } of sheets) {
       const allowed = new Set([
         MOBILE_QUERY,
+        CARD_QUERY,
         DESKTOP_QUERY,
         MID_QUERY,
         COMPACT_QUERY,
@@ -85,10 +88,24 @@ describe("the shared breakpoint", () => {
     }
   });
 
-  test("the mobile query is used by the bottom bar, the icon-only labels and the card rows", () => {
+  test("the mobile query holds the bottom bar and the sheet; the card query the card rows", () => {
     const by = (name: string) => sheets.find((s) => s.name === name)!.text;
-    for (const f of ["pill.css", "overlays.css", "rows.css", "alerts.css", "jobs.css"]) {
-      expect(by(f), f).toContain(`@media ${MOBILE_QUERY}`);
+    expect(by("pill.css")).toContain(`@media ${MOBILE_QUERY}`);
+    for (const f of ["rows.css", "alerts.css", "jobs.css", "beatsaver.css"]) {
+      expect(by(f), f).toContain(`@media ${CARD_QUERY}`);
+    }
+  });
+
+  test("no width media query hides a label: only the bottom bar does, by design", () => {
+    for (const { name, text } of sheets) {
+      for (const m of text.matchAll(/@medias+([^{]*width[^{]*){((?:[^{}]|{[^{}]*})*)}/g)) {
+        const body = m[2]!;
+        if (!body.includes("label-collapsible")) continue;
+        const rules = body.split("}").filter((r) => r.includes("label-collapsible"));
+        for (const r of rules) {
+          expect(r, `${name}: ${m[1]}`).toMatch(/section-tabs/);
+        }
+      }
     }
   });
 });
