@@ -1,6 +1,7 @@
 import type { InfiniteData, UseInfiniteQueryResult } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useParams, useSearchParams } from "react-router";
+import { allPlaylistsHref, BACK_PARAM } from "../lib/backlink";
 import {
   useBsPlaylistMaps,
   useBsPlaylists,
@@ -67,6 +68,7 @@ function DownloadAll({ query, downloads }: { query: Query; downloads: Downloads 
 
 function PlaylistDetail({ id }: { id: string }) {
   const controls = useBsState();
+  const back = useSearchParams()[0].get(BACK_PARAM) ?? undefined;
   const query = useBsPlaylistMaps(id, controls.state);
   const playlist = query.data?.pages[0]?.playlist;
   const name = playlist?.name ?? "Playlist";
@@ -84,7 +86,7 @@ function PlaylistDetail({ id }: { id: string }) {
           controls={controls}
           extra={({ downloads }) => (
             <div className="bs-playlist-actions">
-              <Link className="btn plain" to="/beatsaver/playlists">
+              <Link className="btn plain" to={allPlaylistsHref(back)}>
                 <Icon name="back" />
                 <span className="label-hide-mobile">All playlists</span>
               </Link>

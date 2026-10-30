@@ -81,6 +81,9 @@ class Sampler:
             self._thread.join(timeout=STOP_JOIN_S)
 
 
+MAX_DRAIN = 1 << 20  # bytes of a request body read and dropped before an early reply
+
+
 def make_handler(latest: Callable[[], dict]) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
@@ -94,7 +97,20 @@ def make_handler(latest: Callable[[], dict]) -> type[BaseHTTPRequestHandler]:
 
         do_POST = do_PUT = do_DELETE = do_PATCH = do_OPTIONS = do_HEAD = _other
 
+        def _drain(self) -> None:
+            """Read and drop the request body: closing with unread data resets the connection."""
+            try:
+                left = min(int(self.headers.get("Content-Length") or 0), MAX_DRAIN)
+            except ValueError:
+                left = 0
+            while left > 0:
+                chunk = self.rfile.read(min(left, 65536))
+                if not chunk:
+                    break
+                left -= len(chunk)
+
         def _send(self, code: int, body: dict, allow: bool = False) -> None:
+            self._drain()
             data = json.dumps(body).encode("utf-8")
             self.send_response(code)
             if allow:

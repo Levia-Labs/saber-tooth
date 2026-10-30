@@ -1,5 +1,6 @@
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import type { BsPlaylist } from "../../api/beatsaver";
+import { bsPlaylistHref } from "../../lib/backlink";
 import { formatCount, plural } from "../../lib/format";
 import { formatNpsRange, formatTotalLength } from "../../lib/plfilters";
 import { PL_TIPS } from "../../lib/pltips";
@@ -17,7 +18,8 @@ interface Props {
 }
 
 export function PlaylistRow({ playlist: p, index, busy, onDownloadAll }: Props) {
-  const to = `/beatsaver/playlists/${encodeURIComponent(p.id)}`;
+  const { search } = useLocation();
+  const to = bsPlaylistHref(p.id, search);
   const site = `https://beatsaver.com/playlists/${encodeURIComponent(p.id)}`;
   const votes = `${p.upvotes} up, ${p.downvotes} down`;
   const percent = Math.round(p.rating * 100);

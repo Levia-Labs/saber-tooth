@@ -45,12 +45,13 @@ describe("suggestion toast", () => {
     const user = userEvent.setup();
     const { router } = renderApp("/");
     await screen.findByText(BANNER);
-    await user.click(screen.getByRole("button", { name: "Switch" }));
-    expect(await screen.findByRole("heading", { name: "Library", level: 1 })).toBeInTheDocument();
+    // The action row mounts with the toast but is awaited too: nothing here may assume a commit order.
+    await user.click(await screen.findByRole("button", { name: "Switch" }));
     await waitFor(() => expect(router.state.location.pathname).toBe("/vr"));
-    expect(ui()).toBe("vr");
-    expect(window.localStorage.getItem("saber-tooth.ui-mode")).toBe("vr");
-    expect(screen.queryByText(BANNER)).toBeNull();
+    expect(await screen.findByRole("heading", { name: "Library", level: 1 })).toBeInTheDocument();
+    await waitFor(() => expect(ui()).toBe("vr"));
+    await waitFor(() => expect(window.localStorage.getItem("saber-tooth.ui-mode")).toBe("vr"));
+    await waitFor(() => expect(screen.queryByText(BANNER)).toBeNull());
   });
 
   test("dismissing hides it for the session", async () => {
@@ -58,8 +59,8 @@ describe("suggestion toast", () => {
     const user = userEvent.setup();
     renderApp("/");
     await screen.findByText(BANNER);
-    await user.click(screen.getByRole("button", { name: "Not now" }));
-    expect(screen.queryByText(BANNER)).toBeNull();
+    await user.click(await screen.findByRole("button", { name: "Not now" }));
+    await waitFor(() => expect(screen.queryByText(BANNER)).toBeNull());
     expect(window.sessionStorage.getItem("saber-tooth.vr-banner-dismissed")).toBe("1");
     expect(ui()).toBeUndefined();
   });
@@ -70,8 +71,8 @@ describe("suggestion toast", () => {
     renderApp("/");
     await screen.findByText(BANNER);
     const toast = screen.getByText(BANNER).closest<HTMLElement>(".toast");
-    await user.click(within(toast!).getByRole("button", { name: "Dismiss" }));
-    expect(screen.queryByText(BANNER)).toBeNull();
+    await user.click(await within(toast!).findByRole("button", { name: "Dismiss" }));
+    await waitFor(() => expect(screen.queryByText(BANNER)).toBeNull());
     expect(window.sessionStorage.getItem("saber-tooth.vr-banner-dismissed")).toBe("1");
     await new Promise((resolve) => setTimeout(resolve, 5200));
     expect(screen.queryByText(BANNER)).toBeNull();

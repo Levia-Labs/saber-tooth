@@ -1,9 +1,11 @@
 """Fix operations: frozen, JSON-serialisable edits applied purely to a Beatmap."""
 
 import copy
+from bisect import bisect_left, insort
 from dataclasses import dataclass, replace
 from typing import ClassVar
 
+from saber_tooth.checks.slicing import beat_range
 from saber_tooth.fixer import codec
 from saber_tooth.fixer.cow import Draft
 from saber_tooth.fixer.fill_op import Fill
@@ -174,16 +176,17 @@ def _diff(draft: Draft, name: str) -> Difficulty:
 
 
 def _take(d: Difficulty, note: Note, what: str) -> None:
-    try:
-        d.notes.remove(note)
-    except ValueError:
-        raise OpConflict(f"{what}: note at beat {note.beat:g} not found in {d.name}") from None
+    i = bisect_left(d.notes, note)  # owned notes are in order
+    if i == len(d.notes) or d.notes[i] != note:
+        raise OpConflict(f"{what}: note at beat {note.beat:g} not found in {d.name}")
+    del d.notes[i]
 
 
 def _put(d: Difficulty, note: Note, what: str) -> None:
-    if any(abs(n.beat - note.beat) < EPS and (n.x, n.y) == (note.x, note.y) for n in d.notes):
+    i, j = beat_range(d.notes, note.beat - EPS, note.beat + EPS)
+    if any((n.x, n.y) == (note.x, note.y) and abs(n.beat - note.beat) < EPS for n in d.notes[i:j]):
         raise OpConflict(f"{what}: cell ({note.x},{note.y}) at beat {note.beat:g} is taken")
-    d.notes.append(note)
+    insort(d.notes, note)
 
 
 def _fill_walls(d: Difficulty, op: Fill) -> None:
@@ -255,13 +258,13 @@ def _apply_one(draft: Draft, op: Op) -> None:
             d = _diff(draft, op.difficulty)
             _take(d, op.note, "flip")
             flipped = replace(op.note, cut=op.cut)
-            d.notes.append(flipped)
+            insort(d.notes, flipped)
             retarget(d, op.note, flipped)
         case Recolor():
             d = _diff(draft, op.difficulty)
             _take(d, op.note, "recolor")
             recoloured = replace(op.note, color=Color(1 - op.note.color))
-            d.notes.append(recoloured)
+            insort(d.notes, recoloured)
             retarget(d, op.note, recoloured)
         case Delete():
             d = _diff(draft, op.difficulty)

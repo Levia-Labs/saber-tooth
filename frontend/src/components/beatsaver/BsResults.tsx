@@ -8,6 +8,7 @@ import { BS_TIPS } from "../../lib/bstips";
 import { isBsDefault } from "../../lib/bsfilters";
 import { batchSummary } from "../../lib/announcements";
 import { useMediaQuery } from "../../lib/hooks";
+import { useListScroll } from "../../lib/listscroll";
 import { sortLoaded } from "../../lib/bsrating";
 import { useColumns } from "../../lib/useColumns";
 import type { BsControls } from "../../lib/useBsState";
@@ -69,6 +70,10 @@ export function BsResults({ query, controls, extra }: Props) {
   const paused = limited || isFetchNextPageError;
 
   const loadMore = useCallback(() => void fetchNextPage(), [fetchNextPage]);
+  useListScroll(!query.isPending, items.length, hasNextPage, {
+    load: loadMore,
+    busy: isFetchingNextPage || paused,
+  });
   const retry = useCallback(
     () => void (hasNextPage ? fetchNextPage() : refetch()),
     [hasNextPage, fetchNextPage, refetch],

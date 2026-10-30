@@ -86,6 +86,19 @@ export function playlistHref(id: string, { query }: { query: string }): string {
   return `/playlists/${encodeURIComponent(id)}?${params.toString()}`;
 }
 
+/** Address of a BeatSaver playlist page opened from the BeatSaver playlists list (`query` is the list's). */
+export function bsPlaylistHref(id: string, query: string): string {
+  const params = new URLSearchParams({ [FROM_PARAM]: "bs-playlists" });
+  const back = query.replace(/^\?/, "");
+  if (back) params.set(BACK_PARAM, back);
+  return `/beatsaver/playlists/${encodeURIComponent(id)}?${params.toString()}`;
+}
+
+/** The BeatSaver playlists list, with the query it had when the playlist was opened. */
+export function allPlaylistsHref(back: string | undefined): string {
+  return withQuery("/beatsaver/playlists", back);
+}
+
 /** The `tab` of a map page address, when it names one. */
 export function tabOfHref(href: string): string | undefined {
   const at = href.indexOf("?");

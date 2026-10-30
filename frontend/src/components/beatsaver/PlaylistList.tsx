@@ -1,3 +1,4 @@
+import { useListScroll } from "../../lib/listscroll";
 import { EmptyState } from "../EmptyState";
 import type { InfiniteData, UseInfiniteQueryResult } from "@tanstack/react-query";
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -62,6 +63,10 @@ export function PlaylistList({ query, controls }: { query: Query; controls: PlCo
     [pages, state],
   );
   const loadMore = useCallback(() => void fetchNextPage(), [fetchNextPage]);
+  useListScroll(!query.isPending, items.length, hasNextPage, {
+    load: loadMore,
+    busy: isFetchingNextPage || isFetchNextPageError,
+  });
   const retry = useCallback(
     () => void (hasNextPage ? fetchNextPage() : refetch()),
     [hasNextPage, fetchNextPage, refetch],

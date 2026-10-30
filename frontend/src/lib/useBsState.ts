@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router";
+import { BACK_PARAM, FROM_PARAM } from "./backlink";
 import { clearBsFilters, encodeBsState, parseBsState, type BsState } from "./bsfilters";
 
 export interface BsControls {
@@ -17,7 +18,19 @@ export function useBsState(): BsControls {
   const search = params.toString();
   const state = useMemo(() => parseBsState(search), [search]);
   const set = useCallback(
-    (next: BsState, replace = false) => setParams(encodeBsState(next), { replace }),
+    (next: BsState, replace = false) =>
+      setParams(
+        (prev) => {
+          const out = encodeBsState(next);
+          // The origin of the page (where Back to list returns) is not a filter: keep it.
+          for (const name of [FROM_PARAM, BACK_PARAM]) {
+            const value = prev.get(name);
+            if (value !== null) out.set(name, value);
+          }
+          return out;
+        },
+        { replace },
+      ),
     [setParams],
   );
   const update = useCallback(

@@ -50,7 +50,7 @@ describe("BeatSaver playlists tab", () => {
     const { calls } = api();
     renderApp("/beatsaver/playlists");
     const link = await screen.findByRole("link", { name: "Gentle electronic" });
-    expect(link).toHaveAttribute("href", "/beatsaver/playlists/p1");
+    expect(link).toHaveAttribute("href", "/beatsaver/playlists/p1?from=bs-playlists");
     expect(screen.getByText("Bob", { selector: ".col-author" })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Filter Name" }));
     await userEvent.type(await screen.findByLabelText("Search playlists"), "rock");

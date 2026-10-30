@@ -199,9 +199,9 @@ def test_other_methods_get_a_fixed_405_json_body():
     thread.start()
     try:
         conn = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
-        # No body: the handler answers 405 without reading one, and closing a socket that holds
-        # unread data resets the connection on Windows (WinError 10053) before the client reads.
-        conn.request("POST", "/status")
+        # The handler drains the body before answering; an unread body would reset the
+        # connection on Windows (WinError 10053) before the client reads the reply.
+        conn.request("POST", "/status", body=b"x" * 300_000)
         res = conn.getresponse()
         assert res.status == 405 and res.getheader("Content-Type") == "application/json"
         assert json.loads(res.read()) == {"error": "method not allowed"}

@@ -113,7 +113,7 @@ describe("playlists table", () => {
     await screen.findByRole("link", { name: "Alpha" });
     expect(screen.getByRole("link", { name: "Open Alpha in Saber Tooth" })).toHaveAttribute(
       "href",
-      "/beatsaver/playlists/p1",
+      "/beatsaver/playlists/p1?from=bs-playlists",
     );
     const site = screen.getByRole("link", { name: "Open Alpha on BeatSaver (new tab)" });
     expect(site).toHaveAttribute("target", "_blank");
