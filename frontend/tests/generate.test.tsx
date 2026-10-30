@@ -106,7 +106,25 @@ describe("generate card", () => {
     await user.type(screen.getByLabelText("YouTube URL"), "not a link");
     await user.click(screen.getByRole("button", { name: "Generate" }));
     expect(screen.queryByText("Paste a YouTube link or drop an audio file.")).toBeNull();
+    expect(await screen.findByText("That is not a link. Paste a YouTube URL.")).toBeInTheDocument();
     expect(posts).toHaveLength(0);
+  });
+
+  test("a watch?v= link behind a busy queue shows a queued toast and the stage list at once", async () => {
+    const link = "https://www.youtube.com/watch?v=rDQGieROK_w";
+    const posts = api({ status: "queued", position: 4, result: null });
+    const { router } = renderApp("/new");
+    const user = userEvent.setup();
+    await user.type(await screen.findByLabelText("YouTube URL"), link);
+    await user.click(screen.getByRole("button", { name: "Generate" }));
+    expect(await screen.findByRole("list")).toBeInTheDocument();
+    expect(screen.getByText("Analyse beats")).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Open Jobs" })).toHaveAttribute("href", "/jobs");
+    expect(await screen.findByRole("img", { name: /Queued/ })).toBeInTheDocument();
+    expect(screen.queryByText(`Generating ${link}`)).toBeNull();
+    expect(document.querySelector(".toast")).toBeNull();
+    expect(posts).toEqual([{ path: "/api/generate", body: JSON.stringify({ url: link }) }]);
+    expect(router.state.location.pathname).toBe("/new");
   });
 
   test("a failed job shows the reason in a danger toast and stays on the page", async () => {
@@ -115,11 +133,11 @@ describe("generate card", () => {
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText("YouTube URL"), "https://youtu.be/abc");
     await user.click(screen.getByRole("button", { name: "Generate" }));
-    const toast = await screen.findByText("beat-analyser unreachable");
+    const found = await screen.findAllByText("beat-analyser unreachable");
+    const toast = found.find((el) => el.closest(".toast")) as HTMLElement;
     expect(
       within(toast.closest(".toast") as HTMLElement).getByText(/Generation failed/),
     ).toBeInTheDocument();
     expect(router.state.location.pathname).toBe("/new");
-    expect(screen.queryByText(/Generating/)).toBeNull();
   });
 });

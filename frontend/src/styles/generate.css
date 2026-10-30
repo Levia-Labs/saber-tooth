@@ -1,11 +1,64 @@
-.gen-form .gen-or {
+/* Generate page: the add card and the analyse card, in the beat-analyser look. */
+.gen-page {
+  max-width: 72rem;
+}
+.gen-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+.gen-card {
+  gap: 0.9rem;
+  height: auto;
+}
+.gen-form {
+  display: grid;
+  gap: 0.6rem;
+  justify-items: stretch;
+}
+.gen-form label {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.gen-form input[type="url"] {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: var(--control-h);
+}
+.gen-form input[aria-invalid="true"] {
+  border-color: var(--red);
+}
+.gen-actions {
+  display: flex;
+}
+.gen-actions .tip-wrap,
+.gen-actions .btn {
+  flex: 1;
+  justify-content: center;
+}
+.gen-or {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   color: var(--muted);
   font-size: 0.85rem;
+}
+.gen-or::before,
+.gen-or::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.gen-error {
+  margin: 0;
+  color: var(--red);
+  overflow-wrap: anywhere;
 }
 .drop-wrap {
   display: grid;
   gap: 0.4rem;
-  justify-items: start;
   width: 100%;
 }
 .drop-zone {
@@ -13,11 +66,11 @@
   gap: 0.25rem;
   justify-items: center;
   width: 100%;
-  padding: 1.25rem 1rem;
+  box-sizing: border-box;
+  padding: 1.1rem 1rem;
   text-align: center;
   color: var(--muted);
-  background: var(--panel);
-  border: 2px dashed var(--line);
+  border: 1px dashed var(--line);
   border-radius: var(--radius);
   cursor: pointer;
 }
@@ -26,7 +79,6 @@
 .drop-zone.drop-over {
   color: var(--ink);
   border-color: var(--blue);
-  background: var(--panel-2);
 }
 .drop-zone[aria-disabled="true"] {
   cursor: default;
@@ -39,11 +91,56 @@
 .drop-hint {
   font-size: 0.85rem;
 }
-.drop-clear {
-  background: none;
-  border: 0;
+.gen-job-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+.gen-label {
+  flex: 1;
+  min-width: 0;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.gen-banner {
+  padding: 0.8rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--red) 55%, var(--line));
+  background: color-mix(in srgb, var(--red) 14%, var(--panel));
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.gen-stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.9rem;
+  margin: 0;
   padding: 0;
+  list-style: none;
+  font-size: 0.9rem;
   color: var(--muted);
-  text-decoration: underline;
-  cursor: pointer;
+}
+.gen-stages li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.gen-stages .ic {
+  width: 1em;
+  height: 1em;
+}
+.gen-stages .done {
+  color: var(--green);
+}
+.gen-stages .now {
+  color: var(--amber);
+}
+.gen-stages .failed {
+  color: var(--red);
+}
+@media (max-width: 1299.98px) {
+  .gen-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
