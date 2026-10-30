@@ -1,3 +1,4 @@
+import { mediaFor } from "../src/lib/breakpoint";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { readFileSync } from "node:fs";
@@ -25,7 +26,7 @@ afterEach(() => {
 /** Make `(max-width: Npx)` queries match as they would at this viewport width. */
 function viewport(width: number) {
   window.matchMedia = ((query: string) => {
-    const max = /\(max-width:\s*(\d+)px\)/.exec(query);
+    const max = /\(max-width:\s*([\d.]+)px\)/.exec(mediaFor(query, false));
     return { ...real(query), media: query, matches: max ? width <= Number(max[1]) : false };
   }) as typeof window.matchMedia;
 }
@@ -70,9 +71,9 @@ describe("header actions on narrow screens", () => {
     expect((await screen.findAllByText(TIPS.learn)).length).toBeGreaterThan(0);
   });
 
-  test("bars never wrap below 1100px", () => {
+  test("bars never wrap below 1300px", () => {
     expect(css("rows.css")).toMatch(
-      /@media \(max-width: 1099px\)\s*\{\s*\.lib-bar\s*\{\s*flex-wrap:\s*nowrap/,
+      /@media \(max-width: 1099.98px\)\s*\{\s*\.lib-bar\s*\{\s*flex-wrap:\s*nowrap/,
     );
   });
 
@@ -125,8 +126,8 @@ describe("table control bar", () => {
     expect(within(bar).queryByRole("button", { name: "Clear filters" })).toBeNull();
   });
 
-  test("1100px and wider has no bar", async () => {
-    viewport(1100);
+  test("1300px and wider has no bar", async () => {
+    viewport(1400);
     library();
     const { container } = renderApp("/");
     await screen.findByRole("link", { name: "Song 1" });

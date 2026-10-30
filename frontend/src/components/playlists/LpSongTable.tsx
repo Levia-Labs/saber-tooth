@@ -14,6 +14,8 @@ import { EmptyState } from "../EmptyState";
 import { Icon } from "../icons";
 import { LibraryHeader } from "../LibraryHeader";
 import { PreviewButton } from "../PreviewButton";
+import { FIRST_SKELETONS } from "../LibraryTable";
+import { SkeletonRow } from "../SkeletonRow";
 import { Tip } from "../Tip";
 
 interface Props {
@@ -21,6 +23,8 @@ interface Props {
   onRemove: (row: SongRow) => void;
   /** Saved playlist the rows belong to; map links return to it. */
   playlistId?: string | null;
+  /** The playlist is still loading: header plus skeleton rows, no empty state. */
+  loading?: boolean;
 }
 
 function MissingChip() {
@@ -123,7 +127,7 @@ function SongRowView({
 }
 
 /** The playlist's songs in the library's table: same columns, header sort and filters, column fit. */
-export function LpSongTable({ rows, onRemove, playlistId }: Props) {
+export function LpSongTable({ rows, onRemove, playlistId, loading = false }: Props) {
   const table = useRef<HTMLDivElement>(null);
   const columns = useColumns(table, LIBRARY_COLUMNS);
   const [state, setState] = useState<LibraryState>(DEFAULT_STATE);
@@ -146,7 +150,9 @@ export function LpSongTable({ rows, onRemove, playlistId }: Props) {
           update={(patch) => setState((s) => ({ ...s, ...patch }))}
           columns={columns.api}
         />
-        <div role="rowgroup">
+        <div role="rowgroup" aria-busy={loading || undefined}>
+          {loading &&
+            Array.from({ length: FIRST_SKELETONS }, (_, i) => <SkeletonRow key={i} index={i} />)}
           {shown.map((r, i) => (
             <SongRowView
               key={r.key}
@@ -158,7 +164,7 @@ export function LpSongTable({ rows, onRemove, playlistId }: Props) {
           ))}
         </div>
       </div>
-      {shown.length === 0 && (
+      {!loading && shown.length === 0 && (
         <EmptyState
           icon={filtered ? "search" : "playlist"}
           text={filtered ? "No songs match the filters." : "No songs yet."}

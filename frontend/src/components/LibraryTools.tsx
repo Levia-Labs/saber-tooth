@@ -3,6 +3,7 @@ import { useState } from "react";
 import { learnLightshows } from "../api/client";
 import type { JobRunner } from "../api/jobs";
 import { useMediaQuery } from "../lib/hooks";
+import { COMPACT_QUERY, TINY_QUERY } from "../lib/breakpoint";
 import { TIPS } from "../lib/tips";
 import { InBar } from "./BarSlot";
 import { ActionButton, ActionLink } from "./Buttons";
@@ -19,8 +20,8 @@ interface Props {
  * Below 480px: Generate stays and the rest move into a kebab menu with the same Tips.
  */
 function ToolsBody({ learn, onResetColumns }: Props) {
-  const iconOnly = useMediaQuery("(max-width: 1099px)");
-  const tight = useMediaQuery("(max-width: 479px)");
+  const iconOnly = useMediaQuery(COMPACT_QUERY);
+  const tight = useMediaQuery(TINY_QUERY);
   const [open, setOpen] = useState(false);
   const generate = (
     <ActionLink

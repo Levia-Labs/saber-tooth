@@ -8,6 +8,7 @@ import "./styles/rows.css";
 import "./styles/chips.css";
 import "./styles/overlays.css";
 import "./styles/filters.css";
+import "./styles/datepicker.css";
 import "./styles/page.css";
 import "./styles/generate.css";
 import "./styles/pill.css";

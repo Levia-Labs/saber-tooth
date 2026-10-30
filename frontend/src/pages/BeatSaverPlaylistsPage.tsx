@@ -48,7 +48,7 @@ function DownloadAll({ query, downloads }: { query: Query; downloads: Downloads 
       <Tip text={BS_TIPS.downloadAll}>
         <button
           type="button"
-          className="btn primary"
+          className="btn primary bs-playlist-download"
           disabled={loading || downloads.runner.busy}
           onClick={() => void begin()}
         >
@@ -77,19 +77,26 @@ function PlaylistDetail({ id }: { id: string }) {
     <section className="library" aria-labelledby="bs-heading">
       <BarSlotProvider>
         <BsTabs heading="BeatSaver playlist" headingId="bs-heading" tab="playlists" />
-        <div className="bs-playlist-title">
-          <h2 className="lp-heading">{name}</h2>
-          {playlist && <span className="count">{playlist.owner}</span>}
-        </div>
         <BsResults
           query={query}
           controls={controls}
           extra={({ downloads }) => (
-            <div className="bs-playlist-actions">
-              <Link className="btn plain" to={allPlaylistsHref(back)}>
+            <div className="bs-playlist-head">
+              <Link className="btn plain bs-playlist-back" to={allPlaylistsHref(back)}>
                 <Icon name="back" />
                 <span className="label-hide-mobile">All playlists</span>
               </Link>
+              <div className="bs-playlist-title">
+                <h2 className="lp-heading" title={name}>
+                  {name}
+                </h2>
+                {playlist && (
+                  <span className="count" title={playlist.owner}>
+                    {playlist.owner}
+                  </span>
+                )}
+              </div>
+              <span className="bs-playlist-spacer" />
               <DownloadAll query={query} downloads={downloads} />
             </div>
           )}

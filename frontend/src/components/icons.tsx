@@ -135,6 +135,14 @@ const ICONS = {
   ),
   spinner: <path d="M12 3a9 9 0 1 0 9 9" />,
   chevron: <path d="M6 9l6 6 6-6" />,
+  "chevron-left": <path d="M15 6l-6 6 6 6" />,
+  "chevron-right": <path d="M9 6l6 6-6 6" />,
+  calendar: (
+    <>
+      <rect x="4" y="5.5" width="16" height="14.5" rx="2" />
+      <path d="M4 10h16M8.5 3.5v4M15.5 3.5v4" />
+    </>
+  ),
   upload: <path d="M12 16V4M7 9l5-5 5 5M4 17v3h16v-3" />,
   library: (
     <>

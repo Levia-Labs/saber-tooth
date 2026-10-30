@@ -174,3 +174,22 @@ def test_suggestions_route_returns_ranked_windows(http):
 
 def test_suggestions_for_an_unknown_map_is_404(http):
     assert http.get(f"/api/maps/{'0' * 12}/crop/suggestions").status_code == 404
+
+
+def test_suggestion_cache_is_dropped_when_a_map_file_changes(http, monkeypatch):
+    import os
+
+    from saber_tooth.service import cropsuggest
+
+    calls = []
+    real = cropsuggest._body
+    monkeypatch.setattr(cropsuggest, "_body", lambda *a: calls.append(1) or real(*a))
+    url = f"/api/maps/{MID}/crop/suggestions"
+    http.get(url)
+    http.get(url)
+    assert len(calls) == 1
+    info = next((http.svc.levels / NAME).glob("*.dat"))
+    stat = info.stat()
+    os.utime(info, ns=(stat.st_atime_ns, stat.st_mtime_ns + 5_000_000_000))
+    http.get(url)
+    assert len(calls) == 2

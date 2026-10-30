@@ -91,11 +91,11 @@ export const SUGGESTIONS = {
   ],
 };
 
-export function renderPanel(ui: ReactElement) {
+export function renderPanel(ui: ReactElement, route = "/") {
   return render(
     <QueryClientProvider client={makeQueryClient()}>
       <TipProvider delayDuration={0}>
-        <MemoryRouter>
+        <MemoryRouter initialEntries={[route]}>
           <AnnouncerProvider>{ui}</AnnouncerProvider>
         </MemoryRouter>
       </TipProvider>

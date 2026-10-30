@@ -7,11 +7,13 @@ from saber_tooth.crop.suggest import TARGETS, suggest_crops
 from saber_tooth.service.crop import _timeline
 
 _lock = threading.Lock()
-_cache: dict[tuple[str, str], tuple[float, dict]] = {}
+_cache: dict[tuple[str, str], tuple[tuple, dict]] = {}
 
 
-def _mtime(folder: Path) -> float:
-    return max((p.stat().st_mtime for p in folder.iterdir() if p.is_file()), default=0.0)
+def _stamp(folder: Path) -> tuple:
+    """Name, mtime and size of every file: a rewritten or replaced map never matches the old one."""
+    stats = ((p.name, p.stat()) for p in sorted(folder.iterdir()) if p.is_file())
+    return tuple((name, st.st_mtime_ns, st.st_size) for name, st in stats)
 
 
 def _body(map_id: str, tl) -> dict:
@@ -51,7 +53,7 @@ def crop_suggestions(svc, map_id: str) -> dict:
     """Up to three ranked windows for the map; fast, no job, recomputed when a map file changes."""
     folder = svc._folder(map_id)
     key = (str(svc.levels), map_id)
-    stamp = _mtime(folder)
+    stamp = _stamp(folder)
     with _lock:
         hit = _cache.get(key)
     if hit is not None and hit[0] == stamp:

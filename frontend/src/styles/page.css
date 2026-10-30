@@ -262,7 +262,7 @@
 .card-body .timeline {
   margin-top: 0;
 }
-@media (max-width: 719px) {
+@media (max-width: 1299.98px) {
   .card-sum {
     flex-wrap: wrap;
   }

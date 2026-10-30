@@ -1,3 +1,4 @@
+import { mediaFor, MOBILE_QUERY } from "../src/lib/breakpoint";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test } from "vitest";
@@ -29,7 +30,7 @@ describe("sort and filter placement", () => {
   test("mobile layout shows a toolbar with sort, direction and Filters", async () => {
     window.matchMedia = ((query: string) => ({
       ...real(query),
-      matches: query === "(max-width: 1099px)",
+      matches: mediaFor(query, false) === MOBILE_QUERY,
     })) as typeof window.matchMedia;
     api();
     const { container } = renderApp("/");

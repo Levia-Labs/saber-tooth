@@ -11,6 +11,7 @@ import {
 import { DEFAULT_BS_STATE } from "../../lib/bsfilters";
 import { errorToAlert } from "../../lib/alerts";
 import { useMediaQuery } from "../../lib/hooks";
+import { COMPACT_QUERY } from "../../lib/breakpoint";
 import { PL_COLUMNS } from "../../lib/plcolumns";
 import { isPlDefault, viewPlaylists } from "../../lib/plfilters";
 import { PL_TIPS } from "../../lib/pltips";
@@ -47,7 +48,7 @@ export function PlaylistList({ query, controls }: { query: Query; controls: PlCo
   const { state, update, clearFilters } = controls;
   const table = useRef<HTMLDivElement>(null);
   const columns = useColumns(table, PL_COLUMNS);
-  const narrow = useMediaQuery("(max-width: 1099px)");
+  const narrow = useMediaQuery(COMPACT_QUERY);
   const downloads = useDownloads();
   const [fetching, setFetching] = useState(false);
   const [failure, setFailure] = useState<unknown>(null);

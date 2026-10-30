@@ -1,3 +1,4 @@
+import { mediaFor } from "../src/lib/breakpoint";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import fc from "fast-check";
@@ -23,7 +24,7 @@ afterEach(() => {
 
 function viewport(width: number) {
   window.matchMedia = ((query: string) => {
-    const max = /\(max-width:\s*(\d+)px\)/.exec(query);
+    const max = /\(max-width:\s*([\d.]+)px\)/.exec(mediaFor(query, false));
     return { ...real(query), media: query, matches: max ? width <= Number(max[1]) : false };
   }) as typeof window.matchMedia;
 }

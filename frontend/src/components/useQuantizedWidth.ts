@@ -1,8 +1,9 @@
 import { useLayoutEffect, useRef } from "react";
 import { quantize, TOAST_STEP_PX } from "../lib/quantize";
+import { MOBILE_QUERY } from "../lib/breakpoint";
 
-/** The mobile breakpoint of alerts.css, where toasts take the full stack width instead. */
-export const MOBILE_QUERY = "(max-width: 640px)";
+/** The mobile breakpoint (lib/breakpoint.ts), where toasts take the full stack width instead. */
+export { MOBILE_QUERY };
 
 /**
  * Snaps the element's width up to a multiple of 50 px (times `--ui-scale` in VR) measured from its

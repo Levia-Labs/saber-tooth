@@ -22,7 +22,7 @@
   gap: 0.25rem;
 }
 
-@media (max-width: 1099px) {
+@media (max-width: 1099.98px) {
   .pl-table .col-upvotes,
   .pl-table .col-nps,
   .pl-table .col-created {
@@ -44,7 +44,7 @@
   }
 }
 
-@media (max-width: 719px) {
+@media (max-width: 1299.98px) {
   .pl-table .col-length {
     display: flex;
   }

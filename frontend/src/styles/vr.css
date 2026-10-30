@@ -119,8 +119,7 @@
 }
 
 /* Help is text under the control, never a hover tooltip. */
-[data-ui="vr"] .tooltip,
-[data-ui="vr"] .tip-info {
+[data-ui="vr"] .tooltip {
   display: none !important;
 }
 
@@ -143,14 +142,9 @@
 
 /* The desktop row heights per tier. The media queries below are scaled with the root size by
    src/vr/scale.ts, so each tier starts at the width the desktop tier starts at after the zoom. */
-@media (max-width: 1099px) {
+@media (max-width: 1099.98px) {
   :root[data-ui="vr"] {
     --row-h: calc(92px * var(--ui-scale));
-  }
-}
-@media (max-width: 719px) {
-  :root[data-ui="vr"] {
-    --row-h: calc(232px * var(--ui-scale));
   }
 }
 
@@ -191,15 +185,6 @@
   margin-left: auto;
 }
 
-/* The phone-size card row has a fixed 172 px height on the desktop; here it takes the VR token. */
-@media (max-width: 719px) {
-  [data-ui="vr"] .lib-row {
-    height: var(--row-h);
-    grid-template-columns: calc(56px * var(--ui-scale)) minmax(0, 1fr) auto;
-    row-gap: calc(6px * var(--ui-scale));
-    padding: calc(10px * var(--ui-scale)) calc(12px * var(--ui-scale));
-  }
-}
 [data-ui="vr"] .logo {
   width: 2.5rem;
   height: 2.5rem;

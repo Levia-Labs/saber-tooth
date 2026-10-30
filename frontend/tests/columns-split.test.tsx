@@ -1,3 +1,4 @@
+import { mediaFor, MOBILE_QUERY } from "../src/lib/breakpoint";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import fc from "fast-check";
@@ -237,7 +238,7 @@ describe("Library range filters", () => {
 
   test("the mobile filter sheet has Length and BPM groups", async () => {
     window.matchMedia = ((query: string) => ({
-      matches: query === "(max-width: 1099px)" || query === "(max-width: 719px)",
+      matches: mediaFor(query, false) === MOBILE_QUERY,
       media: query,
       addEventListener: () => {},
       removeEventListener: () => {},

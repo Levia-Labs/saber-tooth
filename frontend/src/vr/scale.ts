@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { mediaFor } from "../lib/breakpoint";
 
 /**
  * The VR scale: the root font size over the desktop 16 px. `vr.css` makes the root size fluid, so
@@ -27,6 +28,7 @@ export const scaledPx = (px: number, scale: number): number => Math.round(px * s
 export const unscaledPx = (px: number, scale: number): number => px / scale;
 
 let scale = 1;
+let vr = false;
 const listeners = new Set<() => void>();
 const originals = new WeakMap<CSSMediaRule, string>();
 
@@ -43,7 +45,7 @@ function rewriteRules(rules: CSSRuleList): void {
     if (rule instanceof CSSMediaRule) {
       const text = originals.get(rule) ?? rule.media.mediaText;
       originals.set(rule, text);
-      const next = scaleMediaText(text, scale);
+      const next = scaleMediaText(mediaFor(text, vr), scale);
       if (rule.media.mediaText !== next) rule.media.mediaText = next;
     }
     if ("cssRules" in rule) rewriteRules((rule as CSSGroupingRule).cssRules);
@@ -63,8 +65,10 @@ function rewriteSheets(): void {
 /** Re-read the scale and, when it changed, rewrite the CSS media rules and tell the listeners. */
 export function refreshScale(): void {
   const next = measure();
-  const changed = next !== scale;
+  const nextVr = document.documentElement.dataset.ui === "vr";
+  const changed = next !== scale || nextVr !== vr;
   scale = next;
+  vr = nextVr;
   document.documentElement.style.setProperty("--ui-scale", String(next));
   rewriteSheets();
   if (changed) for (const each of Array.from(listeners)) each();
@@ -91,7 +95,7 @@ export function installScale(): void {
   if (typeof window.matchMedia !== "function") return;
   const native = window.matchMedia.bind(window);
   window.matchMedia = (query: string): MediaQueryList => {
-    const mq = native(scaleMediaText(query, scale));
+    const mq = native(scaleMediaText(mediaFor(query, vr), scale));
     return scaledList(native, query, mq);
   };
 }
@@ -103,7 +107,7 @@ function scaledList(
   first: MediaQueryList,
 ): MediaQueryList {
   let last = first.matches;
-  const ask = () => native(scaleMediaText(query, scale));
+  const ask = () => native(scaleMediaText(mediaFor(query, vr), scale));
   const fns = new Map<EventListenerOrEventListenerObject, () => void>();
   const poke = () => {
     const now = ask().matches;

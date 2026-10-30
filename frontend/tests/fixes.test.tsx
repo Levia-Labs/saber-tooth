@@ -1,4 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { Proposal } from "../src/api/types";
@@ -22,7 +24,7 @@ afterEach(() => {
 describe("touch tooltips", () => {
   const ui = () => (
     <TipProvider>
-      <Tip text="Explains the button." info>
+      <Tip text="Explains the button.">
         <button type="button">Scan</button>
       </Tip>
     </TipProvider>
@@ -65,17 +67,85 @@ describe("touch tooltips", () => {
     expect(screen.queryByRole("tooltip")).toBeNull();
   });
 
-  test("the info button opens the same copy on tap", async () => {
-    touchDevice(true);
-    render(ui());
-    await userEvent.setup().click(screen.getByRole("button", { name: "What does this do?" }));
-    expect(await screen.findByRole("tooltip")).toHaveTextContent("Explains the button.");
+  test("no extra button is rendered on touch or on hover devices", () => {
+    for (const touch of [true, false]) {
+      touchDevice(touch);
+      const { unmount } = render(ui());
+      expect(screen.getAllByRole("button")).toHaveLength(1);
+      unmount();
+    }
   });
 
-  test("no info button on devices that can hover", () => {
-    touchDevice(false);
+  test("a tap clicks the button and shows no tip", () => {
+    touchDevice(true);
+    vi.useFakeTimers();
+    const clicked = vi.fn();
+    render(
+      <TipProvider>
+        <Tip text="Explains the button.">
+          <button type="button" onClick={clicked}>
+            Scan
+          </button>
+        </Tip>
+      </TipProvider>,
+    );
+    const button = screen.getByRole("button", { name: "Scan" });
+    fireEvent.pointerDown(button, { pointerType: "touch" });
+    fireEvent.pointerUp(button, { pointerType: "touch" });
+    fireEvent.click(button);
+    act(() => {
+      vi.advanceTimersByTime(LONG_PRESS_MS * 2);
+    });
+    expect(clicked).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("tooltip")).toBeNull();
+  });
+
+  test("the tip hides on release and the next tap clicks again", () => {
+    touchDevice(true);
+    vi.useFakeTimers();
+    const clicked = vi.fn();
+    render(
+      <TipProvider>
+        <Tip text="Explains the button.">
+          <button type="button" onClick={clicked}>
+            Scan
+          </button>
+        </Tip>
+      </TipProvider>,
+    );
+    const button = screen.getByRole("button", { name: "Scan" });
+    fireEvent.pointerDown(button, { pointerType: "touch" });
+    act(() => {
+      vi.advanceTimersByTime(LONG_PRESS_MS + 10);
+    });
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    fireEvent.pointerUp(button, { pointerType: "touch" });
+    fireEvent.click(button);
+    expect(screen.queryByRole("tooltip")).toBeNull();
+    expect(clicked).not.toHaveBeenCalled();
+    fireEvent.pointerDown(button, { pointerType: "touch" });
+    fireEvent.pointerUp(button, { pointerType: "touch" });
+    fireEvent.click(button);
+    expect(clicked).toHaveBeenCalledTimes(1);
+  });
+
+  test("scrolling hides an open tip", () => {
+    touchDevice(true);
+    vi.useFakeTimers();
     render(ui());
-    expect(screen.queryByRole("button", { name: "What does this do?" })).toBeNull();
+    fireEvent.pointerDown(screen.getByRole("button", { name: "Scan" }), { pointerType: "touch" });
+    act(() => {
+      vi.advanceTimersByTime(LONG_PRESS_MS + 10);
+    });
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    fireEvent.scroll(window);
+    expect(screen.queryByRole("tooltip")).toBeNull();
+  });
+
+  test("the wrapper turns off the native callout and keeps selection in inputs", () => {
+    const css = readFileSync(resolve(__dirname, "../src/styles/overlays.css"), "utf-8");
+    expect(css).toMatch(/\.tip-wrap \{[^}]*-webkit-touch-callout:\s*none[^}]*user-select:\s*none/);
+    expect(css).toMatch(/\.tip-wrap :is\(input, textarea[^{]*\{[^}]*user-select:\s*text/);
   });
 });
 

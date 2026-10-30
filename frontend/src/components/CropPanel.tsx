@@ -1,12 +1,12 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { cropMap } from "../api/client";
 import { useJobRunner } from "../api/jobs";
 import { useCropSuggestions } from "../api/cropauto";
-import { keys, useTimeline } from "../api/queries";
+import { useTimeline } from "../api/queries";
 import type { CropLength, Timeline } from "../api/types";
 import { errorToAlert } from "../lib/alerts";
 import { spanOf } from "../lib/cropauto";
+import { useCropDone } from "../lib/cropdone";
 import {
   CROP_TIPS,
   MIN_LENGTH_S,
@@ -79,7 +79,7 @@ interface EditorProps {
 }
 
 function CropEditor({ mapId, folder, data, busy, audioUrl }: EditorProps) {
-  const client = useQueryClient();
+  const done = useCropDone(mapId);
   const announce = useAnnounce();
   const crop = useJobRunner("Crop", `Crop:${mapId}`);
   const [length, setLength] = useState<Choice>("auto");
@@ -123,18 +123,16 @@ function CropEditor({ mapId, folder, data, busy, audioUrl }: EditorProps) {
     void crop
       .run(() => cropMap(mapId, selection.start_s, selection.end_s, replace))
       .then((job) => {
-        if (job && replace) {
+        if (!job) return;
+        if (replace) {
           announce({
             key: `Replaced:${mapId}`,
             variant: "success",
             title: "Map replaced",
             message: folder,
           });
-          void client.invalidateQueries({ queryKey: keys.timeline(mapId) });
-          void client.invalidateQueries({ queryKey: keys.proposals(mapId) });
-          void client.invalidateQueries({ queryKey: keys.map(mapId) });
         }
-        return client.invalidateQueries({ queryKey: keys.maps });
+        return done(job, replace);
       });
   };
 

@@ -1,0 +1,125 @@
+/* More filters sheet: padded scrolling body, pinned footer, nothing wider than the panel. */
+.sheet.bs-sheet {
+  max-width: 100dvw;
+  overflow: hidden;
+}
+.bs-sheet .sheet-head {
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+}
+.bs-sheet .sheet-body {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  min-width: 0;
+  padding: 1rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+.bs-sheet .sheet-body > section {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.bs-sheet .sheet-body h3 {
+  margin: 0;
+}
+.bs-sheet .sheet-body :is(.filter-body, .filter-row, .range-field, .checks, .field) {
+  min-width: 0;
+  max-width: 100%;
+}
+.bs-sheet .sheet-body :is(input, select, .date-trigger) {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.bs-sheet .sheet-body :is(label, .field-label, .checks > *) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.bs-sheet .sheet-foot {
+  padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+}
+.bs-sheet .sheet-foot .show-btn {
+  width: 100%;
+  min-width: 0;
+}
+
+.date-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 40px;
+  padding: 0.5rem 0.7rem;
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.date-trigger .muted {
+  color: var(--muted);
+}
+.popover.date-pop {
+  z-index: 60;
+  width: min(19rem, calc(100vw - 16px));
+  max-height: none;
+  gap: 0.5rem;
+  overflow: visible;
+}
+.date-head {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.date-head select {
+  flex: 1;
+  min-width: 0;
+  padding: 0 0.4rem;
+}
+.date-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+.date-dow {
+  padding: 0.3rem 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+}
+.date-day {
+  width: 100%;
+  min-height: 40px;
+  padding: 0;
+  font: inherit;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.date-day.outside {
+  color: var(--muted);
+}
+.date-day.today {
+  border-color: var(--line);
+}
+.date-day:hover:not(:disabled) {
+  background: var(--line);
+}
+.date-day:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+[aria-selected="true"] > .date-day {
+  color: var(--panel);
+  background: var(--blue);
+}
+.date-foot {
+  display: flex;
+  justify-content: space-between;
+}

@@ -98,7 +98,7 @@ a.jobs-title:focus-visible {
   height: 48px;
   color: var(--muted);
 }
-@media (max-width: 1279px) {
+@media (max-width: 1279.98px) {
   .jobs-grid {
     grid-template-columns: var(--cols-mid);
   }
@@ -106,7 +106,7 @@ a.jobs-title:focus-visible {
     min-width: var(--min-mid, 0);
   }
 }
-@media (max-width: 1099px) {
+@media (max-width: 1099.98px) {
   .jobs-grid {
     grid-template-columns: var(--cols-compact);
   }
@@ -116,7 +116,7 @@ a.jobs-title:focus-visible {
 }
 /* A phone has no room for six tracks: Length and Operation drop out, Icon, Title, Status and
    Actions remain with Title taking the rest, and the table never scrolls sideways. */
-@media (max-width: 719px) {
+@media (max-width: 1299.98px) {
   .jobs-table.lib-table {
     min-width: 0;
   }

@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, test } from "vitest";
@@ -130,5 +132,37 @@ describe("BeatSaver playlists tab", () => {
     expect(spinner.querySelector(".alert-spin")).not.toBeNull();
     expect(screen.queryByText(/loading/i)).toBeNull();
     release();
+  });
+});
+
+describe("BeatSaver playlist page header", () => {
+  test("one row: back, name and author, then Download all matching at the right end", async () => {
+    api();
+    const { container } = renderApp("/beatsaver/playlists/p1?from=bs-playlists");
+    await screen.findByText("Song 1");
+    const row = container.querySelector(".bs-playlist-head")!;
+    const kids = [...row.children].map((c) => c.className);
+    expect(kids).toEqual([
+      "btn plain bs-playlist-back",
+      "bs-playlist-title",
+      "bs-playlist-spacer",
+      expect.stringContaining("bs-playlist-download"),
+    ]);
+    const title = row.querySelector(".bs-playlist-title")!;
+    expect(title.querySelector(".lp-heading")).toHaveTextContent("Gentle electronic");
+    expect(title.querySelector(".lp-heading")).toHaveAttribute("title", "Gentle electronic");
+    expect(title.querySelector(".count")).toHaveTextContent("Alice");
+    expect(
+      within(row as HTMLElement).getByRole("link", { name: "All playlists" }),
+    ).toBeInTheDocument();
+    expect(
+      within(row as HTMLElement).getByRole("button", { name: "Download all matching" }),
+    ).toBeInTheDocument();
+  });
+
+  test("the name and author truncate, the spacer grows", () => {
+    const css = readFileSync(resolve(__dirname, "../src/styles/beatsaver.css"), "utf8");
+    expect(css).toMatch(/\.bs-playlist-title \.lp-heading\s*\{[^}]*text-overflow:\s*ellipsis/);
+    expect(css).toMatch(/\.bs-playlist-spacer\s*\{[^}]*flex:\s*1/);
   });
 });

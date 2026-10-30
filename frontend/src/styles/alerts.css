@@ -177,7 +177,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-@media (max-width: 640px) {
+@media (max-width: 1299.98px) {
   .toast-stack {
     width: calc(100% - 2rem);
     bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));

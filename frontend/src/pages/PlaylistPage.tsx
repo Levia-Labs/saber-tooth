@@ -13,7 +13,6 @@ import {
 } from "../api/playlists";
 import type { MapItem } from "../api/types";
 import { useAnnounce } from "../components/Announcer";
-import { PageSkeleton } from "../components/Skeletons";
 import { Alert } from "../components/Alert";
 import { ActionButton } from "../components/Buttons";
 import { BackLink } from "../components/BackLink";
@@ -189,6 +188,37 @@ function PlaylistForm({ existing, initial }: { existing: string | null; initial:
   );
 }
 
+/** The playlist page in its final layout while the playlist loads: header, button shapes, songs. */
+function PlaylistSkeleton() {
+  return (
+    <section
+      className="page map-page lp-page"
+      aria-label="Loading playlist"
+      aria-busy="true"
+      data-skeleton="true"
+    >
+      <PlaylistBar />
+      <div className="map-scroll">
+        <div className="maphead" aria-hidden="true">
+          <span className="sk cover cover-big" />
+          <div className="mapmeta">
+            <span className="sk sk-title" />
+            <span className="sk sk-bar short" />
+            <div className="metarow">
+              <span className="sk sk-tool" />
+              <span className="sk sk-tool wide" />
+            </div>
+          </div>
+        </div>
+        <div className="lp-section-head" aria-hidden="true">
+          <span className="sk sk-bar short" />
+        </div>
+        <LpSongTable rows={[]} onRemove={() => undefined} loading />
+      </div>
+    </section>
+  );
+}
+
 /** `/playlists/new` and `/playlists/:id`: one playlist, laid out like the map page. */
 export function PlaylistPage() {
   const { id } = useParams();
@@ -207,6 +237,6 @@ export function PlaylistPage() {
       </section>
     );
   }
-  if (!loaded.data) return <PageSkeleton />;
+  if (!loaded.data) return <PlaylistSkeleton />;
   return <PlaylistForm key={existing} existing={existing} initial={draftOf(loaded.data)} />;
 }

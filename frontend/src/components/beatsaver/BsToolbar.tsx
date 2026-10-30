@@ -54,25 +54,29 @@ function MoreFilters({ state, update, clear }: Omit<Props, "set" | "narrow">) {
               <span className="label-hide-mobile">Clear all</span>
             </button>
           </div>
-          {section(
-            "Search",
-            <TextFilterBody
-              label="Search BeatSaver"
-              q={state.q}
-              onChange={(q, replace) => update({ q }, replace)}
-            />,
-          )}
-          {section("Levels", <LevelsBody state={state} update={update} />)}
-          {section("Rating", <RatingBody state={state} update={update} />)}
-          {section("Upvotes", <UpvotesBody state={state} update={update} />)}
-          {section("Length", <LengthBody state={state} update={update} />)}
-          {section("BPM", <BpmBody state={state} update={update} />)}
-          {section("Tags", <TagsBody state={state} update={update} />)}
-          {section("More", <MoreBody state={state} update={update} />)}
-          <Dialog.Close className="btn primary">
-            <Icon name="approve" />
-            <span>Show maps</span>
-          </Dialog.Close>
+          <div className="sheet-body">
+            {section(
+              "Search",
+              <TextFilterBody
+                label="Search BeatSaver"
+                q={state.q}
+                onChange={(q, replace) => update({ q }, replace)}
+              />,
+            )}
+            {section("Levels", <LevelsBody state={state} update={update} />)}
+            {section("Rating", <RatingBody state={state} update={update} />)}
+            {section("Upvotes", <UpvotesBody state={state} update={update} />)}
+            {section("Length", <LengthBody state={state} update={update} />)}
+            {section("BPM", <BpmBody state={state} update={update} />)}
+            {section("Tags", <TagsBody state={state} update={update} />)}
+            {section("More", <MoreBody state={state} update={update} />)}
+          </div>
+          <div className="sheet-foot">
+            <Dialog.Close className="btn primary show-btn">
+              <Icon name="approve" />
+              <span>Show maps</span>
+            </Dialog.Close>
+          </div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

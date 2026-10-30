@@ -153,6 +153,7 @@ describe("playlist page songs", () => {
   test("the table has the library columns and rows with only a Remove action", async () => {
     serve();
     renderApp("/playlists/p1");
+    await screen.findByRole("button", { name: "Chill" });
     const table = await screen.findByRole("table", { name: "Songs in the playlist" });
     await screen.findByText("Song 2");
     const heads = within(table)
@@ -186,6 +187,7 @@ describe("playlist page songs", () => {
     const bodies: unknown[] = [];
     serve(bodies);
     renderApp("/playlists/p1");
+    await screen.findByRole("button", { name: "Chill" });
     const table = await screen.findByRole("table", { name: "Songs in the playlist" });
     await screen.findByText("Song 2");
     fireEvent.click(within(table).getByRole("button", { name: "Remove Song 1 from playlist" }));
@@ -199,6 +201,7 @@ describe("playlist page songs", () => {
   test("library sort works on the songs table", async () => {
     serve();
     renderApp("/playlists/p1");
+    await screen.findByRole("button", { name: "Chill" });
     const table = await screen.findByRole("table", { name: "Songs in the playlist" });
     await screen.findByText("Song 2");
     const titles = () =>

@@ -82,11 +82,11 @@ describe("toast width", () => {
   test("on the mobile breakpoint no width is set and the css makes the toast full width", () => {
     setup();
     natural = 120;
-    vi.stubGlobal("matchMedia", (q: string) => ({ matches: q.includes("640px") }));
+    vi.stubGlobal("matchMedia", (q: string) => ({ matches: q.includes("1299.98px") }));
     const { container } = render(<Alert variant="info" title="Hi" className="toast" quantized />);
     expect((container.querySelector(".toast") as HTMLElement).style.width).toBe("");
     const css = readFileSync(resolve(__dirname, "../src/styles/alerts.css"), "utf-8");
-    const mobile = /@media \(max-width: 640px\) \{([\s\S]*?)\n\}/.exec(css)?.[1] ?? "";
+    const mobile = /@media \(max-width: 1299.98px\) \{([\s\S]*?)\n\}/.exec(css)?.[1] ?? "";
     expect(mobile).toMatch(/\.toast-stack \.toast\s*\{[^}]*width:\s*100%/);
   });
 });

@@ -1,3 +1,4 @@
+import { mediaFor } from "../src/lib/breakpoint";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { readFileSync } from "node:fs";
@@ -15,7 +16,7 @@ afterEach(() => {
 
 function viewport(width: number) {
   window.matchMedia = ((query: string) => {
-    const max = /\(max-width:\s*(\d+)px\)/.exec(query);
+    const max = /\(max-width:\s*([\d.]+)px\)/.exec(mediaFor(query, false));
     return { ...real(query), media: query, matches: max ? width <= Number(max[1]) : false };
   }) as typeof window.matchMedia;
 }
@@ -195,7 +196,7 @@ describe("icon-only actions on mobile", () => {
     const button = screen.getByRole("button", { name: "Scan Song" });
     expect(button.querySelector("span.label-hide-mobile")?.textContent).toBe("Scan Song");
     expect(css("overlays.css")).toMatch(
-      /@media \(max-width: 719px\) \{\s*\.label-hide-mobile \{[^}]*clip/,
+      /@media \(max-width: 1299.98px\) \{\s*\.label-hide-mobile \{[^}]*clip/,
     );
   });
 
@@ -220,7 +221,7 @@ describe("icon-only actions on mobile", () => {
       screen.getByRole("link", { name: `Open map: Unreadable: ${reason}` }),
     ).toBeInTheDocument();
     expect(css("rows.css")).toMatch(
-      /@media \(max-width: 719px\) \{\s*\.sub-unreadable \{\s*display: none/,
+      /@media \(max-width: 1299.98px\) \{\s*\.sub-unreadable \{\s*display: none/,
     );
     expect(css("rows.css")).toMatch(/\.sub-unreadable \{[^}]*text-overflow: ellipsis/);
     expect(css("chips.css")).toMatch(/\.chip \{\s*max-width: 100%;\s*white-space: nowrap/);

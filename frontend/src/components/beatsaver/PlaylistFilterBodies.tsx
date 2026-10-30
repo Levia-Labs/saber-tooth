@@ -9,6 +9,7 @@ import {
   type PlState,
 } from "../../lib/plfilters";
 import { ClearFilterButton, type RowClear } from "../ClearFilterButton";
+import { DatePicker } from "../DatePicker";
 import { RangeFilterBody } from "../RangeFilterBody";
 import { Box } from "./Box";
 
@@ -154,19 +155,21 @@ export function PlCreatedBody({ state, update, rowClear }: Props) {
           <ClearFilterButton {...rowClear} />
         </div>
       )}
-      <label htmlFor={`${id}-from`}>Created from</label>
-      <input
+      <span className="field-label">Created from</span>
+      <DatePicker
         id={`${id}-from`}
-        type="date"
+        label="Created from"
         value={state.from}
-        onChange={(e) => update({ from: e.target.value })}
+        max={state.to || undefined}
+        onChange={(from) => update({ from })}
       />
-      <label htmlFor={`${id}-to`}>Created until</label>
-      <input
+      <span className="field-label">Created until</span>
+      <DatePicker
         id={`${id}-to`}
-        type="date"
+        label="Created until"
         value={state.to}
-        onChange={(e) => update({ to: e.target.value })}
+        min={state.from || undefined}
+        onChange={(to) => update({ to })}
       />
     </div>
   );

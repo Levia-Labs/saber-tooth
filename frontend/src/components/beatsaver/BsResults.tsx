@@ -8,6 +8,7 @@ import { BS_TIPS } from "../../lib/bstips";
 import { isBsDefault } from "../../lib/bsfilters";
 import { batchSummary } from "../../lib/announcements";
 import { useMediaQuery } from "../../lib/hooks";
+import { COMPACT_QUERY } from "../../lib/breakpoint";
 import { useListScroll } from "../../lib/listscroll";
 import { sortLoaded } from "../../lib/bsrating";
 import { useColumns } from "../../lib/useColumns";
@@ -50,7 +51,7 @@ export function BsResults({ query, controls, extra }: Props) {
   const { state, update, set, clearFilters } = controls;
   const table = useRef<HTMLDivElement>(null);
   const columns = useColumns(table, BS_COLUMNS);
-  const narrow = useMediaQuery("(max-width: 1099px)");
+  const narrow = useMediaQuery(COMPACT_QUERY);
   const config = useBsConfig();
   const downloads = useDownloads();
   const selection = useSelection();

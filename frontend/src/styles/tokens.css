@@ -18,13 +18,13 @@
   color-scheme: dark;
 }
 
-@media (max-width: 1099px) {
+@media (max-width: 1099.98px) {
   :root {
     --row-h: 92px;
   }
 }
 
-@media (max-width: 719px) {
+@media (max-width: 1299.98px) {
   :root {
     --row-h: 172px;
   }

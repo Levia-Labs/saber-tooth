@@ -255,7 +255,7 @@ select {
   color: var(--ink);
 }
 
-@media (max-width: 719px) {
+@media (max-width: 1299.98px) {
   main {
     padding: 0 0.75rem 0.5rem;
   }

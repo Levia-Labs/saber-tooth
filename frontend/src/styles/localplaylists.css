@@ -144,7 +144,7 @@
   font-weight: 700;
   text-decoration: underline;
 }
-@media (max-width: 1279px) {
+@media (max-width: 1279.98px) {
   .lp-grid {
     grid-template-columns: var(--cols-mid);
   }
@@ -152,7 +152,7 @@
     min-width: var(--min-mid, 0);
   }
 }
-@media (max-width: 1099px) {
+@media (max-width: 1099.98px) {
   .lp-grid {
     grid-template-columns: var(--cols-compact);
   }
@@ -160,7 +160,7 @@
     min-width: var(--min-compact, 0);
   }
 }
-@media (max-width: 719px) {
+@media (max-width: 1299.98px) {
   .lp-table.lib-table {
     min-width: var(--min-compact, 0);
   }

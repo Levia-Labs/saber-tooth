@@ -34,7 +34,7 @@ export function ActionButton(props: ButtonProps) {
   const { icon, label, tip, text, variant, children, className, ...rest } = props;
   const common = { icon, label, tip, text, variant, children };
   return (
-    <Tip text={tip} info={text}>
+    <Tip text={tip}>
       <button type="button" {...rest} className={classes(common, className)}>
         {content(common)}
       </button>
@@ -48,7 +48,7 @@ export function ActionLink(props: LinkButtonProps) {
   const { icon, label, tip, text, variant, children, className, ...rest } = props;
   const common = { icon, label, tip, text, variant, children };
   return (
-    <Tip text={tip} info={text}>
+    <Tip text={tip}>
       <Link {...rest} className={classes(common, className)}>
         {content(common)}
       </Link>

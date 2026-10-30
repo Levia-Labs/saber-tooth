@@ -13,6 +13,7 @@ import { LEVELS } from "../../lib/levels";
 import { toggle } from "../../lib/urlstate";
 import { Icon } from "../icons";
 import { Tip } from "../Tip";
+import { DatePicker } from "../DatePicker";
 import { Box } from "./Box";
 import { NumberField } from "./BsNumberBodies";
 
@@ -181,19 +182,21 @@ export function MoreBody({ state, update }: Props) {
       >
         Ranked maps only
       </Box>
-      <label htmlFor={`${id}-from`}>Uploaded from</label>
-      <input
+      <span className="field-label">Uploaded from</span>
+      <DatePicker
         id={`${id}-from`}
-        type="date"
+        label="Uploaded from"
         value={state.from}
-        onChange={(e) => update({ from: e.target.value })}
+        max={state.to || undefined}
+        onChange={(from) => update({ from })}
       />
-      <label htmlFor={`${id}-to`}>Uploaded until</label>
-      <input
+      <span className="field-label">Uploaded until</span>
+      <DatePicker
         id={`${id}-to`}
-        type="date"
+        label="Uploaded until"
         value={state.to}
-        onChange={(e) => update({ to: e.target.value })}
+        min={state.from || undefined}
+        onChange={(to) => update({ to })}
       />
       <OrderSelect state={state} update={update} />
     </div>

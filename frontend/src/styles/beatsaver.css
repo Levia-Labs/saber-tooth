@@ -66,7 +66,7 @@
   min-height: 40px;
 }
 .selection-bar,
-.bs-playlist-actions {
+.bs-playlist-head {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -178,9 +178,8 @@ button.bs-tag[aria-pressed="true"] {
   margin-top: 0.75rem;
 }
 
-@media (min-width: 1100px) {
+@media (min-width: 1300px) {
   .sheet.bs-sheet {
-    display: grid;
     top: 0;
     left: auto;
     width: 26rem;
@@ -188,18 +187,17 @@ button.bs-tag[aria-pressed="true"] {
     border: 0;
     border-left: 1px solid var(--line);
     border-radius: 0;
-    align-content: start;
   }
 }
 
-@media (max-width: 1279px) {
+@media (max-width: 1279.98px) {
   .bs-table .col-bpm,
   .col-tags {
     display: none;
   }
 }
 
-@media (max-width: 1099px) {
+@media (max-width: 1099.98px) {
   .col-tags,
   .bs-table .col-length,
   .bs-table .col-bpm {
@@ -227,7 +225,7 @@ button.bs-tag[aria-pressed="true"] {
   }
 }
 
-@media (max-width: 719px) {
+@media (max-width: 1299.98px) {
   .bs-table .lib-row {
     height: auto;
     min-height: 172px;
@@ -257,13 +255,35 @@ button.bs-tag[aria-pressed="true"] {
   width: 0.95em;
   height: 0.95em;
 }
+.bs-playlist-head {
+  flex-wrap: nowrap;
+}
 .bs-playlist-title {
   display: flex;
   align-items: baseline;
-  gap: 0.25rem 0.75rem;
-  flex-wrap: wrap;
-  margin-bottom: 0.5rem;
+  flex: 0 1 auto;
+  gap: 0.75rem;
+  min-width: 0;
 }
 .bs-playlist-title .lp-heading {
   margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bs-playlist-title .count {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bs-playlist-spacer {
+  flex: 1;
+}
+.bs-playlist-back,
+.bs-playlist-download {
+  flex: none;
 }

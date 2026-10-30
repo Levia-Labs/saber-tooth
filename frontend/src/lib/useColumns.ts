@@ -15,6 +15,7 @@ import {
   type Widths,
 } from "./columns";
 import { scaledPx, unscaledPx, useUiScale } from "../vr/scale";
+import { COMPACT_QUERY, MID_QUERY } from "./breakpoint";
 import { useMediaQuery } from "./hooks";
 
 export interface ColumnsApi {
@@ -31,8 +32,10 @@ export interface ColumnsApi {
 type All = Record<Breakpoint, Widths>;
 
 export function useBreakpoint(): Breakpoint {
-  const mid = useMediaQuery("(max-width: 1279px)");
-  const compact = useMediaQuery("(max-width: 1099px)");
+  // Outside VR both tier queries stand for the mobile view (see lib/breakpoint.ts), so the table
+  // is compact there; in VR they follow the effective width.
+  const mid = useMediaQuery(MID_QUERY);
+  const compact = useMediaQuery(COMPACT_QUERY);
   return compact ? "compact" : mid ? "mid" : "wide";
 }
 

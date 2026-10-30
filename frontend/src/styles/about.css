@@ -199,10 +199,13 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+/* The card grid is a content tier (1, 2 or 3 columns by width), not part of the mobile view. */
 @media (max-width: 719px) {
   .about-grid {
     grid-template-columns: repeat(1, minmax(0, 1fr));
   }
+}
+@media (max-width: 1299.98px) {
   .masthead .masthead-actions {
     right: 0.75rem;
   }

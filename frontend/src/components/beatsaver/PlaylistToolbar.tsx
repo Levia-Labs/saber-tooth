@@ -62,34 +62,38 @@ function FilterSheet({ state, update, clear }: Omit<Props, "narrow">) {
               <span className="label-hide-mobile">Clear all</span>
             </button>
           </div>
-          {section(
-            "Name",
-            <TextFilterBody
-              label="Search playlists"
-              q={state.q}
-              onChange={(q, replace) => update({ q }, replace)}
-            />,
-          )}
-          {section(
-            "Author",
-            <TextFilterBody
-              label="Author contains"
-              q={state.owner}
-              onChange={(owner, replace) => update({ owner }, replace)}
-            />,
-          )}
-          {section("Maps", <PlMapsBody state={state} update={update} />)}
-          {section("Rating", <PlRatingBody state={state} update={update} />)}
-          {section("Upvotes", <PlUpvotesBody state={state} update={update} />)}
-          {section("Length", <PlLengthBody state={state} update={update} />)}
-          {section("NPS", <PlNpsBody state={state} update={update} />)}
-          {section("Created", <PlCreatedBody state={state} update={update} />)}
-          {section("More", <PlMoreBody state={state} update={update} />)}
-          {section("Order", <PlOrderSelect state={state} update={update} />)}
-          <Dialog.Close className="btn primary">
-            <Icon name="approve" />
-            <span>Show playlists</span>
-          </Dialog.Close>
+          <div className="sheet-body">
+            {section(
+              "Name",
+              <TextFilterBody
+                label="Search playlists"
+                q={state.q}
+                onChange={(q, replace) => update({ q }, replace)}
+              />,
+            )}
+            {section(
+              "Author",
+              <TextFilterBody
+                label="Author contains"
+                q={state.owner}
+                onChange={(owner, replace) => update({ owner }, replace)}
+              />,
+            )}
+            {section("Maps", <PlMapsBody state={state} update={update} />)}
+            {section("Rating", <PlRatingBody state={state} update={update} />)}
+            {section("Upvotes", <PlUpvotesBody state={state} update={update} />)}
+            {section("Length", <PlLengthBody state={state} update={update} />)}
+            {section("NPS", <PlNpsBody state={state} update={update} />)}
+            {section("Created", <PlCreatedBody state={state} update={update} />)}
+            {section("More", <PlMoreBody state={state} update={update} />)}
+            {section("Order", <PlOrderSelect state={state} update={update} />)}
+          </div>
+          <div className="sheet-foot">
+            <Dialog.Close className="btn primary show-btn">
+              <Icon name="approve" />
+              <span>Show playlists</span>
+            </Dialog.Close>
+          </div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
