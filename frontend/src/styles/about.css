@@ -25,7 +25,7 @@
 }
 .about-hero {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 1.5rem;
   margin-top: 1rem;
   padding: 1.5rem 1.75rem;
@@ -64,7 +64,7 @@
 }
 .about-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1rem;
   margin: 0;
   padding: 0;
@@ -72,6 +72,8 @@
 }
 .about-card {
   display: grid;
+  height: 100%;
+  box-sizing: border-box;
   align-content: start;
   gap: 0.4rem;
   padding: 1.1rem 1.2rem;
@@ -103,54 +105,68 @@
   background: var(--panel-2);
   border-radius: var(--radius);
 }
-.about-steps {
-  display: grid;
-  gap: 0.6rem;
+.about-link-card {
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.15s;
+}
+.about-link-card:hover,
+.about-link-card:focus-visible {
+  border-color: var(--blue);
+}
+.about .about-link-card h3 {
+  color: var(--ink);
+}
+/* A vertical timeline: a numbered marker per step with a line running down to the next one. */
+.about-timeline {
   margin: 0;
   padding: 0;
   list-style: none;
   counter-reset: step;
 }
-.about-steps li {
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  padding: 0.7rem 1rem;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+.about-timeline li {
+  position: relative;
+  min-height: 3rem;
+  padding: 0 0 1.4rem 3.2rem;
   counter-increment: step;
 }
-.about-steps li::before {
+.about-timeline li::before {
   content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0;
   display: grid;
   place-items: center;
-  flex: none;
-  width: 2rem;
-  height: 2rem;
+  width: 2.25rem;
+  height: 2.25rem;
   color: #08051a;
   font-weight: 700;
   background: var(--blue);
   border-radius: 999px;
 }
-.about-notes,
-.about-links {
+.about-timeline li::after {
+  content: "";
+  position: absolute;
+  left: 1.05rem;
+  top: 2.5rem;
+  bottom: 0.25rem;
+  width: 2px;
+  background: var(--line);
+}
+.about-timeline li:last-child {
+  padding-bottom: 0;
+}
+.about-timeline li:last-child::after {
+  display: none;
+}
+.about-timeline h3 {
+  color: var(--ink);
+  font-weight: 700;
+  line-height: 2.25rem;
+}
+.about-timeline p {
   margin: 0;
-  padding-left: 1.2rem;
-}
-.about-notes li + li,
-.about-links li + li {
-  margin-top: 0.4rem;
-}
-.about-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1.5rem;
-  padding-left: 0;
-  list-style: none;
-}
-.about-links li + li {
-  margin-top: 0;
+  color: var(--muted);
 }
 .about-version {
   margin-top: 2rem;
@@ -175,7 +191,20 @@
   right: 1.25rem;
   transform: translateY(-50%);
 }
+@media (max-width: 1399px) {
+  .about-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 1099px) {
+  .about-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 @media (max-width: 719px) {
+  .about-grid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
   .masthead .masthead-actions {
     right: 0.75rem;
   }

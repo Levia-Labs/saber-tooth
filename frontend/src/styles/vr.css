@@ -14,16 +14,6 @@
   --row-h: calc(72px * var(--ui-scale));
   --head-h: calc(44px * var(--ui-scale));
   --vr-focus: #ffd33d;
-  --stage: #0b0818;
-  --panel: #1c1738;
-  --panel-2: #2a2352;
-  --line: #9a94d6;
-  --ink: #ffffff;
-  --muted: #e1def5;
-  --red: #ff6b73;
-  --blue: #6cc4ff;
-  --amber: #ffc861;
-  --green: #5bf0a6;
   --radius: 12px;
 }
 
@@ -45,6 +35,59 @@
   min-height: var(--vr-target);
   min-width: var(--vr-target);
   padding-inline: var(--vr-gap);
+}
+
+/* One height for every button, link button, icon button, select, toggle and tab. The desktop sets
+   40 to 44 px heights with selectors more specific than the rule above, so this one is more
+   specific than all of them. Icon-only buttons are square. The checkbox, the header filter and
+   sort buttons and the step buttons keep their own sizes. */
+:root[data-ui="vr"]
+  :is(
+    button,
+    a.btn,
+    .btn,
+    select,
+    summary,
+    [role="radio"],
+    [role="tab"],
+    .vr-target,
+    .order-toggle,
+    .kebab-item
+  ):not(.checkbox, .filter-btn, .th-sort, .step-btn, .field-clear) {
+  min-height: var(--vr-target);
+}
+:root[data-ui="vr"] .btn:is(.icon, .tap, :has(> .label-hide-mobile)):not(.checkbox) {
+  min-width: var(--vr-target);
+  padding-inline: 0;
+  justify-content: center;
+}
+:root[data-ui="vr"] .btn:is(.icon, .tap) {
+  width: var(--vr-target);
+  height: var(--vr-target);
+}
+/* Tabs match the buttons: the pill sits inside a 1 px border, so it is two pixels short. */
+:root[data-ui="vr"] .mode-switch .pill {
+  min-height: calc(var(--vr-target) - 2px);
+}
+/* Icon-only buttons: the mobile breakpoint hides the label of a button that has an icon
+   (overlays.css); VR does the same at every width. */
+[data-ui="vr"] .label-hide-mobile {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+/* Filter popovers render in a portal outside the page, with px sizes: they follow the scale. */
+[data-ui="vr"] .popover {
+  width: min(calc(300px * var(--ui-scale)), calc(100vw - 16px));
+  max-height: min(
+    70vh,
+    calc(460px * var(--ui-scale)),
+    var(--radix-popover-content-available-height, 70vh)
+  );
 }
 
 /* Gaps. */
@@ -117,11 +160,6 @@
   height: calc(28px * var(--ui-scale));
 }
 
-/* The desktop sets 40 and 44 px heights on selects and toggles with more specific selectors than
-   the target rule above; at VR size they clip the text, so they take the target height too. */
-[data-ui="vr"] :is(select, .order-toggle, .lib-mobile-bar .sort-select select, .kebab-item) {
-  min-height: var(--vr-target);
-}
 [data-ui="vr"] .order-toggle {
   width: var(--vr-target);
 }

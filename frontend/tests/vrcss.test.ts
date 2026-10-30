@@ -122,11 +122,6 @@ describe("vr.css", () => {
     expect(rule?.body).toMatch(/min-width:\s*0/);
   });
 
-  test("high contrast tokens: white ink on a dark panel", () => {
-    expect(bare).toMatch(/--ink:\s*#ffffff/);
-    expect(bare).toMatch(/--panel:\s*#1c1738/);
-  });
-
   test("main.tsx imports vr.css last so it wins over the desktop rules", () => {
     const imports = [...read("../src/main.tsx").matchAll(/import "\.\/styles\/([\w-]+\.css)";/g)];
     expect(imports.at(-1)?.[1]).toBe("vr.css");

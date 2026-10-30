@@ -3,11 +3,64 @@ import { Logo } from "../components/Logo";
 import { SectionTabs } from "../components/SectionTabs";
 import { useDocumentTitle } from "../lib/hooks";
 
-const LINKS = [
-  { href: "https://github.com/Levia-Labs/saber-tooth", label: "Saber Tooth on GitHub" },
-  { href: "https://levialabs.net", label: "Levia Labs" },
-  { href: "https://github.com/Levia-Labs/beat-analyser", label: "beat-analyser (companion)" },
-  { href: "https://github.com/Levia-Labs/Crepidoma", label: "Crepidoma (companion)" },
+interface LinkCard {
+  icon: IconName;
+  title: string;
+  text: string;
+  href: string;
+}
+
+const REPO = "https://github.com/Levia-Labs/saber-tooth";
+
+const LINKS: LinkCard[] = [
+  {
+    icon: "github",
+    title: "Saber Tooth on GitHub",
+    text: "Source code, issues and releases.",
+    href: REPO,
+  },
+  {
+    icon: "docker",
+    title: "Docker Hub",
+    text: "The saber-tooth image to run with Docker.",
+    href: "https://hub.docker.com/r/levialabs/sabertooth",
+  },
+  {
+    icon: "book",
+    title: "API reference",
+    text: "Every REST route, job result and error the service answers.",
+    href: `${REPO}/blob/main/docs/api.md`,
+  },
+  {
+    icon: "plug",
+    title: "MCP setup",
+    text: "Connect an agent to the MCP endpoint and see the tools it gets.",
+    href: `${REPO}/blob/main/docs/api.md#mcp`,
+  },
+  {
+    icon: "download",
+    title: "BeatSaver",
+    text: "The map site that search and downloads talk to.",
+    href: "https://beatsaver.com",
+  },
+  {
+    icon: "globe",
+    title: "Levia Labs",
+    text: "The people behind Saber Tooth.",
+    href: "https://levialabs.net",
+  },
+  {
+    icon: "wave",
+    title: "beat-analyser (companion)",
+    text: "The sidecar that finds the beat grid of a song.",
+    href: "https://github.com/Levia-Labs/beat-analyser",
+  },
+  {
+    icon: "layers",
+    title: "Crepidoma (companion)",
+    text: "The shared directives and tooling this project is built with.",
+    href: "https://github.com/Levia-Labs/Crepidoma",
+  },
 ];
 
 interface Feature {
@@ -65,12 +118,47 @@ const FEATURES: Feature[] = [
 ];
 
 const STEPS = [
-  "Open the Library and pick a map.",
-  "Press Fix, or Scan to review each proposal on the map page first.",
-  "Play the “[saber-tooth]” copy in Beat Saber.",
-  "Use the Crop tab for a shorter version, or Generate map for a new one from a song.",
-  "Watch progress in Jobs; results also appear as toasts at the bottom.",
+  { title: "Open the Library", text: "Pick a map from your library." },
+  { title: "Press Fix", text: "Or press Scan to review each proposal on the map page first." },
+  { title: "Play the copy", text: "Play the “[saber-tooth]” copy in Beat Saber." },
+  {
+    title: "Crop or generate",
+    text: "Use the Crop tab for a shorter version, or Generate map for a new one from a song.",
+  },
+  {
+    title: "Watch Jobs",
+    text: "Watch progress in Jobs; results also appear as toasts at the bottom.",
+  },
 ];
+
+const NOTES: Feature[] = [
+  {
+    icon: "ok",
+    title: "Vanilla only",
+    text: "Chroma, Noodle Extensions or Vivify are never required; lighting uses the vanilla environments.",
+  },
+  {
+    icon: "lock",
+    title: "Private",
+    text: "Saber Tooth only talks to BeatSaver when you search or download there, and to the beat-analyser when it needs the audio.",
+  },
+  {
+    icon: "shield",
+    title: "Your maps are safe",
+    text: "Fix, Apply and Crop write new folders. Only Save over this map in Crop and Delete change an existing folder, and both ask first.",
+  },
+];
+
+function CardHead({ icon, title }: { icon: IconName; title: string }) {
+  return (
+    <div className="about-card-head">
+      <span className="about-icon">
+        <Icon name={icon} />
+      </span>
+      <h3>{title}</h3>
+    </div>
+  );
+}
 
 export function AboutPage() {
   useDocumentTitle("About");
@@ -110,46 +198,44 @@ export function AboutPage() {
           <ul className="about-grid" aria-label="Features">
             {FEATURES.map((f) => (
               <li key={f.title} className="about-card">
-                <div className="about-card-head">
-                  <span className="about-icon">
-                    <Icon name={f.icon} />
-                  </span>
-                  <h3>{f.title}</h3>
-                </div>
+                <CardHead icon={f.icon} title={f.title} />
                 <p>{f.text}</p>
               </li>
             ))}
           </ul>
 
           <h2>How to use it</h2>
-          <ol className="about-steps" aria-label="How to use it">
-            {STEPS.map((s) => (
-              <li key={s}>{s}</li>
+          <ol className="about-timeline" aria-label="How to use it">
+            {STEPS.map((step) => (
+              <li key={step.title}>
+                <h3>{step.title}</h3>
+                <p>{step.text}</p>
+              </li>
             ))}
           </ol>
 
           <h2>Good to know</h2>
-          <ul className="about-notes">
-            <li>
-              <strong>Vanilla only.</strong> Chroma, Noodle Extensions or Vivify are never required;
-              lighting uses the vanilla environments.
-            </li>
-            <li>
-              <strong>Private.</strong> Saber Tooth only talks to BeatSaver when you search or
-              download there, and to the beat-analyser when it needs the audio.
-            </li>
-            <li>
-              <strong>Your maps are safe.</strong> Fix, Apply and Crop write new folders. Only Save
-              over this map in Crop and Delete change an existing folder, and both ask first.
-            </li>
+          <ul className="about-grid" aria-label="Good to know">
+            {NOTES.map((n) => (
+              <li key={n.title} className="about-card">
+                <CardHead icon={n.icon} title={n.title} />
+                <p>{n.text}</p>
+              </li>
+            ))}
           </ul>
 
           <h2>Links</h2>
-          <ul className="about-links">
+          <ul className="about-grid" aria-label="Links">
             {LINKS.map((l) => (
-              <li key={l.href}>
-                <a href={l.href} target="_blank" rel="noopener noreferrer">
-                  {l.label}
+              <li key={l.href} className="about-linkitem">
+                <a
+                  className="about-card about-link-card"
+                  href={l.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <CardHead icon={l.icon} title={l.title} />
+                  <p>{l.text}</p>
                 </a>
               </li>
             ))}
