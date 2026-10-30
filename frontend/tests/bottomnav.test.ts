@@ -32,7 +32,8 @@ test("the bar tabs share the full width equally, with centered icons and a full-
   const tab =
     /:root:not\(\[data-ui="vr"\]\) \.section-tabs \.pill \{([^}]*)\}/.exec(block)?.[1] ?? "";
   expect(tab).toMatch(/flex:\s*1 1 0(%|px)?;/);
-  expect(tab).not.toMatch(/max-width/);
+  expect(tab).toMatch(/min-width:\s*48px/);
+  expect(tab).toMatch(/max-width:\s*calc\(48px \+ 2 \* 0\.9rem\)/);
   expect(tab).toMatch(/justify-content:\s*center/);
   expect(tab).toMatch(/align-items:\s*center/);
   expect(tab).toMatch(/gap:\s*0/);
@@ -41,6 +42,7 @@ test("the bar tabs share the full width equally, with centered icons and a full-
   expect(bar).toMatch(/padding-left:\s*max\(6px, env\(safe-area-inset-left/);
   expect(bar).toMatch(/padding-right:\s*max\(6px, env\(safe-area-inset-right/);
   expect(bar).toMatch(/max-width:\s*none/);
+  expect(bar).toMatch(/justify-content:\s*center/);
   // Regular buttons: bordered and rounded like the other buttons, spaced by the bar's gap.
   expect(tab).toMatch(/border:\s*1px solid var\(--line\)/);
   expect(tab).toMatch(/border-radius:\s*var\(--radius\)/);

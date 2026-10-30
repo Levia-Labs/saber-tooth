@@ -38,8 +38,8 @@
 }
 /* Below 1300 px (lib/breakpoint.ts) the section tabs are the bottom navigation bar: the same nav,
    fixed to the bottom, the labels hidden by design (the one place a width, not the room, decides).
-   The tabs are regular buttons that share the bar width equally, each icon centered in its
-   button; the page and the toasts clear the bar. */
+   The tabs are regular buttons, a centered group that shares the bar width equally up to the
+   original tab size and shrinks evenly on a narrow phone, each icon centered in its button; the page and the toasts clear the bar. */
 @media (max-width: 1299.98px) {
   :root:not([data-ui="vr"]) {
     --bottom-nav-h: calc(60px + env(safe-area-inset-bottom, 0px));
@@ -52,6 +52,7 @@
     z-index: 45;
     display: flex;
     gap: 6px;
+    justify-content: center;
     max-width: none;
     border-width: 1px 0 0;
     border-radius: 0;
@@ -73,7 +74,9 @@
   :root:not([data-ui="vr"]) .section-tabs .pill {
     position: relative;
     flex: 1 1 0;
-    min-width: 0;
+    /* The original icon-only tab: the 48 px target plus the 0.9rem side padding of the top row. */
+    min-width: 48px;
+    max-width: calc(48px + 2 * 0.9rem);
     display: flex;
     align-items: center;
     justify-content: center;
