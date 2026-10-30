@@ -4,7 +4,6 @@ import react from "@vitejs/plugin-react";
 import type { Plugin } from "vite";
 import { defineConfig } from "vitest/config";
 
-const BACKEND = "http://127.0.0.1:8100";
 const OUT = fileURLToPath(new URL("../src/saber_tooth/web", import.meta.url));
 
 /** Remove only previous build output so the committed README.md in the folder survives. */
@@ -39,8 +38,6 @@ const PYPROJECT = readFileSync(
 );
 const APP_VERSION = /^version\s*=\s*"([^"]+)"/m.exec(PYPROJECT)?.[1] ?? "unknown";
 
-const proxy = { target: BACKEND, changeOrigin: true, headers: { Host: "127.0.0.1:8100" } };
-
 export default defineConfig({
   plugins: [react(), cleanBuildOutput()],
   base: "/",
@@ -52,7 +49,6 @@ export default defineConfig({
     target: "es2022",
     rollupOptions: { output: { manualChunks } },
   },
-  server: { port: 5173, proxy: { "/api": proxy, "/mcp": proxy } },
   test: {
     environment: "jsdom",
     setupFiles: ["./tests/setup.ts"],

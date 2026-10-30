@@ -7,10 +7,6 @@ tasks:
     desc: "Install the frontend dependencies from the lockfile. Usage: task st:web:install"
     dir: "{{.ROOT_DIR}}"
     cmds: ["npm --prefix frontend ci"]
-  web:dev:
-    desc: "Run the Vite dev server on :5173, proxying /api and /mcp to 127.0.0.1:8100. Usage: task st:web:dev"
-    dir: "{{.ROOT_DIR}}"
-    cmds: ["npm --prefix frontend run dev -- {{.CLI_ARGS}}"]
   web:build:
     desc: "Type check and build the frontend into src/saber_tooth/web. Usage: task st:web:build"
     dir: "{{.ROOT_DIR}}"

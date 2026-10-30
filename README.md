@@ -60,7 +60,6 @@ The design goals are flawless, flowing and atmospheric maps. See the [design spe
 | `task st:down`                             | Remove the containers; volumes and images kept      |
 | `task st:logs`                             | Show recent container logs                          |
 | `task st:test`                             | Run the pytest suite                                |
-| `task st:web:dev`                          | Run the frontend with hot reload against the API    |
 | `task st:web:build` / `task st:web:test`   | Build the frontend into the app; run its tests      |
 | `task st:check -- <folder>`                | Run the quality checks on one map folder            |
 | `task st:inspect -- <folder>`              | Summarise one map folder                            |

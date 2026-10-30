@@ -10,4 +10,4 @@ React 19, TypeScript and Vite single-page app that replaces the old hand-written
 6. `src/`: application code.
 7. `tests/`: Vitest suites.
 
-Tasks: `task st:web:dev`, `task st:web:build`, `task st:web:test`, `task st:web:check`.
+Tasks: `task st:web:build`, `task st:web:test`, `task st:web:check`. There is no dev server: check UI changes against the rebuilt service (`task st:up`).

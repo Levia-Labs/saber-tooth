@@ -14,7 +14,7 @@ The first frontend was hand-written vanilla JavaScript with no build step. The l
 
 ## Consequences
 
-1. A Node toolchain is needed to work on the UI; running the service from a source checkout needs `task st:web:build` first, or `task st:web:dev` against a running API.
+1. A Node toolchain is needed to work on the UI; running the service from a source checkout needs `task st:web:build` first. (A Vite dev server task was removed on 2026-10-30: it interfered with parallel agents and nobody used it; UI checks run against the rebuilt service.)
 2. A source checkout without a build serves no frontend; the API and MCP routes work without it.
 3. Frontend dependencies are a new supply-chain surface; the lockfile pins them and `npm audit` runs in the quality gate.
 4. Component and hook tests run in Vitest with jsdom; the old `node:test` suites are removed.
