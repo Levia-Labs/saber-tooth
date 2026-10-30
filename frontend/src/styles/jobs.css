@@ -98,10 +98,6 @@ a.jobs-title:focus-visible {
   height: 48px;
   color: var(--muted);
 }
-.jobs-empty {
-  margin: 0.75rem;
-  color: var(--muted);
-}
 @media (max-width: 1279px) {
   .jobs-grid {
     grid-template-columns: var(--cols-mid);

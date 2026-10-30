@@ -24,12 +24,12 @@ function ActionsCell({ job, onCancel, onRetry, retrying }: Omit<Props, "index" |
   const requested = job.status === "running" && job.cancel_requested;
   return (
     <div className="jc-actions" role="cell">
-      {job.status === "failed" && (
+      {(job.status === "failed" || job.status === "cancelled") && (
         <ActionButton
           icon="reset"
-          label="Retry job"
-          tip="Retry job"
-          aria-label="Retry job"
+          label={job.status === "failed" ? "Retry job" : "Restart job"}
+          tip={job.status === "failed" ? "Retry job" : "Restart job"}
+          aria-label={job.status === "failed" ? "Retry job" : "Restart job"}
           disabled={retrying.has(job.id)}
           onClick={() => onRetry(job)}
         />

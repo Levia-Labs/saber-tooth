@@ -17,6 +17,7 @@ import "./styles/playlists.css";
 import "./styles/preview.css";
 import "./styles/crop.css";
 import "./styles/alerts.css";
+import "./styles/emptystate.css";
 import "./styles/about.css";
 import "./styles/jobs.css";
 import "./styles/localplaylists.css";

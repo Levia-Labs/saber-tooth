@@ -1,3 +1,4 @@
+import { EmptyState } from "./EmptyState";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import type { Facets, MapItem } from "../api/types";
@@ -115,24 +116,18 @@ export function LibraryTable(props: Props) {
         </div>
       </div>
       {empty && (
-        <div className="lib-empty">
-          <Alert
-            variant="info"
-            title={props.filtered ? "No maps match these filters" : "No maps found"}
-            message={
-              props.filtered
-                ? "Loosen or clear the filters to see more maps."
-                : "Add map folders to the library, then scan them."
-            }
-            actions={
-              props.filtered ? (
-                <button type="button" className="btn plain" onClick={props.onClear}>
-                  Clear filters
-                </button>
-              ) : undefined
-            }
-          />
-        </div>
+        <EmptyState
+          icon={props.filtered ? "search" : "library"}
+          text={props.filtered ? "No maps match these filters" : "No maps found"}
+          {...(props.filtered ? {} : { hint: "Add map folders to the library, then scan them." })}
+          action={
+            props.filtered ? (
+              <button type="button" className="btn plain" onClick={props.onClear}>
+                Clear filters
+              </button>
+            ) : undefined
+          }
+        />
       )}
       {nextFailed && (
         <div className="lib-more">

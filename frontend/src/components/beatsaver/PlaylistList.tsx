@@ -1,3 +1,4 @@
+import { EmptyState } from "../EmptyState";
 import type { InfiniteData, UseInfiniteQueryResult } from "@tanstack/react-query";
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
@@ -112,17 +113,20 @@ export function PlaylistList({ query, controls }: { query: Query; controls: PlCo
             table={table}
             columns={columns}
             empty={
-              <div className="lib-empty">
-                <p>{filtered ? "No playlists match these filters." : "No playlists found."}</p>
-                {filtered && (
-                  <Tip text={PL_TIPS.clearFilters}>
-                    <button type="button" className="btn plain" onClick={clearFilters}>
-                      <Icon name="filter-x" />
-                      <span className="label-hide-mobile">Clear filters</span>
-                    </button>
-                  </Tip>
-                )}
-              </div>
+              <EmptyState
+                icon={filtered ? "search" : "playlist"}
+                text={filtered ? "No playlists match these filters." : "No playlists found."}
+                action={
+                  filtered ? (
+                    <Tip text={PL_TIPS.clearFilters}>
+                      <button type="button" className="btn plain" onClick={clearFilters}>
+                        <Icon name="filter-x" />
+                        <span className="label-hide-mobile">Clear filters</span>
+                      </button>
+                    </Tip>
+                  ) : undefined
+                }
+              />
             }
           />
           {isFetchNextPageError && (

@@ -206,6 +206,30 @@ describe("Jobs page", () => {
     expect(screen.queryByRole("button", { name: /^Cancel/i })).toBeNull();
   });
 
+  test("a cancelled row offers Restart, posting to the retry endpoint; done rows offer nothing", async () => {
+    const posts: string[] = [];
+    mockFetch(async (url, init) => {
+      if (init?.method === "POST") {
+        posts.push(url.pathname);
+        return job("n1", { status: "queued" });
+      }
+      return url.pathname === "/api/jobs"
+        ? {
+            running: [],
+            queued: [],
+            recent: [job("a", { status: "done" }), job("c", { status: "cancelled" })],
+          }
+        : {};
+    });
+    renderApp("/jobs");
+    await loaded();
+    expect(within(rowOf("a")).queryByRole("button", { name: "Restart job" })).toBeNull();
+    const restart = within(rowOf("c")).getByRole("button", { name: "Restart job" });
+    expect(restart.querySelector("svg")).not.toBeNull();
+    fireEvent.click(restart);
+    await waitFor(() => expect(posts).toEqual(["/api/jobs/c/retry"]));
+  });
+
   test("a running job without progress renders no empty progress cell", async () => {
     serve({ running: [job("r", { status: "running", started_at: NOW })], queued: [], recent: [] });
     const { container } = renderApp("/jobs");

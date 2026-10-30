@@ -171,15 +171,13 @@
 .about-version {
   margin-top: 2rem;
 }
-/* The logo and the name sit together on a black, rounded, button-like plate; rem sizes scale in VR. */
+/* The logo and the name, plain, in the same ink as the buttons; rem sizes scale in VR. */
 .masthead .brand {
   padding: 0.3rem 1rem 0.3rem 0.4rem;
-  background: #000;
-  border: 1px solid var(--line);
   border-radius: 999px;
 }
-.masthead .brand:hover {
-  border-color: var(--muted);
+.masthead .wordmark > span {
+  color: var(--ink);
 }
 .masthead .brand:focus-visible {
   outline: 2px solid var(--blue);

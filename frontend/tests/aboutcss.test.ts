@@ -47,6 +47,13 @@ describe("about.css", () => {
     expect(about).not.toMatch(/margin:\s*0 auto/);
   });
 
+  // The brand once sat on a black bordered plate in red and blue; it is plain text in button ink.
+  test("the masthead brand has no plate and uses the button text colour", () => {
+    const brand = base(".masthead .brand");
+    expect(brand).not.toMatch(/background|border:/);
+    expect(base(".masthead .wordmark > span")).toMatch(/color:\s*var\(--ink\)/);
+  });
+
   test("the timeline draws a line between the step markers", () => {
     expect(css).toMatch(/\.about-timeline li::after/);
   });

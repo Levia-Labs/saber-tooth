@@ -39,15 +39,24 @@ def test_only_a_failed_job_can_be_retried(client, jobs_api):  # noqa: F811
     assert jobs_api.jobs.wait(done)["status"] == "done"
     r = client.post(RETRY.format(done))
     assert r.status_code == 409
-    assert r.json() == {"error": "only a failed job can be retried"}
+    assert r.json() == {"error": "only a failed or cancelled job can be restarted"}
     assert len(client.get("/api/jobs").json()["recent"]) == 1
 
 
-def test_retrying_a_queued_or_cancelled_job_is_refused(client, jobs_api):  # noqa: F811
+def test_retrying_a_queued_job_is_refused(client, jobs_api):  # noqa: F811
     queued = jobs_api.store.create_job("ok", None, {})  # the worker is not started
     assert client.post(RETRY.format(queued)).status_code == 409
-    jobs_api.store.cancel_job(queued)
-    assert client.post(RETRY.format(queued)).status_code == 409
+
+
+def test_a_cancelled_job_can_be_restarted(client, jobs_api):  # noqa: F811
+    jobs_api.jobs.register("ok", lambda args, progress: {"ok": True, "args": args})
+    cancelled = jobs_api.store.create_job("ok", "abc123def456", {"n": 2})
+    jobs_api.store.cancel_job(cancelled)
+    r = client.post(RETRY.format(cancelled))
+    assert r.status_code == 200
+    new = r.json()
+    assert new["id"] != cancelled and new["kind"] == "ok" and new["status"] == "queued"
+    assert new["map_id"] == "abc123def456"
 
 
 def test_retrying_an_unknown_job_is_404(client):  # noqa: F811

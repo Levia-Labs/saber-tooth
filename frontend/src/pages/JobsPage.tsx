@@ -7,6 +7,7 @@ import { keys } from "../api/queries";
 import type { JobView } from "../api/types";
 import { useAnnounce } from "../components/Announcer";
 import { ActionButton } from "../components/Buttons";
+import { EmptyState } from "../components/EmptyState";
 import { JobsTable } from "../components/JobsTable";
 import { SectionTabs } from "../components/SectionTabs";
 import { useDocumentTitle } from "../lib/hooks";
@@ -55,18 +56,21 @@ export function JobsPage() {
   const filtered = Object.values(jobsFilterCount(state)).some((n) => n > 0);
   const empty =
     all.length > 0 && filtered ? (
-      <p className="jobs-empty">
-        No jobs match the filters.{" "}
-        <ActionButton
-          icon="filter-x"
-          label="Clear filters"
-          tip="Show every job again"
-          text
-          onClick={clearFilters}
-        />
-      </p>
+      <EmptyState
+        icon="search"
+        text="No jobs match the filters."
+        action={
+          <ActionButton
+            icon="filter-x"
+            label="Clear filters"
+            tip="Show every job again"
+            text
+            onClick={clearFilters}
+          />
+        }
+      />
     ) : (
-      <p className="jobs-empty">Nothing running or queued.</p>
+      <EmptyState icon="queue" text="Nothing running or queued." />
     );
   return (
     <section className="library jobs" aria-labelledby="jobs-heading">

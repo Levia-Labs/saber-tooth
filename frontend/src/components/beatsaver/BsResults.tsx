@@ -1,3 +1,4 @@
+import { EmptyState } from "../EmptyState";
 import type { InfiniteData, UseInfiniteQueryResult } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useBsConfig, type BsMap, type BsPage } from "../../api/beatsaver";
@@ -130,15 +131,18 @@ export function BsResults({ query, controls, extra }: Props) {
             table={table}
             columns={columns}
             empty={
-              <div className="lib-empty">
-                <p>{filtered ? "No BeatSaver maps match these filters." : "No maps found."}</p>
-                {filtered && (
-                  <button type="button" className="btn plain" onClick={clearFilters}>
-                    <Icon name="filter-x" />
-                    <span className="label-hide-mobile">Clear filters</span>
-                  </button>
-                )}
-              </div>
+              <EmptyState
+                icon={filtered ? "search" : "maps"}
+                text={filtered ? "No BeatSaver maps match these filters." : "No maps found."}
+                action={
+                  filtered ? (
+                    <button type="button" className="btn plain" onClick={clearFilters}>
+                      <Icon name="filter-x" />
+                      <span className="label-hide-mobile">Clear filters</span>
+                    </button>
+                  ) : undefined
+                }
+              />
             }
           />
           {isFetchNextPageError && (

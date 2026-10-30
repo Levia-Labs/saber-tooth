@@ -1,0 +1,33 @@
+/* Sized in rem so the VR scale carries it. Centred in the table body area both ways. */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: clamp(14rem, 45vh, 30rem);
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--muted);
+}
+.empty-state .empty-state-icon {
+  width: 3rem;
+  height: 3rem;
+  color: var(--muted);
+}
+.empty-state .empty-state-text {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--muted);
+}
+.empty-state .empty-state-hint {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--muted);
+  opacity: 0.85;
+}
+.empty-state .spinner .ic {
+  width: 3rem;
+  height: 3rem;
+  color: var(--muted);
+}

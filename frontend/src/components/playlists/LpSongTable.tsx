@@ -9,6 +9,7 @@ import { useColumns } from "../../lib/useColumns";
 import { DEFAULT_STATE, filterCounts, totalFilters, type LibraryState } from "../../lib/urlstate";
 import { ActionButton } from "../Buttons";
 import { Cover, LevelChips, StatusChip } from "../Chips";
+import { EmptyState } from "../EmptyState";
 import { Icon } from "../icons";
 import { LibraryHeader } from "../LibraryHeader";
 import { PreviewButton } from "../PreviewButton";
@@ -135,18 +136,18 @@ export function LpSongTable({ rows, onRemove }: Props) {
         </div>
       </div>
       {shown.length === 0 && (
-        <p className="jobs-empty">
-          {filtered ? (
-            <>
-              No songs match the filters.{" "}
+        <EmptyState
+          icon={filtered ? "search" : "playlist"}
+          text={filtered ? "No songs match the filters." : "No songs yet."}
+          {...(filtered ? {} : { hint: "Add songs from the library or a job's output." })}
+          action={
+            filtered ? (
               <button type="button" className="btn plain" onClick={() => setState(DEFAULT_STATE)}>
                 Clear filters
               </button>
-            </>
-          ) : (
-            "No songs yet. Add songs from the library or a job's output."
-          )}
-        </p>
+            ) : undefined
+          }
+        />
       )}
     </div>
   );

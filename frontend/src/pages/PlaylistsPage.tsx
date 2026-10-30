@@ -12,9 +12,9 @@ import {
 } from "../api/playlists";
 import { useAnnounce } from "../components/Announcer";
 import { ActionButton, ActionLink } from "../components/Buttons";
+import { EmptyState } from "../components/EmptyState";
 import { LpTable } from "../components/playlists/LpTable";
 import { SectionTabs } from "../components/SectionTabs";
-import { Spinner } from "../components/Spinner";
 import { useDocumentTitle } from "../lib/hooks";
 import {
   filterPlaylists,
@@ -64,20 +64,27 @@ export function PlaylistsPage() {
   };
   const empty =
     all.length > 0 && lpFiltered(state) ? (
-      <p className="jobs-empty">
-        No playlists match the filters.{" "}
-        <ActionButton
-          icon="filter-x"
-          label="Clear filters"
-          tip="Show every playlist again"
-          text
-          onClick={() => setState({ ...LP_DEFAULT, sort: state.sort, ascending: state.ascending })}
-        />
-      </p>
+      <EmptyState
+        icon="search"
+        text="No playlists match the filters."
+        action={
+          <ActionButton
+            icon="filter-x"
+            label="Clear filters"
+            tip="Show every playlist again"
+            text
+            onClick={() =>
+              setState({ ...LP_DEFAULT, sort: state.sort, ascending: state.ascending })
+            }
+          />
+        }
+      />
     ) : (
-      <p className="jobs-empty">
-        {lists.isPending ? <Spinner label="Loading playlists" /> : "No playlists yet."}
-      </p>
+      <EmptyState
+        icon="playlist"
+        text="No playlists yet."
+        {...(lists.isPending ? { pending: "Loading playlists" } : {})}
+      />
     );
   return (
     <section className="library jobs lp" aria-labelledby="playlists-heading">
