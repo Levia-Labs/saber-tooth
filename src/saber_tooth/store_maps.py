@@ -6,8 +6,9 @@ import threading
 
 STATUS_VALUES = (
     "unreadable", "error", "warn", "scanning", "applying", "fixing", "queued", "incomplete",
-    "unscanned", "ok",
+    "unscanned", "crop", "ok",
 )  # fmt: skip
+CROP_MIN_LENGTH_S = 150.0  # a good map longer than 2.5 minutes qualifies for a crop
 FIXED_COPY_SUFFIX = " [saber-tooth]"  # folder suffix Fix gives the copy it writes
 STATUS_FILTERS = {"all", *STATUS_VALUES}
 MAX_ENVS = 50
@@ -86,13 +87,16 @@ SELECT m.id, m.folder, m.title, m.mapper, m.environment, m.parse_error, s.scanne
        WHEN (SELECT count(*) FROM json_each(s.keys_json)
              WHERE json_extract(value, '$.severity') = 'error') > 0 THEN 'error'
        WHEN (SELECT count(*) FROM json_each(s.keys_json)) > 0 THEN 'warn'
+       WHEN m.duration_s > {CROP_MIN_LENGTH_S}
+            AND instr(m.folder, ' [1 min]') = 0 AND instr(m.folder, ' [2 min]') = 0
+            AND instr(m.folder, ' [crop ') = 0 THEN 'crop'
        ELSE 'ok' END AS status
 FROM maps m LEFT JOIN scans s ON s.map_id = m.id
 LEFT JOIN jobs j ON j.id = (
   SELECT a.id FROM jobs a WHERE a.map_id = m.id AND a.kind IN ('scan', 'apply', 'fix')
   AND a.status IN ('queued', 'running')
   ORDER BY (a.status = 'running') DESC, a.created_at DESC, a.id LIMIT 1)
-"""  # noqa: S608 - interpolates only the constants ALL_LEVELS, FIXED_COPY_SUFFIX
+"""  # noqa: S608 - interpolates only the constants ALL_LEVELS, FIXED_COPY_SUFFIX, CROP_MIN_LENGTH_S
 
 # Lists and facets hide an original once its fixed copy exists; by-id lookups still find it.
 _VISIBLE = "fixed_copy_id IS NULL"

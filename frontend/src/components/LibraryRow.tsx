@@ -3,7 +3,8 @@ import type { MapItem } from "../api/types";
 import { formatEnvironment } from "../lib/environment";
 import { bpmLabel, formatBpm, formatBpmValue, formatDuration } from "../lib/format";
 import { TIPS } from "../lib/tips";
-import { mapName, reviewNeeds } from "../lib/status";
+import { mapHref } from "../lib/backlink";
+import { mapName, reviewNeeds, statusHref } from "../lib/status";
 import { ActionLink } from "./Buttons";
 import { Cover, LevelChips, StatusChip } from "./Chips";
 import { JobStatusChip } from "./JobStatusChip";
@@ -12,7 +13,7 @@ import { PreviewButton } from "./PreviewButton";
 
 export function LibraryRow({ item, index }: { item: MapItem; index: number }) {
   const name = mapName(item);
-  const href = `/maps/${encodeURIComponent(item.id)}`;
+  const href = mapHref(item.id, { from: "library" });
   // Scan and Apply live on the map page; the eye carries whatever waits there.
   const needs = reviewNeeds(item);
   const reviewLabel = needs.text ? `Review ${name}, ${needs.text}` : `Review ${name}`;
@@ -73,7 +74,7 @@ export function LibraryRow({ item, index }: { item: MapItem; index: number }) {
             }}
           />
         ) : (
-          <StatusChip item={item} />
+          <StatusChip item={item} to={statusHref(item.id, item)} />
         )}
       </div>
       <div className="col-actions" role="cell">

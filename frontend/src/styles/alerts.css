@@ -50,11 +50,21 @@
   cursor: pointer;
   color: var(--muted);
 }
-.alert-details pre {
+.alert-details-body {
+  max-height: min(40vh, 18rem);
+  margin-top: 0.4rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted) transparent;
+}
+.alert-details-body pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  margin: 0.4rem 0 0;
-  font-size: 0.85rem;
+  margin: 0 0 0.4rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8rem;
 }
 .alert-actions {
   display: flex;
@@ -109,6 +119,8 @@
   align-items: center;
   gap: 0.5rem;
   width: min(100% - 2.5rem, 1480px);
+  max-height: calc(100dvh - 2rem - env(safe-area-inset-bottom, 0px));
+  justify-content: flex-end;
   margin: 0 auto;
   pointer-events: none;
 }
@@ -119,6 +131,8 @@
 .toast-stack .toast {
   width: fit-content;
   max-width: min(100%, 52rem);
+  max-height: 100%;
+  overflow-y: auto;
   margin: 0;
   pointer-events: auto;
   box-shadow: 0 6px 24px rgb(0 0 0 / 45%);

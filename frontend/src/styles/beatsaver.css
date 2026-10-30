@@ -257,3 +257,13 @@ button.bs-tag[aria-pressed="true"] {
   width: 0.95em;
   height: 0.95em;
 }
+.bs-playlist-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+.bs-playlist-title .lp-heading {
+  margin: 0;
+}

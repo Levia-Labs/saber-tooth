@@ -4,6 +4,7 @@ import { formatEnvironment } from "../../lib/environment";
 import { bpmLabel, formatBpm, formatBpmValue, formatDuration } from "../../lib/format";
 import { LIBRARY_COLUMNS } from "../../lib/columns";
 import { applyState, facetsOf, type SongRow } from "../../lib/lpsongs";
+import { mapHref } from "../../lib/backlink";
 import { mapName } from "../../lib/status";
 import { useColumns } from "../../lib/useColumns";
 import { DEFAULT_STATE, filterCounts, totalFilters, type LibraryState } from "../../lib/urlstate";
@@ -18,6 +19,8 @@ import { Tip } from "../Tip";
 interface Props {
   rows: SongRow[];
   onRemove: (row: SongRow) => void;
+  /** Saved playlist the rows belong to; map links return to it. */
+  playlistId?: string | null;
 }
 
 function MissingChip() {
@@ -35,10 +38,13 @@ function SongRowView({
   row,
   index,
   onRemove,
-}: { row: SongRow; index: number } & Pick<Props, "onRemove">) {
+  playlistId,
+}: { row: SongRow; index: number } & Pick<Props, "onRemove" | "playlistId">) {
   const { item, missing } = row;
   const name = missing ? item.title : mapName(item);
-  const href = `/maps/${encodeURIComponent(item.id)}`;
+  const href = mapHref(item.id, {
+    from: playlistId ? { kind: "playlist", id: playlistId } : { kind: "playlists" },
+  });
   const env = formatEnvironment(item.environment);
   return (
     <div
@@ -111,7 +117,7 @@ function SongRowView({
 }
 
 /** The playlist's songs in the library's table: same columns, header sort and filters, column fit. */
-export function LpSongTable({ rows, onRemove }: Props) {
+export function LpSongTable({ rows, onRemove, playlistId }: Props) {
   const table = useRef<HTMLDivElement>(null);
   const columns = useColumns(table, LIBRARY_COLUMNS);
   const [state, setState] = useState<LibraryState>(DEFAULT_STATE);
@@ -136,7 +142,13 @@ export function LpSongTable({ rows, onRemove }: Props) {
         />
         <div role="rowgroup">
           {shown.map((r, i) => (
-            <SongRowView key={r.key} row={r} index={i} onRemove={onRemove} />
+            <SongRowView
+              key={r.key}
+              row={r}
+              index={i}
+              onRemove={onRemove}
+              playlistId={playlistId}
+            />
           ))}
         </div>
       </div>

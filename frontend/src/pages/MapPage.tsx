@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router";
+import { useNavigate, useParams, useSearchParams } from "react-router";
 import {
   ApiError,
   type Started,
@@ -28,10 +28,13 @@ import { useJobRunner } from "../api/jobs";
 import { keys, useLiveRows, useMap, useProposals } from "../api/queries";
 import { Cover, LevelChips, StatusChip, Tempo } from "../components/Chips";
 import { PreviewButton } from "../components/PreviewButton";
-import { Icon } from "../components/icons";
 import { JobOutcome } from "../components/JobOutcome";
 import { ProposalGroups } from "../components/ProposalGroups";
-import { useDocumentTitle, libraryHref } from "../lib/hooks";
+import { BackLink } from "../components/BackLink";
+import { SectionTabs } from "../components/SectionTabs";
+import { backHref, originTab } from "../lib/backlink";
+import { useDocumentTitle } from "../lib/hooks";
+import { useOrigin } from "../lib/useBacklink";
 import { TIPS } from "../lib/tips";
 import { isCleanCopy, mapName } from "../lib/status";
 import { NotFoundPage } from "./NotFoundPage";
@@ -44,6 +47,7 @@ export function MapPage() {
   const map = useMap(id);
   const proposals = useProposals(id);
   const [params, setParams] = useSearchParams();
+  const { origin, back } = useOrigin();
   const [cropSeen, setCropSeen] = useState(false);
   const [openIds, setOpenIds] = useState<ReadonlySet<string>>(new Set());
   const toggleOne = (pid: string, on: boolean) =>
@@ -93,7 +97,7 @@ export function MapPage() {
       const out = await deleteMap(id);
       client.removeQueries({ queryKey: keys.map(id) });
       client.removeQueries({ queryKey: keys.proposals(id) });
-      await navigate("/");
+      await navigate(backHref(origin, back));
       await client.invalidateQueries({ queryKey: ["maps"] });
       announce({ variant: "success", title: "Deleted", message: out.deleted });
     } catch (err) {
@@ -126,10 +130,12 @@ export function MapPage() {
 
   return (
     <section className="page map-page">
-      <Link className="back" to={libraryHref()}>
-        <Icon name="back" />
-        Library
-      </Link>
+      <div className="lib-bar map-bar">
+        <div className="lib-title">
+          <SectionTabs active={originTab(origin)} heading="Map" headingId="map-heading" noHeading />
+        </div>
+      </div>
+      <BackLink to={backHref(origin, back)} />
       {map.isPending ? (
         <MapHeadSkeleton />
       ) : map.isError ? (

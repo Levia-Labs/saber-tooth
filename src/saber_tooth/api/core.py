@@ -292,4 +292,9 @@ class Api:
             self.jobs.request_cancel(self._job_id(raw))
         elif outcome != "cancelled":
             raise ApiError(409, "the job already finished")
-        return self.job(raw)
+        view = self.job(raw)
+        # The job can stop between reading its row and its cancel flag (the flag is cleared once
+        # it ends), so a row still read as running answers with the request it just received.
+        if outcome == "running" and view["status"] == "running":
+            view["cancel_requested"] = True
+        return view

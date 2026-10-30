@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { errorMessage, getMap } from "../api/client";
 import {
   createPlaylist,
@@ -16,7 +16,10 @@ import { useAnnounce } from "../components/Announcer";
 import { PageSkeleton } from "../components/Skeletons";
 import { Alert } from "../components/Alert";
 import { ActionButton } from "../components/Buttons";
-import { Icon } from "../components/icons";
+import { BackLink } from "../components/BackLink";
+import { PlaylistFooter } from "../components/playlists/PlaylistFooter";
+import { SectionTabs } from "../components/SectionTabs";
+import { backHref } from "../lib/backlink";
 import { LpCover } from "../components/playlists/LpCover";
 import { LpExport } from "../components/playlists/LpExport";
 import { LpName } from "../components/playlists/LpName";
@@ -26,6 +29,20 @@ import { useDocumentTitle } from "../lib/hooks";
 import { addPicks, draftOf, EMPTY_DRAFT, songId, toInput, type Draft } from "../lib/lpedit";
 import { REFRESH_HINT } from "../lib/lpfilters";
 import { rowsOf } from "../lib/lpsongs";
+
+/** Section tabs (Playlists active) and the way back to the Playlists list, with its filters kept. */
+function PlaylistBar() {
+  return (
+    <>
+      <div className="lib-bar map-bar">
+        <div className="lib-title">
+          <SectionTabs active="playlists" heading="Playlist" headingId="lp-heading" noHeading />
+        </div>
+      </div>
+      <BackLink to={backHref({ kind: "playlists" })} />
+    </>
+  );
+}
 
 /** The page for one playlist: details, cover, songs table and export settings. */
 function PlaylistForm({ existing, initial }: { existing: string | null; initial: Draft }) {
@@ -89,49 +106,44 @@ function PlaylistForm({ existing, initial }: { existing: string | null; initial:
 
   return (
     <section className="page lp-page">
-      <Link className="back" to="/playlists">
-        <Icon name="back" />
-        Playlists
-      </Link>
-      {
-        <div className="maphead">
-          <LpCover
-            url={draft.coverUrl}
-            onPick={(c) => set({ cover: { data: c.data }, coverUrl: c.url })}
-            onError={(m) => announce({ variant: "danger", title: "Cover", message: m })}
-          />
-          <div className="mapmeta">
-            <LpName value={draft.title} onCommit={(title) => set({ title })} />
-            <p className="sub">
-              {draft.author || "saber-tooth"} &middot; {rows.length}{" "}
-              {rows.length === 1 ? "song" : "songs"}
-              {missing > 0 && <span className="lp-missing"> &middot; {missing} missing</span>}
-            </p>
-            <div className="metarow">
-              <ActionButton
-                icon="ok"
-                text
-                variant="primary"
-                label="Save"
-                tip="Save the playlist"
-                disabled={busy || !draft.title.trim() || (!dirty && !!existing)}
-                onClick={() => void save(false)}
-              />
-              <ActionButton
-                icon="download"
-                text
-                label="Save and export"
-                tip={
-                  exportEnabled ? "Save and write the .bplist" : "Playlist export is not configured"
-                }
-                disabled={busy || !draft.title.trim() || !exportEnabled}
-                onClick={() => void save(true)}
-              />
-              {dirty && <span className="lp-sub">Unsaved changes</span>}
-            </div>
+      <PlaylistBar />
+      <div className="maphead">
+        <LpCover
+          url={draft.coverUrl}
+          onPick={(c) => set({ cover: { data: c.data }, coverUrl: c.url })}
+          onError={(m) => announce({ variant: "danger", title: "Cover", message: m })}
+        />
+        <div className="mapmeta">
+          <LpName value={draft.title} onCommit={(title) => set({ title })} />
+          <p className="sub">
+            {draft.author || "saber-tooth"} &middot; {rows.length}{" "}
+            {rows.length === 1 ? "song" : "songs"}
+            {missing > 0 && <span className="lp-missing"> &middot; {missing} missing</span>}
+          </p>
+          <div className="metarow">
+            <ActionButton
+              icon="ok"
+              text
+              variant="primary"
+              label="Save"
+              tip="Save the playlist"
+              disabled={busy || !draft.title.trim() || (!dirty && !!existing)}
+              onClick={() => void save(false)}
+            />
+            <ActionButton
+              icon="download"
+              text
+              label="Save and export"
+              tip={
+                exportEnabled ? "Save and write the .bplist" : "Playlist export is not configured"
+              }
+              disabled={busy || !draft.title.trim() || !exportEnabled}
+              onClick={() => void save(true)}
+            />
+            {dirty && <span className="lp-sub">Unsaved changes</span>}
           </div>
         </div>
-      }
+      </div>
       <div className="lp-section-head">
         <h2 className="lp-heading">Songs</h2>
         <ActionButton
@@ -152,6 +164,7 @@ function PlaylistForm({ existing, initial }: { existing: string | null; initial:
       )}
       <LpSongTable
         rows={rows}
+        playlistId={existing}
         onRemove={(r) => set({ songs: draft.songs.filter((s) => s !== r.song) })}
       />
       <h2 className="lp-heading">Export</h2>
@@ -165,6 +178,7 @@ function PlaylistForm({ existing, initial }: { existing: string | null; initial:
         onFolder={(folder) => set({ folder })}
         onSync={(sync) => set({ sync })}
       />
+      {existing && <PlaylistFooter id={existing} />}
     </section>
   );
 }
@@ -178,10 +192,7 @@ export function PlaylistPage() {
   if (loaded.isError) {
     return (
       <section className="page lp-page">
-        <Link className="back" to="/playlists">
-          <Icon name="back" />
-          Playlists
-        </Link>
+        <PlaylistBar />
         <Alert
           variant="danger"
           title="Could not load the playlist"

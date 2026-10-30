@@ -69,9 +69,17 @@ export function Alert({
         {details && details.length > 0 && (
           <details className="alert-details">
             <summary>Details</summary>
-            {details.map((line) => (
-              <pre key={line}>{line}</pre>
-            ))}
+            <div
+              className="alert-details-body"
+              // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- keyboard-scrollable region
+              tabIndex={0}
+              role="region"
+              aria-label="Error details"
+            >
+              {details.map((line) => (
+                <pre key={line}>{line}</pre>
+              ))}
+            </div>
           </details>
         )}
         {actions && <div className="alert-actions">{actions}</div>}

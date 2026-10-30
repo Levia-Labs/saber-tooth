@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { errorMessage } from "../api/client";
 import {
@@ -16,6 +16,7 @@ import { EmptyState } from "../components/EmptyState";
 import { LpTable } from "../components/playlists/LpTable";
 import { SectionTabs } from "../components/SectionTabs";
 import { useDocumentTitle } from "../lib/hooks";
+import { loadLpState, saveLpState } from "../lib/lpstate";
 import {
   filterPlaylists,
   LP_DEFAULT,
@@ -33,7 +34,8 @@ export function PlaylistsPage() {
   const announce = useAnnounce();
   const lists = usePlaylists();
   const config = usePlaylistConfig();
-  const [state, setState] = useState<LpState>(LP_DEFAULT);
+  const [state, setState] = useState<LpState>(loadLpState);
+  useEffect(() => saveLpState(state), [state]);
   const all = useMemo(() => lists.data?.items ?? [], [lists.data]);
   const rows = useMemo(() => sortPlaylists(filterPlaylists(all, state), state), [all, state]);
   const exportEnabled = config.data?.export_enabled ?? false;

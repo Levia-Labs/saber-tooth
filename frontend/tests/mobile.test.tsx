@@ -230,7 +230,7 @@ describe("icons and chips", () => {
     library({ status: "unscanned" });
     const { container } = renderApp("/");
     await screen.findByRole("link", { name: "Song 1" });
-    const chip = screen.getByRole("img", { name: "Not scanned" });
+    const chip = screen.getByRole("link", { name: "Open map: Not scanned" });
     expect(chip.textContent).toBe("");
     expect(container.textContent).not.toContain("--");
     expect(css("chips.css")).toMatch(/\.chip\s*\{[^}]*min-width:\s*3\.6rem/);

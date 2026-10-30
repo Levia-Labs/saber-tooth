@@ -5,6 +5,7 @@ export const STATUS_KEYS = [
   "ok",
   "incomplete",
   "unscanned",
+  "crop",
   "unreadable",
   "scanning",
   "applying",

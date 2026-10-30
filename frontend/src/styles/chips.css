@@ -32,6 +32,10 @@
   --tone: var(--amber);
   background: rgba(232, 163, 61, 0.1);
 }
+.chip-crop {
+  --tone: var(--blue);
+  background: rgba(46, 155, 230, 0.1);
+}
 .chip-ok {
   --tone: var(--green);
   background: rgba(61, 214, 140, 0.08);
@@ -72,8 +76,19 @@
 .chip-incomplete .ic {
   color: var(--amber);
 }
+.chip-crop .ic {
+  color: var(--blue);
+}
 .chip-ok .ic {
   color: var(--green);
+}
+a.chip-link {
+  text-decoration: none;
+  cursor: pointer;
+}
+a.chip-link:focus-visible {
+  outline: 2px solid var(--tone);
+  outline-offset: 2px;
 }
 .chip-scanning .ic,
 .chip-applying .ic,

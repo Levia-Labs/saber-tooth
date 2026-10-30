@@ -72,14 +72,14 @@ describe("library page", () => {
     renderApp("/");
     const first = (await screen.findByRole("link", { name: "Song 1" })).closest("[role=row]");
     const row = within(first as HTMLElement);
-    expect(row.getByRole("img", { name: "3 errors" })).toBeInTheDocument();
+    expect(row.getByRole("link", { name: "Open status: 3 errors" })).toBeInTheDocument();
     expect(row.getAllByText("3:21").length).toBeGreaterThan(0);
     expect(row.getAllByText("128").length).toBeGreaterThan(0);
     expect(row.getAllByLabelText("128 BPM").length).toBeGreaterThan(0);
     expect(row.getAllByRole("img", { name: "Expert+" }).length).toBeGreaterThan(0);
     expect(row.getByRole("link", { name: /Review Song 1, 2 fixes/ })).toHaveAttribute(
       "href",
-      "/maps/id0000000001",
+      "/maps/id0000000001?from=library",
     );
     // A row keeps only Fix and Review; the page holds Scan and Apply.
     expect(row.getByRole("button", { name: "Fix Song 1" })).toBeEnabled();

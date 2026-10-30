@@ -1,31 +1,52 @@
 import { useState } from "react";
+import { Link } from "react-router";
 import type { MapItem } from "../api/types";
 import { formatBpm, formatDuration } from "../lib/format";
 import { levelColor, levelSlots } from "../lib/levels";
-import { STATUS_META, statusLabel, statusText } from "../lib/status";
+import { STATUS_META, statusLabel, statusLinkLabel, statusText } from "../lib/status";
 import { Icon } from "./icons";
 import { Tip } from "./Tip";
 import { LogoGlyph } from "./Logo";
 
 export function StatusChip({
   item,
+  to,
 }: {
   item: Pick<MapItem, "status" | "errors" | "warnings"> & Partial<Pick<MapItem, "parse_error">>;
+  /** Makes the chip a link to this address, named by the status. */
+  to?: string | undefined;
 }) {
   const kind = Object.hasOwn(STATUS_META, item.status) ? item.status : "unscanned";
   const full = { ...item, status: kind };
   const label = statusLabel(full);
   const text = statusText(full);
+  const body = (
+    <>
+      <Icon name={STATUS_META[kind].icon} />
+      {text !== null && (
+        <span className="chip-text" aria-hidden="true">
+          {text}
+        </span>
+      )}
+    </>
+  );
+  const cls = `chip chip-${kind}`;
   return (
     <Tip text={label}>
-      <span className={`chip chip-${kind}`} data-status={kind} role="img" aria-label={label}>
-        <Icon name={STATUS_META[kind].icon} />
-        {text !== null && (
-          <span className="chip-text" aria-hidden="true">
-            {text}
-          </span>
-        )}
-      </span>
+      {to ? (
+        <Link
+          className={`${cls} chip-link`}
+          data-status={kind}
+          to={to}
+          aria-label={statusLinkLabel(full)}
+        >
+          {body}
+        </Link>
+      ) : (
+        <span className={cls} data-status={kind} role="img" aria-label={label}>
+          {body}
+        </span>
+      )}
     </Tip>
   );
 }

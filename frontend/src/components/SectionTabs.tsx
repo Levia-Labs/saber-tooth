@@ -7,6 +7,8 @@ interface Props {
   /** Text of the page's h1, shown to screen readers only. */
   heading: string;
   headingId: string;
+  /** The page shows its own visible h1 (map and playlist pages); leave the screen-reader one out. */
+  noHeading?: boolean;
 }
 
 /** The tabs in order; a new section is one more entry here (About stays last). Playlists, when it joins, uses the `playlist` icon. */
@@ -58,14 +60,16 @@ const ITEMS = [
 type SectionKey = (typeof ITEMS)[number]["key"];
 
 /** Library | BeatSaver | Jobs | About tabs standing where the page title sits, the Jobs tab with the active job count; the h1 stays for assistive tech. */
-export function SectionTabs({ active, heading, headingId }: Props) {
+export function SectionTabs({ active, heading, headingId, noHeading }: Props) {
   const count = activeCount(useJobLists());
   const tabs: PillTab[] = ITEMS.map((i) => (i.key === "jobs" ? { ...i, badge: count } : i));
   return (
     <>
-      <h1 id={headingId} className="sr" tabIndex={-1} data-page-heading>
-        {heading}
-      </h1>
+      {!noHeading && (
+        <h1 id={headingId} className="sr" tabIndex={-1} data-page-heading>
+          {heading}
+        </h1>
+      )}
       <PillTabs label="Section" tabs={tabs} active={active} className="section-tabs" />
     </>
   );

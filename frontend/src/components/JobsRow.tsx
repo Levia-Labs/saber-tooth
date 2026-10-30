@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import type { JobView } from "../api/types";
 import { JOB_COL } from "../lib/jobcolumns";
+import { useMapLinks } from "../lib/useBacklink";
 import { jobLengthMs } from "../lib/jobfilters";
 import { KIND_ICON, KIND_LABEL } from "../lib/jobkinds";
 import { duration, staleMinutes } from "../lib/jobtime";
@@ -69,7 +70,10 @@ function LengthCell({ job, now }: Pick<Props, "job" | "now">) {
   );
 }
 
+const JOBS = { kind: "jobs" } as const;
+
 export function JobsRow({ job, index, now, onCancel, onRetry, retrying }: Props) {
+  const mapLink = useMapLinks(JOBS);
   const linked = job.map_exists && job.map_id;
   const detail = job.status === "failed" && job.error ? job.error : null;
   const cell = (col: string) => `jc-${col}`;
@@ -86,7 +90,7 @@ export function JobsRow({ job, index, now, onCancel, onRetry, retrying }: Props)
       </div>
       <div className={`${cell(JOB_COL.title)} jc-title`} role="cell">
         {linked ? (
-          <Link className="jobs-title" to={`/maps/${job.map_id}`} title={job.title}>
+          <Link className="jobs-title" to={mapLink(job.map_id ?? "")} title={job.title}>
             {job.title}
           </Link>
         ) : (

@@ -1,11 +1,13 @@
 // Status metadata: labels, icons and which statuses mean a job is in flight.
 import type { MapItem, StatusKey } from "../api/types";
 import type { IconName } from "../components/icons";
+import { mapHref } from "./backlink";
 import { plural } from "./format";
 
 export const STATUS_META: Record<StatusKey, { label: string; icon: IconName }> = {
   error: { label: "Errors", icon: "error" },
   warn: { label: "Warnings", icon: "warning" },
+  crop: { label: "Qualified for crop", icon: "scissors" },
   ok: { label: "Good", icon: "ok" },
   incomplete: { label: "Not scanned, missing levels", icon: "unscanned" },
   unscanned: { label: "Not scanned", icon: "unscanned" },
@@ -20,6 +22,7 @@ export const STATUS_META: Record<StatusKey, { label: string; icon: IconName }> =
 export const STATUS_ORDER: readonly StatusKey[] = [
   "error",
   "warn",
+  "crop",
   "ok",
   "incomplete",
   "unscanned",
@@ -60,6 +63,8 @@ export function statusLabel(item: StatusFields): string {
       return plural(item.warnings, "warning");
     case "ok":
       return "All good";
+    case "crop":
+      return STATUS_META.crop.label;
     case "scanning":
       return "Scanning";
     case "applying":
@@ -75,6 +80,24 @@ export function statusLabel(item: StatusFields): string {
     default:
       return "Not scanned";
   }
+}
+
+/** Map page tab a status opens: findings show on Status, a crop candidate on Crop. */
+function statusTab(status: StatusKey): "status" | "crop" | undefined {
+  if (status === "error" || status === "warn") return "status";
+  return status === "crop" ? "crop" : undefined;
+}
+
+/** Map page address a status chip in the library opens. */
+export function statusHref(id: string, item: StatusFields): string {
+  return mapHref(id, { tab: statusTab(item.status), from: "library" });
+}
+
+/** Accessible name of a status chip that links to the map page. */
+export function statusLinkLabel(item: StatusFields): string {
+  if (item.status === "crop") return "Open crop";
+  const tab = statusTab(item.status);
+  return `${tab ? "Open status" : "Open map"}: ${statusLabel(item)}`;
 }
 
 export function mapName(item: Pick<MapItem, "title" | "folder">): string {

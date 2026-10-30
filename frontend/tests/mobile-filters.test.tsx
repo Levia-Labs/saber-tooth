@@ -216,7 +216,9 @@ describe("icon-only actions on mobile", () => {
     await screen.findByRole("link", { name: "Song 1" });
     expect(container.querySelector(".sub-unreadable")).not.toBeNull();
     expect(container.textContent).not.toContain(reason);
-    expect(screen.getByRole("img", { name: `Unreadable: ${reason}` })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: `Open map: Unreadable: ${reason}` }),
+    ).toBeInTheDocument();
     expect(css("rows.css")).toMatch(
       /@media \(max-width: 719px\) \{\s*\.sub-unreadable \{\s*display: none/,
     );

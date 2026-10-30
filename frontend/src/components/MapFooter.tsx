@@ -1,16 +1,18 @@
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { useNeighbors } from "../api/queries";
+import { originSearch } from "../lib/backlink";
 import { storedLibrarySearch } from "../lib/hooks";
 import { Icon } from "./icons";
 
 /** Previous and next map of the library's current list with the position, at the page bottom. */
 export function MapFooter({ id }: { id: string }) {
   const neighbors = useNeighbors(id, storedLibrarySearch());
+  const [params] = useSearchParams();
   if (!neighbors.data?.prev || !neighbors.data.next) {
     return <div className="map-footer map-footer-empty" aria-hidden="true" />;
   }
   const { prev, next, index, total } = neighbors.data;
-  const to = (target: string) => `/maps/${encodeURIComponent(target)}`;
+  const to = (target: string) => `/maps/${encodeURIComponent(target)}${originSearch(params)}`;
   return (
     <nav className="map-footer" aria-label="Neighbouring maps">
       <Link className="back map-footer-prev" to={to(prev.id)} title={prev.title}>

@@ -74,12 +74,11 @@ function PlaylistDetail({ id }: { id: string }) {
   return (
     <section className="library" aria-labelledby="bs-heading">
       <BarSlotProvider>
-        <BsTabs
-          heading={name}
-          headingId="bs-heading"
-          tab="playlists"
-          note={playlist ? `${name} - ${playlist.owner}` : undefined}
-        />
+        <BsTabs heading="BeatSaver playlist" headingId="bs-heading" tab="playlists" />
+        <div className="bs-playlist-title">
+          <h2 className="lp-heading">{name}</h2>
+          {playlist && <span className="count">{playlist.owner}</span>}
+        </div>
         <BsResults
           query={query}
           controls={controls}

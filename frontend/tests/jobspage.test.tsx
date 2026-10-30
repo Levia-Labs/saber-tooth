@@ -61,7 +61,9 @@ describe("Jobs page", () => {
     expect(order()).toEqual(["r1", "q1", "q2", "d1"]);
     expect(screen.queryByRole("heading", { name: "Running" })).toBeNull();
     expect(screen.queryByRole("heading", { name: "Queued" })).toBeNull();
-    expect(screen.getByRole("link", { name: "Acid Rain" }).getAttribute("href")).toBe("/maps/m1");
+    expect(screen.getByRole("link", { name: "Acid Rain" }).getAttribute("href")).toBe(
+      "/maps/m1?from=jobs",
+    );
     expect(rowOf("r1").querySelector(".jobs-tag-warning")?.textContent).toBe("2/6");
     expect(screen.getByText("boom")).toBeTruthy();
     const tabs = screen.getByRole("navigation", { name: "Section" });
