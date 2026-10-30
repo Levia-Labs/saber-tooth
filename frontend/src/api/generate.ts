@@ -5,6 +5,7 @@ import { useNavigate } from "react-router";
 import { useAnnounce } from "../components/Announcer";
 import { capitalize } from "../lib/announcements";
 import { resultMapId } from "../lib/generate";
+import { dismissedJobs } from "../lib/jobdismiss";
 import type { Started } from "./client";
 import { pollJob } from "./jobs";
 import { keys } from "./queries";
@@ -40,12 +41,19 @@ export function useGenerate(): Generator {
       counter.current += 1;
       const key = `generate-${counter.current}`;
       const title = `Generating ${label}`;
-      announce({ key, variant: "progress", title, message: "Queued" });
       try {
         const started = await start();
-        const job = await pollJob(started.job, new AbortController().signal, (status) =>
-          announce({ key, variant: "progress", title, message: capitalize(status) }),
-        );
+        const job = await pollJob(started.job, new AbortController().signal, (status) => {
+          if (status.startsWith("queued") || dismissedJobs.has(started.job)) return;
+          announce({
+            key,
+            variant: "progress",
+            title,
+            message: capitalize(status),
+            autoClose: true,
+            onDismiss: () => dismissedJobs.add(started.job),
+          });
+        });
         const id = resultMapId(job.result);
         if (id === null) throw new Error("the job finished without a map");
         const folder = job.result?.["folder"];

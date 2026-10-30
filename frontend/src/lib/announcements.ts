@@ -16,6 +16,8 @@ export interface AnnounceInput {
   actions?: BannerAction[];
   /** Folded-away extras: raw error text, ids, per-map results. */
   details?: string[];
+  /** A progress toast that closes AUTO_DISMISS_MS after it first shows (updates do not extend it) and then runs onDismiss. */
+  autoClose?: boolean;
   /** Info and success stay until dismissed instead of fading after a few seconds. */
   sticky?: boolean;
   /** Runs when the toast's close button is pressed. */
@@ -52,12 +54,14 @@ export interface Banner {
   onDismiss?: () => void;
   onOpen?: () => void;
   rounds?: string;
+  /** Progress toast that closes on its own and then runs onDismiss. */
+  autoClose?: boolean;
   /** Epoch ms at which the banner goes away, or null when it stays until dismissed. */
   expiresAt: number | null;
 }
 
 export const MAX_BANNERS = 4;
-export const AUTO_DISMISS_MS = 5000;
+export const AUTO_DISMISS_MS = 3000;
 
 /** Success and info fade on their own; progress ends by replacement; warning and danger stay. */
 export function ttl(variant: AnnounceVariant): number | null {
@@ -72,13 +76,18 @@ export function capitalize(text: string): string {
 /** Adds or replaces (in place) the banner for the input's key; drops the oldest beyond the cap. */
 export function addBanner(list: Banner[], input: AnnounceInput, now: number): Banner[] {
   const key = input.key ?? input.title;
-  const ms = input.sticky ? null : ttl(input.variant);
+  const auto = input.variant === "progress" && input.autoClose === true;
+  const ms = input.sticky ? null : auto ? AUTO_DISMISS_MS : ttl(input.variant);
+  const old = list.find((b) => b.key === key);
+  // An update to a self-closing progress toast keeps its first deadline instead of extending it.
+  const kept = auto && old?.autoClose && old.expiresAt !== null ? old.expiresAt : null;
   const banner: Banner = {
     key,
     variant: input.variant,
     title: input.title,
-    expiresAt: ms === null ? null : now + ms,
+    expiresAt: kept ?? (ms === null ? null : now + ms),
   };
+  if (auto) banner.autoClose = true;
   if (input.message !== undefined) banner.message = input.message;
   if (input.link !== undefined) banner.link = input.link;
   if (input.actions !== undefined) banner.actions = input.actions;
@@ -144,6 +153,11 @@ export function dismissBanner(list: Banner[], key: string): Banner[] {
 export function expireBanners(list: Banner[], now: number): Banner[] {
   const kept = list.filter((b) => b.expiresAt === null || b.expiresAt > now);
   return kept.length === list.length ? list : kept;
+}
+
+/** Self-closing progress banners whose expiry has passed; the caller runs their onDismiss. */
+export function timedOut(list: Banner[], now: number): Banner[] {
+  return list.filter((b) => b.autoClose === true && b.expiresAt !== null && b.expiresAt <= now);
 }
 
 /** Earliest pending expiry, or null when nothing will expire. */

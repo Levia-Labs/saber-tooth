@@ -118,7 +118,7 @@ export const DEFAULTS: Record<Breakpoint, Record<string, number>> = {
     status: 106,
     actions: 140,
   },
-  compact: { cover: 56, title: 100, length: 102, bpm: 88, status: 106, actions: 120 },
+  compact: { cover: 56, title: 100, length: 102, bpm: 88, status: 106, actions: 100 },
 };
 
 const STORE_PREFIX = "saber-tooth.columns.v4.";
@@ -136,6 +136,8 @@ export interface ColumnSet {
   legacyPrefixes: readonly string[];
   /** Header widths that differ from `HEADER_FIT` for this list (a column without a filter button). */
   fit?: Partial<Record<ColumnKey, number>>;
+  /** Width in desktop px of the widest cell of a narrow column (icon buttons, a chip, a tag), where it exceeds the header fit. */
+  cells?: Partial<Record<ColumnKey, number>>;
 }
 
 export const LIBRARY_COLUMNS: ColumnSet = {
@@ -143,6 +145,7 @@ export const LIBRARY_COLUMNS: ColumnSet = {
   defaults: DEFAULTS,
   storePrefix: STORE_PREFIX,
   legacyPrefixes: LEGACY_PREFIXES,
+  cells: { actions: 100 },
 };
 
 const GAP = 12;

@@ -28,3 +28,14 @@ export function formatBpm(bpm: number | null | undefined): string {
   if (bpm === null || bpm === undefined || !Number.isFinite(bpm) || bpm <= 0) return "–";
   return `${Math.round(bpm)} BPM`;
 }
+
+/** The tempo number alone for the BPM column, whose header carries the unit; an en dash when unknown. */
+export function formatBpmValue(bpm: number | null | undefined): string {
+  return formatBpm(bpm).replace(/ BPM$/, "");
+}
+
+/** The BPM cell's accessible name: "128 BPM", or undefined when the tempo is unknown. */
+export function bpmLabel(bpm: number | null | undefined): string | undefined {
+  const text = formatBpm(bpm);
+  return text === "–" ? undefined : text;
+}

@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import { formatEnvironment } from "../../lib/environment";
-import { formatBpm, formatDuration } from "../../lib/format";
+import { bpmLabel, formatBpm, formatBpmValue, formatDuration } from "../../lib/format";
 import { LIBRARY_COLUMNS } from "../../lib/columns";
 import { applyState, facetsOf, type SongRow } from "../../lib/lpsongs";
 import { mapName } from "../../lib/status";
@@ -82,8 +82,13 @@ function SongRowView({
       <div className="col-length num" role="cell">
         {formatDuration(item.duration_s)}
       </div>
-      <div className="col-bpm num" role="cell">
-        {formatBpm(item.bpm)}
+      <div
+        className="col-bpm num"
+        role="cell"
+        title={bpmLabel(item.bpm)}
+        aria-label={bpmLabel(item.bpm)}
+      >
+        {formatBpmValue(item.bpm)}
       </div>
       <div className="col-env" role="cell" title={env}>
         {env}

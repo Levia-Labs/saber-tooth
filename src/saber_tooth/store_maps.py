@@ -72,7 +72,10 @@ SELECT m.id, m.folder, m.title, m.mapper, m.environment, m.parse_error, s.scanne
   (SELECT o.id FROM maps o WHERE m.folder = o.folder || '{FIXED_COPY_SUFFIX}') AS original_id,
   (SELECT o.folder FROM maps o
    WHERE m.folder = o.folder || '{FIXED_COPY_SUFFIX}') AS original_folder,
-  j.id AS job_id, j.kind AS job_kind, j.status AS job_status,
+  j.id AS job_id, j.kind AS job_kind, j.status AS job_status, j.progress AS job_progress,
+  (SELECT NULLIF(COUNT(*), 0) FROM jobs q WHERE j.status = 'queued' AND q.status = 'queued'
+   AND (q.created_at < j.created_at
+        OR (q.created_at = j.created_at AND q.rowid <= j.rowid))) AS job_position,
   CASE WHEN m.parse_error IS NOT NULL AND m.parse_error != '' THEN 'unreadable'
        WHEN j.status = 'running' AND j.kind = 'scan' THEN 'scanning'
        WHEN j.status = 'running' AND j.kind = 'fix' THEN 'fixing'

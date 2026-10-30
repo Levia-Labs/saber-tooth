@@ -49,8 +49,8 @@ export function planToasts(
   owned: { has(id: string): boolean },
   /** Runs when a job toast body is clicked; the toast is then one row without buttons. */
   open?: () => void,
-  /** Ids whose progress toast the user closed; it stays closed across message changes, only the outcome shows. */
-  dismissed?: Set<string>,
+  /** Ids whose progress toast closed (X or timeout); it stays closed across message changes, only the outcome shows. */
+  dismissed: Set<string> = new Set(),
 ): ToastPlan {
   const active = lists.running.filter((j) => !owned.has(j.id));
   const folded = active.length > SUMMARY_ABOVE;
@@ -62,15 +62,21 @@ export function planToasts(
     const message = activeMessage(job);
     // A folded job is tracked with an empty message so it is announced again once the summary unfolds.
     next.set(job.id, { key, message: folded ? "" : message });
-    if (dismissed?.has(job.id)) continue;
+    if (dismissed.has(job.id)) continue;
     if (folded) {
       if (prev.get(job.id)?.message) withdraw.push(key);
     } else if (prev.get(job.id)?.message !== message) {
-      const toast: AnnounceInput = { key, variant: "progress", title: toastTitle(job), message };
+      const toast: AnnounceInput = {
+        key,
+        variant: "progress",
+        title: toastTitle(job),
+        message,
+        autoClose: true,
+        onDismiss: () => dismissed.add(job.id),
+      };
       const rounds = roundsText(job.progress);
       if (rounds) toast.rounds = rounds;
       if (open) toast.onOpen = open;
-      if (dismissed) toast.onDismiss = () => dismissed.add(job.id);
       show.push(toast);
     }
   }

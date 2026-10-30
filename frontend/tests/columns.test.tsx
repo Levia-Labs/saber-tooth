@@ -125,8 +125,8 @@ describe("width math", () => {
 
   test("grid template and table minimum follow the widths", () => {
     const w = { ...defaultWidths("compact"), title: 200 };
-    expect(gridTemplate("compact", w)).toBe("56px minmax(200px, 1fr) 102px 88px 106px 120px");
-    expect(tableMinWidth("compact", w)).toBe(56 + 200 + 102 + 88 + 106 + 120 + 5 * 12 + 24);
+    expect(gridTemplate("compact", w)).toBe("56px minmax(200px, 1fr) 102px 88px 106px 100px");
+    expect(tableMinWidth("compact", w)).toBe(56 + 200 + 102 + 88 + 106 + 100 + 5 * 12 + 24);
   });
 });
 

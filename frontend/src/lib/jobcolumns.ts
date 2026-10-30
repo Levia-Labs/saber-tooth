@@ -45,4 +45,5 @@ export const JOB_COLUMNS: ColumnSet = {
     "saber-tooth.columns.jobs.v3.",
   ],
   fit: { operation: 100 },
+  cells: { length: 104, status: 140, actions: 64 },
 };

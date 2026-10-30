@@ -22,7 +22,8 @@ saber-tooth is a local Docker service with a browser interface. Give it a song o
 8. VR mode with `/vr` screens and a headset detection helper (`task st:vr-agent`); see [VR mode](docs/vr.md).
 9. Lighting that follows the energy and structure of the song, from a bundled learned set; "Learn lightshows" adds the styles of your installed maps.
 10. Jobs tab: what the server is running, what waits (with cancel) and what finished in the last day; queued jobs survive a restart.
-11. MCP tools for agents, and a compose stack with beat-analyser. Vanilla features only: no Chroma, Noodle Extensions or Vivify.
+11. Settings tab: how many fix and scan jobs run at once (with the cores and memory the container has), and a PlaylistManager check with a one-click install from BeatMods; needs `GAME_DIR_HOST` for the install.
+12. MCP tools for agents, and a compose stack with beat-analyser. Vanilla features only: no Chroma, Noodle Extensions or Vivify.
 
 ## Screenshots
 

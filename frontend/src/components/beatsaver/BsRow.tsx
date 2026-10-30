@@ -1,7 +1,7 @@
 import * as Checkbox from "@radix-ui/react-checkbox";
 import type { BsMap } from "../../api/beatsaver";
 import { BS_TIPS } from "../../lib/bstips";
-import { formatBpm, formatCount, formatDuration } from "../../lib/format";
+import { bpmLabel, formatBpm, formatBpmValue, formatCount, formatDuration } from "../../lib/format";
 import { ActionButton } from "../Buttons";
 import { PreviewButton } from "../PreviewButton";
 import { Cover, LevelChips } from "../Chips";
@@ -168,8 +168,13 @@ export function BsRow({
       <div className="col-length num" role="cell">
         {formatDuration(item.duration)}
       </div>
-      <div className="col-bpm num" role="cell">
-        {formatBpm(item.bpm)}
+      <div
+        className="col-bpm num"
+        role="cell"
+        title={bpmLabel(item.bpm)}
+        aria-label={bpmLabel(item.bpm)}
+      >
+        {formatBpmValue(item.bpm)}
       </div>
       <div className="col-tags" role="cell">
         <Tags tags={item.tags} active={activeTags} onToggle={onToggleTag} />

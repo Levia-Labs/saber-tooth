@@ -14,3 +14,4 @@ Each record has Context, Decision and Consequences.
 10. [0010 MCP over streamable HTTP in the API process](0010-mcp-over-streamable-http-in-the-api-process.md)
 11. [0011 React + TypeScript + Vite frontend](0011-react-typescript-vite-frontend.md)
 12. [0012 Ship a learned lightshow set](0012-ship-a-learned-lightshow-set.md)
+13. [0013 Worker processes for parallel jobs](0013-worker-processes-for-parallel-jobs.md)

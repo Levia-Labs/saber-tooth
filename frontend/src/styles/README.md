@@ -20,3 +20,4 @@ Plain CSS with custom properties; no framework.
 13. `vrmode.css`: the masthead layout switch (VR / Desktop toggle group, shown in both layouts).
 14. `jobs.css`: the Jobs tab count badge and the Jobs page lists.
 15. `localplaylists.css`: the Playlists table grid, editor panel and song lists.
+16. `settings.css`: the Settings cards, stepper, meters and mod rows.

@@ -36,3 +36,34 @@
   cursor: not-allowed;
   opacity: 0.45;
 }
+/* On a phone the section tabs are the bottom navigation bar: the same nav, fixed to the bottom,
+   icons only (the labels are .label-hide-mobile). The page and the toasts clear it. */
+@media (max-width: 719px) {
+  :root:not([data-ui="vr"]) {
+    --bottom-nav-h: calc(56px + env(safe-area-inset-bottom, 0px));
+  }
+  :root:not([data-ui="vr"]) .mode-switch.section-tabs {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 45;
+    display: flex;
+    border-width: 1px 0 0;
+    border-radius: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    overflow: visible;
+  }
+  :root:not([data-ui="vr"]) .section-tabs .pill {
+    flex: 1;
+    justify-content: center;
+    min-height: 56px;
+    padding: 0;
+  }
+  :root:not([data-ui="vr"]) main:has(.section-tabs) {
+    padding-bottom: calc(var(--bottom-nav-h) + 0.5rem);
+  }
+  :root:not([data-ui="vr"]) .toast-stack {
+    bottom: calc(var(--bottom-nav-h) + 0.75rem);
+  }
+}

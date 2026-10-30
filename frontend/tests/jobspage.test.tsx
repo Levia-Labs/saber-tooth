@@ -41,7 +41,7 @@ const FULL: JobLists = {
     }),
   ],
   queued: [job("q1", { position: 1 }), job("q2", { position: 2, kind: "scan" })],
-  recent: [job("d1", { status: "failed", error: "boom", started_at: NOW })],
+  recent: [job("d1", { status: "failed", error: "boom", started_at: NOW, map_id: "m9" })],
 };
 
 const rowOf = (id: string) => document.querySelector(`[data-job="${id}"]`) as HTMLElement;
@@ -206,28 +206,21 @@ describe("Jobs page", () => {
     expect(screen.queryByRole("button", { name: /^Cancel/i })).toBeNull();
   });
 
-  test("a cancelled row offers Restart, posting to the retry endpoint; done rows offer nothing", async () => {
-    const posts: string[] = [];
-    mockFetch(async (url, init) => {
-      if (init?.method === "POST") {
-        posts.push(url.pathname);
-        return job("n1", { status: "queued" });
-      }
-      return url.pathname === "/api/jobs"
-        ? {
-            running: [],
-            queued: [],
-            recent: [job("a", { status: "done" }), job("c", { status: "cancelled" })],
-          }
-        : {};
+  test("a failed or cancelled map job whose map is gone offers no Restart or Retry; generate still does", async () => {
+    serve({
+      running: [],
+      queued: [],
+      recent: [
+        job("f", { status: "failed", error: "x" }),
+        job("c", { status: "cancelled", kind: "scan" }),
+        job("g", { status: "failed", kind: "generate" }),
+      ],
     });
     renderApp("/jobs");
     await loaded();
-    expect(within(rowOf("a")).queryByRole("button", { name: "Restart job" })).toBeNull();
-    const restart = within(rowOf("c")).getByRole("button", { name: "Restart job" });
-    expect(restart.querySelector("svg")).not.toBeNull();
-    fireEvent.click(restart);
-    await waitFor(() => expect(posts).toEqual(["/api/jobs/c/retry"]));
+    expect(within(rowOf("f")).queryByRole("button", { name: "Retry job" })).toBeNull();
+    expect(within(rowOf("c")).queryByRole("button", { name: "Restart job" })).toBeNull();
+    expect(within(rowOf("g")).getByRole("button", { name: "Retry job" })).toBeTruthy();
   });
 
   test("a running job without progress renders no empty progress cell", async () => {

@@ -179,7 +179,8 @@ def _span(ctx: "Context", ops: list[Op]) -> tuple | None:
     if len(d.notes) < window.WINDOW_MIN_NOTES:
         return None
     f = ctx.finding
-    return (got[0], min(got[1], f.beat_start), max(got[2], f.beat_end))
+    hi = max(got[2], f.beat_end)
+    return (got[0], min(got[1], f.beat_start), window.dot_reach(d, hi))
 
 
 def _target_remains(target: Finding, before: list[Finding], after: list[Finding]) -> bool:

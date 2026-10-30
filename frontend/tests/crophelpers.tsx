@@ -67,6 +67,30 @@ export const TIMELINE: Timeline = {
   lengths: { "60": PLAN_60, "120": PLAN_120 },
 };
 
+const proposal = (rank: number, start: number, stop: number, target: string, score: number) => ({
+  rank,
+  start_beat: start * 2,
+  end_beat: stop * 2,
+  start_s: start,
+  end_s: stop,
+  length_s: stop - start,
+  target,
+  score,
+  reason: `rise from ${start}, peak at ${start + 20}, release at ${stop}`,
+});
+
+/** Three Auto proposals on the 140 s song; the first equals the 1 min plan's best window. */
+export const SUGGESTIONS = {
+  map_id: "id0000000001",
+  duration_s: 140,
+  reason: null,
+  suggestions: [
+    proposal(1, 0, 64, "1 min", 0.9),
+    proposal(2, 70, 136, "1 min", 0.7),
+    proposal(3, 10, 130, "2 min", 0.5),
+  ],
+};
+
 export function renderPanel(ui: ReactElement) {
   return render(
     <QueryClientProvider client={makeQueryClient()}>
@@ -81,6 +105,7 @@ export function renderPanel(ui: ReactElement) {
 
 interface ApiOptions {
   timeline?: unknown;
+  suggestions?: unknown;
   jobStatus?: string;
   jobError?: string | null;
   map?: Partial<MapItem>;
@@ -96,6 +121,9 @@ export function cropApi(options: ApiOptions = {}) {
     if (url.pathname === "/api/maps/id0000000001") return item(1, options.map);
     if (url.pathname === "/api/maps/id0000000001/proposals") return [];
     if (url.pathname === "/api/maps/id0000000001/timeline") return options.timeline ?? TIMELINE;
+    if (url.pathname === "/api/maps/id0000000001/crop/suggestions") {
+      return options.suggestions ?? SUGGESTIONS;
+    }
     if (url.pathname === "/api/jobs/j") {
       return { id: "j", kind: "scan", status: "running", error: null, result: null };
     }

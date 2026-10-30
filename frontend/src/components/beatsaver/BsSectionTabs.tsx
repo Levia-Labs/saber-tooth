@@ -15,13 +15,5 @@ export type BsTab = "maps" | "playlists";
 
 /** The Maps | Playlists switch, the right end of the toolbar row: the section tab bar, reused. */
 export function BsSectionTabs({ tab }: { tab: BsTab }) {
-  return (
-    <PillTabs
-      label="BeatSaver sections"
-      tabs={TABS}
-      active={tab}
-      className="bs-tabs"
-      iconOnlyOnMobile
-    />
-  );
+  return <PillTabs label="BeatSaver sections" tabs={TABS} active={tab} className="bs-tabs" />;
 }

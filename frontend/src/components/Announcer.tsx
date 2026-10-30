@@ -4,6 +4,7 @@ import {
   dismissBanner,
   expireBanners,
   nextExpiry,
+  timedOut,
   type AnnounceInput,
   type Banner,
 } from "../lib/announcements";
@@ -40,7 +41,11 @@ export function AnnouncerProvider({ children }: { children: ReactNode }) {
     const at = nextExpiry(banners);
     if (at === null) return undefined;
     const timer = setTimeout(
-      () => setBanners((list) => expireBanners(list, Date.now())),
+      () => {
+        // A progress toast that timed out counts as closed by the user: its owner must not bring it back.
+        for (const b of timedOut(banners, Date.now())) b.onDismiss?.();
+        setBanners((list) => expireBanners(list, Date.now()));
+      },
       Math.max(0, at - Date.now()),
     );
     return () => clearTimeout(timer);
@@ -67,6 +72,15 @@ export function AnnouncerProvider({ children }: { children: ReactNode }) {
                 className="toast"
                 variant={b.variant === "progress" ? "info" : b.variant}
                 progress={b.variant === "progress"}
+                quantized
+                fitKey={JSON.stringify([
+                  b.title,
+                  b.message,
+                  b.details,
+                  b.variant,
+                  !!b.actions,
+                  !!b.link,
+                ])}
                 title={b.title}
                 message={b.message}
                 {...(b.details ? { details: b.details } : {})}

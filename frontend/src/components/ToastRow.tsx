@@ -1,6 +1,7 @@
 import type { Banner } from "../lib/announcements";
 import type { AlertVariant } from "../lib/alerts";
 import { Icon, type IconName } from "./icons";
+import { useQuantizedWidth } from "./useQuantizedWidth";
 
 const ICON: Record<AlertVariant, IconName> = {
   danger: "error",
@@ -19,11 +20,13 @@ interface Props {
  * button. The body is one button that opens the Jobs page; the close button only closes.
  */
 export function ToastRow({ banner: b, onClose }: Props) {
+  const ref = useQuantizedWidth<HTMLDivElement>([b.title, b.message, b.rounds, b.variant]);
   const progress = b.variant === "progress";
   const variant: AlertVariant = progress ? "info" : (b.variant as AlertVariant);
   const urgent = variant === "danger" || variant === "warning";
   return (
     <div
+      ref={ref}
       className={`alert alert-${variant} toast toast-row`}
       role={urgent ? "alert" : "status"}
       aria-live={urgent ? "assertive" : "polite"}

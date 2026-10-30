@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { useJobLists } from "../api/joblist";
 import { ownedJobs } from "../api/jobs";
 import { planToasts, SUMMARY_KEY, type ToastPlan } from "../lib/jobtoasts";
+import { dismissedJobs } from "../lib/jobdismiss";
 import { useOpenJobs } from "../lib/jobopen";
 import { useAnnounce, useWithdraw } from "./Announcer";
 
@@ -12,13 +13,12 @@ export function JobToasts() {
   const withdraw = useWithdraw();
   const prev = useRef<ToastPlan["next"]>(new Map());
   const summaryClosed = useRef(false);
-  const dismissed = useRef(new Set<string>());
   const shownSummary = useRef<string | null>(null);
 
   const open = useOpenJobs();
 
   useEffect(() => {
-    const plan = planToasts(prev.current, lists, ownedJobs, open, dismissed.current);
+    const plan = planToasts(prev.current, lists, ownedJobs, open, dismissedJobs);
     prev.current = plan.next;
     for (const key of plan.withdraw) withdraw(key);
     for (const t of plan.show) {

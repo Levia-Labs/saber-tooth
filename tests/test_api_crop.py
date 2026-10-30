@@ -161,3 +161,16 @@ def test_crop_an_exact_one_second_window_across_a_tempo_change_is_accepted(tmp_p
             resp = c.post(f"/api/maps/{MID}/crop", json=body)
             assert resp.status_code == 200, (start, resp.json())
             assert _wait(c, resp.json()["job"])["status"] == "done"
+
+
+def test_suggestions_route_returns_ranked_windows(http):
+    body = http.get(f"/api/maps/{MID}/crop/suggestions").json()
+    assert body["map_id"] == MID and "reason" in body
+    for i, s in enumerate(body["suggestions"], 1):
+        assert s["rank"] == i and s["target"] in {"1 min", "2 min"}
+        assert s["end_s"] - s["start_s"] == s["length_s"] and 0 <= s["score"] <= 1
+    assert http.get(f"/api/maps/{MID}/crop/suggestions").json() == body
+
+
+def test_suggestions_for_an_unknown_map_is_404(http):
+    assert http.get(f"/api/maps/{'0' * 12}/crop/suggestions").status_code == 404

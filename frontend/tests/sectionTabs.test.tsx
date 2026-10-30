@@ -122,3 +122,14 @@ describe("BeatSaver Maps | Playlists tabs", () => {
     expect(maps).toHaveFocus();
   });
 });
+
+describe("bottom navigation", () => {
+  test("the one section nav carries the bottom-bar class and its six links; no second row", async () => {
+    api();
+    renderApp("/");
+    const nav = await screen.findByRole("navigation", { name: "Section" });
+    expect(nav).toHaveClass("section-tabs");
+    expect(within(nav).getAllByRole("link")).toHaveLength(6);
+    expect(screen.getAllByRole("navigation", { name: "Section" })).toHaveLength(1);
+  });
+});

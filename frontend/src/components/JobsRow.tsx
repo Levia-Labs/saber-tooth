@@ -9,6 +9,8 @@ import { Cover } from "./Chips";
 import { Icon } from "./icons";
 import { JobStatusChip } from "./JobStatusChip";
 
+const MAP_BOUND = new Set(["scan", "fix", "apply", "crop", "relight"]);
+
 interface Props {
   job: JobView;
   index: number;
@@ -22,9 +24,10 @@ interface Props {
 function ActionsCell({ job, onCancel, onRetry, retrying }: Omit<Props, "index" | "now">) {
   const active = job.status === "queued" || job.status === "running";
   const requested = job.status === "running" && job.cancel_requested;
+  const mapGone = MAP_BOUND.has(job.kind) && !job.map_id; // the server refuses a retry then
   return (
     <div className="jc-actions" role="cell">
-      {(job.status === "failed" || job.status === "cancelled") && (
+      {(job.status === "failed" || job.status === "cancelled") && !mapGone && (
         <ActionButton
           icon="reset"
           label={job.status === "failed" ? "Retry job" : "Restart job"}

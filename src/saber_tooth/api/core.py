@@ -274,6 +274,8 @@ class Api:
             raise ApiError(404, f"unknown job: {raw}") from None
         if old["status"] not in ("failed", "cancelled"):
             raise ApiError(409, "only a failed or cancelled job can be restarted")
+        if old["kind"] in ("scan", "fix", "apply", "crop", "relight") and not old["map_id"]:
+            raise ApiError(409, "this job's map is gone")
         if old["kind"] == "generate" and "upload" in old["args"]:  # the only temp input
             path = upload_path(self.service.data, old["args"]["upload"])
             if path is None or not path.is_file():

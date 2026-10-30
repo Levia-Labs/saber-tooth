@@ -6,7 +6,7 @@ import fc from "fast-check";
 import { TipProvider } from "../src/components/Tip";
 import { describe, expect, test } from "vitest";
 import { LevelChips, StatusChip } from "../src/components/Chips";
-import { formatBpm, formatDuration } from "../src/lib/format";
+import { bpmLabel, formatBpm, formatBpmValue, formatDuration } from "../src/lib/format";
 import {
   contrast,
   LEVELS,
@@ -203,5 +203,14 @@ describe("tooltip copy", () => {
     expect(TIPS.reject).toBe("Discard this fix.");
     expect(TIPS.resetColumns).toBe("Reset column widths to their defaults.");
     expect(applyTip("Moon")).toContain("'Moon [saber-tooth]'");
+  });
+});
+
+describe("BPM column values", () => {
+  test("show the number alone, with the unit as the accessible label", () => {
+    expect(formatBpmValue(127.6)).toBe("128");
+    expect(formatBpmValue(null)).toBe("\u2013");
+    expect(bpmLabel(127)).toBe("127 BPM");
+    expect(bpmLabel(0)).toBeUndefined();
   });
 });

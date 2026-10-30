@@ -26,6 +26,7 @@ from saber_tooth.api.mcp_tools import build_mcp
 from saber_tooth.api.playlists_api import PlaylistsApi
 from saber_tooth.api.playlists_routes import register as register_playlists
 from saber_tooth.api.relight_api import environments, start_relight
+from saber_tooth.api.settings_api import install as install_settings
 from saber_tooth.api.static import WebFiles
 from saber_tooth.api.upload import _save_upload
 from saber_tooth.api.vr_routes import register as register_vr
@@ -33,6 +34,7 @@ from saber_tooth.api.vr_status import VrStatusClient
 from saber_tooth.api.web_routes import register as register_web_routes
 from saber_tooth.audio import encode_egg
 from saber_tooth.beatsaver.client import BeatSaverClient
+from saber_tooth.jobs_service import ChildSpec
 from saber_tooth.service import ApplyConflict, MapNotFound, MapUnreadable, Service
 from saber_tooth.service.errors import DeleteRefused
 from saber_tooth.service.staging import sweep_staging
@@ -122,6 +124,7 @@ def create_app(
     register_playlists(app, PlaylistsApi(api, bs.playlists_dir))
     register_crop(app, crop_api)
     register_vr(app, vr_status or VrStatusClient())
+    install_settings(app, api, service)  # settings, worker cap and the mods routes
 
     # The library, cover and SPA routes are registered after the JSON routes below so the
     # catch-all /api/* 404 never shadows them.
@@ -231,6 +234,13 @@ def build_service() -> Service:
         store,
         client,
         encode_egg,
+    )
+    service.child_spec = ChildSpec(  # what a job worker process rebuilds the service from
+        str(service.levels),
+        str(data),
+        str(data / "saber-tooth.db"),
+        os.environ.get("ANALYSER_URL", "http://beat-analyser:8000"),
+        os.environ.get("ANALYSER_UPLOADS", "/analyser"),
     )
     return service
 

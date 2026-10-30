@@ -1,6 +1,6 @@
 import pytest
 
-from tests.test_api_jobs import api, client, jobs_api  # noqa: F401
+from tests.test_api_jobs import a_map_id, api, client, jobs_api  # noqa: F401
 
 RETRY = "/api/jobs/{}/retry"
 
@@ -86,3 +86,26 @@ def test_retrying_a_generate_with_its_upload_still_there_is_queued(client, jobs_
     song.write_bytes(b"x")
     failed = _failed_upload(jobs_api, str(song))
     assert client.post(RETRY.format(failed)).status_code == 200
+
+
+@pytest.mark.parametrize("kind", ["scan", "fix", "apply", "crop", "relight"])
+def test_retrying_a_map_job_whose_map_is_gone_is_409(client, jobs_api, kind):  # noqa: F811
+    jobs_api.jobs.register(kind, lambda args, progress: {"ok": True})
+    orphan = jobs_api.store.create_job(kind, None, {})
+    jobs_api.store.cancel_job(orphan)
+    r = client.post(RETRY.format(orphan))
+    assert r.status_code == 409
+    assert r.json() == {"error": "this job's map is gone"}
+
+
+def test_library_item_carries_the_job_position_and_progress(client, jobs_api, a_map_id):  # noqa: F811
+    first = jobs_api.store.create_job("fix", a_map_id, {})
+    items = client.get("/api/maps").json()["items"]
+    job = next(i for i in items if i["id"] == a_map_id)["job"]
+    assert job == {"id": first, "kind": "fix", "status": "queued", "position": 1, "progress": None}
+    jobs_api.store.claim_next_job()
+    jobs_api.store.set_job_progress(first, "round 2 of 5")
+    items = client.get("/api/maps").json()["items"]
+    job = next(i for i in items if i["id"] == a_map_id)["job"]
+    assert job["status"] == "running" and job["position"] is None
+    assert job["progress"] == "round 2 of 5"

@@ -98,6 +98,10 @@ export interface ActiveJob {
   id: string;
   kind: JobKind;
   status: JobState;
+  /** Place in the queue while queued. */
+  position?: number | null;
+  /** Latest progress text while running, for example "round 2 of 5". */
+  progress?: string | null;
 }
 
 export interface MapItem {

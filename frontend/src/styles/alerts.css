@@ -168,6 +168,11 @@
     width: calc(100% - 2rem);
     bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
   }
+  /* Full stack width on a phone; the script leaves the width alone here. */
+  .toast-stack .toast {
+    width: 100%;
+    max-width: none;
+  }
 }
 @media (prefers-reduced-motion: no-preference) {
   .alert-spin {

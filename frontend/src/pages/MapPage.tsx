@@ -1,7 +1,15 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
-import { ApiError, applyMap, approveAll, relightMap, scanMap, deleteMap } from "../api/client";
+import {
+  ApiError,
+  type Started,
+  applyMap,
+  approveAll,
+  relightMap,
+  scanMap,
+  deleteMap,
+} from "../api/client";
 import { Alert, SpecAlert } from "../components/Alert";
 import { useAnnounce } from "../components/Announcer";
 import { FixesSkeleton, MapHeadSkeleton } from "../components/Skeletons";
@@ -59,6 +67,12 @@ export function MapPage() {
     await client.invalidateQueries({ queryKey: keys.map(id) });
     await client.invalidateQueries({ queryKey: keys.proposals(id) });
     await client.invalidateQueries({ queryKey: ["maps", "library"] });
+  };
+  // The job now shows on the library rows: refetch the list with its current filters.
+  const queued = async (start: Promise<Started>): Promise<Started> => {
+    const started = await start;
+    void client.invalidateQueries({ queryKey: ["maps", "library"] });
+    return started;
   };
   const list = proposals.data ?? [];
   const pendingCount = list.filter((p) => p.status === "pending").length;
@@ -136,7 +150,9 @@ export function MapPage() {
                 <EnvironmentPicker
                   current={map.data.environment}
                   busy={running}
-                  onPick={(env) => void relight.run(() => relightMap(id, env)).then(refresh)}
+                  onPick={(env) =>
+                    void relight.run(() => queued(relightMap(id, env))).then(refresh)
+                  }
                 />
               )}
             </p>
@@ -158,14 +174,14 @@ export function MapPage() {
             toastKey={`Apply:${id}`}
             job={apply.job}
             error={apply.error}
-            onRetry={() => void apply.run(() => applyMap(id)).then(refresh)}
+            onRetry={() => void apply.run(() => queued(applyMap(id))).then(refresh)}
             onReview={() => document.getElementById("fixes-top")?.scrollIntoView?.()}
           />
           <JobOutcome
             toastKey={`Scan:${id}`}
             job={scan.job}
             error={scan.error}
-            onRetry={() => void scan.run(() => scanMap(id)).then(refresh)}
+            onRetry={() => void scan.run(() => queued(scanMap(id))).then(refresh)}
           />
           <JobOutcome toastKey={`Relight:${id}`} job={relight.job} error={relight.error} />
           {approved === 0 && pendingCount > 0 && (
@@ -184,9 +200,9 @@ export function MapPage() {
               pendingCount={pendingCount}
               approved={approved}
               proposalCount={list.length}
-              onScan={() => void scan.run(() => scanMap(id)).then(refresh)}
+              onScan={() => void scan.run(() => queued(scanMap(id))).then(refresh)}
               onApproveAll={() => void approveEverything()}
-              onApply={() => void apply.run(() => applyMap(id)).then(refresh)}
+              onApply={() => void apply.run(() => queued(applyMap(id))).then(refresh)}
               onExpandAll={() => setOpenIds(new Set(list.map((p) => String(p.id))))}
               onCollapseAll={() => setOpenIds(new Set())}
             />

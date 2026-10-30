@@ -74,7 +74,8 @@ describe("library page", () => {
     const row = within(first as HTMLElement);
     expect(row.getByRole("img", { name: "3 errors" })).toBeInTheDocument();
     expect(row.getAllByText("3:21").length).toBeGreaterThan(0);
-    expect(row.getAllByText("128 BPM").length).toBeGreaterThan(0);
+    expect(row.getAllByText("128").length).toBeGreaterThan(0);
+    expect(row.getAllByLabelText("128 BPM").length).toBeGreaterThan(0);
     expect(row.getAllByRole("img", { name: "Expert+" }).length).toBeGreaterThan(0);
     expect(row.getByRole("link", { name: /Review Song 1, 2 fixes/ })).toHaveAttribute(
       "href",
@@ -158,7 +159,7 @@ describe("library page", () => {
     const four = (await screen.findByRole("link", { name: "Song 4" })).closest("[role=row]");
     expect(within(four as HTMLElement).getAllByText("–").length).toBeGreaterThan(0);
     const three = (await screen.findByRole("link", { name: "Song 3" })).closest("[role=row]");
-    expect(within(three as HTMLElement).getByRole("img", { name: "Scanning" })).toBeInTheDocument();
+    expect(within(three as HTMLElement).getByRole("img", { name: "Running" })).toBeInTheDocument();
     expect(within(three as HTMLElement).getByRole("button", { name: "Fix Song 3" })).toBeDisabled();
   });
 

@@ -26,58 +26,74 @@ function HoverTip({ text, children }: Props) {
   );
 }
 
-/** Touch variant: long-press the control, or tap the info button, to read the same copy. */
+/**
+ * Touch variant: long-press the control, or tap the info button, to read the same copy. The tip
+ * is a sibling of the children, never their parent: a Radix Popover.Root around the children
+ * would capture a Popover trigger among them and open the tip instead of its menu.
+ */
 function TouchTip({ text, children, info }: Props) {
   const [open, setOpen] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const fired = useRef(false);
+  const wrap = useRef<HTMLSpanElement>(null);
   useEffect(() => () => clearTimeout(timer.current), []);
   const cancel = () => clearTimeout(timer.current);
   return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
-      <Popover.Anchor asChild>
-        <span
-          className="tip-wrap"
-          onPointerDown={(e) => {
-            if (e.pointerType === "mouse") return;
-            fired.current = false;
-            timer.current = setTimeout(() => {
-              fired.current = true;
-              setOpen(true);
-            }, LONG_PRESS_MS);
-          }}
-          onPointerUp={cancel}
-          onPointerCancel={cancel}
-          onPointerLeave={cancel}
-          onContextMenu={(e) => e.preventDefault()}
-          onClickCapture={(e) => {
-            if (!fired.current) return;
-            fired.current = false;
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-        >
-          {children}
-          {info && (
-            <Popover.Trigger className="tip-info" aria-label="What does this do?">
-              i
-            </Popover.Trigger>
-          )}
-        </span>
-      </Popover.Anchor>
-      <Popover.Portal>
-        <Popover.Content
-          className="tooltip"
-          role="tooltip"
-          side="top"
-          sideOffset={8}
-          collisionPadding={8}
-          onOpenAutoFocus={(e) => e.preventDefault()}
-        >
-          {text}
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
+    <>
+      <span
+        ref={wrap}
+        className="tip-wrap"
+        onPointerDown={(e) => {
+          if (e.pointerType === "mouse") return;
+          fired.current = false;
+          timer.current = setTimeout(() => {
+            fired.current = true;
+            setOpen(true);
+          }, LONG_PRESS_MS);
+        }}
+        onPointerUp={cancel}
+        onPointerCancel={cancel}
+        onPointerLeave={cancel}
+        onContextMenu={(e) => e.preventDefault()}
+        onClickCapture={(e) => {
+          if (!fired.current) return;
+          fired.current = false;
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+      >
+        {children}
+        {info && (
+          <button
+            type="button"
+            className="tip-info"
+            aria-label="What does this do?"
+            aria-expanded={open}
+            onClick={() => setOpen((o) => !o)}
+          >
+            i
+          </button>
+        )}
+      </span>
+      <Popover.Root open={open} onOpenChange={setOpen}>
+        <Popover.Anchor virtualRef={wrap} />
+        <Popover.Portal>
+          <Popover.Content
+            className="tooltip"
+            role="tooltip"
+            side="top"
+            sideOffset={8}
+            collisionPadding={8}
+            onOpenAutoFocus={(e) => e.preventDefault()}
+            onInteractOutside={(e) => {
+              if (e.target instanceof Node && wrap.current?.contains(e.target)) e.preventDefault();
+            }}
+          >
+            {text}
+          </Popover.Content>
+        </Popover.Portal>
+      </Popover.Root>
+    </>
   );
 }
 

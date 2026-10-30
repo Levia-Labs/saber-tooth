@@ -39,4 +39,5 @@ export const LP_COLUMNS: ColumnSet = {
   },
   storePrefix: "saber-tooth.columns.lp.v1.",
   legacyPrefixes: [],
+  cells: { maps: 100, actions: 124 },
 };

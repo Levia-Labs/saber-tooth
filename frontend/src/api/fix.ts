@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { useAnnounce } from "../components/Announcer";
 import { capitalize } from "../lib/announcements";
 import { fixKey, fixToast } from "../lib/fixToast";
+import { dismissedJobs } from "../lib/jobdismiss";
 import { fixMap } from "./client";
 import { JobFailed, pollJob } from "./jobs";
 import { keys, markRunning } from "./queries";
@@ -22,13 +23,23 @@ export function useFix(item: MapItem, name: string): () => Promise<void> {
   return useCallback(async () => {
     const key = fixKey(item.id);
     const title = `Fix ${name}`;
-    announce({ key, variant: "progress", title, message: "Queued" });
     try {
       const started = await fixMap(item.id);
       markRunning(client, item, "fix", started.job);
-      const job = await pollJob(started.job, new AbortController().signal, (s) =>
-        announce({ key, variant: "progress", title, message: capitalize(s) }),
-      );
+      // Refetch with the current filters so a map that is now queued leaves a view that excludes it.
+      void client.invalidateQueries({ queryKey: ["maps", "library"] });
+      // No toast while queued; one appears when the job runs, closes by itself and stays closed once closed.
+      const job = await pollJob(started.job, new AbortController().signal, (s) => {
+        if (s.startsWith("queued") || dismissedJobs.has(started.job)) return;
+        announce({
+          key,
+          variant: "progress",
+          title,
+          message: capitalize(s),
+          autoClose: true,
+          onDismiss: () => dismissedJobs.add(started.job),
+        });
+      });
       announce(fixToast(item.id, name, job, null));
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

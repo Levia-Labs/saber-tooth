@@ -7,6 +7,7 @@ from saber_tooth.crop.replace import replace_folder
 from saber_tooth.fixer import ApplyLightshow, apply_ops
 from saber_tooth.fixer.verify import map_timing
 from saber_tooth.lightshow import Templates, build_lightshow
+from saber_tooth.service.copyscan import store_copy_scan
 from saber_tooth.service.util import checkpoint, map_id_for
 from saber_tooth.service.verify import stored_analysis
 from saber_tooth.service.writeout import write_fixed
@@ -57,6 +58,8 @@ def relight_map(svc, map_id: str, environment: str, progress=None) -> dict:
         target = replace_folder(svc.levels, folder, staged)
     else:
         target = write_fixed(svc.levels, folder, lit, folder.name + SUFFIX)
+    if not rewrite or svc.store.scan_info(map_id_for(target.name)) is None:
+        store_copy_scan(svc, target.name, lit, analysis)
     try:
         svc.refresh_library()
     except Exception:

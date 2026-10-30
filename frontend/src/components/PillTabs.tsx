@@ -21,8 +21,6 @@ interface Props {
   active: string;
   /** Extra class on the nav, for its place in a toolbar. */
   className?: string;
-  /** Show the icon alone on a phone; the name stays available to assistive tech. */
-  iconOnlyOnMobile?: boolean;
 }
 
 /** Move focus along the links with the arrow keys, Home and End. */
@@ -46,7 +44,7 @@ function arrows(e: KeyboardEvent<HTMLElement>): void {
 }
 
 /** The segmented tab bar: the section tabs and the BeatSaver Maps | Playlists switch share it. */
-export function PillTabs({ label, tabs, active, className, iconOnlyOnMobile }: Props) {
+export function PillTabs({ label, tabs, active, className }: Props) {
   return (
     // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- arrow keys only move focus between the links
     <nav
@@ -60,10 +58,10 @@ export function PillTabs({ label, tabs, active, className, iconOnlyOnMobile }: P
             className="pill"
             to={t.path}
             aria-current={t.key === active ? "page" : undefined}
-            aria-label={iconOnlyOnMobile ? t.label : undefined}
+            aria-label={t.label}
           >
             <Icon name={t.icon} />
-            {iconOnlyOnMobile ? <span className="label-hide-mobile">{t.label}</span> : t.label}
+            <span className="label-hide-mobile">{t.label}</span>
             {t.badge !== undefined && t.badge > 0 && (
               <span className="tab-count" aria-label={`${t.badge} active`}>
                 {t.badge}

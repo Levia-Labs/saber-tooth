@@ -33,6 +33,9 @@ const PlaylistsPage = lazyRoute(() =>
 const AboutPage = lazyRoute(() =>
   import("./pages/AboutPage").then((m) => ({ default: m.AboutPage })),
 );
+const SettingsPage = lazyRoute(() =>
+  import("./pages/SettingsPage").then((m) => ({ default: m.SettingsPage })),
+);
 const NewPage = lazyRoute(() => import("./pages/NewPage").then((m) => ({ default: m.NewPage })));
 
 export function makeQueryClient(): QueryClient {
@@ -109,6 +112,7 @@ export const routes: RouteObject[] = [
       { path: "/", element: <LibraryPage />, errorElement: <RouteError /> },
       { path: "/maps/:id", element: <MapPage />, errorElement: <RouteError /> },
       { path: "/about", element: <AboutPage />, errorElement: <RouteError /> },
+      { path: "/settings", element: <SettingsPage />, errorElement: <RouteError /> },
       { path: "/new", element: <NewPage />, errorElement: <RouteError /> },
       { path: "/beatsaver", element: <BeatSaverPage />, errorElement: <RouteError /> },
       { path: "/jobs", element: <JobsPage />, errorElement: <RouteError /> },
@@ -130,6 +134,7 @@ export const routes: RouteObject[] = [
       { path: "/vr/maps/:id", element: <MapPage />, errorElement: <RouteError /> },
       { path: "/vr/beatsaver", element: <BeatSaverPage />, errorElement: <RouteError /> },
       { path: "/vr/jobs", element: <JobsPage />, errorElement: <RouteError /> },
+      { path: "/vr/settings", element: <SettingsPage />, errorElement: <RouteError /> },
       { path: "/vr/playlists", element: <PlaylistsPage />, errorElement: <RouteError /> },
       { path: "/vr/playlists/new", element: <PlaylistPage />, errorElement: <RouteError /> },
       { path: "/vr/playlists/:id", element: <PlaylistPage />, errorElement: <RouteError /> },

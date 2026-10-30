@@ -12,7 +12,8 @@ import {
   type ColumnKey,
   type ColumnSet,
 } from "../src/lib/columns";
-import { headerFit } from "../src/lib/columnfit";
+import { contentMin, headerFit, NARROW_KEYS } from "../src/lib/columnfit";
+import { JOB_COLUMNS } from "../src/lib/jobcolumns";
 import { PL_COLUMNS } from "../src/lib/plcolumns";
 import { LP_COLUMNS } from "../src/lib/lpcolumns";
 
@@ -50,3 +51,18 @@ describe.each(SETS)("%s columns", (_name, set) => {
     );
   });
 });
+
+describe.each([...SETS, ["jobs", JOB_COLUMNS] as [string, ColumnSet]])(
+  "%s compact tier",
+  (_name, set) => {
+    test("every narrow column is exactly its content minimum, so Title gets the rest", () => {
+      const narrow = set.tracks.compact.filter((k) => NARROW_KEYS.includes(k));
+      expect(narrow.length).toBeGreaterThan(0);
+      for (const key of narrow) {
+        expect(set.defaults.compact[key], key).toBe(contentMin(key, set));
+      }
+      const sum = narrow.reduce((n, k) => n + (set.defaults.compact[k] ?? 0), 0);
+      expect(sum).toBe(narrow.reduce((n, k) => n + contentMin(k, set), 0));
+    });
+  },
+);

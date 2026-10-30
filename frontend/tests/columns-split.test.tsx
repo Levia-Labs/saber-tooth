@@ -140,7 +140,7 @@ describe("BeatSaver columns", () => {
     expect(text("rating")).toBe("93%");
     expect(text("upvotes")).toBe("1.2k");
     expect(text("length")).toBe("2:05");
-    expect(text("bpm")).toBe("140 BPM");
+    expect(text("bpm")).toBe("140");
     for (const name of ["Rating", "Upvotes", "Length", "BPM"]) {
       expect(screen.getByRole("button", { name: `Sort by ${name}` })).toBeInTheDocument();
       expect(

@@ -6,6 +6,7 @@ from dataclasses import replace
 
 from saber_tooth.checks import Finding, run_checks
 from saber_tooth.safe_fs import LevelsWriter
+from saber_tooth.service.copyscan import store_copy_scan
 from saber_tooth.service.fixrun import MAX_ROUNDS, FixRun, complete, fix_beatmap
 from saber_tooth.service.fixsave import Checkpoint, source_stamp
 from saber_tooth.service.util import checkpoint, map_id_for
@@ -63,6 +64,7 @@ class _Saver:
                 ids = self.svc.store.add_proposals(self.map_id, [p.to_dict() for p in new])
                 self.svc.store.mark_applied(ids)
             self.stored = len(run.steps)
+            store_copy_scan(self.svc, self.name, run.fixed, self.analysis)
         if self.name is None:
             return
         if position is None:

@@ -69,7 +69,7 @@ describe("map page tabs look like the Library and BeatSaver tabs", () => {
         </MemoryRouter>
       </QueryClientProvider>,
     );
-    expect(container.querySelectorAll("nav.mode-switch a.pill")).toHaveLength(5);
+    expect(container.querySelectorAll("nav.mode-switch a.pill")).toHaveLength(6);
     expect(container.querySelectorAll("[role=tablist] button.pill")).toHaveLength(3);
   });
 });

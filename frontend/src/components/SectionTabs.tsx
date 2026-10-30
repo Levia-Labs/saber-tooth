@@ -40,6 +40,13 @@ const ITEMS = [
     tip: "Build and export Beat Saber playlists.",
   },
   {
+    key: "settings",
+    path: "/settings",
+    label: "Settings",
+    icon: "settings",
+    tip: "Service controls and mods.",
+  },
+  {
     key: "about",
     path: "/about",
     label: "About",
@@ -59,7 +66,7 @@ export function SectionTabs({ active, heading, headingId }: Props) {
       <h1 id={headingId} className="sr" tabIndex={-1} data-page-heading>
         {heading}
       </h1>
-      <PillTabs label="Section" tabs={tabs} active={active} />
+      <PillTabs label="Section" tabs={tabs} active={active} className="section-tabs" />
     </>
   );
 }

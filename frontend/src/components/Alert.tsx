@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { AlertActionKind, AlertSpec, AlertVariant } from "../lib/alerts";
 import { Icon, type IconName } from "./icons";
+import { useQuantizedWidth } from "./useQuantizedWidth";
 
 const ICON: Record<AlertVariant, IconName> = {
   danger: "error",
@@ -22,6 +23,10 @@ interface AlertProps {
   pageHeading?: boolean;
   /** Running job: a spinning spinner replaces the icon. */
   progress?: boolean;
+  /** Toast: the width snaps up to a multiple of 50 px. */
+  quantized?: boolean;
+  /** Changes when the content does, so a quantized width is measured again. */
+  fitKey?: string;
 }
 
 /** One status message: icon, title, plain-language text, optional details, actions and dismiss. */
@@ -35,11 +40,15 @@ export function Alert({
   className,
   pageHeading = false,
   progress = false,
+  quantized = false,
+  fitKey = "",
 }: AlertProps) {
+  const ref = useQuantizedWidth<HTMLDivElement>([quantized, fitKey]);
   const urgent = variant === "danger" || variant === "warning";
   const cls = ["alert", `alert-${variant}`, className ?? ""].filter(Boolean).join(" ");
   return (
     <div
+      {...(quantized ? { ref } : {})}
       className={cls}
       role={urgent ? "alert" : "status"}
       aria-live={urgent ? "assertive" : "polite"}

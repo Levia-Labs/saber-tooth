@@ -38,6 +38,13 @@ class CropApi:
         except CropError as exc:
             raise ApiError(422, str(exc)) from None
 
+    def suggestions(self, raw: str) -> dict:
+        map_id = self.api.readable_map(raw)
+        try:
+            return self.service.crop_suggestions(map_id)  # type: ignore[attr-defined]
+        except CropError as exc:
+            raise ApiError(422, str(exc)) from None
+
     def crop(
         self,
         raw: str,

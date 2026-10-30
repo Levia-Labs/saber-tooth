@@ -14,6 +14,10 @@ def register(app: FastAPI, crop: CropApi) -> None:
     def timeline(map_id: str):
         return crop.timeline(map_id)
 
+    @app.get("/api/maps/{map_id}/crop/suggestions")
+    def suggestions(map_id: str):
+        return crop.suggestions(map_id)
+
     @app.post("/api/maps/{map_id}/crop")
     async def start_crop(map_id: str, request: Request):
         try:

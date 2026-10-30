@@ -47,4 +47,5 @@ export const PL_COLUMNS: ColumnSet = {
   storePrefix: "saber-tooth.columns.pl.v2.",
   legacyPrefixes: ["saber-tooth.columns.pl.v1."],
   fit: { author: 78 },
+  cells: { actions: 128 },
 };

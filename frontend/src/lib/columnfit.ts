@@ -23,6 +23,23 @@ export const HEADER_FIT: Partial<Record<ColumnKey, number>> = {
   created: 106,
 };
 
+/** The narrow columns, sized to their content at the compact tier; Title takes the rest. */
+export const NARROW_KEYS: readonly ColumnKey[] = [
+  "length",
+  "bpm",
+  "status",
+  "actions",
+  "rating",
+  "upvotes",
+  "maps",
+  "operation",
+];
+
+/** The least a narrow column needs: the wider of its header and its widest cell, in desktop px. */
+export function contentMin(key: ColumnKey, set: ColumnSet = LIBRARY_COLUMNS): number {
+  return Math.max(headerFit(key, set), set.cells?.[key] ?? 0);
+}
+
 /** The header width a column needs in a list, in desktop px. */
 export function headerFit(key: ColumnKey, set: ColumnSet = LIBRARY_COLUMNS): number {
   return set.fit?.[key] ?? HEADER_FIT[key] ?? 0;

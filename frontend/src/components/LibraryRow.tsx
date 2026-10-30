@@ -1,11 +1,12 @@
 import { Link } from "react-router";
 import type { MapItem } from "../api/types";
 import { formatEnvironment } from "../lib/environment";
-import { formatBpm, formatDuration } from "../lib/format";
+import { bpmLabel, formatBpm, formatBpmValue, formatDuration } from "../lib/format";
 import { TIPS } from "../lib/tips";
 import { mapName, reviewNeeds } from "../lib/status";
 import { ActionLink } from "./Buttons";
 import { Cover, LevelChips, StatusChip } from "./Chips";
+import { JobStatusChip } from "./JobStatusChip";
 import { FixButton } from "./FixButton";
 import { PreviewButton } from "./PreviewButton";
 
@@ -50,14 +51,30 @@ export function LibraryRow({ item, index }: { item: MapItem; index: number }) {
       <div className="col-length num" role="cell">
         {formatDuration(item.duration_s)}
       </div>
-      <div className="col-bpm num" role="cell">
-        {formatBpm(item.bpm)}
+      <div
+        className="col-bpm num"
+        role="cell"
+        title={bpmLabel(item.bpm)}
+        aria-label={bpmLabel(item.bpm)}
+      >
+        {formatBpmValue(item.bpm)}
       </div>
       <div className="col-env" role="cell" title={formatEnvironment(item.environment)}>
         {formatEnvironment(item.environment)}
       </div>
       <div className="col-status" role="cell">
-        <StatusChip item={item} />
+        {item.job && (item.job.status === "queued" || item.job.status === "running") ? (
+          <JobStatusChip
+            job={{
+              status: item.job.status,
+              position: item.job.position ?? null,
+              progress: item.job.progress ?? null,
+              cancel_requested: false,
+            }}
+          />
+        ) : (
+          <StatusChip item={item} />
+        )}
       </div>
       <div className="col-actions" role="cell">
         <div className="actions">

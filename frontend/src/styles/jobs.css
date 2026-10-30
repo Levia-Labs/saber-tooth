@@ -114,8 +114,18 @@ a.jobs-title:focus-visible {
     min-width: var(--min-compact, 0);
   }
 }
+/* A phone has no room for six tracks: Length and Operation drop out, Icon, Title, Status and
+   Actions remain with Title taking the rest, and the table never scrolls sideways. */
 @media (max-width: 719px) {
   .jobs-table.lib-table {
-    min-width: var(--min-compact, 0);
+    min-width: 0;
+  }
+  .jobs-grid {
+    grid-template-columns: minmax(0, 1fr) 106px 64px;
+  }
+  .jobs-grid > .jc-cover,
+  .jobs-grid > .jc-length,
+  .jobs-grid > .jc-operation {
+    display: none;
   }
 }

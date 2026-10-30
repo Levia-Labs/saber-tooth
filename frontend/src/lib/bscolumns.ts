@@ -72,6 +72,7 @@ export const BS_COLUMNS: ColumnSet = {
   storePrefix: "saber-tooth.columns.bs.v3.",
   legacyPrefixes: ["saber-tooth.columns.bs.v1.", "saber-tooth.columns.bs.v2."],
   fit: { select: 28, author: 46, levels: 78, status: 50 },
+  cells: { status: 60, actions: 96 },
 };
 
 /** Cells every BeatSaver row renders, in order; `sub` is the compact subtitle. */

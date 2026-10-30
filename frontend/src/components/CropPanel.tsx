@@ -1,11 +1,12 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { cropMap } from "../api/client";
 import { useJobRunner } from "../api/jobs";
+import { useCropSuggestions } from "../api/cropauto";
 import { keys, useTimeline } from "../api/queries";
-import type { CropLength, CropResult, Job, Timeline } from "../api/types";
-import { errorToAlert, toAlert } from "../lib/alerts";
-import { specToInput } from "../lib/announcements";
+import type { CropLength, Timeline } from "../api/types";
+import { errorToAlert } from "../lib/alerts";
+import { spanOf } from "../lib/cropauto";
 import {
   CROP_TIPS,
   MIN_LENGTH_S,
@@ -20,12 +21,15 @@ import {
 import { Alert, SpecAlert } from "./Alert";
 import { useAnnounce } from "./Announcer";
 import { ActionButton } from "./Buttons";
+import { CropAuto } from "./CropAuto";
+import { CropOutcome } from "./CropOutcome";
 import { CropSave } from "./CropSave";
 import { NpsChart, type Edge } from "./NpsChart";
 
-type Choice = CropLength | "unlimited";
+type Choice = CropLength | "unlimited" | "auto";
 
 const LENGTHS: { key: Choice; label: string }[] = [
+  { key: "auto", label: "Auto" },
   { key: "60", label: "1 min" },
   { key: "120", label: "2 min" },
   { key: "unlimited", label: "Unlimited" },
@@ -56,7 +60,7 @@ function LengthSwitch(props: { value: Choice; data: Timeline; onChange: (next: C
           role="radio"
           className="pill"
           aria-checked={props.value === key}
-          disabled={key !== "unlimited" && !props.data.lengths[key].enabled}
+          disabled={key !== "unlimited" && key !== "auto" && !props.data.lengths[key].enabled}
           onClick={() => props.onChange(key)}
         >
           {label}
@@ -64,36 +68,6 @@ function LengthSwitch(props: { value: Choice; data: Timeline; onChange: (next: C
       ))}
     </div>
   );
-}
-
-/** Reports a finished or failed crop as a toast; renders nothing. */
-function CropOutcome({
-  mapId,
-  job,
-  error,
-}: {
-  mapId: string;
-  job: Job | null;
-  error: string | null;
-}) {
-  const announce = useAnnounce();
-  useEffect(() => {
-    if (error !== null) {
-      const spec = toAlert(job, error);
-      if (spec) announce(specToInput(`Crop:${mapId}`, spec));
-      return;
-    }
-    const result = job?.result as Partial<CropResult> | null | undefined;
-    if (!result?.cropped_id || result.replaced) return;
-    announce({
-      key: `Crop:${mapId}`,
-      variant: "success",
-      title: "Cropped map written",
-      message: `Written to ${result.folder ?? "a new folder"}.`,
-      link: { to: `/maps/${encodeURIComponent(result.cropped_id)}`, label: "Open cropped map" },
-    });
-  }, [announce, mapId, job, error]);
-  return null;
 }
 
 interface EditorProps {
@@ -108,14 +82,25 @@ function CropEditor({ mapId, folder, data, busy, audioUrl }: EditorProps) {
   const client = useQueryClient();
   const announce = useAnnounce();
   const crop = useJobRunner("Crop", `Crop:${mapId}`);
-  const [length, setLength] = useState<Choice>(
-    data.lengths["60"].enabled ? "60" : data.lengths["120"].enabled ? "120" : "unlimited",
-  );
+  const [length, setLength] = useState<Choice>("auto");
+  const [rank, setRank] = useState(0);
   const [picked, setPicked] = useState<Span | null>(null);
+  const auto = useCropSuggestions(mapId, length === "auto");
+  const proposals = auto.data?.suggestions ?? null;
   const min = data.min_length_s ?? MIN_LENGTH_S;
   const whole: Span = { start_s: 0, end_s: data.duration_s };
-  const plan = length === "unlimited" ? null : data.lengths[length];
-  const best = plan ? suggestion(plan) : whole;
+  const plan = length === "unlimited" || length === "auto" ? null : data.lengths[length];
+  const chosen = proposals?.[rank] ?? null;
+  const best =
+    length === "auto"
+      ? chosen
+        ? spanOf(chosen)
+        : proposals || auto.isError
+          ? whole
+          : null
+      : plan
+        ? suggestion(plan)
+        : whole;
   const selection = picked ?? best;
   const edited = picked !== null && !(best && sameSpan(picked, best));
 
@@ -128,7 +113,8 @@ function CropEditor({ mapId, folder, data, busy, audioUrl }: EditorProps) {
     selection && setPicked(shiftWindow(selection, at, data.duration_s));
   const choose = (next: Choice) => {
     if (next === length) return;
-    if (next === "unlimited") setPicked(selection ?? whole);
+    if (next === "auto") setPicked(null);
+    else if (next === "unlimited") setPicked(selection ?? whole);
     else setPicked(keepStart(data.lengths[next], selection));
     setLength(next);
   };
@@ -161,16 +147,16 @@ function CropEditor({ mapId, folder, data, busy, audioUrl }: EditorProps) {
           message="This song has no audio analysis, so section edges come from the notes and lights alone."
         />
       )}
-      {LENGTHS.filter(({ key }) => key !== "unlimited" && !data.lengths[key].enabled).map(
-        ({ key, label }) => (
-          <Alert
-            key={key}
-            variant="info"
-            title={`${label} crop unavailable`}
-            message={data.lengths[key as CropLength].reason ?? ""}
-          />
-        ),
-      )}
+      {LENGTHS.filter(
+        ({ key }) => key !== "unlimited" && key !== "auto" && !data.lengths[key].enabled,
+      ).map(({ key, label }) => (
+        <Alert
+          key={key}
+          variant="info"
+          title={`${label} crop unavailable`}
+          message={data.lengths[key as CropLength].reason ?? ""}
+        />
+      ))}
       <div className="crop-bar">
         <LengthSwitch value={length} data={data} onChange={choose} />
         <div className="crop-actions">
@@ -191,6 +177,24 @@ function CropEditor({ mapId, folder, data, busy, audioUrl }: EditorProps) {
           />
         </div>
       </div>
+      {length === "auto" &&
+        (auto.isError ? (
+          <SpecAlert
+            spec={errorToAlert(auto.error, "Could not find automatic crops")}
+            onRetry={() => void auto.refetch()}
+          />
+        ) : (
+          <CropAuto
+            proposals={proposals}
+            reason={auto.data?.reason ?? null}
+            selected={rank}
+            onSelect={(i) => {
+              setRank(i);
+              setPicked(null);
+            }}
+            onCustom={() => choose("unlimited")}
+          />
+        ))}
       <NpsChart
         nps={data.nps}
         hardest={data.hardest}
@@ -198,7 +202,11 @@ function CropEditor({ mapId, folder, data, busy, audioUrl }: EditorProps) {
         duration={data.duration_s}
         selection={selection}
         faint={
-          plan ? plan.suggestions.slice(1).map((w) => ({ start_s: w.start_s, end_s: w.end_s })) : []
+          plan
+            ? plan.suggestions.slice(1).map((w) => ({ start_s: w.start_s, end_s: w.end_s }))
+            : length === "auto" && proposals
+              ? proposals.filter((_, i) => i !== rank).map(spanOf)
+              : []
         }
         onMove={onMove}
         onStep={onStep}

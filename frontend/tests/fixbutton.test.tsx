@@ -34,7 +34,15 @@ function api(job: { status: string; error?: string | null; result: unknown }) {
     if (url.pathname === "/api/jobs/jf") {
       return { id: "jf", kind: "fix", error: null, ...job };
     }
-    return { items, total: items.length, offset: 0, limit: 40 };
+    // The server lists the map with its active job once the fix was posted, as the real list does.
+    const list =
+      posts.length > 0 && job.status === "running"
+        ? [
+            { ...items[0], status: "fixing", job: { id: "jf", kind: "fix", status: "running" } },
+            ...items.slice(1),
+          ]
+        : items;
+    return { items: list, total: list.length, offset: 0, limit: 40 };
   });
   return { ...mock, posts };
 }
@@ -63,7 +71,7 @@ describe("fix button", () => {
     const link = await screen.findByRole("link", { name: "Song 1" });
     const row = within(link.closest("[role=row]") as HTMLElement);
     await user.click(row.getByRole("button", { name: "Fix Song 1" }));
-    expect(await row.findByRole("img", { name: /Queued|Fixing/ })).toBeInTheDocument();
+    expect(await row.findByRole("img", { name: /Queued|Running/ })).toBeInTheDocument();
     expect(row.getByRole("button", { name: "Fix Song 1" })).toBeDisabled();
   });
 

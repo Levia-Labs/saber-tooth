@@ -28,21 +28,22 @@ export function PanelHeader({ title }: { title: string }) {
 /** Filter button for a column header; opens an anchored, focus-trapped popover. */
 export function FilterPopover({ label, tip, count, children }: Props) {
   const active = count > 0;
+  const trigger = (
+    <Popover.Trigger
+      className={`filter-btn${active ? " active" : ""}`}
+      aria-label={active ? `Filter ${label}, ${count} active` : `Filter ${label}`}
+    >
+      <Icon name="filter" filled={active} />
+      {active && (
+        <span className="filter-badge" aria-hidden="true">
+          {count}
+        </span>
+      )}
+    </Popover.Trigger>
+  );
   return (
     <Popover.Root modal>
-      <Tip text={tip}>
-        <Popover.Trigger
-          className={`filter-btn${active ? " active" : ""}`}
-          aria-label={active ? `Filter ${label}, ${count} active` : `Filter ${label}`}
-        >
-          <Icon name="filter" filled={active} />
-          {active && (
-            <span className="filter-badge" aria-hidden="true">
-              {count}
-            </span>
-          )}
-        </Popover.Trigger>
-      </Tip>
+      <Tip text={tip}>{trigger}</Tip>
       <Popover.Portal>
         <Popover.Content
           className="popover"

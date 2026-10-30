@@ -102,3 +102,20 @@ describe("filter popover scale", () => {
     expect(rule?.body).toMatch(/max-height:[^;]*var\(--ui-scale\)/);
   });
 });
+
+describe("VR header icons and tabs", () => {
+  test("the header filter icon takes the VR icon size, not the 13 px button font", () => {
+    const rule = vrRules.find((r) => r.selector === '[data-ui="vr"] .filter-btn .ic');
+    expect(rule?.body).toMatch(/width:\s*1\.25rem/);
+    expect(rule?.body).toMatch(/height:\s*1\.25rem/);
+  });
+
+  test("tabs with a hidden label are square-ish at the target size in VR", () => {
+    const rule = vrRules.find((r) => r.selector.includes(".pill:has(> .label-hide-mobile)"));
+    expect(rule?.body).toMatch(/min-width:\s*var\(--vr-target\)/);
+  });
+
+  test("the mobile rule has an opt-out class that keeps a label", () => {
+    expect(read("../src/styles/overlays.css")).toMatch(/\.btn\.keep-label > \.label-hide-mobile/);
+  });
+});

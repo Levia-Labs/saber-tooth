@@ -69,6 +69,19 @@ def op_span(ops: list[Op]) -> tuple[str, float, float] | None:
     return None if name is None else (name, lo, hi)
 
 
+def dot_reach(d: Difficulty, hi: float) -> float:
+    """Beat up to which a change at `hi` still moves findings: a dot inherits its hand's last
+    directional swing, so a run of dots after `hi` is judged by what the change left behind."""
+    reach = hi
+    for hand in (0, 1):
+        later = sorted(n for n in d.notes if int(n.color) == hand and n.beat > hi + 1e-9)
+        if not later or later[0].cut != Cut.ANY:
+            continue
+        end = next((n.beat for n in later if n.cut != Cut.ANY), later[-1].beat)
+        reach = max(reach, end)
+    return reach
+
+
 def _slice(d: Difficulty, lo: float, hi: float) -> Difficulty:
     """Notes, bombs and walls in [lo, hi], starting at a note that fixes each hand's swing state."""
     last = {0: float("-inf"), 1: float("-inf")}  # a dot inherits the last directional swing

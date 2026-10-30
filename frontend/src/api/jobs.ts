@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAnnounce } from "../components/Announcer";
 import { capitalize } from "../lib/announcements";
+import { dismissedJobs } from "../lib/jobdismiss";
 import { useOpenJobs } from "../lib/jobopen";
 import { roundsText } from "../lib/jobrounds";
 import { getJob, request, isRetryable, type Started } from "./client";
@@ -138,6 +139,7 @@ export function useJobRunner(label: string, key: string = label): JobRunner {
             });
             return;
           }
+          if (dismissedJobs.has(started.job)) return; // closed by the user or timed out; only the outcome shows
           const requested = polled?.cancel_requested === true;
           const rounds = roundsText(polled?.progress);
           announce({
@@ -146,6 +148,8 @@ export function useJobRunner(label: string, key: string = label): JobRunner {
             title: label,
             message: requested ? "Cancelling" : capitalize(s),
             onOpen: open,
+            autoClose: true,
+            onDismiss: () => dismissedJobs.add(started.job),
             ...(rounds && { rounds }),
           });
         });

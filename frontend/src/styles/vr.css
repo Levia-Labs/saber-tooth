@@ -80,6 +80,17 @@
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+:root[data-ui="vr"] .mode-switch .pill:has(> .label-hide-mobile) {
+  min-width: var(--vr-target);
+  padding-inline: var(--vr-gap);
+  justify-content: center;
+}
+/* The header filter button is a native button with the 13 px default font, so its icon was
+   17 px. It takes the same 1.25 rem icon as the other VR buttons inside its scaled box. */
+[data-ui="vr"] .filter-btn .ic {
+  width: 1.25rem;
+  height: 1.25rem;
+}
 /* Filter popovers render in a portal outside the page, with px sizes: they follow the scale. */
 [data-ui="vr"] .popover {
   width: min(calc(300px * var(--ui-scale)), calc(100vw - 16px));

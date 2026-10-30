@@ -157,6 +157,8 @@ def test_job_makes_status_and_job_field(svc, client):
         "id": jid,
         "kind": "scan",
         "status": "queued",
+        "position": 1,
+        "progress": None,
     }
     svc.store.update_job(jid, "running")
     assert client.get(f"/api/maps/{MID}").json()["status"] == "scanning"

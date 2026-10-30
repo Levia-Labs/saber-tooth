@@ -1,6 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, configure } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
+import { dismissedJobs } from "../src/lib/jobdismiss";
 
 // Lazy routes cold-compile under parallel load; the 1 s default flaked findBy on first render.
 configure({ asyncUtilTimeout: 5000 });
@@ -44,6 +45,7 @@ Element.prototype.releasePointerCapture = () => undefined;
 
 afterEach(() => {
   cleanup();
+  dismissedJobs.clear();
   vi.unstubAllGlobals();
   vi.stubGlobal("ResizeObserver", ResizeObserverStub);
 });

@@ -264,4 +264,22 @@
     padding: 0;
     justify-content: center;
   }
+  /* The opt-out: a button that must keep its text. */
+  .btn.keep-label > .label-hide-mobile {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+  }
+  .btn.keep-label:has(> .label-hide-mobile) {
+    min-width: 0;
+    padding: 0.45rem 0.9rem;
+  }
+  .mode-switch .pill:has(> .label-hide-mobile) {
+    min-width: 44px;
+    padding: 0 0.9rem;
+    justify-content: center;
+  }
 }
