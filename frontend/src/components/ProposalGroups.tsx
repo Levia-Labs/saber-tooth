@@ -45,7 +45,7 @@ export function ProposalGroups({
   mapId: string;
   open: ReadonlySet<string>;
   onToggle: (id: string, on: boolean) => void;
-  /** A clean fixed copy: no empty-state prompt. */
+  /** A clean fixed copy: always scanned, so it shows "No issues found". */
   clean?: boolean;
 }) {
   const rows = entries(proposals, findings);
@@ -59,7 +59,7 @@ export function ProposalGroups({
             message="Scan the map to look for issues and propose fixes."
           />
         )}
-        {rows.length === 0 && !clean && scanned && (
+        {rows.length === 0 && (scanned || clean) && (
           <Alert variant="success" title="No issues found" message="The last scan found nothing." />
         )}
         {[...groupBy(rows, difficulty)].map(([diff, byDiff]) => (

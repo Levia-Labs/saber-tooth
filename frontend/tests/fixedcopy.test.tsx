@@ -72,7 +72,7 @@ describe("fixed copy links", () => {
 });
 
 describe("clean copy page", () => {
-  test("hides fix controls and the empty alert, keeps the Delete tab and the banner", async () => {
+  test("hides fix controls, shows No issues found, keeps the Delete tab and the banner", async () => {
     serve(copy("ok"));
     renderApp("/maps/id0000000099");
     await screen.findByText("Fixed copy of");
@@ -87,7 +87,7 @@ describe("clean copy page", () => {
     ]) {
       expect(screen.queryByRole("button", { name })).toBeNull();
     }
-    expect(screen.queryByText("No fixes yet")).toBeNull();
+    expect(await screen.findByText("No issues found")).toBeInTheDocument();
   });
 
   test("a copy with findings keeps every control", async () => {
