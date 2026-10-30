@@ -4,8 +4,8 @@ import { formatEnvironment } from "../../lib/environment";
 import { bpmLabel, formatBpm, formatBpmValue, formatDuration } from "../../lib/format";
 import { LIBRARY_COLUMNS } from "../../lib/columns";
 import { applyState, facetsOf, type SongRow } from "../../lib/lpsongs";
-import { mapHref } from "../../lib/backlink";
-import { mapName } from "../../lib/status";
+import { mapHref, tabOfHref, type Origin } from "../../lib/backlink";
+import { mapName, statusHref } from "../../lib/status";
 import { useColumns } from "../../lib/useColumns";
 import { DEFAULT_STATE, filterCounts, totalFilters, type LibraryState } from "../../lib/urlstate";
 import { ActionButton } from "../Buttons";
@@ -42,9 +42,8 @@ function SongRowView({
 }: { row: SongRow; index: number } & Pick<Props, "onRemove" | "playlistId">) {
   const { item, missing } = row;
   const name = missing ? item.title : mapName(item);
-  const href = mapHref(item.id, {
-    from: playlistId ? { kind: "playlist", id: playlistId } : { kind: "playlists" },
-  });
+  const origin: Origin = playlistId ? { kind: "playlist", id: playlistId } : { kind: "playlists" };
+  const href = mapHref(item.id, { from: origin });
   const env = formatEnvironment(item.environment);
   return (
     <div
@@ -100,7 +99,14 @@ function SongRowView({
         {env}
       </div>
       <div className="col-status" role="cell">
-        {missing ? <MissingChip /> : <StatusChip item={item} />}
+        {missing ? (
+          <MissingChip />
+        ) : (
+          <StatusChip
+            item={item}
+            to={mapHref(item.id, { from: origin, tab: tabOfHref(statusHref(item.id, item)) })}
+          />
+        )}
       </div>
       <div className="col-actions" role="cell">
         <div className="actions">

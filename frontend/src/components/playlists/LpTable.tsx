@@ -3,7 +3,8 @@ import type { Playlist } from "../../api/playlists";
 import { LP_COLUMNS } from "../../lib/lpcolumns";
 import { useColumns } from "../../lib/useColumns";
 import { lpFilterCount, type LpSort, type LpState, type LpSync } from "../../lib/lpfilters";
-import { ActionButton } from "../Buttons";
+import { Link } from "react-router";
+import { ActionButton, ActionLink } from "../Buttons";
 import { Cover } from "../Chips";
 import { ConfirmDialog } from "../ConfirmDialog";
 import { FilterPopover } from "../FilterPopover";
@@ -18,7 +19,8 @@ interface Props {
   state: LpState;
   update: (patch: Partial<LpState>) => void;
   exportEnabled: boolean;
-  onEdit: (p: Playlist) => void;
+  /** Address of a playlist's page, opened from this list. */
+  hrefOf: (p: Playlist) => string;
   onExport: (p: Playlist) => void;
   onDelete: (p: Playlist) => void;
   empty: ReactNode;
@@ -158,7 +160,7 @@ function Row({
   p,
   index,
   exportEnabled,
-  onEdit,
+  hrefOf,
   onExport,
   onDelete,
 }: Omit<Props, "rows" | "all" | "state" | "update" | "empty"> & { p: Playlist; index: number }) {
@@ -168,9 +170,9 @@ function Row({
         <Cover url={p.cover_url} />
       </div>
       <div className="lp-title" role="cell">
-        <button type="button" className="lp-name" onClick={() => onEdit(p)} title={p.title}>
+        <Link className="lp-name" to={hrefOf(p)} title={p.title}>
           {p.title}
-        </button>
+        </Link>
         {p.author && <span className="lp-sub">{p.author}</span>}
       </div>
       <div className="lp-songs" role="cell">
@@ -194,12 +196,7 @@ function Row({
         )}
       </div>
       <div className="lp-actions" role="cell">
-        <ActionButton
-          icon="review"
-          label={`Edit ${p.title}`}
-          tip="Edit playlist"
-          onClick={() => onEdit(p)}
-        />
+        <ActionLink icon="review" label={`Edit ${p.title}`} tip="Edit playlist" to={hrefOf(p)} />
         <ActionButton
           icon="download"
           label={`Export ${p.title}`}

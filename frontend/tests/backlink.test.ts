@@ -6,6 +6,8 @@ import {
   mapHref,
   originSearch,
   originTab,
+  playlistHref,
+  tabOfHref,
   parseOrigin,
   type Origin,
 } from "../src/lib/backlink";
@@ -76,5 +78,24 @@ describe("backlink", () => {
     const p = new URLSearchParams("tab=crop&from=jobs&back=a%3Db");
     expect(originSearch(p)).toBe("?from=jobs&back=a%3Db");
     expect(originSearch(new URLSearchParams("tab=crop"))).toBe("");
+  });
+});
+
+describe("playlist links", () => {
+  test("a playlist opened from the Playlists list carries from and the list query", () => {
+    expect(playlistHref("a", { query: "" })).toBe("/playlists/a?from=playlists");
+    expect(playlistHref("a b", { query: "?x=1&y=2" })).toBe(
+      "/playlists/a%20b?from=playlists&back=x%3D1%26y%3D2",
+    );
+  });
+
+  test("Back to list from the Playlists origin returns its query", () => {
+    expect(backHref({ kind: "playlists" })).toBe("/playlists");
+    expect(backHref({ kind: "playlists" }, "x=1")).toBe("/playlists?x=1");
+  });
+
+  test("tabOfHref reads the tab of a map address", () => {
+    expect(tabOfHref("/maps/m?tab=crop&from=library")).toBe("crop");
+    expect(tabOfHref("/maps/m?from=library")).toBeUndefined();
   });
 });

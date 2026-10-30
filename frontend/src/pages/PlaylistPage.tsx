@@ -19,7 +19,8 @@ import { ActionButton } from "../components/Buttons";
 import { BackLink } from "../components/BackLink";
 import { PlaylistFooter } from "../components/playlists/PlaylistFooter";
 import { SectionTabs } from "../components/SectionTabs";
-import { backHref } from "../lib/backlink";
+import { backHref, FROM_PARAM } from "../lib/backlink";
+import { useOrigin } from "../lib/useBacklink";
 import { LpCover } from "../components/playlists/LpCover";
 import { LpExport } from "../components/playlists/LpExport";
 import { LpName } from "../components/playlists/LpName";
@@ -32,6 +33,9 @@ import { rowsOf } from "../lib/lpsongs";
 
 /** Section tabs (Playlists active) and the way back to the Playlists list, with its filters kept. */
 function PlaylistBar() {
+  const { origin, back, params } = useOrigin();
+  // Without an origin the playlist was opened from the Playlists list.
+  const to = params.has(FROM_PARAM) ? backHref(origin, back) : backHref({ kind: "playlists" });
   return (
     <>
       <div className="lib-bar map-bar">
@@ -39,7 +43,7 @@ function PlaylistBar() {
           <SectionTabs active="playlists" heading="Playlist" headingId="lp-heading" noHeading />
         </div>
       </div>
-      <BackLink to={backHref({ kind: "playlists" })} />
+      <BackLink to={to} />
     </>
   );
 }
@@ -105,79 +109,81 @@ function PlaylistForm({ existing, initial }: { existing: string | null; initial:
   };
 
   return (
-    <section className="page lp-page">
+    <section className="page map-page lp-page">
       <PlaylistBar />
-      <div className="maphead">
-        <LpCover
-          url={draft.coverUrl}
-          onPick={(c) => set({ cover: { data: c.data }, coverUrl: c.url })}
-          onError={(m) => announce({ variant: "danger", title: "Cover", message: m })}
-        />
-        <div className="mapmeta">
-          <LpName value={draft.title} onCommit={(title) => set({ title })} />
-          <p className="sub">
-            {draft.author || "saber-tooth"} &middot; {rows.length}{" "}
-            {rows.length === 1 ? "song" : "songs"}
-            {missing > 0 && <span className="lp-missing"> &middot; {missing} missing</span>}
-          </p>
-          <div className="metarow">
-            <ActionButton
-              icon="ok"
-              text
-              variant="primary"
-              label="Save"
-              tip="Save the playlist"
-              disabled={busy || !draft.title.trim() || (!dirty && !!existing)}
-              onClick={() => void save(false)}
-            />
-            <ActionButton
-              icon="download"
-              text
-              label="Save and export"
-              tip={
-                exportEnabled ? "Save and write the .bplist" : "Playlist export is not configured"
-              }
-              disabled={busy || !draft.title.trim() || !exportEnabled}
-              onClick={() => void save(true)}
-            />
-            {dirty && <span className="lp-sub">Unsaved changes</span>}
+      <div className="map-scroll">
+        <div className="maphead">
+          <LpCover
+            url={draft.coverUrl}
+            onPick={(c) => set({ cover: { data: c.data }, coverUrl: c.url })}
+            onError={(m) => announce({ variant: "danger", title: "Cover", message: m })}
+          />
+          <div className="mapmeta">
+            <LpName value={draft.title} onCommit={(title) => set({ title })} />
+            <p className="sub">
+              {draft.author || "saber-tooth"} &middot; {rows.length}{" "}
+              {rows.length === 1 ? "song" : "songs"}
+              {missing > 0 && <span className="lp-missing"> &middot; {missing} missing</span>}
+            </p>
+            <div className="metarow">
+              <ActionButton
+                icon="ok"
+                text
+                variant="primary"
+                label="Save"
+                tip="Save the playlist"
+                disabled={busy || !draft.title.trim() || (!dirty && !!existing)}
+                onClick={() => void save(false)}
+              />
+              <ActionButton
+                icon="download"
+                text
+                label="Save and export"
+                tip={
+                  exportEnabled ? "Save and write the .bplist" : "Playlist export is not configured"
+                }
+                disabled={busy || !draft.title.trim() || !exportEnabled}
+                onClick={() => void save(true)}
+              />
+              {dirty && <span className="lp-sub">Unsaved changes</span>}
+            </div>
           </div>
         </div>
-      </div>
-      <div className="lp-section-head">
-        <h2 className="lp-heading">Songs</h2>
-        <ActionButton
-          icon="bookmark-plus"
-          text
-          label={picking ? "Close the picker" : "Add songs"}
-          tip="Add songs from the library or a job's output"
-          aria-expanded={picking}
-          onClick={() => setPicking((p) => !p)}
+        <div className="lp-section-head">
+          <h2 className="lp-heading">Songs</h2>
+          <ActionButton
+            icon="bookmark-plus"
+            text
+            label={picking ? "Close the picker" : "Add songs"}
+            tip="Add songs from the library or a job's output"
+            aria-expanded={picking}
+            onClick={() => setPicking((p) => !p)}
+          />
+        </div>
+        {picking && (
+          <LpSongPicker
+            chosen={new Set(draft.songs.map(songId))}
+            onAdd={(p) => void add(p)}
+            onError={(m) => announce({ variant: "danger", title: "Playlist", message: m })}
+          />
+        )}
+        <LpSongTable
+          rows={rows}
+          playlistId={existing}
+          onRemove={(r) => set({ songs: draft.songs.filter((s) => s !== r.song) })}
+        />
+        <h2 className="lp-heading">Export</h2>
+        <LpExport
+          author={draft.author}
+          description={draft.description}
+          folder={draft.folder}
+          sync={draft.sync}
+          onAuthor={(author) => set({ author })}
+          onDescription={(description) => set({ description })}
+          onFolder={(folder) => set({ folder })}
+          onSync={(sync) => set({ sync })}
         />
       </div>
-      {picking && (
-        <LpSongPicker
-          chosen={new Set(draft.songs.map(songId))}
-          onAdd={(p) => void add(p)}
-          onError={(m) => announce({ variant: "danger", title: "Playlist", message: m })}
-        />
-      )}
-      <LpSongTable
-        rows={rows}
-        playlistId={existing}
-        onRemove={(r) => set({ songs: draft.songs.filter((s) => s !== r.song) })}
-      />
-      <h2 className="lp-heading">Export</h2>
-      <LpExport
-        author={draft.author}
-        description={draft.description}
-        folder={draft.folder}
-        sync={draft.sync}
-        onAuthor={(author) => set({ author })}
-        onDescription={(description) => set({ description })}
-        onFolder={(folder) => set({ folder })}
-        onSync={(sync) => set({ sync })}
-      />
       {existing && <PlaylistFooter id={existing} />}
     </section>
   );

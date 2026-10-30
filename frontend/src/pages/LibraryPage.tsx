@@ -10,6 +10,7 @@ import { LibraryTable } from "../components/LibraryTable";
 import { LibraryMobileBar } from "../components/LibraryMobileBar";
 import { LibraryTools } from "../components/LibraryTools";
 import { useDocumentTitle, useLibraryState, useMediaQuery } from "../lib/hooks";
+import { useListScroll } from "../lib/listscroll";
 import { useColumns } from "../lib/useColumns";
 import { filterCounts, totalFilters } from "../lib/urlstate";
 
@@ -27,6 +28,7 @@ export function LibraryPage() {
   const items = useMemo(() => library.data?.pages.flatMap((p) => p.items) ?? [], [library.data]);
   const total = library.data?.pages.at(-1)?.total ?? 0;
   useLiveRows(items);
+  useListScroll(!library.isPending, items.length, hasNextPage);
 
   const loadMore = useCallback(() => void fetchNextPage(), [fetchNextPage]);
   const counts = filterCounts(state);

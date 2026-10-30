@@ -99,7 +99,7 @@ describe("local playlists", () => {
     fireEvent.click(screen.getByRole("link", { name: "New playlist" }));
     await waitFor(() => expect(router.state.location.pathname).toBe("/playlists/new"));
     await router.navigate("/playlists");
-    fireEvent.click(await screen.findByRole("button", { name: "Alpha" }));
+    fireEvent.click(await screen.findByRole("link", { name: "Alpha" }));
     await waitFor(() => expect(router.state.location.pathname).toBe("/playlists/a"));
   });
 

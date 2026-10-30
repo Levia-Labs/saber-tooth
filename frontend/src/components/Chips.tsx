@@ -11,10 +11,13 @@ import { LogoGlyph } from "./Logo";
 export function StatusChip({
   item,
   to,
+  onSelect,
 }: {
   item: Pick<MapItem, "status" | "errors" | "warnings"> & Partial<Pick<MapItem, "parse_error">>;
   /** Makes the chip a link to this address, named by the status. */
   to?: string | undefined;
+  /** Makes the chip a button that runs this instead (the page it names is already open). */
+  onSelect?: (() => void) | undefined;
 }) {
   const kind = Object.hasOwn(STATUS_META, item.status) ? item.status : "unscanned";
   const full = { ...item, status: kind };
@@ -33,7 +36,17 @@ export function StatusChip({
   const cls = `chip chip-${kind}`;
   return (
     <Tip text={label}>
-      {to ? (
+      {onSelect ? (
+        <button
+          type="button"
+          className={`${cls} chip-link`}
+          data-status={kind}
+          aria-label={statusLinkLabel(full)}
+          onClick={onSelect}
+        >
+          {body}
+        </button>
+      ) : to ? (
         <Link
           className={`${cls} chip-link`}
           data-status={kind}

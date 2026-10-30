@@ -26,7 +26,9 @@
   gap: 2px;
 }
 .lp-name {
+  display: block;
   overflow: hidden;
+  text-decoration: none;
   padding: 0;
   border: 0;
   background: none;
@@ -167,9 +169,6 @@
 .lp-grid .th-row {
   justify-content: flex-start;
   text-align: left;
-}
-.lp-page {
-  display: block;
 }
 .lp-name-h {
   display: flex;

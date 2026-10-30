@@ -54,7 +54,7 @@ export function backHref(o: Origin, back?: string): string {
     case "jobs":
       return withQuery("/jobs", back);
     case "playlists":
-      return "/playlists";
+      return withQuery("/playlists", back);
     case "playlist":
       return `/playlists/${encodeURIComponent(o.id)}`;
     case "bs-playlist":
@@ -76,6 +76,20 @@ export function mapHref(id: string, { tab, from, back }: MapLinkOpts): string {
   params.set(FROM_PARAM, formatOrigin(origin));
   if (back) params.set(BACK_PARAM, back.replace(/^\?/, ""));
   return `/maps/${encodeURIComponent(id)}?${params.toString()}`;
+}
+
+/** Address of a playlist page opened from the Playlists list; `query` is that list's query. */
+export function playlistHref(id: string, { query }: { query: string }): string {
+  const params = new URLSearchParams({ [FROM_PARAM]: "playlists" });
+  const back = query.replace(/^\?/, "");
+  if (back) params.set(BACK_PARAM, back);
+  return `/playlists/${encodeURIComponent(id)}?${params.toString()}`;
+}
+
+/** The `tab` of a map page address, when it names one. */
+export function tabOfHref(href: string): string | undefined {
+  const at = href.indexOf("?");
+  return (at < 0 ? null : new URLSearchParams(href.slice(at + 1)).get("tab")) ?? undefined;
 }
 
 /** The `from` and `back` params of a page URL as a query suffix (`?from=...`), "" when absent. */

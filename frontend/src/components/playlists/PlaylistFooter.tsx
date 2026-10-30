@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
+import { originSearch } from "../../lib/backlink";
 import { usePlaylists } from "../../api/playlists";
 import { filterPlaylists, sortPlaylists } from "../../lib/lpfilters";
 import { loadLpState } from "../../lib/lpstate";
@@ -8,6 +9,7 @@ import { Icon } from "../icons";
 /** Earlier and later playlist in the Playlists table's order (its saved sort and filter), with the position. */
 export function PlaylistFooter({ id }: { id: string }) {
   const lists = usePlaylists();
+  const [params] = useSearchParams();
   const order = useMemo(() => {
     const state = loadLpState();
     const all = lists.data?.items ?? [];
@@ -21,7 +23,7 @@ export function PlaylistFooter({ id }: { id: string }) {
   if (at < 0 || !prev || !next) {
     return <div className="map-footer map-footer-empty" aria-hidden="true" />;
   }
-  const to = (target: string) => `/playlists/${encodeURIComponent(target)}`;
+  const to = (target: string) => `/playlists/${encodeURIComponent(target)}${originSearch(params)}`;
   return (
     <nav className="map-footer" aria-label="Neighbouring playlists">
       <Link className="back map-footer-prev" to={to(prev.id)} title={prev.title}>

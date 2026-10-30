@@ -75,7 +75,9 @@ notes = st.builds(
 )
 
 
-@settings(max_examples=50)
+# Each example copies a fixture tree and writes and reads files; disk latency under a loaded
+# machine is not a property of the code, so no per-example deadline.
+@settings(max_examples=50, deadline=None)
 @given(st.lists(notes, max_size=60))
 def test_round_trip(tmp_path_factory, ns):
     base = load_map(FIX / "v2_basic")

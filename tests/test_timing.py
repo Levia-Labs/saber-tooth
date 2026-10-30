@@ -1,4 +1,4 @@
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from saber_tooth.model import BpmEvent
@@ -18,6 +18,7 @@ def test_timing_with_bpm_change():
     assert t.to_beats(3.0) == 5.0
 
 
+@settings(deadline=None)  # microsecond maths; a GC or scheduler pause is not a regression
 @given(st.floats(min_value=0, max_value=2000), st.floats(min_value=40, max_value=400))
 def test_round_trip(beat, bpm):
     t = Timing(bpm, [BpmEvent(beat=16.0, bpm=bpm * 1.5)])

@@ -25,6 +25,7 @@ import { MapTabList, MapTabPanel } from "../components/MapTabs";
 import { parseTab, tabsFor, type MapTab } from "../lib/mapTabs";
 import { stopPreview } from "../lib/previewPlayer";
 import { useJobRunner } from "../api/jobs";
+import { approvePending, decideOptimistically } from "../api/review";
 import { keys, useLiveRows, useMap, useProposals } from "../api/queries";
 import { Cover, LevelChips, StatusChip, Tempo } from "../components/Chips";
 import { PreviewButton } from "../components/PreviewButton";
@@ -32,12 +33,15 @@ import { JobOutcome } from "../components/JobOutcome";
 import { ProposalGroups } from "../components/ProposalGroups";
 import { BackLink } from "../components/BackLink";
 import { SectionTabs } from "../components/SectionTabs";
-import { backHref, originTab } from "../lib/backlink";
+import { backHref, originTab, tabOfHref } from "../lib/backlink";
 import { useDocumentTitle } from "../lib/hooks";
 import { useOrigin } from "../lib/useBacklink";
 import { TIPS } from "../lib/tips";
-import { isCleanCopy, mapName } from "../lib/status";
+import { isCleanCopy, mapName, statusHref } from "../lib/status";
 import { NotFoundPage } from "./NotFoundPage";
+
+/** The tab a status chip opens: its findings or crop, otherwise Status. */
+const chipTab = (href: string): MapTab => (tabOfHref(href) === "crop" ? "crop" : "status");
 
 export function MapPage() {
   const { id = "" } = useParams();
@@ -82,8 +86,7 @@ export function MapPage() {
   const pendingCount = list.filter((p) => p.status === "pending").length;
   const approveEverything = async () => {
     try {
-      await approveAll(id);
-      await refresh();
+      await decideOptimistically(client, id, approvePending, () => approveAll(id));
     } catch (err) {
       announce(
         specToInput(`Approve all:${id}`, errorToAlert(err, "Approve all failed"), {
@@ -128,6 +131,8 @@ export function MapPage() {
     );
   };
 
+  const statusTab = map.data ? chipTab(statusHref(id, map.data)) : "status";
+
   return (
     <section className="page map-page">
       <div className="lib-bar map-bar">
@@ -163,7 +168,7 @@ export function MapPage() {
               )}
             </p>
             <div className="metarow">
-              <StatusChip item={map.data} />
+              <StatusChip item={map.data} onSelect={() => select(statusTab)} />
               <LevelChips names={map.data.difficulties} />
               <Tempo item={map.data} />
               <PreviewButton src={map.data.audio_url} start={map.data.preview_start} title={name} />

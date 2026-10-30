@@ -75,6 +75,11 @@ def test_cancel_stops_a_job_running_in_a_child(make):
     jobs.request_cancel(job)
     row = jobs.wait(job, 30)
     assert row["status"] == "cancelled" and row["error"] is None
+    # The flag is cleared just after the row turns cancelled (views mask it by status, so the
+    # page never shows a running job as not cancelling); wait for that, do not race it.
+    deadline = time.monotonic() + 10
+    while jobs.cancel_requested(job) and time.monotonic() < deadline:
+        time.sleep(0.01)
     assert jobs.cancel_requested(job) is False
     follow = store.create_job("pid", None, {})
     assert jobs.wait(follow, 60)["status"] == "done"  # the slot came back

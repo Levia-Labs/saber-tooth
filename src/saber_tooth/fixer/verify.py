@@ -9,6 +9,7 @@ from functools import lru_cache
 
 from saber_tooth.analysis import Analysis
 from saber_tooth.checks import MAP_RULES, Finding, check_difficulty, run_checks
+from saber_tooth.checks.slicing import beat_range
 from saber_tooth.fixer import window
 from saber_tooth.fixer.codec import note_to_dict
 from saber_tooth.fixer.ops import AddDifficulty, ApplyLightshow, Op, OpConflict, apply_ops
@@ -184,8 +185,14 @@ def _span(ctx: "Context", ops: list[Op]) -> tuple | None:
 
 
 def _target_remains(target: Finding, before: list[Finding], after: list[Finding]) -> bool:
-    others = [b for b in before if b is not target]
-    return any(_overlaps(a, target) and not any(_overlaps(a, o) for o in others) for a in after)
+    others: dict[tuple, list[Finding]] = {}
+    for b in before:
+        if b is not target:
+            others.setdefault(finding_key(b), []).append(b)
+    return any(
+        _overlaps(a, target) and not any(_overlaps(a, o) for o in others.get(finding_key(a), ()))
+        for a in after
+    )
 
 
 _BEFORE: list[tuple] = []  # (beatmap, analysis, names, findings), newest last
@@ -230,13 +237,20 @@ def _changed(
     beatmap: Beatmap, fixed: Beatmap, names: set[str], span: tuple[float, float] | None = None
 ) -> tuple[list[Note], list[Note]]:
     """Notes gone and notes new; with a span (local ops) only that beat range is compared."""
-    keep = (lambda n: span[0] - EPS <= n.beat <= span[1] + EPS) if span else (lambda n: True)
+
+    def kept(d: Difficulty | None) -> list[Note]:
+        if d is None:
+            return []
+        if span is None:
+            return d.notes
+        i, j = beat_range(d.notes, span[0] - EPS, span[1] + EPS)
+        return d.notes[i:j]
+
     gone: Counter = Counter()
     new: Counter = Counter()
     for name in names:
         old, cur = beatmap.difficulties.get(name), fixed.difficulties.get(name)
-        was = Counter(n for n in old.notes if keep(n)) if old else Counter()
-        now = Counter(n for n in cur.notes if keep(n)) if cur else Counter()
+        was, now = Counter(kept(old)), Counter(kept(cur))
         gone += was - now
         new += now - was
     return sorted(gone.elements()), sorted(new.elements())

@@ -1,5 +1,4 @@
 import shutil
-import time
 from pathlib import Path
 
 import pytest
@@ -28,12 +27,11 @@ def client(svc):
 
 
 def _wait(client, job_id: str) -> dict:
-    for _ in range(200):
-        job = client.get(f"/api/jobs/{job_id}").json()
-        if job["status"] in ("done", "failed"):
-            return job
-        time.sleep(0.05)
-    raise AssertionError("job did not finish")
+    # Wait on the job runner itself; the ceiling only catches a hang, never paces a healthy run.
+    client.app.state.api.jobs.wait(job_id, timeout=120.0)
+    job = client.get(f"/api/jobs/{job_id}").json()
+    assert job["status"] in ("done", "failed"), f"job did not finish: {job['status']}"
+    return job
 
 
 def test_import_does_not_touch_levels():

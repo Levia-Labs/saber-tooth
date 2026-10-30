@@ -17,7 +17,7 @@ describe("Auto crop", () => {
     setup();
     const row = await screen.findByRole("radiogroup", { name: "Crop length" });
     const radios = within(row).getAllByRole("radio");
-    expect(radios.map((r) => r.textContent)).toEqual(["Auto", "1 min", "2 min", "Unlimited"]);
+    expect(radios.map((r) => r.textContent)).toEqual(["Auto", "1 min", "2 min", "Custom"]);
     expect(radios[0]).toBeChecked();
     const cards = within(await proposals()).getAllByRole("radio");
     expect(cards).toHaveLength(3);
@@ -62,7 +62,7 @@ describe("Auto crop", () => {
     expect(await screen.findByText("No automatic crop fits this song")).toBeInTheDocument();
     expect(screen.getByText("The song is 40 s long.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Custom crop" }));
-    expect(screen.getByRole("radio", { name: "Unlimited" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Custom" })).toBeChecked();
   });
 
   test("1 min still works after Auto", async () => {

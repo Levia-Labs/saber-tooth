@@ -7,11 +7,10 @@ artefacts a cut makes at the slice edge outside the compared span.
 """
 
 from bisect import bisect_right
-from dataclasses import replace
 
 from saber_tooth.analysis import Analysis
-from saber_tooth.checks import RULES, Finding, check_difficulty
-from saber_tooth.checks.gaps import empty_gap
+from saber_tooth.checks import Finding, check_difficulty
+from saber_tooth.checks.slicing import slice_difficulty
 from saber_tooth.fixer.fill_op import Fill
 from saber_tooth.fixer.ops import Delete, DeleteWall, Flip, Move, Op, Recolor
 from saber_tooth.model import Cut, Difficulty
@@ -22,7 +21,6 @@ from saber_tooth.timing import Timing
 BATCH_NOTES = 120  # ~0.5 s of a dense Expert+ run per rule pass; 20-40 batches on a long map
 MARGIN_S = 2.0  # above every profile limit (max 1.5 s) so no rule reaches past it
 WINDOW_MIN_NOTES = 300  # below this a whole-difficulty check is as cheap as a window
-_SLICE_RULES = {r for r in RULES if r != "empty-gap"}  # empty-gap needs the true first/last note
 _LOCAL = (Move, Recolor, Flip, Delete, DeleteWall, Fill)
 
 
@@ -73,28 +71,23 @@ def dot_reach(d: Difficulty, hi: float) -> float:
     """Beat up to which a change at `hi` still moves findings: a dot inherits its hand's last
     directional swing, so a run of dots after `hi` is judged by what the change left behind."""
     reach = hi
+    start = bisect_right(d.notes, hi + 1e-9, key=_beat)
     for hand in (0, 1):
-        later = sorted(n for n in d.notes if int(n.color) == hand and n.beat > hi + 1e-9)
-        if not later or later[0].cut != Cut.ANY:
+        later = (n for n in d.notes[start:] if int(n.color) == hand)
+        first = next(later, None)
+        if first is None or first.cut != Cut.ANY:
             continue
-        end = next((n.beat for n in later if n.cut != Cut.ANY), later[-1].beat)
-        reach = max(reach, end)
+        last = first.beat
+        for n in later:
+            last = n.beat
+            if n.cut != Cut.ANY:
+                break
+        reach = max(reach, last)
     return reach
 
 
-def _slice(d: Difficulty, lo: float, hi: float) -> Difficulty:
-    """Notes, bombs and walls in [lo, hi], starting at a note that fixes each hand's swing state."""
-    last = {0: float("-inf"), 1: float("-inf")}  # a dot inherits the last directional swing
-    for n in d.notes:
-        if n.beat < lo and n.cut != Cut.ANY and n.beat > last[int(n.color)]:
-            last[int(n.color)] = n.beat
-    start = min(lo, *last.values())
-    return replace(
-        d,
-        notes=sorted(n for n in d.notes if start <= n.beat <= hi),
-        bombs=[b for b in d.bombs if start <= b.beat <= hi],
-        walls=[w for w in d.walls if w.beat <= hi and w.beat + w.duration >= start],
-    )
+def _beat(n) -> float:
+    return n.beat
 
 
 def window_findings(
@@ -106,13 +99,10 @@ def window_findings(
         return []
     timing = Timing(beatmap.info.bpm, d.bpm_events)
     m = timing.to_beats(MARGIN_S) - timing.to_beats(0.0)
-    a, b = lo - m, hi + m
-    found = check_difficulty(_slice(d, a - m, b + m), timing, profile, analysis, _SLICE_RULES)
-    found += empty_gap(d, None, timing, profile, analysis)
-    return [f for f in found if f.beat_start <= b and f.beat_end >= a]
+    return check_difficulty(d, timing, profile, analysis, window=(lo - m, hi + m))
 
 
 def swings_near(d: Difficulty, timing: Timing, lo: float, hi: float) -> dict:
     """Swings of the notes around [lo, hi], exact except within a margin of the slice edge."""
     m = timing.to_beats(MARGIN_S) - timing.to_beats(0.0)
-    return build_swings(_slice(d, lo - m, hi + m).notes, timing)
+    return build_swings(slice_difficulty(d, lo - m, hi + m).notes, timing)

@@ -152,6 +152,30 @@ describe("approve all", () => {
     await waitFor(() => expect(posts()).toBe(2));
   });
 
+  test("updates the banner at once while the server is slow, and rolls back on failure", async () => {
+    let release: (r: Response) => void = () => {};
+    const gate = new Promise<Response>((r) => (release = r));
+    mockFetch((url, init) => {
+      if (init?.method === "POST" && url.pathname.endsWith("/approve-all")) return gate;
+      if (url.pathname === "/api/maps/id0000000001") return item(1);
+      if (url.pathname.endsWith("/proposals")) return [proposal("pending")];
+      return {};
+    });
+    renderApp("/maps/id0000000001");
+    const user = userEvent.setup();
+    await screen.findAllByText("Fix 1");
+    expect(screen.getByText("No fixes approved yet")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Approve all" }));
+    await user.click(
+      within(await screen.findByRole("dialog")).getByRole("button", { name: "Approve all" }),
+    );
+    await waitFor(() => expect(screen.queryByText("No fixes approved yet")).toBeNull());
+    expect(screen.getByRole("button", { name: "Apply approved" })).toBeEnabled();
+    release(new Response(JSON.stringify({ error: "database is locked" }), { status: 409 }));
+    await toasts().findByText("Approve all failed");
+    expect(await screen.findByText("No fixes approved yet")).toBeInTheDocument();
+  });
+
   test("is disabled when nothing is pending", async () => {
     mapApi("approved");
     renderApp("/maps/id0000000001");

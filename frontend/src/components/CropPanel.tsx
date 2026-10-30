@@ -32,7 +32,7 @@ const LENGTHS: { key: Choice; label: string }[] = [
   { key: "auto", label: "Auto" },
   { key: "60", label: "1 min" },
   { key: "120", label: "2 min" },
-  { key: "unlimited", label: "Unlimited" },
+  { key: "unlimited", label: "Custom" },
 ];
 
 function CropSkeleton() {

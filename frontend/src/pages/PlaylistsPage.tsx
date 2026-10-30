@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router";
+import { useLocation } from "react-router";
 import { errorMessage } from "../api/client";
 import {
   deletePlaylist,
@@ -15,7 +15,9 @@ import { ActionButton, ActionLink } from "../components/Buttons";
 import { EmptyState } from "../components/EmptyState";
 import { LpTable } from "../components/playlists/LpTable";
 import { SectionTabs } from "../components/SectionTabs";
+import { playlistHref } from "../lib/backlink";
 import { useDocumentTitle } from "../lib/hooks";
+import { useListScroll } from "../lib/listscroll";
 import { loadLpState, saveLpState } from "../lib/lpstate";
 import {
   filterPlaylists,
@@ -30,7 +32,6 @@ import {
 export function PlaylistsPage() {
   useDocumentTitle("Playlists");
   const client = useQueryClient();
-  const navigate = useNavigate();
   const announce = useAnnounce();
   const lists = usePlaylists();
   const config = usePlaylistConfig();
@@ -38,6 +39,8 @@ export function PlaylistsPage() {
   useEffect(() => saveLpState(state), [state]);
   const all = useMemo(() => lists.data?.items ?? [], [lists.data]);
   const rows = useMemo(() => sortPlaylists(filterPlaylists(all, state), state), [all, state]);
+  useListScroll(rows.length > 0, rows.length, false);
+  const { search } = useLocation();
   const exportEnabled = config.data?.export_enabled ?? false;
   const fail = (title: string, err: unknown) =>
     announce({ variant: "danger", title, message: errorMessage(err) });
@@ -109,7 +112,7 @@ export function PlaylistsPage() {
         state={state}
         update={(patch) => setState((s) => ({ ...s, ...patch }))}
         exportEnabled={exportEnabled}
-        onEdit={(p) => void navigate(`/playlists/${p.id}`)}
+        hrefOf={(p) => playlistHref(p.id, { query: search })}
         onExport={(p) => void doExport(p)}
         onDelete={(p) => void remove(p)}
         empty={empty}

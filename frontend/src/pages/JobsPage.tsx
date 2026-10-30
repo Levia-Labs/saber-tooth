@@ -12,6 +12,7 @@ import { JobsTable } from "../components/JobsTable";
 import { SectionTabs } from "../components/SectionTabs";
 import { useDocumentTitle } from "../lib/hooks";
 import { allJobs, filterJobs, jobsFilterCount, sortJobs } from "../lib/jobfilters";
+import { useListScroll } from "../lib/listscroll";
 import { useJobsState } from "../lib/useJobsState";
 
 const errorText = (err: unknown) => (err instanceof Error ? err.message : String(err));
@@ -29,6 +30,7 @@ export function JobsPage() {
   }, []);
   const all = useMemo(() => allJobs(lists), [lists]);
   const rows = useMemo(() => sortJobs(filterJobs(all, state), state, now), [all, state, now]);
+  useListScroll(rows.length > 0, rows.length, false);
   const cancel = async (job: JobView) => {
     try {
       await cancelJob(job.id);

@@ -2,7 +2,7 @@
 import sqlite3
 
 import pytest
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from saber_tooth.api.library import MAPPER_SEP, parse_query
@@ -116,6 +116,7 @@ def test_level_mask_ignores_unknown_and_roundtrips(names):
     assert {n for i, n in enumerate(LEVEL_NAMES) if mask >> i & 1} == set(names) & set(LEVEL_NAMES)
 
 
+@settings(deadline=None)  # a fresh on-disk Store per example: file IO under load
 @given(st.text(max_size=30))
 def test_hostile_mapper_values_never_break_the_query(tmp_path_factory, value):
     s = Store(tmp_path_factory.mktemp("h") / "db.sqlite")

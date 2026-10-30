@@ -46,11 +46,6 @@
 [data-ui="vr"]:has(.map-page) .toast-stack {
   bottom: calc(var(--map-footer-h) + var(--vr-gap) + env(safe-area-inset-bottom, 0px));
 }
-/* The playlist page is not a pinned flex column; its footer sits after the content. */
-.lp-page > .map-footer {
-  height: var(--map-footer-h);
-  margin-top: 1rem;
-}
 /* Section tabs above the "Back to list" link on map and playlist pages. */
 .map-bar {
   padding-bottom: 0.25rem;

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { approveProposal, rejectProposal } from "../api/client";
-import { keys } from "../api/queries";
+import { decideOptimistically, setStatus } from "../api/review";
 import type { Note, Proposal } from "../api/types";
 import { canApprove, canReject } from "../lib/decisions";
 import { beatRange, countOperations, isNotesless } from "../lib/timeline";
@@ -42,12 +42,14 @@ export function ProposalCard({
   const refocus = useRef(false);
 
   const decide = useMutation({
-    mutationFn: (verb: "approve" | "reject") =>
-      verb === "approve" ? approveProposal(p.id) : rejectProposal(p.id),
-    onSuccess: async () => {
+    mutationFn: (verb: "approve" | "reject") => {
       refocus.current = true;
-      await client.invalidateQueries({ queryKey: keys.proposals(mapId) });
-      await client.invalidateQueries({ queryKey: keys.map(mapId) });
+      return decideOptimistically(
+        client,
+        mapId,
+        setStatus(p.id, verb === "approve" ? "approved" : "rejected"),
+        () => (verb === "approve" ? approveProposal(p.id) : rejectProposal(p.id)),
+      );
     },
     onError: (err: Error) => announce({ variant: "danger", title: "Error", message: err.message }),
   });

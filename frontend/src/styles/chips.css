@@ -82,11 +82,16 @@
 .chip-ok .ic {
   color: var(--green);
 }
-a.chip-link {
+a.chip-link,
+button.chip-link {
   text-decoration: none;
   cursor: pointer;
 }
-a.chip-link:focus-visible {
+button.chip-link {
+  font: inherit;
+}
+a.chip-link:focus-visible,
+button.chip-link:focus-visible {
   outline: 2px solid var(--tone);
   outline-offset: 2px;
 }

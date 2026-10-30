@@ -4,19 +4,19 @@ Add entries with `task todo:add`.
 
 ## 2 Flaky backend job-wait in tests/test_api.py _wait (200x50 ms) under load; make the wait event-driven or longer
 
-status: open
+status: done
 class: quality
 
 ## 3 Approve all updates the review banner late
 
-status: open
+status: done
 class: bug
 
 After Approve all on a map review, the banner keeps showing 'No fixes approved yet' for about 3 s before Apply approved enables. Seen 2026-10-28 while capturing website screenshots.
 
 ## 4 test_round_trip hypothesis deadline flakes
 
-status: open
+status: done
 class: test
 
 Gate run on 2026-10-28 failed once with DeadlineExceeded in test_round_trip (203 ms vs the 200 ms deadline) and passed on rerun. Raise or disable the deadline for that test, or shrink its inputs.
@@ -30,7 +30,7 @@ frontend/tests/fixbutton.test.tsx 'a failed job shows a danger alert with the er
 
 ## 6 Flaky vrshell suggestion-toast test
 
-status: open
+status: done
 class: bug
 
 tests/vrshell.test.tsx 'suggestion toast > accepting switches to the VR layout and remembers it' failed once under st:gate load (element not found); passed alone and in a full vitest rerun on 2026-10-29. Likely a missing findBy/waitFor.
@@ -58,7 +58,9 @@ frontend/src/components/CropSteps.tsx steps mode was used by the removed VR map 
 
 ## 10 Checks are not incremental on large maps
 
-status: open
+status: done
 class: perf
 
 Each fix proposal re-runs a full difficulty check (~0.17 s per finding on a 7102-finding map). Batched per-level scan/fix work is in progress; if checks stay whole-difficulty, make the rules incremental over a time window.
+
+Done: check_difficulty and run_checks take a beat window (checks/**init**.py, REACH_S declares each rule's reach, empty-gap is global and bisects its gaps); scan checks per batch window; verify and dot_reach bisect instead of scanning the difficulty. Proposing on a 3400-note, 9811-finding map: 40.6 to 17.6 ms per finding (scripts/profile_checks.py). Remaining: fixer/ops.py apply_ops and fixer/cow.py finish still copy and order-check every note per candidate.

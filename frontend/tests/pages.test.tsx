@@ -63,7 +63,7 @@ describe("routes", () => {
     mapApi([proposal(1), proposal(2, { difficulty: "Expert" })]);
     renderApp("/maps/id0000000001");
     expect(await screen.findByRole("heading", { name: "Song 1" })).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "2 errors" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open status: 2 errors" })).toBeInTheDocument();
     expect(screen.getByText(/3:21/)).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Expert+" })).toBeInTheDocument();
     expect(await screen.findByText("Fix 1")).toBeInTheDocument();
