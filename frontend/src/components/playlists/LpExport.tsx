@@ -1,4 +1,4 @@
-import { exportHint, REFRESH_HINT } from "../../lib/lpfilters";
+import { exportHint } from "../../lib/lpfilters";
 import { Box } from "../beatsaver/Box";
 
 interface Props {
@@ -50,9 +50,6 @@ export function LpExport(p: Props) {
           Keep in sync (PlaylistManager refreshes it from this server)
         </Box>
       </div>
-      <p className="lp-hint" role="note">
-        {REFRESH_HINT}
-      </p>
     </section>
   );
 }

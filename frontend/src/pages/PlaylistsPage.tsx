@@ -23,7 +23,6 @@ import {
   filterPlaylists,
   LP_DEFAULT,
   lpFiltered,
-  REFRESH_HINT,
   sortPlaylists,
   type LpState,
 } from "../lib/lpfilters";
@@ -52,7 +51,7 @@ export function PlaylistsPage() {
       announce({
         variant: "success",
         title: `Exported ${p.title}`,
-        message: `${out.relative}. ${REFRESH_HINT}`,
+        message: out.relative,
       });
       await refresh();
     } catch (err) {
@@ -117,9 +116,6 @@ export function PlaylistsPage() {
         onDelete={(p) => void remove(p)}
         empty={empty}
       />
-      <p className="lp-hint" role="note">
-        {REFRESH_HINT}
-      </p>
     </section>
   );
 }

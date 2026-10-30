@@ -1,11 +1,11 @@
 /* Right end of the section-tabs row; the Library tools and the BeatSaver toolbar render here. */
 .lib-bar .btn,
 .lib-bar .btn.icon {
-  min-height: 42px;
+  min-height: var(--control-h);
 }
 .lib-bar .btn.icon {
-  width: 42px;
-  height: 42px;
+  width: var(--control-h);
+  height: var(--control-h);
 }
 .bar-slot {
   display: flex;

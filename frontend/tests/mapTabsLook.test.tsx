@@ -47,7 +47,7 @@ describe("map page tabs look like the Library and BeatSaver tabs", () => {
     const crop = css("crop.css");
     const pill = rule(section, ".mode-switch .pill");
     expect(pill).toContain("color: var(--muted)");
-    expect(pill).toContain("min-height: 40px");
+    expect(pill).toContain("min-height: calc(var(--control-h) - 2px)");
     for (const state of ['aria-current="page"', 'aria-selected="true"', 'aria-checked="true"']) {
       const on = rule(section, `.mode-switch .pill[${state}]`);
       expect(on).toContain("color: var(--ink)");

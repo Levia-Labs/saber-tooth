@@ -27,7 +27,6 @@ import { LpSongPicker } from "../components/playlists/LpSongPicker";
 import { LpSongTable } from "../components/playlists/LpSongTable";
 import { useDocumentTitle } from "../lib/hooks";
 import { addPicks, draftOf, EMPTY_DRAFT, songId, toInput, type Draft } from "../lib/lpedit";
-import { REFRESH_HINT } from "../lib/lpfilters";
 import { rowsOf } from "../lib/lpsongs";
 
 /** Section tabs (Playlists active) and the way back to the Playlists list, with its filters kept. */
@@ -92,7 +91,7 @@ function PlaylistForm({ existing, initial }: { existing: string | null; initial:
         announce({
           variant: "success",
           title: `Exported ${saved.title}`,
-          message: `${out.relative}. ${REFRESH_HINT}`,
+          message: out.relative,
         });
       }
       await client.invalidateQueries({ queryKey: playlistKeys.all });

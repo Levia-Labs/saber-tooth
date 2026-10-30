@@ -228,10 +228,11 @@ describe("BeatSaver view", () => {
     expect(screen.queryByRole("button", { name: /Export playlist/ })).toBeNull();
   });
 
-  test("the footer reports how far the scan looked", async () => {
+  test("no footer reports how far the scan looked", async () => {
     bsApi({ search: () => page([bsMap(1)], { scanned: 300, matched: 1 }) });
     renderApp("/beatsaver");
-    expect(await screen.findByText("Scanned 300 BeatSaver maps, 1 match")).toBeInTheDocument();
+    await screen.findByText("Song 1");
+    expect(screen.queryByText(/Scanned d+ BeatSaver maps/)).toBeNull();
   });
 
   test("a rate limited page keeps its maps, shows a banner and retry loads more", async () => {

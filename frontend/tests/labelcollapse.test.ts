@@ -113,3 +113,14 @@ test("the observer refits a row when it is resized", () => {
   expect(collapsed()).toEqual([]);
   stop();
 });
+
+test("the active tab keeps its label longest", () => {
+  const { row, box, collapsed } = makeRow(["A", "B", "C"]);
+  row.children[0]!.setAttribute("aria-current", "page");
+  box.width = 250; // full: 120 + 240 = 360; two labels may stay open at most 1
+  fitRow(row);
+  expect(collapsed()).toEqual(["B", "C"]);
+  box.width = 100;
+  fitRow(row);
+  expect(collapsed()).toEqual(["A", "B", "C"]);
+});

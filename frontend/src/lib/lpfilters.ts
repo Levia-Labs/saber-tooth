@@ -62,7 +62,3 @@ export function sortPlaylists(rows: Playlist[], s: LpState): Playlist[] {
 /** Slug-safe preview of the file the export writes: Playlists/<folder>/<title>.bplist. */
 export const exportHint = (folder: string): string =>
   `Playlists/${folder.trim() ? `${folder.trim().replace(/^\/+|\/+$/g, "")}/` : ""}`;
-
-/** Shown wherever a file is written: the game reads playlists only when it loads them. */
-export const REFRESH_HINT =
-  "A playlist written while Beat Saber runs appears after PlaylistManager refreshes (Refresh Playlists in its menu) or after a game restart. With sync on, PlaylistManager refreshes it on its own.";

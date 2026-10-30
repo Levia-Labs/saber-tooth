@@ -8,12 +8,14 @@
   background: var(--panel);
 }
 .mode-switch .pill {
-  /* The one pill for the section tabs, the map tabs and the crop length switch. */
+  /* The one pill for the section tabs, the map tabs and the crop length switch. Its height, with
+     the 1 px border of the group, is the button height (--control-h), its padding and gap the
+     button's. */
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  min-height: 40px;
-  padding: 0 1.1rem;
+  gap: 0.45rem;
+  min-height: calc(var(--control-h) - 2px);
+  padding: 0 0.9rem;
   border: 0;
   background: none;
   color: var(--muted);
@@ -36,46 +38,38 @@
   cursor: not-allowed;
   opacity: 0.45;
 }
-/* Below 1300 px (lib/breakpoint.ts) the section tabs float above the page as the same pill group,
-   icon only: fixed at the bottom centre with a margin from the edge and the safe area. The labels
-   are hidden by design here (the one place a width, not the room, decides). The page and the lists
-   extend underneath; every scroll container ends with --bottom-nav-space so the last content
-   scrolls clear of the bar, and the toasts stack above it. */
+/* Below 1300 px (lib/breakpoint.ts) the section tabs float above the page as the same pill group:
+   fixed at the bottom centre, a margin off the edge and the safe area. Labels show while they fit
+   and collapse when the group would overflow (labelCollapse.ts), the active tab's last. The page
+   and the lists extend underneath; each scroll container ends with --bottom-nav-space, the bar's
+   height plus the gap below it and the same gap above it, once, so the last content scrolls just
+   clear of the bar; the toasts stack above it. */
 @media (max-width: 1299.98px) {
   :root:not([data-ui="vr"]) {
-    --bottom-nav-bar: 42px;
-    --bottom-nav-margin: 12px;
+    --bottom-nav-margin: 1.25rem;
     --bottom-nav-space: calc(
-      var(--bottom-nav-bar) + var(--bottom-nav-margin) * 2 + env(safe-area-inset-bottom, 0px)
+      var(--control-h) + var(--bottom-nav-margin) * 2 + env(safe-area-inset-bottom, 0px)
     );
   }
   :root:not([data-ui="vr"]) .mode-switch.section-tabs {
     position: fixed;
-    left: 50%;
+    left: 0;
+    right: 0;
     bottom: calc(var(--bottom-nav-margin) + env(safe-area-inset-bottom, 0px));
     z-index: 35;
-    transform: translateX(-50%);
+    width: fit-content;
     max-width: calc(100vw - 2 * var(--bottom-nav-margin));
+    margin: 0 auto;
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
   }
-  :root:not([data-ui="vr"]) .section-tabs .label-collapsible {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-  }
+  /* The Jobs count sits on the icon's top right once the label is gone. */
   :root:not([data-ui="vr"]) .section-tabs .pill {
     position: relative;
-    min-width: 44px;
-    justify-content: center;
-    padding: 0 0.9rem;
   }
-  /* The Jobs count sits on the icon's top right; the icon is centered, so the offset is from the
-     middle of the button. */
-  :root:not([data-ui="vr"]) .section-tabs .pill .tab-count {
+  :root:not([data-ui="vr"])
+    .section-tabs
+    .pill:has(> .label-collapsible[data-collapsed])
+    .tab-count {
     position: absolute;
     top: 2px;
     left: calc(50% + 4px);
@@ -84,9 +78,17 @@
     font-size: 0.7rem;
     line-height: 1.1rem;
   }
-  :root:not([data-ui="vr"])
-    :is(.lib-scroll, .page:not(.map-page), .about-page, .map-scroll, .fixes-scroll) {
-    padding-bottom: calc(1rem + var(--bottom-nav-space));
+  :root:not([data-ui="vr"]) main:has(.section-tabs) {
+    padding-bottom: 0;
+  }
+  :root:not([data-ui="vr"]) :is(.lib-scroll, .page:not(.map-page)) {
+    padding-bottom: var(--bottom-nav-space);
+  }
+  :root:not([data-ui="vr"]) :is(.about, .settings) {
+    padding-bottom: 0;
+  }
+  :root:not([data-ui="vr"]) .about > :last-child {
+    margin-bottom: 0;
   }
   :root:not([data-ui="vr"]) .map-page {
     padding-bottom: var(--bottom-nav-space);

@@ -232,7 +232,7 @@ describe("playlist page export and create", () => {
       ).toBeTruthy(),
     );
     fireEvent.change(screen.getByLabelText(/Subfolder/), { target: { value: "saber-tooth" } });
-    expect(screen.getAllByText(/PlaylistManager refreshes/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/appears after PlaylistManager refreshes/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Save and export" }));
     await waitFor(() => expect(bodies).toHaveLength(1));
     expect(bodies[0]).toMatchObject({

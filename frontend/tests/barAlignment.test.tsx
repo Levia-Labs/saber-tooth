@@ -34,7 +34,9 @@ describe("section tabs row alignment", () => {
     const slot = css("barslot.css");
     expect(rule(slot, ".bar-slot")).toMatch(/align-items:\s*center/);
     expect(rule(slot, ".bar-slot .bs-toolbar")).toMatch(/margin-bottom:\s*0/);
-    expect(rule(slot, ".lib-bar .btn,\n.lib-bar .btn.icon")).toMatch(/min-height:\s*42px/);
+    expect(rule(slot, ".lib-bar .btn,\n.lib-bar .btn.icon")).toMatch(
+      /min-height:\s*var\(--control-h\)/,
+    );
   });
 
   test("BeatSaver: tabs, website button and right group share the row", async () => {

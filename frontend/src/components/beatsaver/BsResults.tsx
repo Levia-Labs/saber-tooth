@@ -63,8 +63,6 @@ export function BsResults({ query, controls, extra }: Props) {
     const all = pages?.flatMap((p) => p.items) ?? [];
     return sortLoaded(all, order, state.localSort, ascending);
   }, [pages, order, state.localSort, ascending]);
-  const scanned = pages?.reduce((n, p) => n + p.scanned, 0) ?? 0;
-  const matched = pages?.reduce((n, p) => n + p.matched, 0) ?? 0;
   const lastPage = pages?.at(-1);
   const limited = Boolean(lastPage && (lastPage.partial || lastPage.retry_after));
   const paused = limited || isFetchNextPageError;
@@ -159,9 +157,6 @@ export function BsResults({ query, controls, extra }: Props) {
               </button>
             </div>
           )}
-          <p className="bs-footer count" aria-live="polite">
-            {query.isPending ? "" : `Scanned ${scanned} BeatSaver maps, ${matched} match`}
-          </p>
         </>
       )}
     </>

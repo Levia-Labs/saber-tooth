@@ -73,11 +73,6 @@
   align-items: center;
   gap: 0.5rem;
 }
-.lp-hint {
-  margin: 12px;
-  color: var(--muted);
-  font-size: 0.9rem;
-}
 .lp-editor {
   margin: 12px;
   padding: 16px;

@@ -21,12 +21,15 @@ export function overflows(row: HTMLElement): boolean {
   return first !== undefined && kids.some((k) => Math.abs(k.offsetTop - first.offsetTop) > 4);
 }
 
-/** The labels of a row, in the order they collapse: primary buttons last, otherwise last first. */
+/** The labels of a row, in the order they collapse: the primary button and the active tab last, otherwise last first. */
 export function collapseOrder(row: HTMLElement): HTMLElement[] {
   const labels = Array.from(row.querySelectorAll<HTMLElement>(LABEL_SELECTOR)).filter(
     (l) => !l.closest(".keep-label"),
   );
-  const primary = (l: HTMLElement) => (l.closest(".btn.primary, [data-label-primary]") ? 1 : 0);
+  const primary = (l: HTMLElement) =>
+    l.closest('.btn.primary, [data-label-primary], [aria-current="page"], [aria-selected="true"]')
+      ? 1
+      : 0;
   return labels
     .map((label, at) => ({ label, at }))
     .sort((a, b) => primary(a.label) - primary(b.label) || b.at - a.at)

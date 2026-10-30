@@ -90,9 +90,6 @@
   overflow: auto;
   color: var(--muted);
 }
-.bs-footer {
-  margin: 0.5rem 0 0;
-}
 .bs-title {
   color: var(--ink);
   font-weight: 700;
