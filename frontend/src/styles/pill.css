@@ -36,31 +36,27 @@
   cursor: not-allowed;
   opacity: 0.45;
 }
-/* Below 1300 px (lib/breakpoint.ts) the section tabs are the bottom navigation bar: the same nav,
-   fixed to the bottom, the labels hidden by design (the one place a width, not the room, decides).
-   The tabs are regular buttons, a centered group that shares the bar width equally up to the
-   original tab size and shrinks evenly on a narrow phone, each icon centered in its button; the page and the toasts clear the bar. */
+/* Below 1300 px (lib/breakpoint.ts) the section tabs float above the page as the same pill group,
+   icon only: fixed at the bottom centre with a margin from the edge and the safe area. The labels
+   are hidden by design here (the one place a width, not the room, decides). The page and the lists
+   extend underneath; every scroll container ends with --bottom-nav-space so the last content
+   scrolls clear of the bar, and the toasts stack above it. */
 @media (max-width: 1299.98px) {
   :root:not([data-ui="vr"]) {
-    --bottom-nav-h: calc(60px + env(safe-area-inset-bottom, 0px));
+    --bottom-nav-bar: 42px;
+    --bottom-nav-margin: 12px;
+    --bottom-nav-space: calc(
+      var(--bottom-nav-bar) + var(--bottom-nav-margin) * 2 + env(safe-area-inset-bottom, 0px)
+    );
   }
   :root:not([data-ui="vr"]) .mode-switch.section-tabs {
     position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 45;
-    display: flex;
-    gap: 6px;
-    justify-content: center;
-    max-width: none;
-    border-width: 1px 0 0;
-    border-radius: 0;
-    padding: 6px;
-    padding-left: max(6px, env(safe-area-inset-left, 0px));
-    padding-right: max(6px, env(safe-area-inset-right, 0px));
-    padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
-    overflow: visible;
+    left: 50%;
+    bottom: calc(var(--bottom-nav-margin) + env(safe-area-inset-bottom, 0px));
+    z-index: 35;
+    transform: translateX(-50%);
+    max-width: calc(100vw - 2 * var(--bottom-nav-margin));
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
   }
   :root:not([data-ui="vr"]) .section-tabs .label-collapsible {
     position: absolute;
@@ -73,40 +69,32 @@
   }
   :root:not([data-ui="vr"]) .section-tabs .pill {
     position: relative;
-    flex: 1 1 0;
-    /* The original icon-only tab: the 48 px target plus the 0.9rem side padding of the top row. */
-    min-width: 48px;
-    max-width: calc(48px + 2 * 0.9rem);
-    display: flex;
-    align-items: center;
+    min-width: 44px;
     justify-content: center;
-    gap: 0;
-    min-height: 48px;
-    margin: 0;
-    padding: 0;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    background: var(--panel-2);
-  }
-  :root:not([data-ui="vr"]) .section-tabs .pill[aria-current="page"] {
-    border-color: var(--blue);
-    box-shadow: inset 0 -3px 0 var(--blue);
+    padding: 0 0.9rem;
   }
   /* The Jobs count sits on the icon's top right; the icon is centered, so the offset is from the
      middle of the button. */
   :root:not([data-ui="vr"]) .section-tabs .pill .tab-count {
     position: absolute;
-    top: 4px;
-    left: calc(50% + 6px);
+    top: 2px;
+    left: calc(50% + 4px);
     min-width: 1.1rem;
     padding: 0 0.3rem;
     font-size: 0.7rem;
     line-height: 1.1rem;
   }
-  :root:not([data-ui="vr"]) main:has(.section-tabs) {
-    padding-bottom: calc(var(--bottom-nav-h) + 0.5rem);
+  :root:not([data-ui="vr"])
+    :is(.lib-scroll, .page:not(.map-page), .about-page, .map-scroll, .fixes-scroll) {
+    padding-bottom: calc(1rem + var(--bottom-nav-space));
+  }
+  :root:not([data-ui="vr"]) .map-page {
+    padding-bottom: var(--bottom-nav-space);
   }
   :root:not([data-ui="vr"]) .toast-stack {
-    bottom: calc(var(--bottom-nav-h) + 0.75rem);
+    bottom: calc(var(--bottom-nav-space) + 0.25rem);
+  }
+  :root:not([data-ui="vr"]):has(.map-page) .toast-stack {
+    bottom: calc(var(--bottom-nav-space) + var(--map-footer-h) + 0.25rem);
   }
 }
