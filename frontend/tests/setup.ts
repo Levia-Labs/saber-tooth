@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, configure } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
-import { dismissedJobs } from "../src/lib/jobdismiss";
+import { dismissedJobs } from "../src/lib/jobtoasts";
 
 // Lazy routes cold-compile under parallel load; the 1 s default flaked findBy on first render.
 configure({ asyncUtilTimeout: 5000 });

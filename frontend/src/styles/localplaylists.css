@@ -1,25 +1,3 @@
-.lp-grid {
-  display: grid;
-  grid-template-columns: var(--cols-wide);
-  column-gap: 12px;
-  align-items: center;
-  padding: 0 12px;
-}
-.lp-grid > div {
-  min-width: 0;
-}
-.lp-table {
-  position: relative;
-  min-width: var(--min-wide, 0);
-}
-.lp-table .lib-head {
-  display: grid;
-}
-.lp-row {
-  min-height: 64px;
-  padding-block: 8px;
-  border-bottom: 1px solid var(--line);
-}
 .lp-title {
   display: flex;
   flex-direction: column;
@@ -138,22 +116,6 @@
 .lp-tabs .active {
   font-weight: 700;
   text-decoration: underline;
-}
-@media (max-width: 1279.98px) {
-  .lp-grid {
-    grid-template-columns: var(--cols-mid);
-  }
-  .lp-table {
-    min-width: var(--min-mid, 0);
-  }
-}
-@media (max-width: 1099.98px) {
-  .lp-grid {
-    grid-template-columns: var(--cols-compact);
-  }
-  .lp-table {
-    min-width: var(--min-compact, 0);
-  }
 }
 @media (max-width: 719.98px) {
   .lp-table.lib-table {

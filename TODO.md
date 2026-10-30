@@ -64,3 +64,10 @@ class: perf
 Each fix proposal re-runs a full difficulty check (~0.17 s per finding on a 7102-finding map). Batched per-level scan/fix work is in progress; if checks stay whole-difficulty, make the rules incremental over a time window.
 
 Done: check_difficulty and run_checks take a beat window (checks/**init**.py, REACH_S declares each rule's reach, empty-gap is global and bisects its gaps); scan checks per batch window; verify and dot_reach bisect instead of scanning the difficulty. Proposing on a 3400-note, 9811-finding map: 40.6 to 17.6 ms per finding (scripts/profile_checks.py). apply_ops now bisects and inserts into owned sorted notes (fixer/ops.py, cow.py), 17.6 to 9.9 ms per finding; full Fix of the 3400-note map 131 s to 60 s with identical steps. Remaining: apply_ops still copies the note list per candidate and each proposal runs 5-8 candidates, so cost is O(N) memcpy plus the window checks.
+
+## 11 Status tab does not show why Fix left a finding unfixed
+
+status: open
+class: feature
+
+The unfixed reasons live only in the Fix job result keyed to the original map and the checkpoint is cleared on finish; persist them per copy (e.g. on the copy's scan row) and show them on FindingCard next to 'No automatic fix'.

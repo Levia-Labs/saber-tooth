@@ -5,6 +5,7 @@ import {
   cleanTag,
   LOCAL_LABELS,
   LOCAL_SORTS,
+  NUMBERS,
   orderPatch,
   type BsState,
   type Scope,
@@ -15,7 +16,7 @@ import { Icon } from "../icons";
 import { Tip } from "../Tip";
 import { DatePicker } from "../DatePicker";
 import { Box } from "./Box";
-import { NumberField } from "./BsNumberBodies";
+import { NumberField } from "../StateBodies";
 
 export type Patch = (patch: Partial<BsState>, replace?: boolean) => void;
 interface Props {
@@ -90,6 +91,7 @@ export function LevelsBody({ state, update }: Props) {
       <NumberField
         label="Notes per second, at least"
         field="npsMin"
+        bounds={NUMBERS.npsMin}
         state={state}
         update={update}
         step={0.1}
@@ -97,6 +99,7 @@ export function LevelsBody({ state, update }: Props) {
       <NumberField
         label="Notes per second, at most"
         field="npsMax"
+        bounds={NUMBERS.npsMax}
         state={state}
         update={update}
         step={0.1}

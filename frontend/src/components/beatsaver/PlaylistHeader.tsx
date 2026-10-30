@@ -1,13 +1,11 @@
 import type { ReactNode } from "react";
-import { isResizable, LABELS, type ColumnKey } from "../../lib/columns";
+import { LABELS, type ColumnKey } from "../../lib/columns";
 import { plCounts, type PlLocalSort, type PlOrder, type PlState } from "../../lib/plfilters";
 import { PL_TIPS } from "../../lib/pltips";
 import type { ColumnsApi } from "../../lib/useColumns";
 import { TextFilterBody } from "../FilterBodies";
 import { FilterPopover } from "../FilterPopover";
-import { Icon } from "../icons";
-import { ResizeHandle } from "../ResizeHandle";
-import { Tip } from "../Tip";
+import { HeaderCell } from "../HeaderCell";
 import {
   PlCreatedBody,
   PlLengthBody,
@@ -30,49 +28,25 @@ interface CellProps extends Props {
   filter?: ReactNode;
 }
 
-function HeaderCell({ col, columns, state, update, sort, filter }: CellProps) {
-  const label = col === "title" ? "Name" : LABELS[col];
+function Cell({ col, columns, state, update, sort, filter }: CellProps) {
   const sorted =
     sort !== undefined &&
     (sort.local ? state.localSort === sort.local : !state.localSort && state.order === sort.order);
-  const aria = sorted ? (state.ascending ? "ascending" : "descending") : "none";
   const click = () =>
-    sort &&
     update({
-      ...(sort.order && { order: sort.order }),
-      localSort: sort.local ?? null,
+      ...(sort?.order && { order: sort.order }),
+      localSort: sort?.local ?? null,
       ascending: sorted ? !state.ascending : false,
     });
   return (
-    <div
-      className={`th col-${col}${col === "cover" ? " th-quiet" : ""}`}
-      role="columnheader"
-      aria-sort={sort ? aria : undefined}
-    >
-      <div className="th-row">
-        {sort ? (
-          <Tip text={sort.tip}>
-            <button
-              type="button"
-              className="th-sort"
-              onClick={click}
-              aria-label={`Sort by ${label}`}
-            >
-              <span className="th-label">{label}</span>
-            </button>
-          </Tip>
-        ) : (
-          <span className="th-label">{label}</span>
-        )}
-        {filter}
-        {sort && (
-          <span className="th-slot" aria-hidden="true">
-            {sorted && <Icon name={state.ascending ? "sort-asc" : "sort-desc"} />}
-          </span>
-        )}
-      </div>
-      {isResizable(col) && <ResizeHandle colKey={col} columns={columns} />}
-    </div>
+    <HeaderCell
+      col={col}
+      label={col === "title" ? "Name" : LABELS[col]}
+      columns={columns}
+      filter={filter}
+      {...(sort && { onSort: click, tip: sort.tip })}
+      order={sorted ? (state.ascending ? "asc" : "desc") : undefined}
+    />
   );
 }
 
@@ -87,8 +61,8 @@ export function PlaylistHeader({ state, update, columns }: Props) {
   });
   return (
     <div className="lib-head lib-grid" role="row" aria-rowindex={1}>
-      <HeaderCell col="cover" {...cell} />
-      <HeaderCell
+      <Cell col="cover" {...cell} />
+      <Cell
         col="title"
         {...cell}
         filter={
@@ -103,7 +77,7 @@ export function PlaylistHeader({ state, update, columns }: Props) {
           </FilterPopover>
         }
       />
-      <HeaderCell
+      <Cell
         col="author"
         {...cell}
         filter={
@@ -118,7 +92,7 @@ export function PlaylistHeader({ state, update, columns }: Props) {
           </FilterPopover>
         }
       />
-      <HeaderCell
+      <Cell
         col="maps"
         {...cell}
         sort={{ local: "maps", tip: PL_TIPS.sortMaps }}
@@ -132,7 +106,7 @@ export function PlaylistHeader({ state, update, columns }: Props) {
           </FilterPopover>
         }
       />
-      <HeaderCell
+      <Cell
         col="rating"
         {...cell}
         sort={{ order: "Rating", tip: PL_TIPS.sortRating }}
@@ -146,7 +120,7 @@ export function PlaylistHeader({ state, update, columns }: Props) {
           </FilterPopover>
         }
       />
-      <HeaderCell
+      <Cell
         col="upvotes"
         {...cell}
         sort={{ local: "upvotes", tip: PL_TIPS.sortUpvotes }}
@@ -160,7 +134,7 @@ export function PlaylistHeader({ state, update, columns }: Props) {
           </FilterPopover>
         }
       />
-      <HeaderCell
+      <Cell
         col="length"
         {...cell}
         sort={{ local: "length", tip: PL_TIPS.sortLength }}
@@ -174,7 +148,7 @@ export function PlaylistHeader({ state, update, columns }: Props) {
           </FilterPopover>
         }
       />
-      <HeaderCell
+      <Cell
         col="nps"
         {...cell}
         filter={
@@ -187,7 +161,7 @@ export function PlaylistHeader({ state, update, columns }: Props) {
           </FilterPopover>
         }
       />
-      <HeaderCell
+      <Cell
         col="created"
         {...cell}
         sort={{ order: "Latest", tip: PL_TIPS.sortCreated }}
@@ -201,7 +175,7 @@ export function PlaylistHeader({ state, update, columns }: Props) {
           </FilterPopover>
         }
       />
-      <HeaderCell col="actions" {...cell} />
+      <Cell col="actions" {...cell} />
     </div>
   );
 }

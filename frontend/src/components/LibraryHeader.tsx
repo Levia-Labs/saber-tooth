@@ -9,10 +9,10 @@ import {
   TextFilterBody,
 } from "./FilterBodies";
 import { FilterPopover } from "./FilterPopover";
-import { Icon } from "./icons";
+import { HeaderCell } from "./HeaderCell";
 import { RangeFilterBody } from "./RangeFilterBody";
-import { ResizeHandle } from "./ResizeHandle";
-import { isResizable, LABELS, type ColumnKey } from "../lib/columns";
+
+import { LABELS, type ColumnKey } from "../lib/columns";
 import type { ColumnsApi } from "../lib/useColumns";
 
 interface Props {
@@ -31,35 +31,17 @@ interface CellProps {
   filter?: ReactNode;
 }
 
-function HeaderCell({ col, columns, sort, state, update, filter }: CellProps) {
-  const label = LABELS[col];
-  const className = `col-${col}${col === "cover" ? " th-quiet" : ""}`;
+function Cell({ col, columns, sort, state, update, filter }: CellProps) {
   const sorted = sort !== undefined && state.sort === sort;
-  const aria = sorted ? (state.order === "asc" ? "ascending" : "descending") : "none";
   return (
-    <div className={`th ${className}`} role="columnheader" aria-sort={sort ? aria : undefined}>
-      <div className="th-row">
-        {sort ? (
-          <button
-            type="button"
-            className="th-sort"
-            onClick={() => update(nextSort(state, sort))}
-            aria-label={`Sort by ${label}`}
-          >
-            <span className="th-label">{label}</span>
-          </button>
-        ) : (
-          <span className="th-label">{label}</span>
-        )}
-        {filter}
-        {sort && (
-          <span className="th-slot" aria-hidden="true">
-            {sorted && <Icon name={state.order === "asc" ? "sort-asc" : "sort-desc"} />}
-          </span>
-        )}
-      </div>
-      {isResizable(col) && <ResizeHandle colKey={col} columns={columns} />}
-    </div>
+    <HeaderCell
+      col={col}
+      label={LABELS[col]}
+      columns={columns}
+      filter={filter}
+      {...(sort && { onSort: () => update(nextSort(state, sort)) })}
+      order={sorted ? state.order : undefined}
+    />
   );
 }
 
@@ -69,8 +51,8 @@ export function LibraryHeader({ state, facets, update, columns }: Props) {
   const cell = { state, update, columns };
   return (
     <div className="lib-head lib-grid" role="row" aria-rowindex={1}>
-      <HeaderCell col="cover" {...cell} />
-      <HeaderCell
+      <Cell col="cover" {...cell} />
+      <Cell
         col="title"
         sort="title"
         {...cell}
@@ -90,7 +72,7 @@ export function LibraryHeader({ state, facets, update, columns }: Props) {
           </FilterPopover>
         }
       />
-      <HeaderCell
+      <Cell
         col="author"
         sort="mapper"
         {...cell}
@@ -109,7 +91,7 @@ export function LibraryHeader({ state, facets, update, columns }: Props) {
           </FilterPopover>
         }
       />
-      <HeaderCell
+      <Cell
         col="levels"
         sort="levels"
         {...cell}
@@ -129,7 +111,7 @@ export function LibraryHeader({ state, facets, update, columns }: Props) {
           </FilterPopover>
         }
       />
-      <HeaderCell
+      <Cell
         col="length"
         sort="duration"
         {...cell}
@@ -160,7 +142,7 @@ export function LibraryHeader({ state, facets, update, columns }: Props) {
           </FilterPopover>
         }
       />
-      <HeaderCell
+      <Cell
         col="bpm"
         sort="bpm"
         {...cell}
@@ -191,7 +173,7 @@ export function LibraryHeader({ state, facets, update, columns }: Props) {
           </FilterPopover>
         }
       />
-      <HeaderCell
+      <Cell
         col="env"
         sort="environment"
         {...cell}
@@ -210,7 +192,7 @@ export function LibraryHeader({ state, facets, update, columns }: Props) {
           </FilterPopover>
         }
       />
-      <HeaderCell
+      <Cell
         col="status"
         sort="status"
         {...cell}
@@ -229,7 +211,7 @@ export function LibraryHeader({ state, facets, update, columns }: Props) {
           </FilterPopover>
         }
       />
-      <HeaderCell col="actions" {...cell} />
+      <Cell col="actions" {...cell} />
     </div>
   );
 }

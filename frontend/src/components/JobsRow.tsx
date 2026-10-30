@@ -4,7 +4,7 @@ import { JOB_COL } from "../lib/jobcolumns";
 import { useMapLinks } from "../lib/useBacklink";
 import { jobLengthMs } from "../lib/jobfilters";
 import { KIND_ICON, KIND_LABEL } from "../lib/jobkinds";
-import { duration, staleMinutes } from "../lib/jobtime";
+import { duration, staleMinutes } from "../lib/jobview";
 import { ActionButton } from "./Buttons";
 import { Cover } from "./Chips";
 import { Icon } from "./icons";

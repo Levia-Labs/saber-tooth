@@ -1,3 +1,4 @@
+# ruff: noqa: F811
 """A saber-tooth copy shows its real status at once: its scan row is stored when it is written."""
 
 import shutil
@@ -5,6 +6,7 @@ import shutil
 from saber_tooth.checks import run_checks
 from saber_tooth.mapio import load_map
 from saber_tooth.service import map_id_for
+from tests.crop_helpers import cuts  # noqa: F401
 from tests.test_fix_map import CLASH
 from tests.test_relight import _other
 from tests.test_service import NAME, _make
@@ -50,3 +52,26 @@ def test_a_copy_that_was_scanned_keeps_its_scan_on_reindex(tmp_path):
     svc.store.replace_open_proposals(map_id_for(COPY), [], marker)
     svc.refresh_library()
     assert _row(svc, COPY)["findings"] == []
+
+
+def test_crop_new_map_and_replace_both_store_a_scan(tmp_path, cuts):
+    from tests.crop_helpers import make_service
+
+    svc = make_service(tmp_path)
+    mid = map_id_for("Song")
+    window = svc.crop_timeline(mid)["lengths"]["60"]["suggestions"][0]
+    made = svc.crop_map(mid, window["start_beat"], window["end_beat"])
+    assert _row(svc, made["folder"]) is not None
+    assert _row(svc, "Song") is None
+    svc.crop_map(mid, window["start_beat"], window["end_beat"], replace=True)
+    assert _row(svc, "Song") is not None
+
+
+def test_the_backfill_covers_crop_outputs(tmp_path):
+    svc = _make(tmp_path)
+    for label in ("[2 min]", "[crop 1m05s]"):
+        shutil.copytree(svc.levels / NAME, svc.levels / f"{COPY} {label}")
+    svc.refresh_library()
+    assert _row(svc, f"{COPY} [2 min]") is not None
+    assert _row(svc, f"{COPY} [crop 1m05s]") is not None
+    assert _row(svc, NAME) is None

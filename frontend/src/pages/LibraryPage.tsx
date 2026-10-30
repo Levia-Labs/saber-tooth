@@ -5,7 +5,8 @@ import { useFacets, useLibrary, useLiveRows } from "../api/queries";
 import { useJobRunner } from "../api/jobs";
 import { JobOutcome } from "../components/JobOutcome";
 import { BarSlot, BarSlotProvider } from "../components/BarSlot";
-import { SectionTabs } from "../components/SectionTabs";
+import { PageShell } from "../components/PageShell";
+import { EmptyState } from "../components/EmptyState";
 import { LibraryTable } from "../components/LibraryTable";
 import { LibraryMobileBar } from "../components/LibraryMobileBar";
 import { LibraryTools } from "../components/LibraryTools";
@@ -36,17 +37,17 @@ export function LibraryPage() {
   const filtered = totalFilters(counts) > 0;
 
   return (
-    <section className="library" aria-labelledby="library-heading">
-      <BarSlotProvider>
-        <div className="lib-bar">
-          <div className="lib-title">
-            <SectionTabs active="library" heading="Library" headingId="library-heading" />
-            <span className="count" aria-live="polite">
-              {library.isPending ? "" : `${total} ${total === 1 ? "map" : "maps"}`}
-            </span>
-          </div>
-          <BarSlot />
-        </div>
+    <BarSlotProvider>
+      <PageShell
+        active="library"
+        title="Library"
+        barExtra={
+          <span className="count" aria-live="polite">
+            {library.isPending ? "" : `${total} ${total === 1 ? "map" : "maps"}`}
+          </span>
+        }
+        barEnd={<BarSlot />}
+      >
         <LibraryTools learn={learn} onResetColumns={columns.api.resetAll} />
         <JobOutcome toastKey="Learn lightshows" job={learn.job} error={learn.error} />
         {narrow && (
@@ -59,12 +60,12 @@ export function LibraryPage() {
           />
         )}
         {library.isError && !library.data ? (
-          <div className="lib-empty">
+          <EmptyState tone="error">
             <SpecAlert
               spec={errorToAlert(library.error, "Could not load the library")}
               onRetry={() => void library.refetch()}
             />
-          </div>
+          </EmptyState>
         ) : (
           <LibraryTable
             items={items}
@@ -83,7 +84,7 @@ export function LibraryPage() {
             columns={columns}
           />
         )}
-      </BarSlotProvider>
-    </section>
+      </PageShell>
+    </BarSlotProvider>
   );
 }

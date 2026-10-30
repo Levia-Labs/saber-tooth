@@ -17,7 +17,7 @@ import { Alert } from "../components/Alert";
 import { ActionButton } from "../components/Buttons";
 import { BackLink } from "../components/BackLink";
 import { PlaylistFooter } from "../components/playlists/PlaylistFooter";
-import { SectionTabs } from "../components/SectionTabs";
+import { PageBar } from "../components/PageShell";
 import { backHref, FROM_PARAM } from "../lib/backlink";
 import { useOrigin } from "../lib/useBacklink";
 import { LpCover } from "../components/playlists/LpCover";
@@ -36,11 +36,7 @@ function PlaylistBar() {
   const to = params.has(FROM_PARAM) ? backHref(origin, back) : backHref({ kind: "playlists" });
   return (
     <>
-      <div className="lib-bar map-bar">
-        <div className="lib-title">
-          <SectionTabs active="playlists" heading="Playlist" headingId="lp-heading" noHeading />
-        </div>
-      </div>
+      <PageBar active="playlists" className="map-bar" />
       <BackLink to={to} />
     </>
   );

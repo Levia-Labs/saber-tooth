@@ -14,7 +14,7 @@ import { useAnnounce } from "../components/Announcer";
 import { ActionButton, ActionLink } from "../components/Buttons";
 import { EmptyState } from "../components/EmptyState";
 import { LpTable } from "../components/playlists/LpTable";
-import { SectionTabs } from "../components/SectionTabs";
+import { PageShell } from "../components/PageShell";
 import { playlistHref } from "../lib/backlink";
 import { useDocumentTitle } from "../lib/hooks";
 import { useListScroll } from "../lib/listscroll";
@@ -91,11 +91,11 @@ export function PlaylistsPage() {
       />
     );
   return (
-    <section className="library jobs lp" aria-labelledby="playlists-heading">
-      <div className="lib-bar">
-        <div className="lib-title">
-          <SectionTabs active="playlists" heading="Playlists" headingId="playlists-heading" />
-        </div>
+    <PageShell
+      active="playlists"
+      title="Playlists"
+      sectionClass="jobs lp"
+      barEnd={
         <ActionLink
           icon="plus"
           text
@@ -104,7 +104,8 @@ export function PlaylistsPage() {
           tip="Create a playlist"
           to="/playlists/new"
         />
-      </div>
+      }
+    >
       <LpTable
         rows={rows}
         all={all}
@@ -116,6 +117,6 @@ export function PlaylistsPage() {
         onDelete={(p) => void remove(p)}
         empty={empty}
       />
-    </section>
+    </PageShell>
   );
 }

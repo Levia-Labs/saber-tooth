@@ -2,7 +2,7 @@ import { renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, test } from "vitest";
 import { mediaFor } from "../src/lib/breakpoint";
 import { useBreakpoint } from "../src/lib/useColumns";
-import { useRowEstimate } from "../src/components/LibraryTable";
+import { useRowEstimate } from "../src/lib/useVirtualList";
 import { scaleMediaText, scaleOf } from "../src/vr/scale";
 
 const real = window.matchMedia;

@@ -10,8 +10,8 @@ import { ConfirmDialog } from "../ConfirmDialog";
 import { FilterPopover } from "../FilterPopover";
 import { JobsFilterBody } from "../JobsFilterBody";
 import { TextFilterBody } from "../TextFilterBody";
+import { HeaderCell } from "../HeaderCell";
 import { Icon } from "../icons";
-import { Tip } from "../Tip";
 
 interface Props {
   rows: Playlist[];
@@ -40,34 +40,16 @@ function Head({
   filter?: ReactNode;
 }) {
   const sorted = sort !== undefined && state.sort === sort;
-  const aria = sorted ? (state.ascending ? "ascending" : "descending") : "none";
   return (
-    <div className="th" role="columnheader" aria-sort={sort ? aria : undefined}>
-      <div className="th-row">
-        {sort ? (
-          <Tip text={`Sort by ${label}`}>
-            <button
-              type="button"
-              className="th-sort"
-              aria-label={`Sort by ${label}`}
-              onClick={() =>
-                update({ sort, ascending: sorted ? !state.ascending : sort === "title" })
-              }
-            >
-              <span className="th-label">{label}</span>
-            </button>
-          </Tip>
-        ) : (
-          <span className="th-label">{label}</span>
-        )}
-        {filter}
-        {sort && (
-          <span className="th-slot" aria-hidden="true">
-            {sorted && <Icon name={state.ascending ? "sort-asc" : "sort-desc"} />}
-          </span>
-        )}
-      </div>
-    </div>
+    <HeaderCell
+      label={label}
+      filter={filter}
+      {...(sort && {
+        onSort: () => update({ sort, ascending: sorted ? !state.ascending : sort === "title" }),
+        tip: `Sort by ${label}`,
+      })}
+      order={sorted ? (state.ascending ? "asc" : "desc") : undefined}
+    />
   );
 }
 
@@ -78,9 +60,7 @@ function Header({ state, update, all }: Pick<Props, "state" | "update" | "all">)
   const h = { state, update };
   return (
     <div className="lib-head lp-grid" role="row" aria-rowindex={1}>
-      <div className="th th-quiet" role="columnheader">
-        <span className="th-label">Icon</span>
-      </div>
+      <HeaderCell label="Icon" quiet />
       <Head
         {...h}
         label="Title"

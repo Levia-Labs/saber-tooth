@@ -102,16 +102,34 @@
   border: 1px solid var(--line);
   border-radius: var(--radius);
 }
-.lib-table {
+.lib-table,
+.jobs-table,
+.lp-table {
   position: relative;
   min-width: var(--min-wide, 0);
 }
-.lib-grid {
+.lib-grid,
+.jobs-grid,
+.lp-grid {
   display: grid;
   grid-template-columns: var(--cols-wide);
   column-gap: 12px;
   align-items: center;
   padding: 0 12px;
+}
+.jobs-grid > div,
+.lp-grid > div {
+  min-width: 0;
+}
+.jobs-table .lib-head,
+.lp-table .lib-head {
+  display: grid;
+}
+.jobs-row,
+.lp-row {
+  min-height: 64px;
+  padding-block: 8px;
+  border-bottom: 1px solid var(--line);
 }
 .lib-grid > div {
   text-align: left;
@@ -147,13 +165,11 @@
   gap: 0.25rem;
   flex: 1 1 auto;
   min-width: 0;
+  justify-content: flex-start;
+  padding-right: 6px;
 }
 .th-row > :not(.th-sort):not(.th-label) {
   flex: none;
-}
-.th-row {
-  justify-content: flex-start;
-  padding-right: 6px;
 }
 .th-sort {
   flex: 0 1 auto;
@@ -235,7 +251,6 @@
   left: 0;
   width: 100%;
 }
-.lib-empty,
 .lib-more {
   display: grid;
   justify-items: center;
@@ -243,7 +258,6 @@
   padding: 2rem 1rem;
   color: var(--muted);
 }
-.lib-empty .alert,
 .lib-more .alert {
   margin: 0;
   width: min(100%, 34rem);

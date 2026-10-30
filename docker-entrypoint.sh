@@ -7,13 +7,16 @@ PUID="${PUID:-1000}"
 PGID="${PGID:-1000}"
 
 case "$PUID$PGID" in
-    *[!0-9]* | "") echo "PUID and PGID must be numbers" >&2; exit 64 ;;
+  *[!0-9]* | "")
+    echo "PUID and PGID must be numbers" >&2
+    exit 64
+    ;;
 esac
 
 if [ "$(id -u)" = "0" ]; then
-    groupmod --non-unique --gid "$PGID" app
-    usermod --non-unique --uid "$PUID" --gid "$PGID" app
-    chown "$PUID:$PGID" /data
-    exec setpriv --reuid "$PUID" --regid "$PGID" --clear-groups -- "$@"
+  groupmod --non-unique --gid "$PGID" app
+  usermod --non-unique --uid "$PUID" --gid "$PGID" app
+  chown "$PUID:$PGID" /data
+  exec setpriv --reuid "$PUID" --regid "$PGID" --clear-groups -- "$@"
 fi
 exec "$@"

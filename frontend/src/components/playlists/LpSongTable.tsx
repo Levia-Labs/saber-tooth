@@ -14,7 +14,7 @@ import { EmptyState } from "../EmptyState";
 import { Icon } from "../icons";
 import { LibraryHeader } from "../LibraryHeader";
 import { PreviewButton } from "../PreviewButton";
-import { FIRST_SKELETONS } from "../LibraryTable";
+import { FIRST_SKELETONS } from "../../lib/useVirtualList";
 import { SkeletonRow } from "../SkeletonRow";
 import { Tip } from "../Tip";
 

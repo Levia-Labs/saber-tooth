@@ -2,7 +2,7 @@ import { mediaFor, MOBILE_QUERY } from "../src/lib/breakpoint";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test } from "vitest";
-import { FIRST_SKELETONS } from "../src/components/LibraryTable";
+import { FIRST_SKELETONS } from "../src/lib/useVirtualList";
 import { FACETS, item, mockFetch, renderApp } from "./helpers";
 
 const items = [

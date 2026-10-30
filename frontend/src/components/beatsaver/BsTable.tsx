@@ -1,24 +1,32 @@
-import { useVirtualizer } from "@tanstack/react-virtual";
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type ReactNode,
-  type RefObject,
-} from "react";
+import type { ReactNode, RefObject } from "react";
 import type { BsMap } from "../../api/beatsaver";
 import { toggle } from "../../lib/urlstate";
 import type { BsState } from "../../lib/bsfilters";
 import type { useColumns } from "../../lib/useColumns";
-import { FIRST_SKELETONS, NEXT_SKELETONS, useRowEstimate } from "../LibraryTable";
+import { SkeletonRow, type SkeletonCol } from "../SkeletonRow";
+import { VirtualBody } from "../VirtualBody";
+import { useVirtualList } from "../../lib/useVirtualList";
 import { BsHeader } from "./BsHeader";
 import { BsRow } from "./BsRow";
-import { BsSkeletonRow } from "./BsSkeletonRow";
 import type { Patch } from "./BsFilterBodies";
 import type { RowStatus } from "./downloads";
 
-const LOAD_AHEAD = 6;
+/** Placeholder columns with the BeatSaver grid; no layout shift when data arrives. */
+const BS_COLS: readonly SkeletonCol[] = [
+  "select",
+  "cover",
+  "title",
+  ["sub", "sub-pill"],
+  "author",
+  "levels",
+  "rating",
+  "upvotes",
+  "length",
+  "bpm",
+  "tags",
+  "status",
+  "actions",
+];
 
 interface Props {
   items: BsMap[];
@@ -43,48 +51,16 @@ interface Props {
 /** Scroll region with a sticky header and a virtualised body; only this region scrolls. */
 export function BsTable(props: Props) {
   const { items, loading, hasNext, fetchingNext, paused, onLoadMore, table, columns } = props;
-  const scroller = useRef<HTMLDivElement>(null);
-  const body = useRef<HTMLDivElement>(null);
-  const [margin, setMargin] = useState(0);
-  const estimate = useRowEstimate();
-  const skeletons = loading ? FIRST_SKELETONS : fetchingNext ? NEXT_SKELETONS : 0;
-
-  const virtual = useVirtualizer({
-    count: items.length + skeletons,
-    getScrollElement: () => scroller.current,
-    estimateSize: () => estimate,
-    overscan: 8,
-    scrollMargin: margin,
-    getItemKey: (i) => items[i]?.id ?? `skeleton-${i}`,
+  const { scroller, body, virtual } = useVirtualList({
+    items,
+    loading,
+    hasNext,
+    fetchingNext,
+    paused,
+    onLoadMore,
+    resetKey: JSON.stringify(props.state),
+    anchor: true,
   });
-  useEffect(() => setMargin(body.current?.offsetTop ?? 0), [estimate]);
-
-  // Keep the viewport anchored when a loaded page sorts in above the rows being read.
-  const anchor = useRef<{ id: string; start: number } | null>(null);
-  useLayoutEffect(() => {
-    const el = scroller.current;
-    const held = anchor.current;
-    if (el && held && el.scrollTop > 0) {
-      const at = items.findIndex((i) => i.id === held.id);
-      const start = at >= 0 ? virtual.measurementsCache[at]?.start : undefined;
-      if (start !== undefined && start !== held.start) el.scrollTop += start - held.start;
-    }
-  }, [items, virtual]);
-  useEffect(() => {
-    const first = virtual.getVirtualItems().find((v) => items[v.index]);
-    const item = first && items[first.index];
-    anchor.current = first && item ? { id: item.id, start: first.start } : null;
-  });
-
-  const stateKey = JSON.stringify(props.state);
-  useEffect(() => {
-    if (scroller.current) scroller.current.scrollTop = 0;
-  }, [stateKey]);
-
-  const last = virtual.getVirtualItems().at(-1)?.index ?? -1;
-  useEffect(() => {
-    if (hasNext && !fetchingNext && !paused && last >= items.length - LOAD_AHEAD) onLoadMore();
-  }, [hasNext, fetchingNext, paused, last, items.length, onLoadMore]);
 
   const allSelected = items.length > 0 && items.every((i) => props.selected.has(i.id));
   return (
@@ -104,41 +80,25 @@ export function BsTable(props: Props) {
           allSelected={allSelected}
           onSelectAll={props.onSelectAll}
         />
-        <div
-          role="rowgroup"
-          className="lib-body"
-          ref={body}
-          style={{ height: virtual.getTotalSize() }}
-          aria-busy={loading || fetchingNext}
-        >
-          {virtual.getVirtualItems().map((v) => {
-            const item = items[v.index];
-            return (
-              <div
-                key={v.key}
-                ref={virtual.measureElement}
-                data-index={v.index}
-                className="lib-slot"
-                style={{ transform: `translateY(${v.start - virtual.options.scrollMargin}px)` }}
-              >
-                {item ? (
-                  <BsRow
-                    item={item}
-                    index={v.index}
-                    selected={props.selected.has(item.id)}
-                    status={props.status(item)}
-                    onSelect={props.onSelect}
-                    onDownload={props.onDownload}
-                    activeTags={props.state.tags}
-                    onToggleTag={(tag) => props.update({ tags: toggle(props.state.tags, tag) })}
-                  />
-                ) : (
-                  <BsSkeletonRow index={v.index} />
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <VirtualBody
+          virtual={virtual}
+          bodyRef={body}
+          items={items}
+          busy={loading || fetchingNext}
+          row={(item, i) => (
+            <BsRow
+              item={item}
+              index={i}
+              selected={props.selected.has(item.id)}
+              status={props.status(item)}
+              onSelect={props.onSelect}
+              onDownload={props.onDownload}
+              activeTags={props.state.tags}
+              onToggleTag={(tag) => props.update({ tags: toggle(props.state.tags, tag) })}
+            />
+          )}
+          skeleton={(i) => <SkeletonRow index={i} cols={BS_COLS} />}
+        />
       </div>
       {!loading && items.length === 0 && !hasNext && props.empty}
     </div>

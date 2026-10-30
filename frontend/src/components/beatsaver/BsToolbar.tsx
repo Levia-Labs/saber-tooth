@@ -1,5 +1,3 @@
-import * as Dialog from "@radix-ui/react-dialog";
-import type { ReactNode } from "react";
 import {
   BS_ORDERS,
   bsCounts,
@@ -11,11 +9,9 @@ import {
 } from "../../lib/bsfilters";
 import { BS_TIPS } from "../../lib/bstips";
 import { TextFilterBody } from "../FilterBodies";
-import { Icon } from "../icons";
-import { Tip } from "../Tip";
 import { LevelsBody, MoreBody, TagsBody, type Patch } from "./BsFilterBodies";
 import { BpmBody, LengthBody, RatingBody, UpvotesBody } from "./BsNumberBodies";
-import { InBar } from "../BarSlot";
+import { ListToolbar, Section } from "./ListToolbar";
 import { PresetsBar } from "./PresetsBar";
 
 interface Props {
@@ -27,115 +23,59 @@ interface Props {
   narrow: boolean;
 }
 
-function MoreFilters({ state, update, clear }: Omit<Props, "set" | "narrow">) {
-  const total = bsTotal(bsCounts(state));
-  const section = (title: string, body: ReactNode) => (
-    <section>
-      <h3>{title}</h3>
-      {body}
-    </section>
-  );
-  return (
-    <Dialog.Root>
-      <Tip text={BS_TIPS.moreFilters}>
-        <Dialog.Trigger className="btn plain filters-btn">
-          <Icon name="filter" filled={total > 0} />
-          <span className="label-collapsible">More filters</span>
-          {total > 0 && <span className="filter-badge static">{total}</span>}
-        </Dialog.Trigger>
-      </Tip>
-      <Dialog.Portal>
-        <Dialog.Overlay className="overlay" />
-        <Dialog.Content className="sheet bs-sheet" aria-describedby={undefined}>
-          <div className="sheet-head">
-            <Dialog.Title>Filters</Dialog.Title>
-            <button type="button" className="btn plain" disabled={!total} onClick={clear}>
-              <Icon name="filter-x" />
-              <span className="label-collapsible">Clear all</span>
-            </button>
-          </div>
-          <div className="sheet-body">
-            {section(
-              "Search",
-              <TextFilterBody
-                label="Search BeatSaver"
-                q={state.q}
-                onChange={(q, replace) => update({ q }, replace)}
-              />,
-            )}
-            {section("Levels", <LevelsBody state={state} update={update} />)}
-            {section("Rating", <RatingBody state={state} update={update} />)}
-            {section("Upvotes", <UpvotesBody state={state} update={update} />)}
-            {section("Length", <LengthBody state={state} update={update} />)}
-            {section("BPM", <BpmBody state={state} update={update} />)}
-            {section("Tags", <TagsBody state={state} update={update} />)}
-            {section("More", <MoreBody state={state} update={update} />)}
-          </div>
-          <div className="sheet-foot">
-            <Dialog.Close className="btn primary show-btn">
-              <Icon name="approve" />
-              <span>Show maps</span>
-            </Dialog.Close>
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
-  );
-}
+const ORDER_OPTIONS = [
+  ...BS_ORDERS.map((o) => ({ value: o, label: o })),
+  ...LOCAL_SORTS.map((o) => ({ value: `local:${o}`, label: LOCAL_LABELS[o] })),
+];
 
 /** Presets, the full filter sheet and clear; on narrow screens also order and direction. */
 export function BsToolbar({ state, update, set, clear, narrow }: Props) {
-  const active = bsTotal(bsCounts(state)) > 0;
   return (
-    <InBar>
-      <div className={narrow ? "lib-mobile-bar bs-toolbar" : "bs-toolbar"}>
-        <PresetsBar state={state} onApply={set} />
-        <div className="mobile-filters">
-          {narrow && <OrderControls state={state} update={update} />}
-          <MoreFilters state={state} update={update} clear={clear} />
-          {active && (
-            <Tip text="Remove every filter.">
-              <button type="button" className="btn icon tap" onClick={clear}>
-                <Icon name="filter-x" />
-                <span className="sr">Clear filters</span>
-              </button>
-            </Tip>
-          )}
-        </div>
-      </div>
-    </InBar>
-  );
-}
-
-function OrderControls({ state, update }: { state: BsState; update: Patch }) {
-  return (
-    <div className="sort-group">
-      <label className="sort-select">
-        <span className="sr">Order by</span>
-        <select
-          value={state.localSort ? `local:${state.localSort}` : state.order}
-          onChange={(e) => update(orderPatch(e.target.value))}
-        >
-          {BS_ORDERS.map((o) => (
-            <option key={o} value={o}>
-              {o}
-            </option>
-          ))}
-          {LOCAL_SORTS.map((o) => (
-            <option key={o} value={`local:${o}`}>
-              {LOCAL_LABELS[o]}
-            </option>
-          ))}
-        </select>
-      </label>
-      <button
-        type="button"
-        className="order-toggle"
-        onClick={() => update({ ascending: !state.ascending })}
-      >
-        <Icon name={state.ascending ? "sort-asc" : "sort-desc"} />
-        <span className="sr">{state.ascending ? "Ascending" : "Descending"}</span>
-      </button>
-    </div>
+    <ListToolbar
+      total={bsTotal(bsCounts(state))}
+      clear={clear}
+      narrow={narrow}
+      sort={{
+        options: ORDER_OPTIONS,
+        value: state.localSort ? `local:${state.localSort}` : state.order,
+        ascending: state.ascending,
+        onOrder: (v) => update(orderPatch(v)),
+        onToggle: () => update({ ascending: !state.ascending }),
+      }}
+      moreTip={BS_TIPS.moreFilters}
+      clearTip="Remove every filter."
+      sheetTitle="Filters"
+      showLabel="Show maps"
+      lead={<PresetsBar state={state} onApply={set} />}
+    >
+      <Section title="Search">
+        <TextFilterBody
+          label="Search BeatSaver"
+          q={state.q}
+          onChange={(q, replace) => update({ q }, replace)}
+        />
+      </Section>
+      <Section title="Levels">
+        <LevelsBody state={state} update={update} />
+      </Section>
+      <Section title="Rating">
+        <RatingBody state={state} update={update} />
+      </Section>
+      <Section title="Upvotes">
+        <UpvotesBody state={state} update={update} />
+      </Section>
+      <Section title="Length">
+        <LengthBody state={state} update={update} />
+      </Section>
+      <Section title="BPM">
+        <BpmBody state={state} update={update} />
+      </Section>
+      <Section title="Tags">
+        <TagsBody state={state} update={update} />
+      </Section>
+      <Section title="More">
+        <MoreBody state={state} update={update} />
+      </Section>
+    </ListToolbar>
   );
 }

@@ -24,15 +24,16 @@ import { MapFooter } from "../components/MapFooter";
 import { MapTabList, MapTabPanel } from "../components/MapTabs";
 import { parseTab, tabsFor, type MapTab } from "../lib/mapTabs";
 import { stopPreview } from "../lib/previewPlayer";
+import { errorText } from "../lib/jobtoasts";
 import { useJobRunner } from "../api/jobs";
-import { approvePending, decideOptimistically } from "../api/review";
+import { approvePending, decideOptimistically, useFindings } from "../api/review";
 import { keys, useLiveRows, useMap, useProposals } from "../api/queries";
 import { Cover, LevelChips, StatusChip, Tempo } from "../components/Chips";
 import { PreviewButton } from "../components/PreviewButton";
 import { JobOutcome } from "../components/JobOutcome";
 import { ProposalGroups } from "../components/ProposalGroups";
 import { BackLink } from "../components/BackLink";
-import { SectionTabs } from "../components/SectionTabs";
+import { PageShell } from "../components/PageShell";
 import { backHref, originTab, tabOfHref } from "../lib/backlink";
 import { useDocumentTitle } from "../lib/hooks";
 import { useOrigin } from "../lib/useBacklink";
@@ -50,6 +51,7 @@ export function MapPage() {
   const announce = useAnnounce();
   const map = useMap(id);
   const proposals = useProposals(id);
+  const found = useFindings(id);
   const [params, setParams] = useSearchParams();
   const { origin, back } = useOrigin();
   const [cropSeen, setCropSeen] = useState(false);
@@ -107,7 +109,7 @@ export function MapPage() {
       announce({
         variant: "danger",
         title: "Could not delete the map",
-        message: err instanceof Error ? err.message : "unknown error",
+        message: errorText(err),
       });
     }
   };
@@ -134,12 +136,7 @@ export function MapPage() {
   const statusTab = map.data ? chipTab(statusHref(id, map.data)) : "status";
 
   return (
-    <section className="page map-page">
-      <div className="lib-bar map-bar">
-        <div className="lib-title">
-          <SectionTabs active={originTab(origin)} heading="Map" headingId="map-heading" noHeading />
-        </div>
-      </div>
+    <PageShell active={originTab(origin)} sectionClass="map-page" className="map-bar">
       <BackLink to={backHref(origin, back)} />
       {map.isPending ? (
         <MapHeadSkeleton />
@@ -218,7 +215,7 @@ export function MapPage() {
               onCollapseAll={() => setOpenIds(new Set())}
             />
           )}
-          {proposals.isPending ? (
+          {proposals.isPending || found.isPending ? (
             <FixesSkeleton />
           ) : proposals.isError ? (
             <SpecAlert
@@ -231,6 +228,8 @@ export function MapPage() {
               mapId={id}
               open={openIds}
               onToggle={toggleOne}
+              findings={found.data?.findings}
+              scanned={found.data?.scanned ?? false}
               clean={clean}
             />
           )}
@@ -261,6 +260,6 @@ export function MapPage() {
         )}
       </div>
       <MapFooter id={id} />
-    </section>
+    </PageShell>
   );
 }

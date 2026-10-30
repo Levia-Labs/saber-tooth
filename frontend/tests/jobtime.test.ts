@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { duration, staleMinutes } from "../src/lib/jobtime";
+import { duration, staleMinutes } from "../src/lib/jobview";
 
 const at = (iso: string) => Date.parse(iso);
 

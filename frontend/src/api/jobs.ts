@@ -1,10 +1,8 @@
 // Start a job and poll it until it ends; used by learn, generate and the map page actions.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAnnounce } from "../components/Announcer";
-import { capitalize } from "../lib/announcements";
-import { dismissedJobs } from "../lib/jobdismiss";
-import { useOpenJobs } from "../lib/jobopen";
-import { roundsText } from "../lib/jobrounds";
+import type { AnnounceInput } from "../lib/announcements";
+import { errorText, progressReporter, useOpenJobs } from "../lib/jobtoasts";
 import { getJob, request, isRetryable, type Started } from "./client";
 import type { Job, JobView } from "./types";
 
@@ -127,6 +125,7 @@ export function useJobRunner(label: string, key: string = label): JobRunner {
       try {
         const started = await start();
         // No toast while the job is queued; the first one appears when it runs.
+        const report = progressReporter(announce, { key, title: label, jobId: started.job, open });
         const done = await pollJob(started.job, ctl.signal, (s, polled) => {
           if (s.startsWith("queued")) return;
           if (s === UNREACHABLE) {
@@ -139,19 +138,7 @@ export function useJobRunner(label: string, key: string = label): JobRunner {
             });
             return;
           }
-          if (dismissedJobs.has(started.job)) return; // closed by the user or timed out; only the outcome shows
-          const requested = polled?.cancel_requested === true;
-          const rounds = roundsText(polled?.progress);
-          announce({
-            key,
-            variant: "progress",
-            title: label,
-            message: requested ? "Cancelling" : capitalize(s),
-            onOpen: open,
-            autoClose: true,
-            onDismiss: () => dismissedJobs.add(started.job),
-            ...(rounds && { rounds }),
-          });
+          report(s, polled);
         });
         setJob(done);
         setState("done");
@@ -160,7 +147,7 @@ export function useJobRunner(label: string, key: string = label): JobRunner {
       } catch (err) {
         // Ended by our own abort (the page unmounted): the job still runs; the toast watcher owns it.
         if (ctl.signal.aborted) return null;
-        const message = err instanceof Error ? err.message : String(err);
+        const message = errorText(err);
         if (err instanceof JobFailed && err.job) setJob(err.job);
         setError(message);
         setState("failed");
@@ -181,6 +168,20 @@ export function useJobRunner(label: string, key: string = label): JobRunner {
   );
 
   return { state, busy: state === "running", error, job, run };
+}
+
+/**
+ * Start a job and follow it with a keyed progress toast (none while queued, self-closing, stays closed
+ * once closed). Resolves with the finished job; throws what `start` or `pollJob` throws.
+ */
+export async function runAnnounced(
+  announce: (input: AnnounceInput) => void,
+  start: () => Promise<Started>,
+  { key, title }: { key: string; title: string },
+): Promise<Job> {
+  const started = await start();
+  const report = progressReporter(announce, { key, title, jobId: started.job });
+  return pollJob(started.job, new AbortController().signal, report);
 }
 
 /** Re-queue a failed job; resolves with the new queued job's view (409 when it is not failed). */

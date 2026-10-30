@@ -1,5 +1,3 @@
-import * as Dialog from "@radix-ui/react-dialog";
-import type { ReactNode } from "react";
 import {
   PL_LOCAL_LABELS,
   PL_LOCAL_SORTS,
@@ -12,9 +10,7 @@ import {
 } from "../../lib/plfilters";
 import { PL_TIPS } from "../../lib/pltips";
 import { TextFilterBody } from "../FilterBodies";
-import { Icon } from "../icons";
-import { Tip } from "../Tip";
-import { InBar } from "../BarSlot";
+import { ListToolbar, Section } from "./ListToolbar";
 import {
   PlCreatedBody,
   PlLengthBody,
@@ -35,123 +31,68 @@ interface Props {
   narrow: boolean;
 }
 
-function FilterSheet({ state, update, clear }: Omit<Props, "narrow">) {
-  const total = plTotal(plCounts(state));
-  const section = (title: string, body: ReactNode) => (
-    <section>
-      <h3>{title}</h3>
-      {body}
-    </section>
-  );
-  return (
-    <Dialog.Root>
-      <Tip text={PL_TIPS.moreFilters}>
-        <Dialog.Trigger className="btn plain filters-btn">
-          <Icon name="filter" filled={total > 0} />
-          <span className="label-collapsible">More filters</span>
-          {total > 0 && <span className="filter-badge static">{total}</span>}
-        </Dialog.Trigger>
-      </Tip>
-      <Dialog.Portal>
-        <Dialog.Overlay className="overlay" />
-        <Dialog.Content className="sheet bs-sheet" aria-describedby={undefined}>
-          <div className="sheet-head">
-            <Dialog.Title>Playlist filters</Dialog.Title>
-            <button type="button" className="btn plain" disabled={!total} onClick={clear}>
-              <Icon name="filter-x" />
-              <span className="label-collapsible">Clear all</span>
-            </button>
-          </div>
-          <div className="sheet-body">
-            {section(
-              "Name",
-              <TextFilterBody
-                label="Search playlists"
-                q={state.q}
-                onChange={(q, replace) => update({ q }, replace)}
-              />,
-            )}
-            {section(
-              "Author",
-              <TextFilterBody
-                label="Author contains"
-                q={state.owner}
-                onChange={(owner, replace) => update({ owner }, replace)}
-              />,
-            )}
-            {section("Maps", <PlMapsBody state={state} update={update} />)}
-            {section("Rating", <PlRatingBody state={state} update={update} />)}
-            {section("Upvotes", <PlUpvotesBody state={state} update={update} />)}
-            {section("Length", <PlLengthBody state={state} update={update} />)}
-            {section("NPS", <PlNpsBody state={state} update={update} />)}
-            {section("Created", <PlCreatedBody state={state} update={update} />)}
-            {section("More", <PlMoreBody state={state} update={update} />)}
-            {section("Order", <PlOrderSelect state={state} update={update} />)}
-          </div>
-          <div className="sheet-foot">
-            <Dialog.Close className="btn primary show-btn">
-              <Icon name="approve" />
-              <span>Show playlists</span>
-            </Dialog.Close>
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
-  );
-}
-
-function OrderControls({ state, update }: { state: PlState; update: PlPatch }) {
-  return (
-    <div className="sort-group">
-      <label className="sort-select">
-        <span className="sr">Order by</span>
-        <select
-          value={state.localSort ? `local:${state.localSort}` : state.order}
-          onChange={(e) => update(plOrderPatch(e.target.value))}
-        >
-          {PL_ORDERS.map((o) => (
-            <option key={o} value={o}>
-              {PL_ORDER_LABELS[o]}
-            </option>
-          ))}
-          {PL_LOCAL_SORTS.map((o) => (
-            <option key={o} value={`local:${o}`}>
-              {PL_LOCAL_LABELS[o]}
-            </option>
-          ))}
-        </select>
-      </label>
-      <button
-        type="button"
-        className="order-toggle"
-        onClick={() => update({ ascending: !state.ascending })}
-      >
-        <Icon name={state.ascending ? "sort-asc" : "sort-desc"} />
-        <span className="sr">{state.ascending ? "Ascending" : "Descending"}</span>
-      </button>
-    </div>
-  );
-}
+const ORDER_OPTIONS = [
+  ...PL_ORDERS.map((o) => ({ value: o, label: PL_ORDER_LABELS[o] })),
+  ...PL_LOCAL_SORTS.map((o) => ({ value: `local:${o}`, label: PL_LOCAL_LABELS[o] })),
+];
 
 /** The full filter sheet and clear; on narrow screens also order and direction. */
 export function PlaylistToolbar({ state, update, clear, narrow }: Props) {
-  const active = plTotal(plCounts(state)) > 0;
   return (
-    <InBar>
-      <div className={narrow ? "lib-mobile-bar bs-toolbar" : "bs-toolbar"}>
-        <div className="mobile-filters">
-          {narrow && <OrderControls state={state} update={update} />}
-          <FilterSheet state={state} update={update} clear={clear} />
-          {active && (
-            <Tip text={PL_TIPS.clearFilters}>
-              <button type="button" className="btn icon tap" onClick={clear}>
-                <Icon name="filter-x" />
-                <span className="sr">Clear filters</span>
-              </button>
-            </Tip>
-          )}
-        </div>
-      </div>
-    </InBar>
+    <ListToolbar
+      total={plTotal(plCounts(state))}
+      clear={clear}
+      narrow={narrow}
+      sort={{
+        options: ORDER_OPTIONS,
+        value: state.localSort ? `local:${state.localSort}` : state.order,
+        ascending: state.ascending,
+        onOrder: (v) => update(plOrderPatch(v)),
+        onToggle: () => update({ ascending: !state.ascending }),
+      }}
+      moreTip={PL_TIPS.moreFilters}
+      clearTip={PL_TIPS.clearFilters}
+      sheetTitle="Playlist filters"
+      showLabel="Show playlists"
+    >
+      <Section title="Name">
+        <TextFilterBody
+          label="Search playlists"
+          q={state.q}
+          onChange={(q, replace) => update({ q }, replace)}
+        />
+      </Section>
+      <Section title="Author">
+        <TextFilterBody
+          label="Author contains"
+          q={state.owner}
+          onChange={(owner, replace) => update({ owner }, replace)}
+        />
+      </Section>
+      <Section title="Maps">
+        <PlMapsBody state={state} update={update} />
+      </Section>
+      <Section title="Rating">
+        <PlRatingBody state={state} update={update} />
+      </Section>
+      <Section title="Upvotes">
+        <PlUpvotesBody state={state} update={update} />
+      </Section>
+      <Section title="Length">
+        <PlLengthBody state={state} update={update} />
+      </Section>
+      <Section title="NPS">
+        <PlNpsBody state={state} update={update} />
+      </Section>
+      <Section title="Created">
+        <PlCreatedBody state={state} update={update} />
+      </Section>
+      <Section title="More">
+        <PlMoreBody state={state} update={update} />
+      </Section>
+      <Section title="Order">
+        <PlOrderSelect state={state} update={update} />
+      </Section>
+    </ListToolbar>
   );
 }

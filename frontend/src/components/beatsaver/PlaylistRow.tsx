@@ -98,36 +98,3 @@ export function PlaylistRow({ playlist: p, index, busy, onDownloadAll }: Props) 
     </div>
   );
 }
-
-/** Placeholder row with the playlist grid and height; no layout shift when data arrives. */
-export function PlaylistSkeletonRow({ index }: { index: number }) {
-  return (
-    <div
-      className="lib-row lib-grid skeleton-row"
-      role="row"
-      aria-rowindex={index + 2}
-      aria-hidden="true"
-      data-skeleton="true"
-    >
-      <div className="col-cover" role="cell">
-        <span className="sk sk-cover" />
-      </div>
-      <div className="col-title" role="cell">
-        <span className="sk sk-bar" />
-      </div>
-      <div className="col-sub" role="cell">
-        <span className="sk sk-bar short" />
-      </div>
-      {(["author", "maps", "rating", "upvotes", "length", "nps", "created"] as const).map((c) => (
-        <div key={c} className={`col-${c}`} role="cell">
-          <span className="sk sk-bar short" />
-        </div>
-      ))}
-      <div className="col-actions" role="cell">
-        <span className="sk sk-btn" />
-        <span className="sk sk-btn" />
-        <span className="sk sk-btn" />
-      </div>
-    </div>
-  );
-}

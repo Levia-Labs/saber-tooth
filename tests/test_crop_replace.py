@@ -50,10 +50,10 @@ def test_replace_resets_the_store_rows_but_keeps_the_running_job(http, cuts):
     assert store.scan_info(MID) is not None
     job = _wait(http, http.post(f"/api/maps/{MID}/crop", json=BODY).json()["job"])
     assert job["status"] == "done"
-    assert store.scan_info(MID) is None and store.proposals(MID) == []
+    assert store.scan_info(MID)["analysis"] is None and store.proposals(MID) == []  # fresh scan
     rows = store._query("SELECT id, kind FROM jobs WHERE map_id=?", (MID,))
     assert [(r["id"], r["kind"]) for r in rows] == [(job["id"], "crop")]
-    assert http.get(f"/api/maps/{MID}").json()["status"] in {"unscanned", "incomplete"}
+    assert http.get(f"/api/maps/{MID}").json()["status"] in {"ok", "warn", "error"}
 
 
 def test_replace_failing_before_the_swap_leaves_the_original(http, cuts, monkeypatch):

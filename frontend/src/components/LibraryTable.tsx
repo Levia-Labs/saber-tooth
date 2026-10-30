@@ -1,19 +1,14 @@
+import type { RefObject } from "react";
 import { EmptyState } from "./EmptyState";
-import { useVirtualizer } from "@tanstack/react-virtual";
-import { useEffect, useRef, useState, type RefObject } from "react";
 import type { Facets, MapItem } from "../api/types";
-import { useMediaQuery } from "../lib/hooks";
-import { CARD_QUERY, COMPACT_QUERY } from "../lib/breakpoint";
 import { useColumns } from "../lib/useColumns";
 import type { LibraryState } from "../lib/urlstate";
 import { Alert } from "./Alert";
 import { LibraryHeader } from "./LibraryHeader";
 import { LibraryRow } from "./LibraryRow";
 import { SkeletonRow } from "./SkeletonRow";
-
-export const FIRST_SKELETONS = 14;
-export const NEXT_SKELETONS = 3;
-const LOAD_AHEAD = 6;
+import { VirtualBody } from "./VirtualBody";
+import { useVirtualList } from "../lib/useVirtualList";
 
 interface Props {
   items: MapItem[];
@@ -33,44 +28,19 @@ interface Props {
   table: RefObject<HTMLDivElement | null>;
   columns: ReturnType<typeof useColumns>;
 }
-
-export function useRowEstimate(): number {
-  const mobile = useMediaQuery(CARD_QUERY);
-  const compact = useMediaQuery(COMPACT_QUERY);
-  if (mobile) return 140;
-  return compact ? 92 : 72;
-}
-
 /** Scroll region with a sticky header and a virtualised body; only this region scrolls. */
 export function LibraryTable(props: Props) {
   const { items, loading, hasNext, fetchingNext, nextFailed, onLoadMore } = props;
-  const scroller = useRef<HTMLDivElement>(null);
-  const body = useRef<HTMLDivElement>(null);
   const { table, columns } = props;
-  const [margin, setMargin] = useState(0);
-  const estimate = useRowEstimate();
-  const skeletons = loading ? FIRST_SKELETONS : fetchingNext ? NEXT_SKELETONS : 0;
-  const count = items.length + skeletons;
-
-  const virtual = useVirtualizer({
-    count,
-    getScrollElement: () => scroller.current,
-    estimateSize: () => estimate,
-    overscan: 8,
-    scrollMargin: margin,
-    getItemKey: (i) => items[i]?.id ?? `skeleton-${i}`,
+  const { scroller, body, virtual } = useVirtualList({
+    items,
+    loading,
+    hasNext,
+    fetchingNext,
+    paused: nextFailed,
+    onLoadMore,
+    resetKey: JSON.stringify(props.state),
   });
-  useEffect(() => setMargin(body.current?.offsetTop ?? 0), [estimate]);
-
-  const stateKey = JSON.stringify(props.state);
-  useEffect(() => {
-    if (scroller.current) scroller.current.scrollTop = 0;
-  }, [stateKey]);
-
-  const last = virtual.getVirtualItems().at(-1)?.index ?? -1;
-  useEffect(() => {
-    if (hasNext && !fetchingNext && !nextFailed && last >= items.length - LOAD_AHEAD) onLoadMore();
-  }, [hasNext, fetchingNext, nextFailed, last, items.length, onLoadMore]);
 
   const empty = !loading && items.length === 0;
   return (
@@ -89,32 +59,14 @@ export function LibraryTable(props: Props) {
           update={props.update}
           columns={columns.api}
         />
-        <div
-          role="rowgroup"
-          className="lib-body"
-          ref={body}
-          style={{ height: virtual.getTotalSize() }}
-          aria-busy={loading || fetchingNext}
-        >
-          {virtual.getVirtualItems().map((v) => {
-            const item = items[v.index];
-            return (
-              <div
-                key={v.key}
-                ref={virtual.measureElement}
-                data-index={v.index}
-                className="lib-slot"
-                style={{ transform: `translateY(${v.start - virtual.options.scrollMargin}px)` }}
-              >
-                {item ? (
-                  <LibraryRow item={item} index={v.index} />
-                ) : (
-                  <SkeletonRow index={v.index} />
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <VirtualBody
+          virtual={virtual}
+          bodyRef={body}
+          items={items}
+          busy={loading || fetchingNext}
+          row={(item, i) => <LibraryRow item={item} index={i} />}
+          skeleton={(i) => <SkeletonRow index={i} />}
+        />
       </div>
       {empty && (
         <EmptyState

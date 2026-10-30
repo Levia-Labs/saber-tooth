@@ -8,11 +8,10 @@ import type { ColumnsApi } from "../lib/useColumns";
 import type { JobsPatch } from "../lib/useJobsState";
 import { FilterPopover } from "./FilterPopover";
 import { TextFilterBody } from "./TextFilterBody";
+import { HeaderCell } from "./HeaderCell";
 import { Icon } from "./icons";
 import { JobsFilterBody } from "./JobsFilterBody";
-import { ResizeHandle } from "./ResizeHandle";
 import { Tip } from "./Tip";
-import { isResizable } from "../lib/columns";
 
 const STATE_LABEL: Record<JobState, string> = {
   running: "Running",
@@ -37,44 +36,23 @@ interface CellProps extends Props {
   tip?: string;
   filter?: ReactNode;
 }
-
-function HeaderCell({ col, label, columns, state, update, sort, tip, filter }: CellProps) {
+function Cell({ col, label, columns, state, update, sort, tip, filter }: CellProps) {
   const sorted = sort !== undefined && state.sort === sort;
-  const aria = sorted ? (state.ascending ? "ascending" : "descending") : "none";
-  const click = () => {
-    if (!sort) return;
+  const click = () =>
+    sort &&
     update({ sort, ascending: sorted ? !state.ascending : sort === "status" || sort === "title" });
-  };
+  const order = state.ascending ? "asc" : "desc";
   return (
-    <div
-      className={`th jc-${col}${col === JOB_COL.icon ? " th-quiet" : ""}`}
-      role="columnheader"
-      aria-sort={sort ? aria : undefined}
-    >
-      <div className="th-row">
-        {sort ? (
-          <Tip text={tip ?? `Sort by ${label}`}>
-            <button
-              type="button"
-              className="th-sort"
-              onClick={click}
-              aria-label={`Sort by ${label}`}
-            >
-              <span className="th-label">{label}</span>
-            </button>
-          </Tip>
-        ) : (
-          <span className="th-label">{label}</span>
-        )}
-        {filter}
-        {sort && (
-          <span className="th-slot" aria-hidden="true">
-            {sorted && <Icon name={state.ascending ? "sort-asc" : "sort-desc"} />}
-          </span>
-        )}
-      </div>
-      {isResizable(col) && <ResizeHandle colKey={col} columns={columns} />}
-    </div>
+    <HeaderCell
+      col={col}
+      label={label}
+      columns={columns}
+      prefix="jc"
+      quiet={col === JOB_COL.icon}
+      filter={filter}
+      {...(sort && { onSort: click, tip: tip ?? `Sort by ${label}` })}
+      order={sorted ? order : undefined}
+    />
   );
 }
 
@@ -93,8 +71,8 @@ export function JobsHeader(props: Props) {
   const cell = (col: ColumnKey) => ({ ...props, col, label: col });
   return (
     <div className="lib-head jobs-grid" role="row" aria-rowindex={1}>
-      <HeaderCell {...cell(JOB_COL.icon)} label="Icon" />
-      <HeaderCell
+      <Cell {...cell(JOB_COL.icon)} label="Icon" />
+      <Cell
         {...cell(JOB_COL.title)}
         label="Title"
         sort="title"
@@ -110,7 +88,7 @@ export function JobsHeader(props: Props) {
           </FilterPopover>
         }
       />
-      <HeaderCell
+      <Cell
         {...cell(JOB_COL.length)}
         label="Length"
         sort="length"
@@ -134,7 +112,7 @@ export function JobsHeader(props: Props) {
           </Tip>
         }
       />
-      <HeaderCell
+      <Cell
         {...cell(JOB_COL.operation)}
         label="Operation"
         filter={
@@ -155,7 +133,7 @@ export function JobsHeader(props: Props) {
           </div>
         }
       />
-      <HeaderCell
+      <Cell
         {...cell(JOB_COL.status)}
         label="Status"
         sort="status"
@@ -178,7 +156,7 @@ export function JobsHeader(props: Props) {
           </div>
         }
       />
-      <HeaderCell {...cell(JOB_COL.actions)} label="Actions" />
+      <Cell {...cell(JOB_COL.actions)} label="Actions" />
     </div>
   );
 }

@@ -9,13 +9,12 @@ import { useAnnounce } from "../components/Announcer";
 import { ActionButton } from "../components/Buttons";
 import { EmptyState } from "../components/EmptyState";
 import { JobsTable } from "../components/JobsTable";
-import { SectionTabs } from "../components/SectionTabs";
+import { PageShell } from "../components/PageShell";
 import { useDocumentTitle } from "../lib/hooks";
+import { errorText } from "../lib/jobtoasts";
 import { allJobs, filterJobs, jobsFilterCount, sortJobs } from "../lib/jobfilters";
 import { useListScroll } from "../lib/listscroll";
 import { useJobsState } from "../lib/useJobsState";
-
-const errorText = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
 export function JobsPage() {
   useDocumentTitle("Jobs");
@@ -75,12 +74,7 @@ export function JobsPage() {
       <EmptyState icon="queue" text="Nothing running or queued." />
     );
   return (
-    <section className="library jobs" aria-labelledby="jobs-heading">
-      <div className="lib-bar">
-        <div className="lib-title">
-          <SectionTabs active="jobs" heading="Jobs" headingId="jobs-heading" />
-        </div>
-      </div>
+    <PageShell active="jobs" title="Jobs" sectionClass="jobs">
       <JobsTable
         rows={rows}
         all={all}
@@ -92,6 +86,6 @@ export function JobsPage() {
         retrying={retrying}
         empty={empty}
       />
-    </section>
+    </PageShell>
   );
 }

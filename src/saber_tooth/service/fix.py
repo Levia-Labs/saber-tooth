@@ -149,5 +149,6 @@ def fix_map(
         difficulties=sorted(written.difficulties),
         complete=complete(written),
         errors=sum(f.severity == "error" for f in after),
+        status=(svc.store.get_map(fixed_id) or {}).get("status"),  # as the library lists the copy
     )
     return report

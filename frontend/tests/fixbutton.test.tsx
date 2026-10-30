@@ -83,10 +83,10 @@ describe("fix button", () => {
     await user.click(
       within(link.closest("[role=row]") as HTMLElement).getByRole("button", { name: "Fix Song 1" }),
     );
-    const alert = await toasts().findByText("Fixed: written to Folder 1 [saber-tooth]");
+    const alert = await toasts().findByText("Fixed: Song 1");
     const box = alert.closest(".alert") as HTMLElement;
     expect(box.closest(".toast-stack")).not.toBeNull();
-    expect(inlineText(/Fixed: written to/)).toBe(false);
+    expect(inlineText(/Fixed: Song/)).toBe(false);
     expect(box).toHaveClass("alert-success");
     expect(box).toHaveTextContent("Errors 3 -> 0, 1 difficulty added, 7 fixes applied");
     expect(within(box).getByRole("link", { name: "Open fixed map" })).toHaveAttribute(
@@ -153,7 +153,7 @@ describe("fix button", () => {
     expect(first).toHaveTextContent("Fix");
     await user.click(first);
     await waitFor(() => expect(posts).toContain("/api/maps/id0000000001/fix"));
-    expect(await toasts().findByText("Fixed: written to Folder 1 [saber-tooth]")).toBeVisible();
+    expect(await toasts().findByText("Fixed: Song 1")).toBeVisible();
   });
 });
 

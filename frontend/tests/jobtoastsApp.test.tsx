@@ -116,14 +116,14 @@ describe("job toast watcher", () => {
     );
     // The cached list still shows the finished job as running.
     state.jobs = { running: [other, view("jf", "running")], queued: [], recent: [] };
-    await toasts().findByText("Fixed: written to Folder 1 [saber-tooth]", {}, { timeout: 5000 });
+    await toasts().findByText("Fixed: Song 1", {}, { timeout: 5000 });
     const polls = () => calls.filter((u) => u.pathname === "/api/jobs").length;
     const before = polls();
     await waitFor(() => expect(polls()).toBeGreaterThan(before), { timeout: 4000 });
     await act(async () => {
       await new Promise((r) => setTimeout(r, 300));
     });
-    expect(toasts().getByText("Fixed: written to Folder 1 [saber-tooth]")).toBeInTheDocument();
+    expect(toasts().getByText("Fixed: Song 1")).toBeInTheDocument();
     expect(toasts().queryByText("Running")).toBeNull();
     state.jobs = { running: [other], queued: [], recent: [view("jf", "done")] };
     await act(async () => {
@@ -181,7 +181,7 @@ describe("job toast watcher", () => {
     phase = "done";
     state.jobs = { running: [], queued: [], recent: [view("jf", "done")] };
     expect(
-      await toasts().findByText(/Fixed: written to|^Done$/, {}, { timeout: 6000 }),
+      await toasts().findByText(/Fixed: Song|^Done$/, {}, { timeout: 6000 }),
     ).toBeInTheDocument();
   }, 20_000);
 
@@ -190,6 +190,22 @@ describe("job toast watcher", () => {
     const { state } = api({ running: [], queued: [], recent: [] }, (url) => {
       if (url.pathname === "/api/maps/id0000000001") return items[0];
       if (url.pathname === "/api/maps/id0000000001/proposals") return [];
+      if (url.pathname.endsWith("/findings"))
+        return {
+          scanned: true,
+          findings: [
+            {
+              rule: "r",
+              difficulty: "Hard",
+              beat_start: 1,
+              beat_end: 1,
+              severity: "error",
+              message: "m",
+              time_s: 1,
+              proposal_id: null,
+            },
+          ],
+        };
       if (url.pathname === "/api/jobs/js") {
         return { id: "js", kind: "scan", error: null, status: phase, result: null };
       }

@@ -6,6 +6,7 @@
   gap: 0.4rem;
   min-width: 3.6rem;
   max-width: 100%;
+  white-space: nowrap;
   padding: 0.25rem 0.7rem 0.25rem 0.85rem;
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -143,9 +144,4 @@ button.chip-link:focus-visible {
   color: var(--muted);
   font-weight: 400;
   opacity: 0.25;
-}
-
-.chip {
-  max-width: 100%;
-  white-space: nowrap;
 }

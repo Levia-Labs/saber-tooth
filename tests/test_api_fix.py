@@ -22,6 +22,7 @@ def test_fix_job_writes_new_folder_and_reports(tmp_path):
         assert report["folder"] == f"{NAME} [saber-tooth]"
         assert report["fixed_id"] == map_id_for(report["folder"])
         assert report["errors"] == 0 and report["unfixed"] == []
+        assert report["status"] == "ok"  # the copy's library status, the toast's severity
         assert len(report["difficulties"]) == 5 and report["analysed"] is False
         assert set(report) >= {"before", "after", "rounds", "applied"}
         assert _hashes(original) == before

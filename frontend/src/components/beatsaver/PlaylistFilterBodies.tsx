@@ -10,7 +10,7 @@ import {
 } from "../../lib/plfilters";
 import { ClearFilterButton, type RowClear } from "../ClearFilterButton";
 import { DatePicker } from "../DatePicker";
-import { RangeFilterBody } from "../RangeFilterBody";
+import { NumberField, StateRange } from "../StateBodies";
 import { Box } from "./Box";
 
 export type PlPatch = (patch: Partial<PlState>, replace?: boolean) => void;
@@ -22,50 +22,12 @@ interface Props {
   rowClear?: RowClear;
 }
 
-type NumKey = keyof typeof PL_NUMBERS;
-
-function NumberField(props: {
-  label: string;
-  field: NumKey;
-  state: PlState;
-  update: PlPatch;
-  scale?: number;
-  rowClear?: RowClear;
-}) {
-  const { label, field, state, update, scale = 1, rowClear } = props;
-  const id = useId();
-  const { min, max } = PL_NUMBERS[field];
-  const value = state[field];
-  return (
-    <div className="filter-body">
-      <label htmlFor={id}>{label}</label>
-      <div className={rowClear ? "filter-row" : undefined}>
-        <input
-          id={id}
-          type="number"
-          inputMode="decimal"
-          min={min * scale}
-          max={max * scale}
-          step={1}
-          value={value === null ? "" : Number((value * scale).toFixed(2))}
-          onChange={(e) => {
-            const raw = e.target.value;
-            if (raw === "") return update({ [field]: null }, true);
-            const n = Number(raw) / scale;
-            if (Number.isFinite(n)) update({ [field]: Math.min(max, Math.max(min, n)) }, true);
-          }}
-        />
-        {rowClear && <ClearFilterButton {...rowClear} />}
-      </div>
-    </div>
-  );
-}
-
 export function PlRatingBody({ state, update, rowClear }: Props) {
   return (
     <NumberField
       label="Minimum rating (%)"
       field="minRating"
+      bounds={PL_NUMBERS.minRating}
       state={state}
       update={update}
       scale={100}
@@ -79,6 +41,7 @@ export function PlUpvotesBody({ state, update, rowClear }: Props) {
     <NumberField
       label="Min upvotes"
       field="minUpvotes"
+      bounds={PL_NUMBERS.minUpvotes}
       state={state}
       update={update}
       rowClear={rowClear}
@@ -86,65 +49,24 @@ export function PlUpvotesBody({ state, update, rowClear }: Props) {
   );
 }
 
-export function PlMapsBody({ state, update, rowClear }: Props) {
-  return (
-    <RangeFilterBody
-      name="Maps"
-      kind="number"
-      min={state.mapsMin}
-      max={state.mapsMax}
-      limit={PL_NUMBERS.mapsMax.max}
-      rowClear={rowClear}
-      onChange={(r, replace) =>
-        update(
-          { ...("min" in r && { mapsMin: r.min }), ...("max" in r && { mapsMax: r.max }) },
-          replace,
-        )
-      }
-    />
-  );
-}
+const rangeBody = (name: string, kind: "number" | "duration", prefix: string, limit: number) =>
+  function PlRangeBody({ state, update, rowClear }: Props) {
+    return (
+      <StateRange
+        name={name}
+        kind={kind}
+        prefix={prefix}
+        limit={limit}
+        state={state}
+        update={update}
+        rowClear={rowClear}
+      />
+    );
+  };
 
-export function PlLengthBody({ state, update, rowClear }: Props) {
-  return (
-    <RangeFilterBody
-      name="Length"
-      kind="duration"
-      min={state.durationMin}
-      max={state.durationMax}
-      limit={PL_NUMBERS.durationMax.max}
-      rowClear={rowClear}
-      onChange={(r, replace) =>
-        update(
-          {
-            ...("min" in r && { durationMin: r.min }),
-            ...("max" in r && { durationMax: r.max }),
-          },
-          replace,
-        )
-      }
-    />
-  );
-}
-
-export function PlNpsBody({ state, update, rowClear }: Props) {
-  return (
-    <RangeFilterBody
-      name="NPS"
-      kind="number"
-      min={state.npsMin}
-      max={state.npsMax}
-      limit={PL_NUMBERS.npsMax.max}
-      rowClear={rowClear}
-      onChange={(r, replace) =>
-        update(
-          { ...("min" in r && { npsMin: r.min }), ...("max" in r && { npsMax: r.max }) },
-          replace,
-        )
-      }
-    />
-  );
-}
+export const PlMapsBody = rangeBody("Maps", "number", "maps", PL_NUMBERS.mapsMax.max);
+export const PlLengthBody = rangeBody("Length", "duration", "duration", PL_NUMBERS.durationMax.max);
+export const PlNpsBody = rangeBody("NPS", "number", "nps", PL_NUMBERS.npsMax.max);
 
 export function PlCreatedBody({ state, update, rowClear }: Props) {
   const id = useId();

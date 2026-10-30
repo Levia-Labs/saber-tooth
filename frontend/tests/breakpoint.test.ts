@@ -27,6 +27,8 @@ const widthQueries = (text: string) =>
 
 /** The width queries that are not the mobile view: content tiers and tiny phones. */
 const REMAINING: Record<string, string[]> = {
+  // 650 px toast floor plus the 1rem side margins: width-based, not a layout tier.
+  "alerts.css": ["(max-width: 682px)"],
   "settings.css": ["(max-width: 1099px)"],
   "about.css": [
     "(max-width: 1399px)",
@@ -91,7 +93,7 @@ describe("the shared breakpoint", () => {
   test("the mobile query holds the bottom bar and the sheet; the card query the card rows", () => {
     const by = (name: string) => sheets.find((s) => s.name === name)!.text;
     expect(by("pill.css")).toContain(`@media ${MOBILE_QUERY}`);
-    for (const f of ["rows.css", "alerts.css", "jobs.css", "beatsaver.css"]) {
+    for (const f of ["rows.css", "jobs.css", "beatsaver.css"]) {
       expect(by(f), f).toContain(`@media ${CARD_QUERY}`);
     }
   });

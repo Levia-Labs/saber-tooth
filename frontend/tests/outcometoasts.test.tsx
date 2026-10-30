@@ -5,12 +5,24 @@ import { FACETS, inlineText, item, mockFetch, renderApp, toasts } from "./helper
 
 const mapItem = item(1, { status: "error", errors: 2 });
 
-function api(scanStatus: "failed" | "done") {
+const F = {
+  rule: "r",
+  difficulty: "Hard",
+  beat_start: 1,
+  beat_end: 1,
+  severity: "error",
+  message: "m",
+  time_s: 1,
+  proposal_id: null,
+};
+
+function api(scanStatus: "failed" | "done", findings: unknown[] = [F, { ...F, beat_start: 2 }]) {
   return mockFetch((url, init) => {
     if (init?.method === "POST") return { job: "js" };
     if (url.pathname === "/api/maps/facets") return FACETS;
     if (url.pathname === "/api/maps/id0000000001") return mapItem;
     if (url.pathname.endsWith("/proposals")) return [];
+    if (url.pathname.endsWith("/findings")) return { scanned: true, findings };
     if (url.pathname === "/api/jobs/js") {
       return {
         id: "js",
@@ -54,9 +66,9 @@ describe("map page outcomes are toasts", () => {
   });
 
   test("the empty state stays inline on the page", async () => {
-    api("done");
+    api("done", []);
     renderApp("/maps/id0000000001");
-    const empty = await screen.findByText("No fixes yet");
+    const empty = await screen.findByText("No issues found");
     expect(empty.closest(".toast-stack")).toBeNull();
   });
 });

@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { act, render, screen } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
 import { AnnouncerProvider, useAnnounce } from "../src/components/Announcer";
-import { DownloadSummary } from "../src/components/beatsaver/BsResults";
+import { DownloadSummary } from "../src/components/beatsaver/DownloadSummary";
 import type { Downloads } from "../src/components/beatsaver/downloads";
 import type { BsOutcome } from "../src/api/beatsaver";
 import type { JobRunner } from "../src/api/jobs";

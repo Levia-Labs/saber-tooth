@@ -142,8 +142,8 @@ describe("toast stack", () => {
     expect(block(".toast-stack .toast")).toMatch(/max-width:/);
   });
 
-  test("keeps a 16 px side gutter on a phone", () => {
-    expect(alerts).toMatch(/max-width: 719.98px\)[^@]*width:\s*calc\(100% - 2rem\)/);
+  test("keeps a 16 px side gutter on a narrow screen", () => {
+    expect(block(".toast-stack")).toMatch(/width:\s*min\(100% - 2rem,/);
   });
 
   test("the VR stack centers its toasts too", () => {

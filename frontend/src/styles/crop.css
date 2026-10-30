@@ -48,6 +48,7 @@
 .nps-selection {
   fill: var(--green);
   opacity: 0.2;
+  cursor: grab;
 }
 .nps-line {
   stroke-width: 1.5;
@@ -72,9 +73,6 @@
   stroke-width: 2;
   vector-effect: non-scaling-stroke;
   pointer-events: none;
-}
-.nps-selection {
-  cursor: grab;
 }
 .nps-xaxis {
   position: relative;

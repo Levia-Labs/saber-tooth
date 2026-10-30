@@ -31,3 +31,11 @@
   height: 3rem;
   color: var(--muted);
 }
+.empty-state-error {
+  min-height: 0;
+  gap: 0.6rem;
+}
+.empty-state-error .alert {
+  margin: 0;
+  width: min(100%, 34rem);
+}

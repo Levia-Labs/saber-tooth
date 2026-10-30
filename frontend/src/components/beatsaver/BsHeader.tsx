@@ -2,12 +2,12 @@ import * as Checkbox from "@radix-ui/react-checkbox";
 import type { ReactNode } from "react";
 import { bsCounts, type BsOrder, type BsState, type LocalSort } from "../../lib/bsfilters";
 import { BS_TIPS } from "../../lib/bstips";
-import { isResizable, LABELS, type ColumnKey } from "../../lib/columns";
+import { LABELS, type ColumnKey } from "../../lib/columns";
 import type { ColumnsApi } from "../../lib/useColumns";
 import { FilterPopover } from "../FilterPopover";
 import { TextFilterBody } from "../FilterBodies";
+import { HeaderCell } from "../HeaderCell";
 import { Icon } from "../icons";
-import { ResizeHandle } from "../ResizeHandle";
 import { Tip } from "../Tip";
 import { LevelsBody, TagsBody, type Patch } from "./BsFilterBodies";
 import { BpmBody, LengthBody, RatingBody, UpvotesBody } from "./BsNumberBodies";
@@ -29,52 +29,27 @@ interface CellProps {
   filter?: ReactNode;
 }
 
-function HeaderCell({ col, columns, state, update, sort, filter }: CellProps) {
-  const label = LABELS[col];
+function Cell({ col, columns, state, update, sort, filter }: CellProps) {
   const sorted =
     sort !== undefined &&
     (sort.local ? state.localSort === sort.local : !state.localSort && state.order === sort.order);
-  const aria = sorted ? (state.ascending ? "ascending" : "descending") : "none";
   const click = () =>
-    sort &&
     update({
-      ...(sort.order && { order: sort.order }),
-      localSort: sort.local ?? null,
+      ...(sort?.order && { order: sort.order }),
+      localSort: sort?.local ?? null,
       ascending: sorted ? !state.ascending : false,
     });
   return (
-    <div
-      className={`th col-${col}${col === "cover" ? " th-quiet" : ""}`}
-      role="columnheader"
-      aria-sort={sort ? aria : undefined}
-    >
-      <div className="th-row">
-        {sort ? (
-          <Tip text={sort.tip}>
-            <button
-              type="button"
-              className="th-sort"
-              onClick={click}
-              aria-label={`Sort by ${label}`}
-            >
-              <span className="th-label">{label}</span>
-            </button>
-          </Tip>
-        ) : (
-          <span className="th-label">{label}</span>
-        )}
-        {filter}
-        {sort && (
-          <span className="th-slot" aria-hidden="true">
-            {sorted && <Icon name={state.ascending ? "sort-asc" : "sort-desc"} />}
-          </span>
-        )}
-      </div>
-      {isResizable(col) && <ResizeHandle colKey={col} columns={columns} />}
-    </div>
+    <HeaderCell
+      col={col}
+      label={LABELS[col]}
+      columns={columns}
+      filter={filter}
+      {...(sort && { onSort: click, tip: sort.tip })}
+      order={sorted ? (state.ascending ? "asc" : "desc") : undefined}
+    />
   );
 }
-
 /** Sticky header row: sort and filters on Rating, Upvotes, Length and BPM; filters on Title, Levels and Tags. */
 export function BsHeader({ state, update, columns, allSelected, onSelectAll }: Props) {
   const counts = bsCounts(state);
@@ -95,8 +70,8 @@ export function BsHeader({ state, update, columns, allSelected, onSelectAll }: P
           </Checkbox.Root>
         </Tip>
       </div>
-      <HeaderCell col="cover" {...cell} />
-      <HeaderCell
+      <Cell col="cover" {...cell} />
+      <Cell
         col="title"
         {...cell}
         filter={
@@ -109,8 +84,8 @@ export function BsHeader({ state, update, columns, allSelected, onSelectAll }: P
           </FilterPopover>
         }
       />
-      <HeaderCell col="author" {...cell} />
-      <HeaderCell
+      <Cell col="author" {...cell} />
+      <Cell
         col="levels"
         {...cell}
         filter={
@@ -119,7 +94,7 @@ export function BsHeader({ state, update, columns, allSelected, onSelectAll }: P
           </FilterPopover>
         }
       />
-      <HeaderCell
+      <Cell
         col="rating"
         {...cell}
         sort={{ order: "Rating", tip: BS_TIPS.sortRating }}
@@ -129,7 +104,7 @@ export function BsHeader({ state, update, columns, allSelected, onSelectAll }: P
           </FilterPopover>
         }
       />
-      <HeaderCell
+      <Cell
         col="upvotes"
         {...cell}
         sort={{ local: "upvotes", tip: BS_TIPS.sortUpvotes }}
@@ -139,7 +114,7 @@ export function BsHeader({ state, update, columns, allSelected, onSelectAll }: P
           </FilterPopover>
         }
       />
-      <HeaderCell
+      <Cell
         col="length"
         {...cell}
         sort={{ order: "Duration", tip: BS_TIPS.sortLength }}
@@ -149,7 +124,7 @@ export function BsHeader({ state, update, columns, allSelected, onSelectAll }: P
           </FilterPopover>
         }
       />
-      <HeaderCell
+      <Cell
         col="bpm"
         {...cell}
         sort={{ local: "bpm", tip: BS_TIPS.sortBpm }}
@@ -159,7 +134,7 @@ export function BsHeader({ state, update, columns, allSelected, onSelectAll }: P
           </FilterPopover>
         }
       />
-      <HeaderCell
+      <Cell
         col="tags"
         {...cell}
         filter={
@@ -168,8 +143,8 @@ export function BsHeader({ state, update, columns, allSelected, onSelectAll }: P
           </FilterPopover>
         }
       />
-      <HeaderCell col="status" {...cell} />
-      <HeaderCell col="actions" {...cell} />
+      <Cell col="status" {...cell} />
+      <Cell col="actions" {...cell} />
     </div>
   );
 }

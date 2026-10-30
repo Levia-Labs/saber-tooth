@@ -43,16 +43,35 @@
   margin: 0.2rem 0 0;
   overflow-wrap: anywhere;
 }
-.alert-details {
+/* Details on the left, the action on the right of one row; the open box drops below the row. */
+.alert-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.5rem;
   margin-top: 0.5rem;
 }
+.alert-foot .alert-actions {
+  order: 1;
+  margin: 0 0 0;
+  margin-left: auto;
+}
+.alert-details {
+  display: contents;
+}
+.alert-details:not([open]) .alert-details-body {
+  display: none;
+}
 .alert-details summary {
+  order: 0;
   cursor: pointer;
   color: var(--muted);
 }
 .alert-details-body {
+  order: 2;
+  flex: 0 0 100%;
   max-height: min(40vh, 18rem);
-  margin-top: 0.4rem;
+  margin-top: 0;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -70,7 +89,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-top: 0.6rem;
 }
 .alert-dismiss {
   flex: none;
@@ -118,7 +136,7 @@
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-  width: min(100% - 2.5rem, 1480px);
+  width: min(100% - 2rem, 1480px);
   max-height: calc(100dvh - 2rem - env(safe-area-inset-bottom, 0px));
   justify-content: flex-end;
   margin: 0 auto;
@@ -130,6 +148,7 @@
 /* Each toast is as wide as its content, centered on the stack's axis, never wider than the cap. */
 .toast-stack .toast {
   width: fit-content;
+  min-width: min(calc(650px * var(--ui-scale, 1)), 100%);
   max-width: min(100%, 52rem);
   max-height: 100%;
   overflow-y: auto;
@@ -177,15 +196,11 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-@media (max-width: 719.98px) {
-  .toast-stack {
-    width: calc(100% - 2rem);
-    bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
-  }
-  /* Full stack width on a phone; the script leaves the width alone here. */
+/* Narrower than 650px plus the 1rem side margins: full stack width (clamps the script's width). */
+@media (max-width: 682px) {
   .toast-stack .toast {
-    width: 100%;
-    max-width: none;
+    min-width: 100%;
+    max-width: 100%;
   }
 }
 @media (prefers-reduced-motion: no-preference) {

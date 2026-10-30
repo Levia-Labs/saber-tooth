@@ -6,6 +6,7 @@ import { jobPicks, livePicks, type SongPick } from "../../api/playlists";
 import type { MapItem } from "../../api/types";
 import { ActionButton } from "../Buttons";
 import { Cover } from "../Chips";
+import { errorText } from "../../lib/jobtoasts";
 
 interface Props {
   /** Map ids already in the draft. */
@@ -72,7 +73,7 @@ function OutputPicker({ onAdd, onError }: Omit<Props, "chosen">) {
   const run = (load: () => Promise<{ items: SongPick[] }>) =>
     load().then(
       (r) => onAdd(r.items),
-      (e: unknown) => onError(e instanceof Error ? e.message : String(e)),
+      (e: unknown) => onError(errorText(e)),
     );
   return (
     <div className="lp-pick">

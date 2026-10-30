@@ -14,7 +14,7 @@ from saber_tooth.lightshow import learn as learn_templates
 from saber_tooth.mapio import MapParseError, load_map
 from saber_tooth.mapio.errors import safe_name
 from saber_tooth.model import Beatmap
-from saber_tooth.service.copyscan import store_copy_scan
+from saber_tooth.service.copyscan import copy_source, is_copy, store_copy_scan
 from saber_tooth.service.delete import DeleteMixin
 from saber_tooth.service.duration import folder_duration
 from saber_tooth.service.errors import ApplyConflict, MapNotFound, MapUnreadable
@@ -106,7 +106,7 @@ class Service(DeleteMixin):
                     mid, folder.name, i.song_name, i.mapper, i.environment, None,
                     i.bpm, folder_duration(folder, beatmap), level_mask(beatmap.difficulties),
                 )  # fmt: skip
-                if folder.name.endswith(SUFFIX) and self.store.scan_info(mid) is None:
+                if is_copy(folder.name) and self.store.scan_info(mid) is None:
                     self._scan_copy(folder, beatmap)
             except (MapParseError, OSError) as exc:
                 self.store.upsert_map(mid, folder.name, folder.name, "", "", str(exc))
@@ -115,8 +115,10 @@ class Service(DeleteMixin):
 
     def _scan_copy(self, folder: Path, beatmap: Beatmap) -> None:
         """A saber-tooth copy with no scan: one cheap check, with its original's analysis."""
-        source = map_id_for(folder.name[: -len(SUFFIX)])
-        analysis = stored_analysis(self.uploads, self.store.scan_info(source))
+        source = map_id_for(copy_source(folder.name))
+        cropped = copy_source(folder.name) != folder.name.removesuffix(SUFFIX)  # other time base
+        info = None if cropped else self.store.scan_info(source)
+        analysis = stored_analysis(self.uploads, info)
         store_copy_scan(self, folder.name, beatmap, analysis, locked=False)
 
     def _templates(self) -> Templates | None:

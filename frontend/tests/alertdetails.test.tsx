@@ -9,7 +9,7 @@ const css = readFileSync(resolve(__dirname, "../src/styles/alerts.css"), "utf-8"
   "",
 );
 const rule = (selector: string) =>
-  new RegExp(`${selector.replace(/[.]/g, "\\.")}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? "";
+  new RegExp(`(?:^|\n)${selector.replace(/[.]/g, "\\.")}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? "";
 
 test("the details body is height-capped, scrolls and keeps whitespace", () => {
   const body = rule(".alert-details-body");
@@ -30,4 +30,37 @@ test("expanded details render in a labelled keyboard-scrollable region", () => {
   const region = screen.getByLabelText("Error details");
   expect(region.tabIndex).toBe(0);
   expect(region.textContent).toContain("Traceback line");
+});
+
+test("Details and the action share one row container, Details first", () => {
+  render(
+    <Alert
+      variant="danger"
+      title="Failed"
+      details={["x"]}
+      actions={<a href="/m">Open fixed map</a>}
+    />,
+  );
+  const row = screen.getByText("Details").closest(".alert-foot") as HTMLElement;
+  expect(row).not.toBeNull();
+  const link = screen.getByText("Open fixed map");
+  expect(row.contains(link)).toBe(true);
+  const summary = screen.getByText("Details");
+  expect(summary.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(rule(".alert-foot")).toMatch(/flex-wrap:\s*wrap/);
+  expect(rule(".alert-foot .alert-actions")).toMatch(/margin-left:\s*auto/);
+});
+
+test("toasts have a 650px floor and go full width on a narrow viewport, no mobile breakpoint", () => {
+  expect(rule(".toast-stack .toast")).toMatch(
+    /min-width:\s*min\(calc\(650px \* var\(--ui-scale, 1\)\),\s*100%\)/,
+  );
+  expect(css).not.toMatch(/max-width:\s*719\.98px/);
+  const narrow = /@media \(max-width:\s*(\d+)px\)\s*\{\s*\.toast-stack \.toast\s*\{([^}]*)\}/.exec(
+    css,
+  );
+  expect(narrow).not.toBeNull();
+  expect(Number(narrow![1])).toBe(650 + 32);
+  expect(narrow![2]).toMatch(/min-width:\s*100%/);
+  expect(rule(".toast-stack")).toMatch(/width:\s*min\(100% - 2rem,/);
 });

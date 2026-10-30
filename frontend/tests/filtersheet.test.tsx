@@ -30,16 +30,15 @@ describe("More filters sheet", () => {
 
   test("the footer sits outside the scrolling body with a safe-area inset", () => {
     expect(rule(".bs-sheet .sheet-foot")).toMatch(/safe-area-inset-bottom/);
-    for (const [file, label] of [
-      ["components/beatsaver/BsToolbar.tsx", "Show maps"],
-      ["components/beatsaver/PlaylistToolbar.tsx", "Show playlists"],
-    ] as const) {
-      const src = read(file);
-      const bodyEnd = src.indexOf('<div className="sheet-foot">');
-      expect(src.indexOf('<div className="sheet-body">')).toBeGreaterThan(0);
-      expect(bodyEnd).toBeGreaterThan(src.indexOf('<div className="sheet-body">'));
-      expect(src.indexOf(label)).toBeGreaterThan(bodyEnd);
-    }
+    const src = read("components/beatsaver/ListToolbar.tsx");
+    const bodyEnd = src.indexOf('<div className="sheet-foot">');
+    expect(src.indexOf('<div className="sheet-body">')).toBeGreaterThan(0);
+    expect(bodyEnd).toBeGreaterThan(src.indexOf('<div className="sheet-body">'));
+    expect(src.indexOf("{showLabel}")).toBeGreaterThan(bodyEnd);
+    expect(read("components/beatsaver/BsToolbar.tsx")).toContain('showLabel="Show maps"');
+    expect(read("components/beatsaver/PlaylistToolbar.tsx")).toContain(
+      'showLabel="Show playlists"',
+    );
     const base = read("styles/overlays.css");
     expect(base).toMatch(/\.sheet-body \{[^}]*overflow-y:\s*auto/);
     expect(base).toMatch(/\.sheet-foot \{[^}]*flex:\s*none/);

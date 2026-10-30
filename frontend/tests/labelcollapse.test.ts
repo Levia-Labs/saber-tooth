@@ -7,7 +7,9 @@ function makeRow(names: string[], opts: { primary?: string; keep?: string } = {}
   row.setAttribute("data-label-row", "");
   for (const name of names) {
     const btn = document.createElement("button");
-    btn.className = `btn${name === opts.primary ? " primary" : ""}${name === opts.keep ? " keep-label" : ""}`;
+    btn.className = `btn${name === opts.primary ? " primary" : ""}${
+      name === opts.keep ? " keep-label" : ""
+    }`;
     const label = document.createElement("span");
     label.className = "label-collapsible";
     label.textContent = name;
@@ -112,6 +114,31 @@ test("the observer refits a row when it is resized", () => {
   }
   expect(collapsed()).toEqual([]);
   stop();
+});
+
+test("a row never collapses the labels of a row nested inside it", () => {
+  // The page bar of Playlists: a title group holding the marked tab row, and a button of its own.
+  const bar = document.createElement("div");
+  bar.className = "lib-bar";
+  const title = document.createElement("div");
+  const tabs = makeRow(["Library", "Playlists"]);
+  title.append(tabs.row);
+  const own = document.createElement("a");
+  own.className = "btn primary";
+  const label = document.createElement("span");
+  label.className = "label-collapsible";
+  label.textContent = "New playlist";
+  own.append(label);
+  bar.append(title, own);
+  document.body.append(bar);
+  Object.defineProperty(bar, "clientWidth", { get: () => 100 });
+  Object.defineProperty(bar, "scrollWidth", { get: () => 500 }); // the bar overflows
+  fitRow(bar);
+  expect(label.hasAttribute("data-collapsed")).toBe(true);
+  expect(tabs.collapsed()).toEqual([]); // the tab row keeps its labels at the width Library does
+  tabs.box.width = 1000;
+  fitRow(tabs.row);
+  expect(tabs.collapsed()).toEqual([]);
 });
 
 test("the active tab keeps its label longest", () => {

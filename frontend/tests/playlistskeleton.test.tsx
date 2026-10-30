@@ -1,6 +1,6 @@
 import { screen } from "@testing-library/react";
 import { expect, test } from "vitest";
-import { FIRST_SKELETONS } from "../src/components/LibraryTable";
+import { FIRST_SKELETONS } from "../src/lib/useVirtualList";
 import { item, mockFetch, renderApp } from "./helpers";
 
 const PLAYLIST = {

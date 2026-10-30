@@ -1,7 +1,6 @@
-import { useListScroll } from "../../lib/listscroll";
 import { EmptyState } from "../EmptyState";
 import type { InfiniteData, UseInfiniteQueryResult } from "@tanstack/react-query";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   getPlaylistMaps,
   type BsMap,
@@ -10,17 +9,17 @@ import {
 } from "../../api/beatsaver";
 import { DEFAULT_BS_STATE } from "../../lib/bsfilters";
 import { errorToAlert } from "../../lib/alerts";
-import { useNarrow } from "../../lib/breakpoint";
 import { PL_COLUMNS } from "../../lib/plcolumns";
 import { isPlDefault, viewPlaylists } from "../../lib/plfilters";
 import { PL_TIPS } from "../../lib/pltips";
 import type { PlControls } from "../../lib/usePlState";
-import { useColumns } from "../../lib/useColumns";
 import { SpecAlert } from "../Alert";
+import { ListError } from "../ListError";
+import { useInfiniteList } from "../../lib/useInfiniteList";
 import { Icon } from "../icons";
 import { Tip } from "../Tip";
-import { useDownloads } from "./downloads";
-import { DownloadSummary } from "./BsResults";
+
+import { DownloadSummary } from "./DownloadSummary";
 import { PlaylistTable } from "./PlaylistTable";
 import { PlaylistToolbar } from "./PlaylistToolbar";
 import { DownloadConfirm, MAX_BATCH } from "./SelectionBar";
@@ -45,32 +44,15 @@ async function allMaps(id: string): Promise<BsMap[]> {
 /** Playlist search results as a table; header filters, infinite scroll and mobile cards. */
 export function PlaylistList({ query, controls }: { query: Query; controls: PlControls }) {
   const { state, update, clearFilters } = controls;
-  const table = useRef<HTMLDivElement>(null);
-  const columns = useColumns(table, PL_COLUMNS);
-  const narrow = useNarrow();
-  const downloads = useDownloads();
   const [fetching, setFetching] = useState(false);
   const [failure, setFailure] = useState<unknown>(null);
   const [confirm, setConfirm] = useState<{ open: boolean; items: BsMap[] }>({
     open: false,
     items: [],
   });
-  const { fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError, refetch } = query;
-
-  const pages = query.data?.pages;
-  const items = useMemo(
-    () => viewPlaylists(pages?.flatMap((p) => p.items) ?? [], state),
-    [pages, state],
-  );
-  const loadMore = useCallback(() => void fetchNextPage(), [fetchNextPage]);
-  useListScroll(!query.isPending, items.length, hasNextPage, {
-    load: loadMore,
-    busy: isFetchingNextPage || isFetchNextPageError,
-  });
-  const retry = useCallback(
-    () => void (hasNextPage ? fetchNextPage() : refetch()),
-    [hasNextPage, fetchNextPage, refetch],
-  );
+  const select = useCallback((all: BsPlaylist[]) => viewPlaylists(all, state), [state]);
+  const list = useInfiniteList(query, PL_COLUMNS, select);
+  const { items, downloads } = list;
   const downloadAll = useCallback(async (p: BsPlaylist) => {
     setFetching(true);
     setFailure(null);
@@ -84,10 +66,9 @@ export function PlaylistList({ query, controls }: { query: Query; controls: PlCo
   }, []);
 
   const filtered = !isPlDefault(state);
-  const failedFirst = query.isError && !query.data;
   return (
     <>
-      <PlaylistToolbar state={state} update={update} clear={clearFilters} narrow={narrow} />
+      <PlaylistToolbar state={state} update={update} clear={clearFilters} narrow={list.narrow} />
       <DownloadSummary downloads={downloads} />
       {failure !== null && (
         <SpecAlert
@@ -95,28 +76,29 @@ export function PlaylistList({ query, controls }: { query: Query; controls: PlCo
           onDismiss={() => setFailure(null)}
         />
       )}
-      {failedFirst ? (
-        <div className="lib-empty">
-          <SpecAlert
-            spec={errorToAlert(query.error, "Could not reach BeatSaver")}
-            onRetry={retry}
-          />
-        </div>
+      {list.failedFirst ? (
+        <ListError
+          alert
+          scope="first"
+          what="Could not reach BeatSaver"
+          error={query.error}
+          onRetry={list.retry}
+        />
       ) : (
         <>
           <PlaylistTable
             items={items}
             loading={query.isPending}
-            hasNext={hasNextPage}
-            fetchingNext={isFetchingNextPage}
-            paused={isFetchNextPageError}
-            onLoadMore={loadMore}
+            hasNext={query.hasNextPage}
+            fetchingNext={query.isFetchingNextPage}
+            paused={list.paused}
+            onLoadMore={list.loadMore}
             state={state}
             update={update}
             busy={fetching || downloads.runner.busy}
             onDownloadAll={(p) => void downloadAll(p)}
-            table={table}
-            columns={columns}
+            table={list.table}
+            columns={list.columns}
             empty={
               <EmptyState
                 icon={filtered ? "search" : "playlist"}
@@ -134,13 +116,14 @@ export function PlaylistList({ query, controls }: { query: Query; controls: PlCo
               />
             }
           />
-          {isFetchNextPageError && (
-            <div className="lib-more">
-              <SpecAlert
-                spec={errorToAlert(query.error, "Could not load more playlists")}
-                onRetry={retry}
-              />
-            </div>
+          {query.isFetchNextPageError && (
+            <ListError
+              alert
+              scope="more"
+              what="Could not load more playlists"
+              error={query.error}
+              onRetry={list.retry}
+            />
           )}
         </>
       )}

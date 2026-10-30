@@ -222,6 +222,6 @@ describe("icon-only actions on mobile", () => {
       /@media \(max-width: 719.98px\) \{\s*\.sub-unreadable \{\s*display: none/,
     );
     expect(css("rows.css")).toMatch(/\.sub-unreadable \{[^}]*text-overflow: ellipsis/);
-    expect(css("chips.css")).toMatch(/\.chip \{\s*max-width: 100%;\s*white-space: nowrap/);
+    expect(css("chips.css")).toMatch(/\.chip \{[^}]*max-width: 100%;\s*white-space: nowrap/);
   });
 });

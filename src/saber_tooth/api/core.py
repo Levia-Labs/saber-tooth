@@ -20,8 +20,7 @@ from saber_tooth.api.library import (
     parse_query,
     shape_item,
 )
-from saber_tooth.api.overlap import conflicts_with
-from saber_tooth.api.wall_context import changed_walls, stored_walls, walls_context
+from saber_tooth.api.proposal_views import map_findings, proposal_views
 from saber_tooth.jobs import Jobs
 from saber_tooth.service import MapNotFound, MapUnreadable, Service
 from saber_tooth.store import ProposalApplied
@@ -31,18 +30,6 @@ log = logging.getLogger(__name__)
 
 MAP_ID = re.compile(r"[0-9a-f]{12}")
 JOB_ID = re.compile(r"[0-9a-f]{32}")
-PROPOSAL_FIELDS = (
-    "id",
-    "rule",
-    "difficulty",
-    "severity",
-    "summary",
-    "status",
-    "before",
-    "after",
-    "replaces",
-)
-
 
 YOUTUBE_HOSTS = {"youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "youtu.be"}
 
@@ -157,33 +144,11 @@ class Api:
             raise MapNotFound(f"no audio for map: {raw}")
         return path, AUDIO_TYPES[path.suffix.lower()]
 
-    def _stored_walls(self, map_id: str) -> dict[str, list[dict]]:
-        row = next((m for m in self.store.list_maps() if m["id"] == map_id), None)
-        if row is None or row["parse_error"]:
-            return {}
-        name = row["folder"]
-        folder = self.service.levels / name
-        if Path(name).name != name or folder.is_symlink() or not folder.is_dir():
-            return {}
-        return stored_walls(folder)
-
-    def _view(
-        self, proposal: dict, stored: dict[str, list[dict]], clashes: dict[int, list[int]]
-    ) -> dict:
-        view = {k: proposal[k] for k in PROPOSAL_FIELDS}
-        view["conflicts_with"] = clashes.get(proposal["id"], [])
-        before, after = changed_walls(proposal)
-        context = walls_context(proposal, stored, before + after)
-        view.update(walls_before=before, walls_after=after, walls_context=context)
-        if view["status"] == "applying":
-            view["status"] = "approved"
-        return view
-
     def proposals(self, map_id: str) -> list[dict]:
-        found = self.store.proposals(self.map_id(map_id))
-        stored = self._stored_walls(map_id)
-        clashes = conflicts_with(found)
-        return [self._view(p, stored, clashes) for p in found]
+        return proposal_views(self, map_id)
+
+    def findings(self, map_id: str) -> dict:
+        return map_findings(self, map_id)
 
     def set_status(self, raw: str, status: str) -> dict:
         pid = self.proposal_id(raw)

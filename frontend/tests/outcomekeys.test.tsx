@@ -33,9 +33,7 @@ describe("toast keys include the map id", () => {
     expect(buttons).toHaveLength(2);
     await user.click(buttons[0] as HTMLElement);
     await user.click(buttons[1] as HTMLElement);
-    await waitFor(() =>
-      expect(toasts().getAllByText("Fixed: written to Same [saber-tooth]")).toHaveLength(2),
-    );
+    await waitFor(() => expect(toasts().getAllByText("Fixed: Same")).toHaveLength(2));
   });
 
   test("retry from a failed scan shows the progress toast at once", async () => {

@@ -18,6 +18,7 @@ from saber_tooth.crop.timeline import (
 from saber_tooth.crop.write import stage_cropped, write_cropped
 from saber_tooth.mapio import load_map
 from saber_tooth.model import Beatmap
+from saber_tooth.service.copyscan import store_copy_scan
 from saber_tooth.service.duration import audio_path, folder_duration
 from saber_tooth.service.util import checkpoint, map_id_for
 from saber_tooth.service.verify import stored_analysis
@@ -93,6 +94,7 @@ def crop_map(
         target = _replace(svc, map_id, folder, audio, cropped, label, progress)
     else:
         target = write_cropped(svc.levels, folder, audio, cropped, label)
+    store_copy_scan(svc, target.name, cropped.beatmap, None)  # the analysis is on the old time base
     try:
         svc.refresh_library()
     except Exception:

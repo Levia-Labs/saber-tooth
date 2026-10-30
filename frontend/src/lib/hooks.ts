@@ -1,7 +1,8 @@
 // Small hooks: URL-backed library state, debounce, media query and document title.
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 import { encodeState, parseState, type LibraryState } from "./urlstate";
+import { useUrlState, type UrlControls } from "./useUrlState";
 
 let lastLibrarySearch = "";
 const SEARCH_KEY = "saber-tooth.library-search";
@@ -28,45 +29,33 @@ export function libraryHref(): string {
   return lastLibrarySearch ? `/?${lastLibrarySearch}` : "/";
 }
 
-export interface LibraryControls {
-  state: LibraryState;
-  /** Merge a change into the URL; typing uses replace so history is not flooded. */
-  update: (patch: Partial<LibraryState>, replace?: boolean) => void;
-  clearFilters: () => void;
-}
+const clearLibraryFilters = (s: LibraryState): LibraryState => ({
+  ...s,
+  q: "",
+  qField: "title",
+  status: [],
+  env: [],
+  mapper: [],
+  level: [],
+  levelMode: "any",
+  durationMin: null,
+  durationMax: null,
+  bpmMin: null,
+  bpmMax: null,
+});
+
+const LIBRARY_CODEC = { parse: parseState, encode: encodeState, clear: clearLibraryFilters };
+
+export type LibraryControls = UrlControls<LibraryState>;
 
 export function useLibraryState(): LibraryControls {
-  const [params, setParams] = useSearchParams();
-  const search = params.toString();
-  const state = useMemo(() => parseState(search), [search]);
+  const controls = useUrlState(LIBRARY_CODEC);
+  const search = useSearchParams()[0].toString();
   useEffect(() => {
     lastLibrarySearch = search;
     storeLibrarySearch(search);
   }, [search]);
-  const update = useCallback(
-    (patch: Partial<LibraryState>, replace = false) => {
-      setParams(encodeState({ ...parseState(search), ...patch }), { replace });
-    },
-    [search, setParams],
-  );
-  const clearFilters = useCallback(
-    () =>
-      update({
-        q: "",
-        qField: "title",
-        status: [],
-        env: [],
-        mapper: [],
-        level: [],
-        levelMode: "any",
-        durationMin: null,
-        durationMax: null,
-        bpmMin: null,
-        bpmMax: null,
-      }),
-    [update],
-  );
-  return { state, update, clearFilters };
+  return controls;
 }
 
 /** A value that follows `value` after it has been stable for `ms`. */

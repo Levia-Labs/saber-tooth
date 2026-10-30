@@ -1,5 +1,6 @@
-import type { QueryClient } from "@tanstack/react-query";
-import { keys } from "./queries";
+import { useQuery, type QueryClient } from "@tanstack/react-query";
+import { request } from "./client";
+import { keys, retry } from "./queries";
 import type { Proposal } from "./types";
 
 type Status = Proposal["status"];
@@ -39,3 +40,32 @@ export const setStatus =
 
 export const approvePending = (list: Proposal[]): Proposal[] =>
   list.map((p) => (p.status === "pending" ? { ...p, status: "approved" } : p));
+
+/** One finding of the latest scan; `proposal_id` is null when no automatic fix exists. */
+export interface Finding {
+  rule: string;
+  difficulty: string;
+  beat_start: number;
+  beat_end: number;
+  severity: string;
+  message: string;
+  time_s: number | null;
+  proposal_id: number | string | null;
+}
+
+export interface Findings {
+  scanned: boolean;
+  findings: Finding[];
+}
+
+export const getFindings = (id: string): Promise<Findings> =>
+  request("GET", `/api/maps/${encodeURIComponent(id)}/findings`);
+
+/** Nested under the proposals key so every proposals invalidation refetches the findings too. */
+export function useFindings(id: string) {
+  return useQuery({
+    queryKey: [...keys.proposals(id), "findings"],
+    queryFn: () => getFindings(id),
+    retry,
+  });
+}

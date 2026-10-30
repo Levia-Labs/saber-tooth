@@ -24,7 +24,9 @@ export function overflows(row: HTMLElement): boolean {
 /** The labels of a row, in the order they collapse: the primary button and the active tab last, otherwise last first. */
 export function collapseOrder(row: HTMLElement): HTMLElement[] {
   const labels = Array.from(row.querySelectorAll<HTMLElement>(LABEL_SELECTOR)).filter(
-    (l) => !l.closest(".keep-label"),
+    // Only the row's own labels: those of a row nested inside it (the section tabs inside the
+    // page bar) belong to that row, which measures itself.
+    (l) => !l.closest(".keep-label") && rowOf(l) === row,
   );
   const primary = (l: HTMLElement) =>
     l.closest('.btn.primary, [data-label-primary], [aria-current="page"], [aria-selected="true"]')

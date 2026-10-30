@@ -3,11 +3,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useAnnounce } from "../components/Announcer";
-import { capitalize } from "../lib/announcements";
 import { resultMapId } from "../lib/generate";
-import { dismissedJobs } from "../lib/jobdismiss";
+import { errorText } from "../lib/jobtoasts";
 import type { Started } from "./client";
-import { pollJob } from "./jobs";
+import { runAnnounced } from "./jobs";
 import { keys } from "./queries";
 
 export interface Generator {
@@ -40,20 +39,8 @@ export function useGenerate(): Generator {
       setBusy(true);
       counter.current += 1;
       const key = `generate-${counter.current}`;
-      const title = `Generating ${label}`;
       try {
-        const started = await start();
-        const job = await pollJob(started.job, new AbortController().signal, (status) => {
-          if (status.startsWith("queued") || dismissedJobs.has(started.job)) return;
-          announce({
-            key,
-            variant: "progress",
-            title,
-            message: capitalize(status),
-            autoClose: true,
-            onDismiss: () => dismissedJobs.add(started.job),
-          });
-        });
+        const job = await runAnnounced(announce, start, { key, title: `Generating ${label}` });
         const id = resultMapId(job.result);
         if (id === null) throw new Error("the job finished without a map");
         const folder = job.result?.["folder"];
@@ -67,8 +54,12 @@ export function useGenerate(): Generator {
         await client.invalidateQueries({ queryKey: keys.maps });
         if (mounted.current) void navigate(`/maps/${id}`);
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        announce({ key, variant: "danger", title: `Generation failed: ${label}`, message });
+        announce({
+          key,
+          variant: "danger",
+          title: `Generation failed: ${label}`,
+          message: errorText(err),
+        });
       } finally {
         running.current = false;
         if (mounted.current) setBusy(false);

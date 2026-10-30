@@ -140,6 +140,10 @@ def create_app(
     def proposals(map_id: str):
         return api.proposals(map_id)
 
+    @app.get("/api/maps/{map_id}/findings")
+    def findings(map_id: str):
+        return api.findings(map_id)
+
     @app.post("/api/proposals/{pid}/approve")
     def approve(pid: str):
         return api.set_status(pid, "approved")

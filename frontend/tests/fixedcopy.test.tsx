@@ -22,6 +22,7 @@ function serve(map: ReturnType<typeof item>, list = [map]) {
     if (url.pathname === "/api/maps/facets") return FACETS;
     if (url.pathname === `/api/maps/${map.id}`) return map;
     if (url.pathname.endsWith("/proposals")) return [];
+    if (url.pathname.endsWith("/findings")) return { scanned: false, findings: [] };
     return { items: list, total: list.length, offset: 0, limit: 40 };
   });
 }
@@ -93,17 +94,18 @@ describe("clean copy page", () => {
     serve(copy("error"));
     renderApp("/maps/id0000000099");
     await screen.findByText("Fixed copy of");
-    for (const name of [/Scan/, /Approve all/, /Apply approved/, /Expand all/, /Collapse all/]) {
+    for (const name of [/Approve all/, /Apply approved/, /Expand all/, /Collapse all/]) {
       expect(await screen.findByRole("button", { name })).toBeInTheDocument();
     }
     expect(screen.getByRole("tab", { name: "Delete" })).toBeInTheDocument();
-    expect(screen.getByText("No fixes yet")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /Scan/ }).length).toBeGreaterThan(0);
+    expect(screen.getByText("Not scanned yet")).toBeInTheDocument();
   });
 
   test("an unscanned copy keeps every control", async () => {
     serve(copy("unscanned"));
     renderApp("/maps/id0000000099");
     expect(await screen.findByRole("button", { name: /Apply approved/ })).toBeInTheDocument();
-    expect(await screen.findByText("No fixes yet")).toBeInTheDocument();
+    expect(await screen.findByText("Not scanned yet")).toBeInTheDocument();
   });
 });

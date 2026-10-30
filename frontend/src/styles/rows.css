@@ -118,10 +118,14 @@
 }
 
 @media (max-width: 1279.98px) {
-  .lib-grid {
+  .lib-grid,
+  .jobs-grid,
+  .lp-grid {
     grid-template-columns: var(--cols-mid);
   }
-  .lib-table {
+  .lib-table,
+  .jobs-table,
+  .lp-table {
     min-width: var(--min-mid, 0);
   }
   .col-env {
@@ -130,8 +134,14 @@
 }
 
 @media (max-width: 1099.98px) {
-  .lib-table {
+  .lib-table,
+  .jobs-table,
+  .lp-table {
     min-width: var(--min-compact, 0);
+  }
+  .jobs-grid,
+  .lp-grid {
+    grid-template-columns: var(--cols-compact);
   }
   .lib-grid {
     grid-template-columns: var(--cols-compact);
@@ -255,39 +265,4 @@
   .sub-unreadable {
     display: none;
   }
-}
-
-.sk-title {
-  height: 1.7rem;
-  width: min(60%, 18rem);
-  margin: 0.2rem 0;
-}
-.sk-tempo {
-  width: 7rem;
-}
-.sk-tool {
-  width: 6.5rem;
-  height: 2.4rem;
-  border-radius: var(--radius);
-}
-.sk-tool.wide {
-  width: 8.5rem;
-}
-.card-skeleton {
-  margin-bottom: 0.5rem;
-}
-.card-skeleton .card-sum {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  min-height: 40px;
-}
-.card-skeleton .spacer {
-  flex: 1 1 0;
-}
-.card-skeleton .card-sk-label {
-  width: min(40%, 16rem);
-}
-.card-skeleton .sk-btn {
-  margin-right: 0;
 }

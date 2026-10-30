@@ -1,5 +1,5 @@
 import type { JobView } from "../api/types";
-import { jobChip, jobIcon, jobStatusLabel, jobTag } from "../lib/jobstatus";
+import { jobChip, jobIcon, jobStatusLabel, jobTag } from "../lib/jobview";
 import { Icon } from "./icons";
 import { Tip } from "./Tip";
 

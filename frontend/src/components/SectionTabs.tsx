@@ -4,11 +4,10 @@ import { PillTabs, type PillTab } from "./PillTabs";
 interface Props {
   /** Which section the page belongs to. */
   active: SectionKey;
-  /** Text of the page's h1, shown to screen readers only. */
-  heading: string;
-  headingId: string;
-  /** The page shows its own visible h1 (map and playlist pages); leave the screen-reader one out. */
-  noHeading?: boolean;
+  /** Text of the page's screen-reader h1; leave out when the page shows its own visible h1 (map and playlist pages). */
+  heading?: string;
+  /** Id of that h1; defaults to `<active>-heading`. */
+  headingId?: string;
 }
 
 /** The tabs in order; a new section is one more entry here (About stays last). Playlists, when it joins, uses the `playlist` icon. */
@@ -57,15 +56,15 @@ const ITEMS = [
   },
 ] as const satisfies readonly PillTab[];
 
-type SectionKey = (typeof ITEMS)[number]["key"];
+export type SectionKey = (typeof ITEMS)[number]["key"];
 
 /** Library | BeatSaver | Jobs | About tabs standing where the page title sits, the Jobs tab with the active job count; the h1 stays for assistive tech. */
-export function SectionTabs({ active, heading, headingId, noHeading }: Props) {
+export function SectionTabs({ active, heading, headingId = `${active}-heading` }: Props) {
   const count = activeCount(useJobLists());
   const tabs: PillTab[] = ITEMS.map((i) => (i.key === "jobs" ? { ...i, badge: count } : i));
   return (
     <>
-      {!noHeading && (
+      {heading && (
         <h1 id={headingId} className="sr" tabIndex={-1} data-page-heading>
           {heading}
         </h1>

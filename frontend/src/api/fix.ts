@@ -2,11 +2,10 @@
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { useAnnounce } from "../components/Announcer";
-import { capitalize } from "../lib/announcements";
 import { fixKey, fixToast } from "../lib/fixToast";
-import { dismissedJobs } from "../lib/jobdismiss";
+import { errorText } from "../lib/jobtoasts";
 import { fixMap } from "./client";
-import { JobFailed, pollJob } from "./jobs";
+import { JobFailed, runAnnounced } from "./jobs";
 import { keys, markRunning } from "./queries";
 import type { MapItem } from "./types";
 
@@ -21,29 +20,21 @@ export function useFix(item: MapItem, name: string): () => Promise<void> {
   const client = useQueryClient();
   const announce = useAnnounce();
   return useCallback(async () => {
-    const key = fixKey(item.id);
-    const title = `Fix ${name}`;
-    try {
+    const start = async () => {
       const started = await fixMap(item.id);
       markRunning(client, item, "fix", started.job);
       // Refetch with the current filters so a map that is now queued leaves a view that excludes it.
       void client.invalidateQueries({ queryKey: ["maps", "library"] });
-      // No toast while queued; one appears when the job runs, closes by itself and stays closed once closed.
-      const job = await pollJob(started.job, new AbortController().signal, (s) => {
-        if (s.startsWith("queued") || dismissedJobs.has(started.job)) return;
-        announce({
-          key,
-          variant: "progress",
-          title,
-          message: capitalize(s),
-          autoClose: true,
-          onDismiss: () => dismissedJobs.add(started.job),
-        });
+      return started;
+    };
+    try {
+      const job = await runAnnounced(announce, start, {
+        key: fixKey(item.id),
+        title: `Fix ${name}`,
       });
       announce(fixToast(item.id, name, job, null));
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      announce(fixToast(item.id, name, err instanceof JobFailed ? err.job : null, message));
+      announce(fixToast(item.id, name, err instanceof JobFailed ? err.job : null, errorText(err)));
     }
     await refresh(client, item.id);
   }, [client, announce, item, name]);

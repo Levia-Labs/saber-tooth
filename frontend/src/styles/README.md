@@ -5,7 +5,8 @@ Plain CSS with custom properties; no framework.
 1. `tokens.css`: colours, type and row heights.
 2. `base.css`: reset, app shell, buttons and inputs.
 3. `library.css`: library bar, scroll region, sticky header and filter buttons.
-4. `rows.css`: library rows, cover, skeletons and the responsive and mobile card layouts.
+4. `rows.css`: library rows, cover and the responsive and mobile card layouts.
+   `skeletons.css`: skeleton row and card placeholders, loaded right after `rows.css`.
 5. `chips.css`: status and level chips.
 6. `overlays.css`: tooltip, popovers, checkboxes and the fullscreen filter sheet.
    `filters.css`: filter popover and sheet bodies (rows, lists that scroll, range inputs).
