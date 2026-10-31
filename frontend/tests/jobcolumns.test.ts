@@ -1,5 +1,7 @@
 import { describe, expect, test } from "vitest";
-import { availableWidth, BREAKPOINTS, tableMinWidth } from "../src/lib/columns";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { availableWidth, BREAKPOINTS, gridTemplate, tableMinWidth } from "../src/lib/columns";
 import { headerFit } from "../src/lib/columnfit";
 import { JOB_COL, JOB_COLUMNS } from "../src/lib/jobcolumns";
 
@@ -17,6 +19,18 @@ describe("job columns", () => {
         headerFit(key, JOB_COLUMNS),
       );
     }
+  });
+
+  test.each(BREAKPOINTS)("%s: Title is the only flexible track of the grid", (bp) => {
+    const tracks = gridTemplate(bp, {}, JOB_COLUMNS).split(/ (?![^(]*\))/);
+    const index = JOB_COLUMNS.tracks[bp].indexOf(JOB_COL.title);
+    expect(tracks[index]).toMatch(/^minmax\(\d+px, 1fr\)$/);
+    expect(tracks.filter((t) => t.includes("fr"))).toHaveLength(1);
+  });
+
+  test("the jobs table and rows span the full width at every tier", () => {
+    const css = readFileSync(resolve(__dirname, "../src/styles/jobs.css"), "utf-8");
+    expect(css).toMatch(/\.jobs-table\.lib-table,\s*\.jobs-table \.jobs-grid \{[^}]*width:\s*100%/);
   });
 
   test("there is no Queue # or Rounds column; Status carries them", () => {

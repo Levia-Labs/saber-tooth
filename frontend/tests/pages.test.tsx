@@ -99,8 +99,16 @@ describe("routes", () => {
 
   test("unknown map shows a not found page", async () => {
     mapApi([]);
+    const api = mapApi([]);
     renderApp("/maps/missing0000");
-    expect(await screen.findByRole("heading", { name: "Map not found" })).toBeInTheDocument();
+    // Wait for the map request itself, then for its 404 to render: the lazy page, the query and
+    // the error state are three awaited steps, and only the last one is a ceiling on load.
+    await waitFor(() =>
+      expect(api.calls.map((u) => u.pathname)).toContain("/api/maps/missing0000"),
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Map not found" }, { timeout: 10_000 }),
+    ).toBeInTheDocument();
   });
 
   test("unknown path shows the 404 page", async () => {

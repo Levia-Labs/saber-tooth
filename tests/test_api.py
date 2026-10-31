@@ -9,6 +9,7 @@ from saber_tooth.api import create_app
 from saber_tooth.fixer import Flip
 from saber_tooth.model import Cut
 from saber_tooth.service import map_id_for
+from tests.bg_helpers import settle
 from tests.test_service import NAME, NOTE, _make, _propose
 
 MID = map_id_for(NAME)
@@ -249,8 +250,12 @@ def test_origin_scheme_or_port_mismatch_is_403(client, origin):
 def test_maps_refresh_when_levels_listing_changes(client, svc):
     assert client.get("/api/maps").json()["total"] == 1
     shutil.copytree(svc.levels / NAME, svc.levels / "Second")
+    client.get("/api/maps")  # serves the stored index and starts the re-index in the background
+    settle(svc)
     assert {m["folder"] for m in client.get("/api/maps").json()["items"]} == {NAME, "Second"}
     shutil.rmtree(svc.levels / "Second")
+    client.get("/api/maps")
+    settle(svc)
     assert [m["folder"] for m in client.get("/api/maps").json()["items"]] == [NAME]
 
 

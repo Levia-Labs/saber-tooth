@@ -37,6 +37,15 @@ describe("Status tab findings", () => {
     expect(screen.queryByText("No fixes yet")).toBeNull();
   });
 
+  test("the card shows why Fix left the finding unfixed", async () => {
+    api(item(1, { status: "error", errors: 1, scanned_at: "2026-01-01" }), {
+      scanned: true,
+      findings: [{ ...FINDING, unfixed_reason: "verify rejected: parity break" }],
+    });
+    renderApp("/maps/id0000000001");
+    expect(await screen.findByText(/verify rejected: parity break/)).toBeInTheDocument();
+  });
+
   test("a scanned clean map says No issues found", async () => {
     api(item(1, { status: "ok", scanned_at: "2026-01-01" }), { scanned: true, findings: [] });
     renderApp("/maps/id0000000001");

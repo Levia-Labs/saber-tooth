@@ -1,6 +1,7 @@
 """Library listing helpers: query validation, item shaping and cover lookup."""
 
 import math
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import NamedTuple
@@ -31,6 +32,7 @@ MAX_ENV_LEN = 200
 MAX_MAPPER_LEN = 200
 MAPPER_SEP = ""  # joins repeated mapper values; names may contain commas
 _CACHE_SIZE = 4096
+FRESH_S = 10.0  # a listed folder's cover, song and difficulties are rechecked after this long
 
 
 @dataclass(frozen=True)
@@ -198,6 +200,23 @@ class Extras:
     def __init__(self) -> None:
         self._cache: dict[str, tuple[tuple[int, int], Extra]] = {}
         self._media: dict[str, tuple[tuple[int, int, int], bool, bool]] = {}
+        self._shown: dict[str, tuple[float, Extra, bool, bool]] = {}
+        self.fresh_s = FRESH_S
+
+    def recent(self, name: str) -> tuple[Extra, bool, bool] | None:
+        """The extras checked against the disk within `fresh_s` seconds, else None."""
+        hit = self._shown.get(name)
+        if hit and time.monotonic() - hit[0] < self.fresh_s:
+            return hit[1], hit[2], hit[3]
+        return None
+
+    def remember(
+        self, name: str, extra: Extra, cover: bool, audio: bool
+    ) -> tuple[Extra, bool, bool]:
+        if len(self._shown) >= _CACHE_SIZE:
+            self._shown.clear()
+        self._shown[name] = (time.monotonic(), extra, cover, audio)
+        return extra, cover, audio
 
     def media(self, folder: Path, extra: Extra) -> tuple[bool, bool]:
         """Whether the folder has a usable cover and song, cached until its listing changes."""
@@ -256,11 +275,15 @@ def shape_item(row: dict, levels: Path, extras: Extras) -> dict:
     }
     item["job"] = job if row["job_id"] else None
     item.update(cover_url=None, difficulties=[], audio_url=None, preview_start=None)
-    folder = folder_path(levels, row["folder"])
+    shown = extras.recent(row["folder"])  # no disk access while fresh: bind mounts stat slowly
+    folder = None if shown else folder_path(levels, row["folder"])
     if folder is not None and not row["parse_error"]:
         extra = extras.get(folder)
-        item["difficulties"] = extra.difficulties
         has_cover, has_audio = extras.media(folder, extra)
+        shown = extras.remember(row["folder"], extra, has_cover, has_audio)
+    if shown and not row["parse_error"]:
+        extra, has_cover, has_audio = shown
+        item["difficulties"] = extra.difficulties
         if has_cover:
             item["cover_url"] = f"/api/maps/{row['id']}/cover"
         if has_audio:

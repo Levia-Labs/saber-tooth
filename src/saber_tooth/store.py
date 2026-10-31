@@ -32,6 +32,8 @@ CREATE TABLE IF NOT EXISTS scans(
 _INDEXES = (
     "CREATE INDEX IF NOT EXISTS jobs_map ON jobs(map_id, status);"
     "CREATE INDEX IF NOT EXISTS jobs_status ON jobs(status, created_at);"
+    "CREATE INDEX IF NOT EXISTS maps_folder ON maps(folder);"  # fixed-copy lookups in the list view
+    "CREATE INDEX IF NOT EXISTS proposals_map ON proposals(map_id, status);"
 )
 # Columns added after the first release: (table, column, statement). Added in place when missing.
 _MIGRATIONS = (

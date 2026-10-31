@@ -1,6 +1,7 @@
 """Service layer: library refresh, scan, apply and learn."""
 
 import logging
+import os
 import threading
 from collections.abc import Callable
 from dataclasses import replace
@@ -14,7 +15,8 @@ from saber_tooth.lightshow import learn as learn_templates
 from saber_tooth.mapio import MapParseError, load_map
 from saber_tooth.mapio.errors import safe_name
 from saber_tooth.model import Beatmap
-from saber_tooth.service.copyscan import copy_source, is_copy, store_copy_scan
+from saber_tooth.service.background import start_backfill, start_reindex
+from saber_tooth.service.copyscan import is_copy, store_copy_scan
 from saber_tooth.service.delete import DeleteMixin
 from saber_tooth.service.duration import folder_duration
 from saber_tooth.service.errors import ApplyConflict, MapNotFound, MapUnreadable
@@ -63,23 +65,34 @@ class Service(DeleteMixin):
         self._analyses: dict[tuple, Analysis] = {}
         self._refresh_lock = threading.Lock()  # one re-index at a time; readers never wait on it
         self._seen: frozenset[str] = frozenset()
+        self._bg_lock = threading.Lock()  # guards the background flags and the scan queue
+        self._reindexing = False
+        self._backfilling = False
+        self._pending_scans: list[str] = []
 
     # library -----------------------------------------------------------------
 
     def _listing(self) -> frozenset[str]:
-        return frozenset(
-            p.name
-            for p in self.levels.iterdir()
-            if not p.name.startswith(".") and not p.is_symlink() and p.is_dir()
-        )
+        with os.scandir(self.levels) as entries:  # dirent types: no stat per folder
+            return frozenset(
+                e.name
+                for e in entries
+                if not e.name.startswith(".") and not e.is_symlink() and e.is_dir()
+            )
 
-    def refresh_if_changed(self) -> bool:
-        """Re-index when the set of folders under levels differs from the last refresh."""
+    def refresh_if_changed(self, background: bool = False) -> bool:
+        """Re-index when the set of folders under levels differs from the last refresh.
+
+        With `background`, the re-index runs on its own thread and True means it was started.
+        """
         try:
             if self._listing() == self._seen:
                 return False
         except OSError:
             return False
+        if background:
+            start_reindex(self)
+            return True
         return self.refresh_library(wait=False) is not None
 
     def refresh_library(self, wait: bool = True) -> int | None:
@@ -94,6 +107,7 @@ class Service(DeleteMixin):
     def _reindex(self) -> int:
         self._seen = self._listing()
         seen: set[str] = set()
+        pending: list[str] = []
         for folder in sorted(self.levels.iterdir()):
             if folder.name.startswith(".") or folder.is_symlink() or not folder.is_dir():
                 continue
@@ -107,19 +121,12 @@ class Service(DeleteMixin):
                     i.bpm, folder_duration(folder, beatmap), level_mask(beatmap.difficulties),
                 )  # fmt: skip
                 if is_copy(folder.name) and self.store.scan_info(mid) is None:
-                    self._scan_copy(folder, beatmap)
+                    pending.append(folder.name)
             except (MapParseError, OSError) as exc:
                 self.store.upsert_map(mid, folder.name, folder.name, "", "", str(exc))
         self.store.prune_maps(seen)
+        start_backfill(self, pending)  # low priority, off this thread
         return len(seen)
-
-    def _scan_copy(self, folder: Path, beatmap: Beatmap) -> None:
-        """A saber-tooth copy with no scan: one cheap check, with its original's analysis."""
-        source = map_id_for(copy_source(folder.name))
-        cropped = copy_source(folder.name) != folder.name.removesuffix(SUFFIX)  # other time base
-        info = None if cropped else self.store.scan_info(source)
-        analysis = stored_analysis(self.uploads, info)
-        store_copy_scan(self, folder.name, beatmap, analysis, locked=False)
 
     def _templates(self) -> Templates | None:
         return active_templates(self.data, self.bundled)

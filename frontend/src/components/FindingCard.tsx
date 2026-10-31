@@ -30,7 +30,10 @@ export function FindingCard({ finding: f }: { finding: Finding }) {
         <p className="card-summary">
           <strong>{f.message}</strong>
         </p>
-        <p className="muted">No automatic fix for this finding. Edit it by hand.</p>
+        <p className="muted">
+          No automatic fix for this finding. Edit it by hand.
+          {f.unfixed_reason ? ` Fix skipped it: ${f.unfixed_reason}.` : ""}
+        </p>
       </div>
     </article>
   );

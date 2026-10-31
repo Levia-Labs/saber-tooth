@@ -55,6 +55,12 @@ a.jobs-title:hover,
 a.jobs-title:focus-visible {
   text-decoration: underline;
 }
+/* The table and every row span the scroll region at each width; Title's 1fr track takes the slack. */
+.jobs-table.lib-table,
+.jobs-table .jobs-grid {
+  box-sizing: border-box;
+  width: 100%;
+}
 .jobs-grid .th,
 .jobs-grid .th-row {
   justify-content: flex-start;

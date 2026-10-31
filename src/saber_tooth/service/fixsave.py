@@ -47,3 +47,13 @@ class Checkpoint:
 
     def clear(self) -> None:
         self.path.unlink(missing_ok=True)
+
+
+def _window(f: dict) -> tuple:
+    return (f.get("rule"), f.get("difficulty"), f.get("beat_start"), f.get("beat_end"))
+
+
+def with_reasons(findings: list[dict], unfixed: list[dict]) -> list[dict]:
+    """Findings with `unfixed_reason` added where Fix left that rule, difficulty and window."""
+    why = {_window(u): u["reason"] for u in unfixed if u.get("reason")}
+    return [{**f, "unfixed_reason": why[_window(f)]} if _window(f) in why else f for f in findings]

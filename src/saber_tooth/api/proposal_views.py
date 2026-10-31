@@ -74,5 +74,6 @@ def map_findings(api: "Api", map_id: str) -> dict:
         view["message"] = f["message"]
         view["time_s"] = round(f["beat_start"] * 60 / bpm, 2) if bpm else None
         view["proposal_id"] = owners.get(key(f))
+        view["unfixed_reason"] = f.get("unfixed_reason")
         out.append(view)
     return {"scanned": True, "findings": out}

@@ -234,6 +234,9 @@ class MapQueries:
             rows = self._db.execute(page, [*args, limit, offset]).fetchall()
         return [dict(r) for r in rows], int(total)
 
+    def has_maps(self) -> bool:
+        return bool(self._query("SELECT 1 FROM maps LIMIT 1"))
+
     def facets(self) -> dict:
         """Counts per status, environment, mapper and level over every map, ignoring any filter."""
         rows = self._query(_FACET_SQL)

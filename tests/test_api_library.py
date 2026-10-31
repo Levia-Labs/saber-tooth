@@ -6,6 +6,7 @@ from hypothesis import strategies as st
 
 from saber_tooth.api import create_app
 from saber_tooth.api.library import MAX_COVER_BYTES, parse_query
+from tests.bg_helpers import settle
 from tests.test_api import MID, NAME, client, svc  # noqa: F401
 
 
@@ -52,6 +53,8 @@ def test_query_filters_sort_and_pages(client, svc):
     shutil.copytree(svc.levels / NAME, svc.levels / "Zulu")
     info = svc.levels / "Zulu" / "info.dat"
     info.write_text(info.read_text(encoding="utf-8").replace('"Basic"', '"Zulu"'), encoding="utf-8")
+    client.get("/api/maps")  # starts the background re-index
+    settle(svc)
     page = client.get("/api/maps?limit=1&sort=title&order=desc").json()
     assert page["total"] == 2 and page["limit"] == 1
     assert [m["folder"] for m in page["items"]] == ["Zulu"]

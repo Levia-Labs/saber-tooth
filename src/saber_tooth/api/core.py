@@ -94,7 +94,7 @@ class Api:
             query = parse_query(params, max_limit)
         except ValueError as exc:
             raise ApiError(400, str(exc)) from None
-        self.service.refresh_if_changed()
+        self._refresh()
         rows, total = self.store.query_maps(
             query.offset,
             query.limit,
@@ -115,8 +115,12 @@ class Api:
         items = [shape_item(r, self.service.levels, self.extras) for r in rows]
         return {"items": items, "total": total, "offset": query.offset, "limit": query.limit}
 
+    def _refresh(self) -> None:
+        """Re-index off the request once a stored index exists; the first ever index is awaited."""
+        self.service.refresh_if_changed(background=self.store.has_maps())
+
     def facets(self) -> dict:
-        self.service.refresh_if_changed()
+        self._refresh()
         return self.store.facets()
 
     def map_item(self, raw: str) -> dict:

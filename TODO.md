@@ -67,14 +67,14 @@ Done: check_difficulty and run_checks take a beat window (checks/**init**.py, RE
 
 ## 11 Status tab does not show why Fix left a finding unfixed
 
-status: open
+status: done
 class: feature
 
 The unfixed reasons live only in the Fix job result keyed to the original map and the checkpoint is cleared on finish; persist them per copy (e.g. on the copy's scan row) and show them on FindingCard next to 'No automatic fix'.
 
 ## 12 Flaky frontend test: pages.test.tsx 'Map not found'
 
-status: open
+status: done
 class: test
 
 Failed once in a full st:web:test run during the delete-flow change and passed on rerun; find the timing dependency (unawaited fetch or shared state) and make it deterministic.

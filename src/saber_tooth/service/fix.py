@@ -6,9 +6,8 @@ from dataclasses import replace
 
 from saber_tooth.checks import Finding, run_checks
 from saber_tooth.safe_fs import LevelsWriter
-from saber_tooth.service.copyscan import store_copy_scan
 from saber_tooth.service.fixrun import MAX_ROUNDS, FixRun, complete, fix_beatmap
-from saber_tooth.service.fixsave import Checkpoint, source_stamp
+from saber_tooth.service.fixsave import Checkpoint, source_stamp, with_reasons
 from saber_tooth.service.util import checkpoint, map_id_for
 from saber_tooth.service.writeout import replace_fixed
 
@@ -25,6 +24,17 @@ def counts(findings: list[Finding]) -> dict[str, dict[str, dict[str, int]]]:
         kind = slot["errors" if f.severity == "error" else "warnings"]
         kind[f.rule] = kind.get(f.rule, 0) + 1
     return out
+
+
+def scan_of(beatmap, analysis, unfixed: list[dict]) -> dict:
+    """The copy's own scan, each finding carrying the reason Fix left it unfixed."""
+    return scan_dict(run_checks(beatmap, analysis), analysis, unfixed)
+
+
+def scan_dict(findings: list[Finding], analysis, unfixed: list[dict]) -> dict:
+    project = analysis.audio.parent.name if analysis and analysis.audio else None
+    found = with_reasons([f.to_dict() for f in findings], unfixed)
+    return {"findings": found, "analysis": project}
 
 
 class _Saver:
@@ -63,8 +73,9 @@ class _Saver:
             with self.svc._lock:  # short store mutations only
                 ids = self.svc.store.add_proposals(self.map_id, [p.to_dict() for p in new])
                 self.svc.store.mark_applied(ids)
+                scan = scan_of(run.fixed, self.analysis, run.unfixed)
+                self.svc.store.replace_open_proposals(map_id_for(self.name), [], scan)
             self.stored = len(run.steps)
-            store_copy_scan(self.svc, self.name, run.fixed, self.analysis)
         if self.name is None:
             return
         if position is None:
@@ -138,8 +149,7 @@ def fix_map(
     written = svc._load(svc.levels / saver.name)
     after = run_checks(written, analysis)
     fixed_id = map_id_for(saver.name)
-    project = analysis.audio.parent.name if analysis and analysis.audio else None
-    scan = {"findings": [f.to_dict() for f in after], "analysis": project}
+    scan = scan_dict(after, analysis, run.unfixed)
     with svc._lock:
         svc.store.replace_open_proposals(fixed_id, [], scan)
     report.update(

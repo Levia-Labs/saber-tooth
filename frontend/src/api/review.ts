@@ -51,6 +51,8 @@ export interface Finding {
   message: string;
   time_s: number | null;
   proposal_id: number | string | null;
+  /** Why the last Fix left this finding unfixed; null or absent when unknown. */
+  unfixed_reason?: string | null;
 }
 
 export interface Findings {

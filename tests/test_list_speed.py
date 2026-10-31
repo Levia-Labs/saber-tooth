@@ -2,6 +2,7 @@
 
 import shutil
 import time
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 
@@ -25,7 +26,9 @@ def test_list_of_150_maps_is_fast(tmp_path):
 
 def test_media_cache_follows_folder_changes(tmp_path):
     svc = _make(tmp_path)
-    with TestClient(create_app(svc), base_url="http://localhost") as http:
+    app = create_app(svc)
+    app.state.api.extras.fresh_s = 0  # recheck the disk on every list
+    with TestClient(app, base_url="http://localhost") as http:
         before = http.get("/api/maps").json()["items"][0]
         assert before["audio_url"] or before["cover_url"], "fixture has no media to track"
         for f in (svc.levels / NAME).iterdir():
@@ -33,3 +36,17 @@ def test_media_cache_follows_folder_changes(tmp_path):
                 f.unlink()
         after = http.get("/api/maps").json()["items"][0]
     assert after["audio_url"] is None and after["cover_url"] is None
+
+
+def test_fresh_listing_does_not_touch_the_disk(tmp_path, monkeypatch):
+    svc = _make(tmp_path)
+    with TestClient(create_app(svc), base_url="http://localhost") as http:
+        http.get("/api/maps")
+        calls = []
+        real = Path.stat
+        monkeypatch.setattr(
+            Path, "stat", lambda self, **kw: (calls.append(self), real(self, **kw))[1]
+        )
+        monkeypatch.setattr(Path, "iterdir", lambda self: calls.append(self) or iter(()))
+        assert http.get("/api/maps").status_code == 200
+    assert not [c for c in calls if str(svc.levels) in str(c)]
