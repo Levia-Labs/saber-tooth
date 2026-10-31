@@ -13,17 +13,20 @@ saber-tooth is a local Docker service with a browser interface. Give it a song o
 ## Features
 
 1. Library with status filters; once a map is fixed, its original is hidden.
-2. One-click Fix writes `<map> [saber-tooth]` with all five Standard difficulties (Easy, Normal, Hard, Expert, ExpertPlus). The original map is never touched.
+2. One-click Fix writes `<map> [saber-tooth]` with all five Standard difficulties (Easy, Normal, Hard, Expert, ExpertPlus). The original map is never touched. Scan and Fix run in batches, save as they go and resume after a cancel, timeout or error.
 3. Scan, Approve and Apply proposals: checks for impossible swings, broken parity and empty stretches, with fixes verified to reach zero findings before they are offered.
-4. Map page with Status, Crop and Delete tabs; results show as toasts at the bottom.
-5. Crop to a highlight of 1 minute, 2 minutes or unlimited length, with free cutting down to 1 second. An NPS chart with sections, playback, and saving as a new map or over the original.
-6. One-step map generation from a YouTube link or a dropped audio file, analysed by the beat-analyser sidecar.
-7. BeatSaver search, presets, playlists and downloads.
-8. VR mode with `/vr` screens and a headset detection helper (`task st:vr-agent`); see [VR mode](docs/vr.md).
-9. Lighting that follows the energy and structure of the song, from a bundled learned set; "Learn lightshows" adds the styles of your installed maps.
-10. Jobs tab: what the server is running, what waits (with cancel) and what finished in the last day; queued jobs survive a restart.
-11. Settings tab: how many fix and scan jobs run at once (with the cores and memory the container has), and a PlaylistManager check with a one-click install from BeatMods; needs `GAME_DIR_HOST` for the install.
-12. MCP tools for agents, and a compose stack with beat-analyser. Vanilla features only: no Chroma, Noodle Extensions or Vivify.
+4. Map page with Status, Crop, Relight and Delete tabs; results show as toasts at the bottom. The Status tab lists the findings and, after a Fix, why each unfixed finding was left.
+5. Crop to a highlight of 1 minute, 2 minutes or unlimited length, with free cutting down to 1 second. An NPS chart with sections, playback, Auto crop (up to three suggested windows), and saving as a new map or over the original.
+6. Relight: light a map in another vanilla environment; the lightshow is regenerated and the fixes stay.
+7. One-step map generation from a YouTube link or a dropped audio file, analysed by the beat-analyser sidecar.
+8. BeatSaver search, presets and downloads.
+9. Playlists tab: playlists from library maps with SongCore hashes, `.bplist` export, and sync URLs that PlaylistManager refreshes on its own.
+10. VR mode with `/vr` screens and a headset detection helper (`task st:vr-agent`); see [VR mode](docs/vr.md). Desktop, VR and mobile layouts.
+11. Lighting that follows the energy and structure of the song, from a bundled learned set; "Learn lightshows" adds the styles of your installed maps.
+12. Jobs tab: what the server is running, what waits and what finished in the last day, with cancel, retry and restart; queued jobs survive a restart.
+13. Settings tab: how many fix and scan jobs run at once (with the cores and memory the container has), and a PlaylistManager check with a one-click install from BeatMods; needs `GAME_DIR_HOST` for the install.
+14. About page.
+15. MCP tools for agents, and a compose stack with beat-analyser. Vanilla features only: no Chroma, Noodle Extensions or Vivify.
 
 ## Screenshots
 

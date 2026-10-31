@@ -40,13 +40,18 @@ describe("about page", () => {
       .map((h) => h.textContent);
     expect(titles).toEqual([
       "Quality checker",
+      "Status tab",
       "One-click Fix",
+      "Batched scan and Fix",
       "Generate from a song",
       "Lightshows",
+      "Relight",
       "Crop",
       "BeatSaver",
+      "Playlists",
       "Jobs",
-      "VR mode",
+      "Settings",
+      "VR and mobile layouts",
       "MCP tools",
     ]);
     for (const card of within(cards).getAllByRole("listitem")) {

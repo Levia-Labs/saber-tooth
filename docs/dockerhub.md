@@ -19,15 +19,19 @@ Source, issues and full documentation: <https://github.com/Levia-Labs/saber-toot
 ## Features
 
 1. Library with status filters; once a map is fixed, its original is hidden.
-2. One-click Fix writes `<map> [saber-tooth]` with all five Standard difficulties.
+2. One-click Fix writes `<map> [saber-tooth]` with all five Standard difficulties. Scan and Fix run in batches, save as they go and resume after a cancel, timeout or error.
 3. Scan, Approve and Apply proposals, each verified to reach zero findings.
-4. Map page with Status, Crop and Delete tabs and bottom toasts.
-5. Crop to a highlight (1 minute, 2 minutes or unlimited, free cutting down to 1 second) with an NPS chart, sections and playback; save as a new map or over the original.
-6. One-step generation from a YouTube link or a dropped audio file.
-7. BeatSaver search, presets, playlists and downloads.
-8. VR mode at `/vr`, with a host helper that detects the headset.
-9. Jobs tab: what the server is running, what waits (with cancel) and what finished in the last day; queued jobs survive a restart.
-10. MCP tools for agents.
+4. Map page with Status, Crop, Relight and Delete tabs and bottom toasts. The Status tab lists the findings and, after a Fix, why each unfixed finding was left.
+5. Crop to a highlight (1 minute, 2 minutes or unlimited, free cutting down to 1 second) with an NPS chart, sections and playback; Auto crop proposes up to three windows; save as a new map or over the original.
+6. Relight a map in another vanilla environment; the lightshow is regenerated and the fixes stay.
+7. One-step generation from a YouTube link or a dropped audio file.
+8. BeatSaver search, presets and downloads.
+9. Playlists tab: build playlists from library maps, with SongCore hashes, `.bplist` export and sync URLs that PlaylistManager refreshes on its own.
+10. Jobs tab: what the server is running, what waits and what finished in the last day, with cancel, retry and restart; queued jobs survive a restart.
+11. Settings tab: how many fix and scan jobs run at once, shown with the cores and memory the container has, and a PlaylistManager check with a one-click install from BeatMods.
+12. VR mode at `/vr`, with a host helper that detects the headset; desktop, VR and mobile layouts.
+13. About page.
+14. MCP tools for agents.
 
 ## Screenshots
 
@@ -176,8 +180,9 @@ folder and the original map is never changed.
 
 | Tag      | What it is                |
 | -------- | ------------------------- |
-| `1.2.0`  | The 1.2.0 release         |
-| `latest` | The same build as `1.2.0` |
+| `1.3.0`  | The 1.3.0 release         |
+| `latest` | The same build as `1.3.0` |
+| `1.2.0`  | The 1.2.0 release, kept   |
 | `1.1.0`  | The 1.1.0 release, kept   |
 | `1.0.0`  | The 1.0.0 release, kept   |
 

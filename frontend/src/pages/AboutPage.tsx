@@ -76,9 +76,19 @@ const FEATURES: Feature[] = [
     text: "Scan finds impossible swings, broken parity and empty stretches. Fixes are proposed on a timeline, and each one is verified to reach zero findings before it is offered.",
   },
   {
+    icon: "review",
+    title: "Status tab",
+    text: "Lists every finding of a map. After a Fix it also says why each finding that is still open was left, so you know what to change by hand.",
+  },
+  {
     icon: "fix",
     title: "One-click Fix",
     text: 'Adds the missing Standard difficulties (Easy to Expert+) and fixes every finding it can, then writes a new "[saber-tooth]" folder next to the original. The original map is never changed, and it is hidden from the library once fixed.',
+  },
+  {
+    icon: "queue",
+    title: "Batched scan and Fix",
+    text: "Scan and Fix work through a map in batches and save as they go. After a cancel, a timeout or an error, a retry resumes from the last saved batch.",
   },
   {
     icon: "generate",
@@ -91,9 +101,14 @@ const FEATURES: Feature[] = [
     text: "Lighting follows the energy and structure of the song, from a bundled learned set. Learn lightshows adds the styles of the maps you have installed.",
   },
   {
+    icon: "layers",
+    title: "Relight",
+    text: "Light a map in another vanilla environment. The lightshow is regenerated on the saber-tooth copy and its fixes stay; the original is never changed.",
+  },
+  {
     icon: "scissors",
     title: "Crop",
-    text: "Cut a highlight of 1 minute, 2 minutes or any length down to 1 second on an NPS chart with sections and playback. Save it as a new map or over the original.",
+    text: "Cut a highlight of 1 minute, 2 minutes or any length down to 1 second on an NPS chart with sections and playback. Auto crop suggests up to three windows. Save it as a new map or over the original.",
   },
   {
     icon: "search",
@@ -101,14 +116,24 @@ const FEATURES: Feature[] = [
     text: "Search with filters BeatSaver itself lacks, such as maps that have Easy, Normal and Hard. Save presets, browse playlists and download maps into your library.",
   },
   {
+    icon: "playlist",
+    title: "Playlists",
+    text: "Build local playlists from your maps, with the SongCore hash of each. Export a .bplist, or turn on a sync URL so PlaylistManager refreshes the list on its own.",
+  },
+  {
     icon: "clock",
     title: "Jobs",
-    text: "See what the server is running, what waits and what finished in the last day. Cancel running or queued jobs and retry failed ones. Queued jobs survive a restart.",
+    text: "A table of what the server is running, what waits and what finished in the last day. Cancel running or queued jobs, retry or restart failed ones. Queued jobs survive a restart.",
+  },
+  {
+    icon: "settings",
+    title: "Settings",
+    text: "Choose how many fix and scan jobs run at once, next to the cores and memory the container has. Check for PlaylistManager and install it from BeatMods in one click.",
   },
   {
     icon: "maps",
-    title: "VR mode",
-    text: "The same pages scaled up for a headset browser, with a Layout switch in the header. A helper on the host detects the headset runtime.",
+    title: "VR and mobile layouts",
+    text: "The same pages scaled up for a headset browser, with a Layout switch in the header, and laid out to fit a phone. A helper on the host detects the headset runtime.",
   },
   {
     icon: "external",
@@ -127,7 +152,7 @@ const STEPS = [
   },
   {
     title: "Watch Jobs",
-    text: "Watch progress in Jobs; results also appear as toasts at the bottom.",
+    text: "Watch progress in Jobs, where you can cancel or retry; results also appear as toasts at the bottom.",
   },
 ];
 
