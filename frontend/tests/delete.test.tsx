@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, test } from "vitest";
-import { item, mockFetch, renderApp } from "./helpers";
+import { item, mockFetch, renderApp, toasts } from "./helpers";
 
 const ID = "id0000000001";
 
@@ -52,7 +52,43 @@ describe("delete map", () => {
     await waitFor(() => expect(deletes(fn)).toHaveLength(1));
     expect(String(deletes(fn)[0]?.[0])).toContain(`/api/maps/${ID}`);
     await waitFor(() => expect(router.state.location.pathname).toBe("/"));
-    expect(await screen.findByText("Deleted")).toBeVisible();
+    expect(await toasts().findByText("Deleted")).toBeVisible();
+    expect(toasts().getByText("Folder 1")).toBeVisible();
+  });
+
+  test.each([
+    ["from=jobs&back=status%3Dfailed", "/jobs", "?status=failed"],
+    ["from=playlist%3Apl1", "/playlists/pl1", ""],
+    ["", "/", ""],
+  ])("delete from %s returns to the origin list, replacing history", async (q, path, search) => {
+    api();
+    const { router } = renderApp(`/maps/${ID}?tab=delete${q ? `&${q}` : ""}`);
+    const panel = await screen.findByRole("tabpanel");
+    await userEvent.click(within(panel).getByRole("button", { name: "Delete" }));
+    await waitFor(() => expect(router.state.location.pathname).toBe(path));
+    expect(router.state.location.search).toBe(search);
+    await router.navigate(-1);
+    expect(router.state.location.pathname).not.toBe(`/maps/${ID}`);
+  });
+
+  test("the list is refetched after delete", async () => {
+    const { calls } = api();
+    renderApp(`/maps/${ID}?tab=delete`);
+    const panel = await screen.findByRole("tabpanel");
+    const before = () => calls.filter((u) => u.pathname === "/api/maps").length;
+    const n = before();
+    await userEvent.click(within(panel).getByRole("button", { name: "Delete" }));
+    await waitFor(() => expect(before()).toBeGreaterThan(n));
+  });
+
+  test("a double click sends one request and the button shows a spinner meanwhile", async () => {
+    const { fn } = api();
+    renderApp(`/maps/${ID}?tab=delete`);
+    const panel = await screen.findByRole("tabpanel");
+    const button = within(panel).getByRole("button", { name: "Delete" });
+    await userEvent.dblClick(button);
+    await waitFor(() => expect(deletes(fn)).toHaveLength(1));
+    expect(deletes(fn)).toHaveLength(1);
   });
 
   test("an error announces danger and stays on the page", async () => {

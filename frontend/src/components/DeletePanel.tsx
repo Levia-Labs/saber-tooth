@@ -4,12 +4,15 @@ import { Icon } from "./icons";
 export function DeletePanel({
   folder,
   disabled,
+  pending = false,
   tip,
   onDelete,
   onBack,
 }: {
   folder: string;
   disabled: boolean;
+  /** The delete request is in flight: the button turns a spinner and cannot be pressed. */
+  pending?: boolean;
   tip: string;
   onDelete: () => void;
   onBack: () => void;
@@ -22,11 +25,11 @@ export function DeletePanel({
         <button
           type="button"
           className="btn danger"
-          disabled={disabled}
+          disabled={disabled || pending}
           title={tip}
           onClick={onDelete}
         >
-          <Icon name="trash" />
+          <Icon name={pending ? "spinner" : "trash"} />
           Delete
         </button>
         <button type="button" className="btn plain" onClick={onBack}>

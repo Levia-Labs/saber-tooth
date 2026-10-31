@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 
 from fastapi.responses import JSONResponse
 
+from saber_tooth.api.generate_api import Conflict, GenerateSubmitter
 from saber_tooth.api.jobs_api import core_handlers, job_detail, list_jobs, upload_path
 from saber_tooth.api.library import (
     AUDIO_TYPES,
@@ -50,13 +51,14 @@ def _is_youtube_url(url: object) -> bool:
 
 
 class ApiError(Exception):
-    def __init__(self, status: int, message: str) -> None:
+    def __init__(self, status: int, message: str, fields: dict | None = None) -> None:
         super().__init__(message)
         self.status = status
+        self.fields = fields or {}  # extra keys of the JSON answer, e.g. the job or map id
 
 
-def _error(status: int, message: str) -> JSONResponse:
-    return JSONResponse({"error": message}, status_code=status)
+def _error(status: int, message: str, fields: dict | None = None) -> JSONResponse:
+    return JSONResponse({"error": message, **(fields or {})}, status_code=status)
 
 
 class Api:
@@ -66,6 +68,8 @@ class Api:
         self.service = service
         self.store = service.store
         self.jobs = Jobs(service.store)
+        self.generator = GenerateSubmitter(self)
+        self.jobs.after_done["generate"] = self._generated
         for kind, handler in core_handlers(service).items():
             self.jobs.register(kind, handler)
         self.extras = Extras()
@@ -205,14 +209,26 @@ class Api:
     def learn(self) -> dict:
         return {"job": self.jobs.submit("learn")}
 
+    def _generated(self, args: dict, result: object) -> None:
+        """Record the source on the map a generate job created, so it is not imported twice."""
+        map_id = result.get("map_id") if isinstance(result, dict) else None
+        if isinstance(args.get("source"), str) and isinstance(map_id, str):
+            self.store.set_source(map_id, args["source"])
+
     def generate_url(self, url: object) -> dict:
         if not _is_youtube_url(url):
             raise ApiError(400, "only YouTube URLs are supported")
-        return {"job": self.jobs.submit("generate", {"url": url})}
+        try:
+            return {"job": self.generator.url(str(url))}
+        except Conflict as conflict:
+            raise ApiError(409, str(conflict), conflict.fields) from None
 
     def generate_file(self, path: Path) -> dict:
         try:
-            return {"job": self.jobs.submit("generate", {"upload": str(path)})}
+            return {"job": self.generator.file(path)}
+        except Conflict as conflict:
+            shutil.rmtree(path.parent, ignore_errors=True)
+            raise ApiError(409, str(conflict), conflict.fields) from None
         except BaseException:
             shutil.rmtree(path.parent, ignore_errors=True)
             raise

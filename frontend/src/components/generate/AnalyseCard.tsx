@@ -23,7 +23,7 @@ export function AnalyseCard({ view }: { view: View }) {
             progress: view.progress ?? null,
           }}
         />
-        <span className="gen-label">{view.label}</span>
+        <span className="gen-label">{view.title ?? view.label}</span>
         {working && <Spinner label="Generating" />}
       </div>
       {view.error !== null && (
@@ -31,7 +31,13 @@ export function AnalyseCard({ view }: { view: View }) {
           {view.error}
         </div>
       )}
-      <StageList stages={stageStates(view, view.source)} />
+      {view.existing ? (
+        <Link className="gen-jobs-link" to={view.existing.to}>
+          {view.existing.label}
+        </Link>
+      ) : (
+        <StageList stages={stageStates(view, view.source)} />
+      )}
       {view.status === "queued" && (
         <Link className="gen-jobs-link" to="/jobs">
           Open Jobs

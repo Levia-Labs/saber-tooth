@@ -140,7 +140,7 @@ const NOTES: Feature[] = [
   {
     icon: "lock",
     title: "Private",
-    text: "Saber Tooth only talks to BeatSaver when you search or download there, to BeatMods when you check or install mods in Settings, and to the beat-analyser when it needs the audio.",
+    text: "Saber Tooth only talks to BeatSaver when you search or download there, to BeatMods when you check or install mods in Settings, to YouTube for a pasted link's title, and to the beat-analyser when it needs the audio.",
   },
   {
     icon: "shield",

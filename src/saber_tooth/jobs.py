@@ -49,6 +49,8 @@ class Jobs:
         self._store = store
         self._limit = limit or (lambda: 1)  # most jobs running at once; read on every pass
         self._handlers: dict[str, Handler] = {}
+        # Per kind, run in this process with (args, result) once a job of the kind is done.
+        self.after_done: dict[str, Callable[[dict, Any], None]] = {}
         self._children: ChildRunner | None = None
         self._wake = threading.Event()
         self._stop = threading.Event()
@@ -192,6 +194,12 @@ class Jobs:
                 )
             else:
                 result = handler(args, progress)
+            after = self.after_done.get(job["kind"])
+            if after is not None:
+                try:
+                    after(args, result)
+                except Exception:
+                    log.exception("after-done hook of job %s failed", job_id)
             self._store.update_job(job_id, "done", result=result)
         except JobCancelled:
             self._store.update_job(job_id, "cancelled")

@@ -9,6 +9,7 @@ from pathlib import Path
 from saber_tooth.store_claims import ProposalClaims
 from saber_tooth.store_jobs import JobRows
 from saber_tooth.store_maps import MapQueries
+from saber_tooth.store_sources import SourceRows
 
 PROPOSAL_STATUSES = {"pending", "approved", "rejected", "applied", "superseded"}
 
@@ -39,6 +40,7 @@ _MIGRATIONS = (
     ("maps", "levels", "ALTER TABLE maps ADD COLUMN levels INTEGER"),
     ("maps", "bs_id", "ALTER TABLE maps ADD COLUMN bs_id TEXT"),
     ("maps", "bs_hash", "ALTER TABLE maps ADD COLUMN bs_hash TEXT"),
+    ("maps", "source", "ALTER TABLE maps ADD COLUMN source TEXT"),
     ("proposals", "finding_json", "ALTER TABLE proposals ADD COLUMN finding_json TEXT"),
     ("proposals", "replaces", "ALTER TABLE proposals ADD COLUMN replaces INTEGER"),
     ("jobs", "map_id", "ALTER TABLE jobs ADD COLUMN map_id TEXT"),
@@ -57,7 +59,7 @@ def _now() -> str:
     return datetime.now(UTC).isoformat()
 
 
-class Store(MapQueries, ProposalClaims, JobRows):
+class Store(MapQueries, ProposalClaims, JobRows, SourceRows):
     def __init__(self, path: Path) -> None:
         self._lock = threading.Lock()
         self._db = sqlite3.connect(str(path), check_same_thread=False)

@@ -7,16 +7,35 @@ import { capitalize } from "../lib/announcements";
 import type { StageJob } from "../lib/genstages";
 import { resultMapId } from "../lib/generate";
 import { errorText, useOpenJobs } from "../lib/jobtoasts";
-import type { Started } from "./client";
+import { ApiError, type Started } from "./client";
 import { pollJob } from "./jobs";
 import { keys } from "./queries";
 
 export interface Generator {
   busy: boolean;
   /** What the page shows: the job's latest state, from the moment Generate is pressed; null before. */
-  view: (StageJob & { source: "url" | "file"; label: string; error: string | null }) | null;
+  view:
+    | (StageJob & {
+        source: "url" | "file";
+        label: string;
+        error: string | null;
+        /** The song's title once the server knows it. */
+        title?: string | undefined;
+        /** Set when the song is already imported or being imported: where to look at it. */
+        existing?: { to: string; label: string };
+      })
+    | null;
   /** Start a job for `label` (a link or file name); resolves once the job ended. */
   run: (label: string, source: "url" | "file", start: () => Promise<Started>) => Promise<void>;
+}
+
+/** The link a 409 "already imported / being imported" answer points at, else null. */
+export function existingLink(err: unknown): { to: string; label: string } | null {
+  if (!(err instanceof ApiError) || err.status !== 409) return null;
+  const { job, map_id: map } = err.fields;
+  if (typeof job === "string") return { to: "/jobs", label: "Open job" };
+  if (typeof map === "string") return { to: `/maps/${map}`, label: "Open map" };
+  return null;
 }
 
 /** Announces queue, progress, success with an "Open map" link, or the failure reason; one job at a time. */
@@ -43,9 +62,11 @@ export function useGenerate(): Generator {
       running.current = true;
       counter.current += 1;
       const key = `generate-${counter.current}`;
-      const title = `Generating ${label}`;
-      const show = (job: StageJob, error: string | null = null) => {
-        if (mounted.current) setView({ ...job, source, label, error });
+      let song: string | undefined;
+      const show = (job: StageJob & { title?: string }, error: string | null = null) => {
+        // The server names a job "Generate from ..." until it knows the song.
+        if (job.title && !job.title.startsWith("Generate from")) song = job.title;
+        if (mounted.current) setView({ ...job, source, label, error, title: song });
       };
       show({ status: "queued" });
       let closed = false;
@@ -59,7 +80,7 @@ export function useGenerate(): Generator {
           announce({
             key,
             variant: "progress",
-            title,
+            title: `Generating ${song ?? label}`,
             message: capitalize(polled?.progress ?? status),
             autoClose: true,
             onDismiss: () => {
@@ -83,7 +104,13 @@ export function useGenerate(): Generator {
         if (mounted.current) void navigate(`/maps/${id}`);
       } catch (err) {
         const message = errorText(err);
-        if (mounted.current) setView((v) => (v ? { ...v, status: "failed", error: message } : v));
+        const existing = existingLink(err);
+        if (mounted.current) {
+          setView((v) =>
+            v ? { ...v, status: "failed", error: message, ...(existing && { existing }) } : v,
+          );
+        }
+        if (existing) return; // the card shows it with a link; no toast
         announce({ key, variant: "danger", title: `Generation failed: ${label}`, message });
       } finally {
         running.current = false;

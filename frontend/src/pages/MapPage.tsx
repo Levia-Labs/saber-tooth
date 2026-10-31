@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import {
   ApiError,
@@ -55,6 +55,8 @@ export function MapPage() {
   const [params, setParams] = useSearchParams();
   const { origin, back } = useOrigin();
   const [cropSeen, setCropSeen] = useState(false);
+  const deleting = useRef(false);
+  const [deletePending, setDeletePending] = useState(false);
   const [openIds, setOpenIds] = useState<ReadonlySet<string>>(new Set());
   const toggleOne = (pid: string, on: boolean) =>
     setOpenIds((prev) => {
@@ -98,14 +100,20 @@ export function MapPage() {
     }
   };
   const remove = async () => {
+    if (deleting.current) return;
+    deleting.current = true;
+    setDeletePending(true);
     try {
       const out = await deleteMap(id);
+      await navigate(backHref(origin, back), { replace: true });
       client.removeQueries({ queryKey: keys.map(id) });
       client.removeQueries({ queryKey: keys.proposals(id) });
-      await navigate(backHref(origin, back));
-      await client.invalidateQueries({ queryKey: ["maps"] });
+      void client.invalidateQueries({ queryKey: keys.maps });
+      void client.invalidateQueries({ queryKey: keys.jobs });
       announce({ variant: "success", title: "Deleted", message: out.deleted });
     } catch (err) {
+      deleting.current = false;
+      setDeletePending(false);
       announce({
         variant: "danger",
         title: "Could not delete the map",
@@ -252,6 +260,7 @@ export function MapPage() {
             <DeletePanel
               folder={map.data.folder ?? name}
               disabled={running}
+              pending={deletePending}
               tip={TIPS.delete}
               onDelete={() => void remove()}
               onBack={() => select("status")}

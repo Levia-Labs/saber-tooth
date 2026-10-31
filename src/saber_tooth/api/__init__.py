@@ -1,5 +1,6 @@
 """HTTP API: JSON routes for the review UI, plus the static frontend at /."""
 
+import asyncio
 import logging
 import os
 import threading
@@ -114,7 +115,7 @@ def create_app(
 
     @app.exception_handler(ApiError)
     async def _api_error(_: Request, exc: ApiError):
-        return _error(exc.status, str(exc))
+        return _error(exc.status, str(exc), exc.fields)
 
     @app.get("/api/health")
     def health():
@@ -180,12 +181,14 @@ def create_app(
     async def generate(request: Request):
         ctype = request.headers.get("content-type", "")
         if ctype.startswith("multipart/form-data"):
-            return api.generate_file(await _save_upload(request, service.data))
+            path = await _save_upload(request, service.data)
+            return await asyncio.to_thread(api.generate_file, path)
         try:
             body = await request.json()
         except ValueError:
             raise ApiError(400, "send JSON {\"url\"} or a multipart 'file'") from None
-        return api.generate_url(body.get("url") if isinstance(body, dict) else None)
+        url = body.get("url") if isinstance(body, dict) else None
+        return await asyncio.to_thread(api.generate_url, url)
 
     @app.get("/api/lightshow")
     def lightshow():

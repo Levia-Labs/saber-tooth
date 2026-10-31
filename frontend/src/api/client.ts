@@ -4,10 +4,13 @@ import type { Facets, Job, MapItem, MapPage, Proposal, Timeline } from "./types"
 
 export class ApiError extends Error {
   readonly status: number;
-  constructor(message: string, status: number) {
+  /** Extra keys of the error answer, for example the job or map id of a 409. */
+  readonly fields: Record<string, unknown>;
+  constructor(message: string, status: number, fields: Record<string, unknown> = {}) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.fields = fields;
   }
 }
 
@@ -67,7 +70,11 @@ export async function request<T>(
   if (!res.ok) {
     const record = (data ?? {}) as { detail?: unknown; error?: unknown };
     const detail = record.error ?? record.detail;
-    throw new ApiError(typeof detail === "string" ? detail : `HTTP ${res.status}`, res.status);
+    throw new ApiError(
+      typeof detail === "string" ? detail : `HTTP ${res.status}`,
+      res.status,
+      record as Record<string, unknown>,
+    );
   }
   return data as T;
 }

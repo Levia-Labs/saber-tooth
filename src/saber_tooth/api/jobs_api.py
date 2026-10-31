@@ -23,15 +23,17 @@ def upload_path(data: Path, raw: object) -> Path | None:
 
 
 def _generate(service, args: dict, progress) -> dict:
+    # The song title learnt at submit names the map; without one the download names it.
+    extra = {"title": args["title"]} if args.get("title") else {}
     if "url" in args:
-        return service.run_generate(args["url"], progress)
+        return service.run_generate(args["url"], progress, **extra)
     path = upload_path(service.data, args.get("upload"))
     if path is None:
         raise FileNotFoundError(UPLOAD_GONE)
     try:
         if not path.is_file():
             raise FileNotFoundError(UPLOAD_GONE)
-        return service.run_generate(str(path), progress)
+        return service.run_generate(str(path), progress, **extra)
     finally:
         shutil.rmtree(path.parent, ignore_errors=True)
 
@@ -81,6 +83,8 @@ def _title(row: dict) -> str:
     if row.get("map_title"):
         return row["map_title"]
     if row["kind"] == "generate":
+        if row["args"].get("title"):
+            return row["args"]["title"]
         return "Generate from YouTube" if "url" in row["args"] else "Generate from file"
     return KIND_LABELS.get(row["kind"], row["kind"])
 
@@ -96,8 +100,26 @@ def view(
     return out
 
 
+def _result_map(store, row: dict) -> dict | None:
+    """The map a finished generate job created, when it still exists."""
+    result = store.job(row["id"]).get("result")
+    map_id = result.get("map_id") if isinstance(result, dict) else None
+    return store.get_map(map_id) if isinstance(map_id, str) else None
+
+
+def _backfill_generated(store, rows: list[dict]) -> None:
+    """Finished generate rows have no map row: show the created map's title and link."""
+    for row in rows:
+        if row["kind"] != "generate" or row["status"] != "done" or row.get("map_title"):
+            continue
+        found = _result_map(store, row)
+        if found:
+            row.update(map_id=found["id"], map_title=found["title"], map_exists=True)
+
+
 def list_jobs(store, cancelling: Callable[[str], bool] = _never) -> dict:
     lists = store.job_lists()
+    _backfill_generated(store, lists["recent"])
     active = {r["map_id"] for k in ("running", "queued") for r in lists[k] if r.get("map_id")}
     # an active job on a map hides that map's finished entry: one entry per song
     lists["recent"] = [r for r in lists["recent"] if r.get("map_id") not in active]
@@ -112,6 +134,9 @@ def job_detail(store, job_id: str, cancelling: Callable[[str], bool] = _never) -
     """One job with its result; raises KeyError for an unknown id."""
     row = store.job(job_id)
     found = store.get_map(row["map_id"]) if row.get("map_id") else None
+    if found is None and row["kind"] == "generate" and row["status"] == "done":
+        found = _result_map(store, row)
+        row["map_id"] = found["id"] if found else row["map_id"]
     row["map_title"] = found["title"] if found else None
     row["map_exists"] = found is not None
     out = view(row, store.queue_position(job_id), cancelling)

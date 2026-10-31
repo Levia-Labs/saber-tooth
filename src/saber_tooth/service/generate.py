@@ -13,7 +13,7 @@ from saber_tooth.mapio import load_map, write_map
 from saber_tooth.service.fix import complete, fix_beatmap
 from saber_tooth.service.util import checkpoint, map_id_for
 from saber_tooth.service.writeout import commit_staged
-from saber_tooth.songmeta import SongMeta, file_meta, project_meta
+from saber_tooth.songmeta import SongMeta, file_meta, parse_title, project_meta
 
 log = logging.getLogger(__name__)
 
@@ -22,10 +22,10 @@ def _is_url(source: str) -> bool:
     return source.startswith(("http://", "https://"))
 
 
-def _meta(svc, source: str, a: Analysis) -> SongMeta:
-    """Names from the video title beat-analyser names a project after, else tags or file name."""
+def _meta(svc, source: str, a: Analysis, title: str | None = None) -> SongMeta:
+    """Names from the looked-up video title, else the project name, else tags or file name."""
     if _is_url(source):
-        return project_meta(a.name)
+        return parse_title(title) if title else project_meta(a.name)
     path = Path(source)
     return file_meta(path.name, svc.probe_tags(path))
 
@@ -40,7 +40,7 @@ def _fix_in_place(svc, staging: Path, a: Analysis, seed: int, progress=None) -> 
     return len(run.steps)
 
 
-def generate_map(svc, source: str, progress=None) -> dict:
+def generate_map(svc, source: str, progress=None, title: str | None = None) -> dict:
     """Generate a map from a YouTube URL or an audio file path into a new levels folder.
 
     The map is built and fixed in a staging folder, then moved into the levels folder under a
@@ -51,7 +51,7 @@ def generate_map(svc, source: str, progress=None) -> dict:
     else:
         a = svc.client.analyse_file(Path(source), Path(source).name)
     checkpoint(progress, "building the map")
-    meta = _meta(svc, source, a)
+    meta = _meta(svc, source, a, title)
     staging = svc.data / "staging" / uuid.uuid4().hex
     staging.parent.mkdir(parents=True, exist_ok=True)
     seed = int(hashlib.sha256(a.name.encode("utf-8")).hexdigest()[:8], 16)
