@@ -4,6 +4,7 @@ from saber_tooth.checks.finding import Finding
 from saber_tooth.checks.flow import parity_break, swing_speed, wide_jump
 from saber_tooth.checks.gaps import empty_gap
 from saber_tooth.checks.layout import crossover, note_in_wall, stack_conflict, vision_block
+from saber_tooth.checks.lights import light_strobe
 from saber_tooth.checks.slicing import slice_difficulty
 from saber_tooth.checks.structure import default_environment, missing_difficulty
 from saber_tooth.checks.walls import wall_short, wall_trap
@@ -35,6 +36,7 @@ REACH_S: dict[str, float | None] = {r: LOCAL_REACH_S for r in RULES} | {"empty-g
 MAP_RULES: dict[str, Callable] = {
     "missing-difficulty": missing_difficulty,
     "default-environment": default_environment,
+    "light-strobe": light_strobe,
 }
 
 

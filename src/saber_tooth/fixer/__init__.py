@@ -51,9 +51,8 @@ def propose_with_reason(
     if strategy is None:
         return Outcome(None, f"no fix for {finding.rule}")
     ctx = Context(beatmap, finding, analysis, templates, seed)
-    if finding.rule not in ("missing-difficulty", "default-environment") and (
-        ctx.d is None or ctx.profile is None
-    ):
+    no_profile = ("missing-difficulty", "default-environment", "light-strobe")
+    if finding.rule not in no_profile and (ctx.d is None or ctx.profile is None):
         return Outcome(None, f"difficulty {finding.difficulty} not found")
     tried = 0
     for plan in islice(strategy(ctx), MAX_GENERATED):

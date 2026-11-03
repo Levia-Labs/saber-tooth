@@ -202,13 +202,14 @@ def test_boost_resets_after_high_section():
     assert (0.0, True) in boosts and (32.0, False) in boosts
 
 
-def test_lights_off_sorts_after_unit_events_at_same_beat():
+def test_lights_off_supersedes_unit_events_at_same_beat():
     t = Templates({"E": [Unit("E", "s", 0.1, [BasicEvent(0.0, 0, 5)], [], {})]}, {})
     bm = _counts_map([1, 1])  # last note at beat 4 -> off at 6; unit events at 0 and 4
     t.units["E"][0].events.append(BasicEvent(2.0, 0, 7))  # bar 1 start 4 + 2 == 6
     p = build_lightshow(bm, Timing(120, []), t, None, 1)
     at_off = [e for e in p.events["Expert"][0] if e.beat == 6.0 and e.type == 0]
-    assert [e.value for e in at_off] == [7, 0]
+    # pacing allows one state change per group per 0.5 s: the final off wins the same beat
+    assert [e.value for e in at_off] == [0]
 
 
 def test_learned_templates_apply():

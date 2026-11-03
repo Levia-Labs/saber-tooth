@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from saber_tooth.analysis import Analysis
 from saber_tooth.lightshow.energy import bar_energy, last_note_beat
+from saber_tooth.lightshow.pacing import pace_show
 from saber_tooth.lightshow.units import BAR, Templates, Unit
 from saber_tooth.mapio.write import BOX_KEYS
 from saber_tooth.model import BasicEvent, Beatmap, ColorScheme
@@ -150,9 +151,12 @@ def build_lightshow(
                 unit = _closest(_limited(donor, FADE_UNIT_MAX, units), energy[i])
             _place(unit, i * BAR, out, boosts=not (high or low) and i < fade_from)
     last = last_note_beat(beatmap)
-    final = _finish(out, last + OFF_AFTER)
+    off = last + OFF_AFTER
+    final = _finish(out, off)
+    strong = [lo * BAR for lo, _ in _sections(energy)]
+    strong += [i * BAR for i, e in enumerate(energy) if e > HIGH]
+    paced, groups = pace_show(final[0], final[2], timing, strong, off)
     shows = {
-        name: (list(final[0]), list(final[1]), copy.deepcopy(final[2]))
-        for name in beatmap.difficulties
+        name: (list(paced), list(final[1]), copy.deepcopy(groups)) for name in beatmap.difficulties
     }
     return LightshowPayload(env, scheme, shows)
