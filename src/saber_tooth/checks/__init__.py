@@ -2,7 +2,7 @@ from collections.abc import Callable
 
 from saber_tooth.checks.finding import Finding
 from saber_tooth.checks.flow import parity_break, swing_speed, wide_jump
-from saber_tooth.checks.gaps import empty_gap
+from saber_tooth.checks.gaps import empty_gap, no_rest
 from saber_tooth.checks.layout import (
     crossover,
     note_converge,
@@ -30,6 +30,7 @@ RULES: dict[str, Callable] = {
     "note-in-wall": note_in_wall,
     "note-converge": note_converge,
     "empty-gap": empty_gap,
+    "no-rest": no_rest,
     "wall-trap": wall_trap,
     "wall-short": wall_short,
 }
@@ -37,7 +38,10 @@ RULES: dict[str, Callable] = {
 # (the profile limits top out at 1.5 s). None marks a global rule that is computed on the whole
 # difficulty (or, with a window, on the gaps around it) instead of on a slice.
 LOCAL_REACH_S = 2.0
-REACH_S: dict[str, float | None] = {r: LOCAL_REACH_S for r in RULES} | {"empty-gap": None}
+REACH_S: dict[str, float | None] = {r: LOCAL_REACH_S for r in RULES} | {
+    "empty-gap": None,
+    "no-rest": None,
+}
 # Map-level rules: rule(beatmap) -> list[Finding].
 MAP_RULES: dict[str, Callable] = {
     "missing-difficulty": missing_difficulty,
@@ -70,11 +74,9 @@ def check_difficulty(
         swings = build_swings(part.notes, timing)
         for rule in local:
             out.extend(rule(part, swings, timing, profile, analysis))
-    out += (
-        empty_gap(d, None, timing, profile, analysis, window)
-        if any(REACH_S[i] is None for i, _ in wanted)
-        else []
-    )
+    for i, rule in wanted:
+        if REACH_S[i] is None:
+            out += rule(d, None, timing, profile, analysis, window)
     return sorted((f for f in out if f.beat_start <= hi and f.beat_end >= lo), key=Finding.sort_key)
 
 

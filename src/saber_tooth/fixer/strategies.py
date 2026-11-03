@@ -13,6 +13,7 @@ from saber_tooth.fixer.layout_fixes import (
 )
 from saber_tooth.fixer.map_fixes import default_environment, empty_gap, missing_difficulty
 from saber_tooth.fixer.ops import Delete, Flip, Move, Op
+from saber_tooth.fixer.rest_fixes import no_rest
 from saber_tooth.fixer.verify import Context, Strategy
 from saber_tooth.fixer.wall_fixes import wall_short, wall_trap
 from saber_tooth.generator.candidates import build_candidates, phase_of
@@ -120,6 +121,7 @@ STRATEGIES: dict[str, Strategy] = {
     "note-in-wall": note_in_wall,
     "note-converge": note_converge,
     "empty-gap": empty_gap,
+    "no-rest": no_rest,
     "wall-trap": wall_trap,
     "wall-short": wall_short,
     "missing-difficulty": missing_difficulty,
