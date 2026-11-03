@@ -56,8 +56,14 @@ tasks:
     desc: "Tail saber-tooth logs. Usage: task st:logs"
     cmds: ["docker compose logs --tail 100 saber-tooth"]
   gen:
-    desc: "Start a map generation job from a URL. Usage: task st:gen -- <url>"
+    desc: "Start a generate job from a URL. Usage: task st:gen -- <url> [--environment N] [--color R=#hex] [--wait]"
     cmds: ["uv run saber-tooth gen-url {{.CLI_ARGS}}"]
+  environments:
+    desc: "Print the environment catalogue: moods, scores, setting, genres, palette. Usage: task st:environments"
+    cmds: ["uv run saber-tooth environments"]
+  songmeta:
+    desc: "Print title, artist, duration, bpm as JSON. Usage: task st:songmeta -- <audio-or-map>"
+    cmds: ["uv run saber-tooth songmeta {{.CLI_ARGS}}"]
   scan:
     desc: "Scan one map through the running API. Usage: task st:scan -- <map_id>"
     cmds: ["uv run saber-tooth scan-api {{.CLI_ARGS}}"]

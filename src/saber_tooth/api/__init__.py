@@ -182,13 +182,15 @@ def create_app(
         ctype = request.headers.get("content-type", "")
         if ctype.startswith("multipart/form-data"):
             path = await _save_upload(request, service.data)
-            return await asyncio.to_thread(api.generate_file, path)
+            raw = request.query_params.get("style")  # JSON text; the body carries the file
+            return await asyncio.to_thread(api.generate_file, path, raw)
         try:
             body = await request.json()
         except ValueError:
             raise ApiError(400, "send JSON {\"url\"} or a multipart 'file'") from None
         url = body.get("url") if isinstance(body, dict) else None
-        return await asyncio.to_thread(api.generate_url, url)
+        style = body.get("style") if isinstance(body, dict) else None
+        return await asyncio.to_thread(api.generate_url, url, style)
 
     @app.get("/api/lightshow")
     def lightshow():

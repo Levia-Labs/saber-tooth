@@ -8,7 +8,8 @@ Project Claude Code configuration for saber-tooth.
 2. `settings.local.json`: per-machine overrides. Gitignored.
 3. `agents/map-auditor.md`: runs the checks on one map folder and returns counts per rule.
 4. `agents/lightshow-learner.md`: builds lightshow templates and reports unit counts per environment.
-5. Local skills: none yet.
+5. `agents/song-director.md`: researches a song, picks its environment and palette from `task st:environments`, and generates the map with that style.
+6. `skills/README.md`, `skills/song-mood/SKILL.md`: the procedure song-director follows, from `task st:songmeta` to `task st:gen`.
 
 ## From the Crepidoma plugin
 

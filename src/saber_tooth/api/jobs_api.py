@@ -6,6 +6,7 @@ from pathlib import Path
 
 from saber_tooth.jobs import Handler
 from saber_tooth.service.relight import relight_map
+from saber_tooth.style import parse_style
 
 UPLOAD_GONE = "the uploaded file is no longer available; upload it again"
 
@@ -25,6 +26,9 @@ def upload_path(data: Path, raw: object) -> Path | None:
 def _generate(service, args: dict, progress) -> dict:
     # The song title learnt at submit names the map; without one the download names it.
     extra = {"title": args["title"]} if args.get("title") else {}
+    style = parse_style(args.get("style"))  # re-checked: stored args are not trusted
+    if style:
+        extra["style"] = style
     if "url" in args:
         return service.run_generate(args["url"], progress, **extra)
     path = upload_path(service.data, args.get("upload"))

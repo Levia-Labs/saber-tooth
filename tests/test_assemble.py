@@ -9,6 +9,7 @@ from PIL import Image
 from saber_tooth.analysis import Analysis
 from saber_tooth.assemble import assemble_new, folder_name
 from saber_tooth.checks import RULES, run_checks
+from saber_tooth.environments import BY_NAME
 from saber_tooth.lightshow import Templates, Unit
 from saber_tooth.mapio import load_map
 from saber_tooth.mapio.write import BOX_KEYS
@@ -61,7 +62,7 @@ def test_assemble_writes_five_difficulties(tmp_path):
     with Image.open(cover) as im:
         assert im.size == (512, 512)
     assert run_checks(loaded, a, rules=set(RULES)) == []
-    assert bm.info.environment == "NiceEnvironment"
+    assert bm.info.environment in BY_NAME
     assert bm.info.song_name == "AC/DC: Back?In"
     assert bm.info.mapper == "saber-tooth"
     assert bm.info.preview_duration == 10

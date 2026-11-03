@@ -9,5 +9,6 @@ Rule-based note placer. Inputs come from [analysis.py](../analysis.py) and a per
 5. `motifs.py`: swing direction patterns.
 6. `tempo.py`: `tempo_map`, BPM events from the beat grid.
 7. `walls.py`: `place_walls`, walls only (no bombs) on Hard and above.
+8. `connectors.py`: `add_connectors`, v3 arcs on flowing pairs in calm passages and chains on accented hits in high-energy phrases; none on Easy, never over a note, wall, bomb or other connector.
 
 Tests: `task st:test -- tests/test_generator.py`. Design: [architecture](../../../docs/architecture.md).

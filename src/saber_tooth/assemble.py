@@ -10,16 +10,17 @@ from PIL import Image, ImageDraw
 
 from saber_tooth.analysis import Analysis
 from saber_tooth.checks import RULES, run_checks
+from saber_tooth.environments import BY_NAME
 from saber_tooth.generator import generate_all, tempo_map
 from saber_tooth.lightshow import Templates, build_lightshow
 from saber_tooth.mapio import write_map
 from saber_tooth.mapio.write import BOX_KEYS
 from saber_tooth.model import Beatmap, MapInfo
 from saber_tooth.songmeta import UNKNOWN_AUTHOR, SongMeta
+from saber_tooth.style import Style, resolve_style, to_scheme
 
 log = logging.getLogger(__name__)
 
-VANILLA_ENVIRONMENT = "NiceEnvironment"
 MAPPER = "saber-tooth"
 SONG_FILE = "song.egg"
 COVER_FILE = "cover.png"
@@ -72,11 +73,13 @@ def _length(a: Analysis, wav: Path) -> float:
         return a.beats[-1] if a.beats else 0.0
 
 
-def _apply_lightshow(bm: Beatmap, timing, templates: Templates | None, a: Analysis, seed: int):
+def _apply_lightshow(
+    bm: Beatmap, timing, templates: Templates | None, a: Analysis, seed: int, env: str | None = None
+):
     if templates is None or not any(templates.units.values()):
         log.warning("no lightshow templates; map keeps a vanilla environment without lighting")
         return
-    payload = build_lightshow(bm, timing, templates, a, seed)
+    payload = build_lightshow(bm, timing, templates, a, seed, env)
     bm.info.environment = payload.environment
     bm.info.color_scheme = payload.color_scheme
     for name, (events, boosts, groups) in payload.events.items():
@@ -88,7 +91,12 @@ def _apply_lightshow(bm: Beatmap, timing, templates: Templates | None, a: Analys
 
 
 def _build(
-    a: Analysis, audio: Path, templates: Templates | None, seed: int, meta: SongMeta
+    a: Analysis,
+    audio: Path,
+    templates: Templates | None,
+    seed: int,
+    meta: SongMeta,
+    style: Style | None = None,
 ) -> Beatmap:
     if not (a.kick or a.snare or a.hh):
         raise ValueError("analysis has no onsets")
@@ -96,6 +104,8 @@ def _build(
     empty = [name for name, d in diffs.items() if not d.notes]
     if empty:
         raise ValueError(f"generated difficulties have no notes: {', '.join(empty)}")
+    learned = {e for e, u in templates.units.items() if u} if templates else None
+    env, scheme = resolve_style(style, a, seed, learned)
     info = MapInfo(
         song_name=meta.song,
         sub_name=meta.sub,
@@ -106,10 +116,14 @@ def _build(
         cover_file=COVER_FILE,
         preview_start=round(_length(a, audio) * PREVIEW_FRACTION, 3),
         preview_duration=PREVIEW_DURATION,
-        environment=VANILLA_ENVIRONMENT,
+        environment=env.name,
+        color_scheme=scheme,
     )
     bm = Beatmap(info, diffs, folder_name(meta.song))
-    _apply_lightshow(bm, timing, templates, a, seed)
+    _apply_lightshow(bm, timing, templates, a, seed, env.name)
+    shown = BY_NAME.get(bm.info.environment)
+    if shown is not None or (style and style.colors):  # a learned scheme only for unknown names
+        bm.info.color_scheme = to_scheme(shown or env, style)
     findings = run_checks(bm, a, rules=set(RULES))
     if findings:
         first = findings[0]
@@ -127,13 +141,14 @@ def assemble_new(
     seed: int,
     encode: Callable[[Path, Path], None],
     meta: SongMeta | None = None,
+    style: Style | None = None,
 ) -> Beatmap:
     if a.audio is None or not a.audio.is_file():
         raise ValueError("analysis has no audio file")
     if out.exists():
         raise FileExistsError(str(out))
     meta = meta or SongMeta(a.name, "", UNKNOWN_AUTHOR)
-    bm = _build(a, a.audio, templates, seed, meta)
+    bm = _build(a, a.audio, templates, seed, meta, style)
     tmp = out.parent / f".{out.name}.partial"
     shutil.rmtree(tmp, ignore_errors=True)
     tmp.mkdir(parents=True)
