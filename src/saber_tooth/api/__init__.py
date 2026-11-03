@@ -26,6 +26,7 @@ from saber_tooth.api.hosts import (
 from saber_tooth.api.mcp_tools import build_mcp
 from saber_tooth.api.playlists_api import PlaylistsApi
 from saber_tooth.api.playlists_routes import register as register_playlists
+from saber_tooth.api.regen_api import register as register_regen
 from saber_tooth.api.relight_api import environments, start_relight
 from saber_tooth.api.settings_api import install as install_settings
 from saber_tooth.api.static import WebFiles
@@ -124,6 +125,7 @@ def create_app(
     register_beatsaver(app, bs)
     register_playlists(app, PlaylistsApi(api, bs.playlists_dir))
     register_crop(app, crop_api)
+    register_regen(app, api)
     register_vr(app, vr_status or VrStatusClient())
     install_settings(app, api, service)  # settings, worker cap and the mods routes
 

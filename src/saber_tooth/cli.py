@@ -10,6 +10,7 @@ from urllib.parse import quote
 import httpx
 
 from saber_tooth.checks import Finding, run_checks
+from saber_tooth.cli_library import register as register_library
 from saber_tooth.lightshow import learn
 from saber_tooth.mapio import MapParseError, load_map
 from saber_tooth.timing import Timing
@@ -199,6 +200,7 @@ def _parser() -> argparse.ArgumentParser:
     af.add_argument("--data", required=True)
     af.add_argument("--max-rounds", type=int, default=6)
     af.set_defaults(func=_cmd_autofix)
+    register_library(sub)
     return p
 
 
