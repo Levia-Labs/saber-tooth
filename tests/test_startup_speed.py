@@ -69,7 +69,7 @@ def test_list_query_uses_indexes(tmp_path):
     svc = _make(tmp_path)
     from saber_tooth import store_maps as m
 
-    sql = m._page_sql((0, 0, 0, None, None, (False,) * 4), "title", "ASC")
+    sql = m._page_sql((0, 0, 0, None, None, (False,) * 4), "title", "ASC", 150.0)
     plan = " ".join(
         r[3] for r in svc.store._db.execute("EXPLAIN QUERY PLAN " + sql, (40, 0)).fetchall()
     )

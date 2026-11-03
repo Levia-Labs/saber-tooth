@@ -76,6 +76,10 @@ const proposal = (rank: number, start: number, stop: number, target: string, sco
   length_s: stop - start,
   target,
   score,
+  breakdown: [
+    { key: "peak", label: "Peak intensity", points: score / 2, max_points: 50 },
+    { key: "valley", label: "Valley cuts", points: score / 2, max_points: 50 },
+  ],
   reason: `rise from ${start}, peak at ${start + 20}, release at ${stop}`,
 });
 
@@ -85,9 +89,9 @@ export const SUGGESTIONS = {
   duration_s: 140,
   reason: null,
   suggestions: [
-    proposal(1, 0, 64, "1 min", 0.9),
-    proposal(2, 70, 136, "1 min", 0.7),
-    proposal(3, 10, 130, "2 min", 0.5),
+    proposal(1, 0, 64, "1 min", 90),
+    proposal(2, 70, 136, "1 min", 78),
+    proposal(3, 10, 130, "2 min", 72),
   ],
 };
 

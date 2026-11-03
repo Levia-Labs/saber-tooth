@@ -1,14 +1,19 @@
 """Auto crop: rank 1 and 2 minute windows by how good they are to play and keep the best three.
 
-Windows start and end on bar lines. A window is scored on the smoothed notes-per-second curve of
-the hardest difficulty (peak, rise, release, quiet cut points), on every difficulty's mean density
-(comfort), on empty gaps, on variety and on how close it is to its target length. Pure and
+Windows start and end on bar lines. A window is scored in points out of 100 on the smoothed
+notes-per-second curve of the hardest difficulty (peak, rise, release, quiet cut points), on every
+difficulty's mean density (comfort), on empty gaps, on variety, on how close it is to its target
+length and on valleys: both cuts sit where the audio is low and no difficulty has notes. A coarse
+grid of windows seeds a search that moves each bound by bars and phrases, keeps the best and
+stops when a pass finds nothing better. Windows below MIN_POINTS are never returned. Pure and
 deterministic: the same inputs give the same list.
 """
 
 from collections.abc import Callable
 from dataclasses import dataclass
 from itertools import accumulate
+
+from saber_tooth.crop.valley import audio_reference, cut_valley, prefix
 
 TARGETS = (60, 120)
 TOLERANCE_S = {60: 10.0, 120: 15.0}  # a window may stray this far from its target: a phrase or two
@@ -22,16 +27,31 @@ COMFORT_LO, COMFORT_FULL, COMFORT_TOP, COMFORT_MAX = 0.8, 1.5, 5.5, 9.0  # windo
 PEAK_ZONE = (0.30, 0.80)  # the peak sits best between 30 % and 80 % of the way through
 MAX_OVERLAP = 0.5  # of the shorter pick; picks may share at most this much
 COUNT = 3
-WEIGHTS = {
-    "peak": 0.25,  # window peak against the song peak
-    "arc": 0.20,  # rise before and release after the peak (the weaker of the two)
-    "position": 0.10,  # the peak in the middle zone, not at an edge
-    "comfort": 0.10,  # mean NPS in a playable range on every difficulty
-    "gaps": 0.10,  # no long empty stretch
-    "variety": 0.10,  # the energy changes from block to block
-    "cut": 0.10,  # quiet entry and exit, cuts on section or phrase lines
-    "length": 0.05,  # close to the target length
+MIN_POINTS = 70.0  # a window scoring less is never proposed
+SEED_STEP = 4  # the seed grid takes every 4th bar line as a start and as an end
+SEED_KEEP = 12  # the best seeds each pass refines
+MOVES = (1, 2, 4, 8)  # a bound moves by this many bars: a bar, two, a half phrase, a phrase
+MAX_PASSES = 8
+POINTS = {  # key: (label, points out of 100); the points sum to 100
+    "peak": ("Peak intensity", 22.0),  # window peak against the song peak
+    "arc": ("Rise and release", 18.0),  # build-up before and release after the peak
+    "valley": ("Valley cuts", 18.0),  # both cuts in quiet audio with no notes near them
+    "position": ("Peak position", 8.0),  # the peak in the middle zone, not at an edge
+    "comfort": ("Playable density", 8.0),  # mean NPS in a playable range on every difficulty
+    "gaps": ("No long gaps", 8.0),  # no long empty stretch
+    "variety": ("Variety", 8.0),  # the energy changes from block to block
+    "cut": ("Cut on a phrase", 6.0),  # quiet entry and exit, cuts on section or phrase lines
+    "length": ("Target length", 4.0),  # close to the target length
 }
+WEIGHTS = {k: pts / 100.0 for k, (_, pts) in POINTS.items()}
+
+
+@dataclass(frozen=True)
+class Part:
+    key: str
+    label: str
+    points: float
+    max_points: float
 
 
 @dataclass(frozen=True)
@@ -41,8 +61,9 @@ class Suggestion:
     start_s: float
     end_s: float
     target_s: int
-    score: float
+    score: float  # points out of 100: the sum of the breakdown
     reason: str
+    breakdown: tuple[Part, ...] = ()
 
     @property
     def length_s(self) -> float:
@@ -109,13 +130,14 @@ def score_window(
     i1: int,
     target_s: int,
     aligned: float,
-) -> tuple[float, int]:
-    """Return (score in [0, 1], bin of the window peak) for the bins [i0, i1)."""
+    valley: float = 1.0,
+) -> tuple[list[Part], int]:
+    """Return (points per component, bin of the window peak) for the bins [i0, i1)."""
     n = i1 - i0
     peak_i = max(range(i0, i1), key=lambda i: (sm[i], -i))
     top = sm[peak_i]
     if top <= 0 or song_peak <= 0:
-        return 0.0, peak_i
+        return [Part(k, lab, 0.0, pts) for k, (lab, pts) in POINTS.items()], peak_i
     rise_lvl = _mean(sm_pre, i0, min(i1, i0 + RISE_BINS))
     exit_lvl = _mean(sm_pre, max(i0, i1 - RISE_BINS), i1)
     arc = min(1.0, (top - rise_lvl) / top, (top - exit_lvl) / top)
@@ -139,13 +161,24 @@ def score_window(
         "variety": min(1.0, cv / 0.5),
         "cut": 0.7 * max(0.0, min(1.0, quiet)) + 0.3 * aligned,
         "length": 1.0 - min(1.0, abs(n - target_s) / TOLERANCE_S[target_s]),
+        "valley": max(0.0, min(1.0, valley)),
     }
-    return sum(WEIGHTS[k] * v for k, v in parts.items()), peak_i
+    return [
+        Part(k, lab, round(pts * max(0.0, min(1.0, parts[k])), 1), pts)
+        for k, (lab, pts) in POINTS.items()
+    ], peak_i
 
 
 def _overlap(a: Suggestion, b: Suggestion) -> float:
     shared = min(a.end_s, b.end_s) - max(a.start_s, b.start_s)
     return max(0.0, shared) / min(a.length_s, b.length_s)
+
+
+def _target_of(length_s: float) -> int | None:
+    for target in TARGETS:
+        if abs(length_s - target) <= TOLERANCE_S[target] + 1e-9:
+            return target
+    return None
 
 
 def suggest_crops(
@@ -155,45 +188,82 @@ def suggest_crops(
     to_seconds: Callable[[float], float],
     boundaries: list[float],
     duration_s: float,
+    audio: list[float] | None = None,
 ) -> list[Suggestion]:
-    """The best distinct windows (at most COUNT), best first. `bars` are bar-line beats."""
+    """The best distinct windows (at most COUNT, each at least MIN_POINTS), best first. `bars` are
+    bar-line beats; `audio` is the weighted onsets per 1 s bin, empty or None when not analysed."""
     raw = series.get(hardest, [])
     if not raw or len(bars) < 2:
         return []
     sm = _smooth(raw)
     sm_pre = [0.0, *accumulate(sm)]
     pres = [[0.0, *accumulate(s)] for s in series.values()]
+    note_pre = prefix([sum(col) for col in zip(*series.values(), strict=False)])
+    audio_pre = prefix(audio) if audio else []
+    audio_ref = audio_reference(audio or [])
     song_peak = max(sm, default=0.0)
     secs = [to_seconds(b) for b in bars]
     marks = {round(b, 6) for b in boundaries}
     phrase = {round(b, 6) for b in bars[::8]}
-    found: list[Suggestion] = []
-    for a, start_s in enumerate(secs):
-        if start_s >= duration_s:
-            break
-        for target in TARGETS:
-            tol = TOLERANCE_S[target]
-            for z in range(a + 1, len(bars)):
-                end_s = secs[z]
-                if end_s - start_s > target + tol:
-                    break
-                if end_s - start_s < target - tol or end_s > duration_s + 1e-6:
-                    continue
-                i0, i1 = round(start_s), min(len(raw), round(end_s))
-                if i1 - i0 < 2:
-                    continue
-                ends = (round(bars[a], 6), round(bars[z], 6))
-                aligned = sum(1.0 if e in marks else 0.5 if e in phrase else 0.0 for e in ends) / 2
-                score, peak_i = score_window(
-                    sm, sm_pre, raw, pres, song_peak, i0, i1, target, aligned
-                )
-                reason = _reason(sm, i0, i1, peak_i, start_s, end_s)
-                found.append(
-                    Suggestion(bars[a], bars[z], start_s, end_s, target, round(score, 4), reason)
-                )
-    found.sort(key=lambda s: (-s.score, s.start_s, s.end_s))
+    last = len(bars) - 1
+    scored: dict[tuple[int, int], Suggestion | None] = {}
+
+    def evaluate(a: int, z: int) -> Suggestion | None:
+        key = (a, z)
+        if key in scored:
+            return scored[key]
+        out = None
+        start_s, end_s = secs[a], secs[z]
+        target = _target_of(end_s - start_s)
+        i0, i1 = round(start_s), min(len(raw), round(end_s))
+        if (
+            target is not None
+            and start_s < duration_s
+            and end_s <= duration_s + 1e-6
+            and i1 - i0 >= 2
+        ):
+            ends = (round(bars[a], 6), round(bars[z], 6))
+            aligned = sum(1.0 if e in marks else 0.5 if e in phrase else 0.0 for e in ends) / 2
+            valley = (
+                cut_valley(note_pre, audio_pre, audio_ref, start_s)
+                + cut_valley(note_pre, audio_pre, audio_ref, end_s)
+            ) / 2
+            parts, peak_i = score_window(
+                sm, sm_pre, raw, pres, song_peak, i0, i1, target, aligned, valley
+            )
+            reason = _reason(sm, i0, i1, peak_i, start_s, end_s)
+            points = round(sum(p.points for p in parts), 1)
+            out = Suggestion(bars[a], bars[z], start_s, end_s, target, points, reason, tuple(parts))
+        scored[key] = out
+        return out
+
+    def rank(a: int, z: int) -> tuple[float, int, int]:
+        got = scored[(a, z)]
+        return (-(got.score if got else -1.0), a, z)
+
+    for a in range(0, last, SEED_STEP):
+        for z in range(a + SEED_STEP, last + 1, SEED_STEP):
+            if secs[z] - secs[a] > max(t + TOLERANCE_S[t] for t in TARGETS):
+                break
+            evaluate(a, z)
+    for _ in range(MAX_PASSES):
+        top = sorted((k for k, v in scored.items() if v is not None), key=lambda k: rank(*k))
+        before = [rank(*k) for k in top[:SEED_KEEP]]
+        for a, z in top[:SEED_KEEP]:
+            for step in MOVES:
+                for na, nz in ((a - step, z), (a + step, z), (a, z - step), (a, z + step)):
+                    if 0 <= na < nz <= last:
+                        evaluate(na, nz)
+        top = sorted((k for k, v in scored.items() if v is not None), key=lambda k: rank(*k))
+        if [rank(*k) for k in top[:SEED_KEEP]] == before:
+            break  # no pass improved the best windows
+    found = sorted(
+        (v for v in scored.values() if v is not None), key=lambda v: (-v.score, v.start_s, v.end_s)
+    )
     picks: list[Suggestion] = []
     for cand in found:
+        if cand.score < MIN_POINTS:
+            break
         if all(_overlap(cand, p) < MAX_OVERLAP for p in picks):
             picks.append(cand)
             if len(picks) == COUNT:

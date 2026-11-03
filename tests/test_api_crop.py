@@ -168,7 +168,9 @@ def test_suggestions_route_returns_ranked_windows(http):
     assert body["map_id"] == MID and "reason" in body
     for i, s in enumerate(body["suggestions"], 1):
         assert s["rank"] == i and s["target"] in {"1 min", "2 min"}
-        assert s["end_s"] - s["start_s"] == s["length_s"] and 0 <= s["score"] <= 1
+        assert s["end_s"] - s["start_s"] == s["length_s"] and 70 <= s["score"] <= 100
+        assert round(sum(p["points"] for p in s["breakdown"]), 1) == s["score"]
+        assert all({"key", "label", "points", "max_points"} == set(p) for p in s["breakdown"])
     assert http.get(f"/api/maps/{MID}/crop/suggestions").json() == body
 
 

@@ -1,7 +1,8 @@
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from saber_tooth.crop.suggest import COUNT, TOLERANCE_S, suggest_crops
+from saber_tooth.crop.suggest import COUNT, MIN_POINTS, POINTS, TOLERANCE_S, suggest_crops
+from saber_tooth.crop.valley import cut_valley, prefix
 
 BAR_S = 2.0
 
@@ -67,4 +68,51 @@ def test_windows_are_snapped_in_tolerance_and_deterministic(series):
         assert p.start_beat in bars and p.end_beat in bars
         assert abs(p.length_s - p.target_s) <= TOLERANCE_S[p.target_s] + 1e-6
         assert 0 <= p.start_s < p.end_s <= len(series) + 1e-6
-        assert 0.0 <= p.score <= 1.0
+        assert MIN_POINTS <= p.score <= 100.0
+
+
+def test_points_total_100_and_the_breakdown_sums_to_the_score():
+    assert sum(pts for _, pts in POINTS.values()) == 100.0
+    picks = suggest_crops(**_args(arc_song()))
+    assert picks
+    for p in picks:
+        assert [x.key for x in p.breakdown] == list(POINTS)
+        assert all(0.0 <= x.points <= x.max_points for x in p.breakdown)
+        assert abs(sum(x.points for x in p.breakdown) - p.score) < 1e-6
+
+
+def test_nothing_below_the_point_floor_is_proposed():
+    assert suggest_crops(**_args([2.0 if t % 3 else 0.0 for t in range(300)])) == []
+
+
+def test_a_zero_note_valley_cut_beats_a_busy_cut():
+    quiet = prefix([0.0] * 60)
+    busy = prefix([4.0] * 60)
+    assert cut_valley(quiet, [], 0.0, 30) == 1.0
+    assert cut_valley(busy, [], 0.0, 30) < 0.1
+    loud = prefix([9.0] * 60)
+    assert cut_valley(quiet, loud, 9.0, 30) < cut_valley(quiet, prefix([0.0] * 60), 9.0, 30)
+
+
+def _valley_song():
+    """Notes everywhere except a silent gap at 90-100 s and 210-220 s, rising between."""
+    return [
+        0.0 if 90 <= t < 100 or 210 <= t < 220 else (5.0 if 130 <= t < 190 else 3.0)
+        for t in range(300)
+    ]
+
+
+def test_cuts_land_in_valleys_when_one_is_in_reach():
+    best = suggest_crops(**_args(_valley_song()))[0]
+    series = _valley_song()
+    for cut in (best.start_s, best.end_s):
+        assert sum(series[max(0, int(cut) - 2) : int(cut) + 2]) <= 3.0
+
+
+def test_audio_energy_pulls_cuts_to_quiet_audio():
+    series = arc_song()
+    plain = suggest_crops(**_args(series))[0]
+    dip = int(plain.start_s) - 20  # a quiet stretch of audio 20 s before the plain start
+    audio = [0.0 if dip - 4 <= t < dip + 4 else 9.0 for t in range(300)]
+    best = suggest_crops(**_args(series), audio=audio)[0]
+    assert abs(best.start_s - dip) < abs(plain.start_s - dip)

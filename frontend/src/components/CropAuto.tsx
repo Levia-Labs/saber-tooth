@@ -1,6 +1,7 @@
+import { useState } from "react";
 import "../styles/cropauto.css";
 import { clock } from "../lib/crop";
-import { percent, type CropProposal } from "../lib/cropauto";
+import { percent, points, type CropProposal } from "../lib/cropauto";
 import { EmptyState } from "./EmptyState";
 
 interface Props {
@@ -11,8 +12,43 @@ interface Props {
   onCustom: () => void;
 }
 
-/** The Auto crop proposals as selectable cards; a spinner while loading, an empty state if none fit. */
+/** The scoring components of one proposal, points earned out of the most each can give. */
+function Breakdown({ id, proposal }: { id: string; proposal: CropProposal }) {
+  return (
+    <ul
+      className="crop-card-breakdown"
+      id={id}
+      aria-label={`Score breakdown of proposal ${proposal.rank}`}
+    >
+      {proposal.breakdown.map((part) => (
+        <li key={part.key}>
+          <span>{part.label}</span>
+          <span className="crop-card-part-bar" aria-hidden="true">
+            <span
+              style={{
+                width: `${part.max_points > 0 ? (part.points / part.max_points) * 100 : 0}%`,
+              }}
+            />
+          </span>
+          <span className="crop-card-points">
+            {points(part.points)} / {points(part.max_points)}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** The Auto crop proposals as selectable cards, each with an expandable score breakdown; a spinner
+ * while loading, an empty state if none fit. */
 export function CropAuto({ proposals, reason, selected, onSelect, onCustom }: Props) {
+  const [open, setOpen] = useState<Set<number>>(new Set());
+  const toggle = (rank: number) =>
+    setOpen((was) => {
+      const next = new Set(was);
+      if (!next.delete(rank)) next.add(rank);
+      return next;
+    });
   if (proposals === null) {
     return <EmptyState icon="spinner" text="" pending="Finding the best crops" />;
   }
@@ -33,29 +69,40 @@ export function CropAuto({ proposals, reason, selected, onSelect, onCustom }: Pr
   return (
     <div className="crop-auto" role="radiogroup" aria-label="Auto crop proposals">
       {proposals.map((p, i) => (
-        <button
-          key={p.rank}
-          type="button"
-          role="radio"
-          className="crop-card"
-          aria-checked={i === selected}
-          onClick={() => onSelect(i)}
-        >
-          <span className="crop-card-head">
-            <span className="crop-card-rank">#{p.rank}</span>
-            <span className="crop-card-range">
-              {clock(p.start_s)} to {clock(p.end_s)}
+        <div key={p.rank} className="crop-card" data-selected={i === selected}>
+          <button
+            type="button"
+            role="radio"
+            className="crop-card-pick"
+            aria-checked={i === selected}
+            onClick={() => onSelect(i)}
+          >
+            <span className="crop-card-head">
+              <span className="crop-card-rank">#{p.rank}</span>
+              <span className="crop-card-range">
+                {clock(p.start_s)} to {clock(p.end_s)}
+              </span>
+              <span className="crop-card-length">{p.target}</span>
             </span>
-            <span className="crop-card-length">{p.target}</span>
-          </span>
-          <span className="crop-card-reason">{p.reason}</span>
-          <span className="crop-card-score">
-            <span className="crop-card-bar" aria-hidden="true">
-              <span style={{ width: `${percent(p.score)}%` }} />
+            <span className="crop-card-reason">{p.reason}</span>
+            <span className="crop-card-score">
+              <span className="crop-card-bar" aria-hidden="true">
+                <span style={{ width: `${percent(p.score)}%` }} />
+              </span>
+              <span>Score {percent(p.score)}</span>
             </span>
-            <span>Score {percent(p.score)}</span>
-          </span>
-        </button>
+          </button>
+          <button
+            type="button"
+            className="crop-card-toggle"
+            aria-expanded={open.has(p.rank)}
+            aria-controls={`crop-breakdown-${p.rank}`}
+            onClick={() => toggle(p.rank)}
+          >
+            {open.has(p.rank) ? "Hide breakdown" : "Show breakdown"}
+          </button>
+          {open.has(p.rank) && <Breakdown id={`crop-breakdown-${p.rank}`} proposal={p} />}
+        </div>
       ))}
     </div>
   );

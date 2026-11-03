@@ -1,12 +1,13 @@
 """Everything the crop panel and the crop job need, built in one call."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from saber_tooth.analysis import Analysis
 from saber_tooth.crop.errors import InvalidWindow
 from saber_tooth.crop.nps import all_series
 from saber_tooth.crop.phrases import EPS, Grid, build_grid, grid_drift, grid_timing, hardest
 from saber_tooth.crop.sections import SectionMap, find_sections
+from saber_tooth.crop.valley import audio_series
 from saber_tooth.crop.window import (
     TARGETS,
     CropPlan,
@@ -30,6 +31,9 @@ class Timeline:
     sections: SectionMap
     plans: dict[int, CropPlan]
     drift_s: float | None
+    audio: list[float] = field(
+        default_factory=list
+    )  # weighted onsets per 1 s bin; empty unanalysed
 
 
 def build_timeline(beatmap: Beatmap, duration_s: float, analysis: Analysis | None) -> Timeline:
@@ -44,7 +48,7 @@ def build_timeline(beatmap: Beatmap, duration_s: float, analysis: Analysis | Non
     }
     return Timeline(
         beatmap, duration_s, grid, timing, hard.name, series, sections, plans,
-        grid_drift(grid, timing, analysis),
+        grid_drift(grid, timing, analysis), audio_series(analysis, duration_s),
     )  # fmt: skip
 
 

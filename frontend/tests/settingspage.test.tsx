@@ -12,7 +12,12 @@ const SYSTEM: SystemInfo = {
   fix_job_peak_mb: 512,
   workers: { configured: 1, running: 0 },
 };
-const SETTINGS: SettingsView = { max_concurrent_jobs: 1, recommended_max: 4, game_dir: null };
+const SETTINGS: SettingsView = {
+  max_concurrent_jobs: 1,
+  recommended_max: 4,
+  game_dir: null,
+  crop_min_length_s: 150,
+};
 
 const NOT_MOUNTED: ModStatus = {
   game: { state: "not_mounted", path: null, source: null, version: null, running: null },
