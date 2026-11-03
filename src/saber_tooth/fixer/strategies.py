@@ -4,7 +4,13 @@ import math
 from collections.abc import Iterator
 
 from saber_tooth.fixer.cells import RING, nearest_cut, occupied, swing_pair
-from saber_tooth.fixer.layout_fixes import crossover, note_in_wall, stack_conflict, vision_block
+from saber_tooth.fixer.layout_fixes import (
+    crossover,
+    note_converge,
+    note_in_wall,
+    stack_conflict,
+    vision_block,
+)
 from saber_tooth.fixer.map_fixes import default_environment, empty_gap, missing_difficulty
 from saber_tooth.fixer.ops import Delete, Flip, Move, Op
 from saber_tooth.fixer.verify import Context, Strategy
@@ -112,6 +118,7 @@ STRATEGIES: dict[str, Strategy] = {
     "crossover": crossover,
     "vision-block": vision_block,
     "note-in-wall": note_in_wall,
+    "note-converge": note_converge,
     "empty-gap": empty_gap,
     "wall-trap": wall_trap,
     "wall-short": wall_short,

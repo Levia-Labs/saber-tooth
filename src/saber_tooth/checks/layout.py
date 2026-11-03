@@ -10,6 +10,36 @@ from saber_tooth.swings import MAX_CUT_ANGLE, Swing, angle_between
 from saber_tooth.timing import Timing
 
 MAX_SPREAD = 1.5
+CONVERGE_SHARE = 0.4  # share of the half-jump time in which a note is still moving to its row
+CONVERGE_FALLBACK_S = 0.2  # window when njs or bpm give no usable jump time
+SAME_CELL_S = 0.1  # two notes in one cell closer in time than this fly through each other
+SIMULTANEOUS_S = 1e-4  # notes this close are one stack, judged by the stack rules instead
+MAX_HALF_JUMP_S = 18.0  # Beat Saber halves the half-jump distance until njs*spb*hjd fits this
+
+
+def jump_window_s(njs: float, offset: float, bpm: float) -> float:
+    """Seconds after spawn in which a note still changes row, from njs, jump offset and bpm."""
+    try:
+        if not (njs > 0 and bpm > 0 and math.isfinite(njs + offset + bpm)):
+            return CONVERGE_FALLBACK_S
+        spb = 60.0 / bpm
+        hjd = 4.0
+        while njs * spb * hjd > MAX_HALF_JUMP_S and hjd > 0.25:
+            hjd /= 2
+        return max(CONVERGE_SHARE * max(hjd + offset, 1.0) * spb, SAME_CELL_S)
+    except (TypeError, ValueError):
+        return CONVERGE_FALLBACK_S
+
+
+def converges(dt: float, a: tuple[int, int], b: tuple[int, int], window: float) -> bool:
+    """Flight paths of two notes `dt` seconds apart meet: one cell too soon, or one column
+    with different rows inside the jump window."""
+    dt = abs(dt)
+    if dt <= SIMULTANEOUS_S:
+        return False
+    if a == b:
+        return dt < SAME_CELL_S
+    return a[0] == b[0] and VISION_MIN_DT < dt <= window
 
 
 def _line_angle(u, v) -> float:
@@ -112,3 +142,20 @@ def note_in_wall(d: Difficulty, swings, timing: Timing, profile: Profile, analys
         for w in d.walls
         if _in_wall(n, w)
     ]
+
+
+def note_converge(d: Difficulty, swings, timing: Timing, profile: Profile, analysis=None):
+    window = jump_window_s(d.njs, d.offset, timing.initial_bpm)
+    reach = max(window, SAME_CELL_S)
+    out = []
+    notes = sorted(d.notes)
+    secs = [timing.to_seconds(n.beat) for n in notes]
+    for i, n in enumerate(notes):
+        for j in range(i + 1, len(notes)):
+            m, dt = notes[j], secs[j] - secs[i]
+            if dt > reach:
+                break
+            if converges(dt, (n.x, n.y), (m.x, m.y), window):
+                msg = "notes fly into the same spot while jumping to their rows"
+                out.append(Finding("note-converge", d.name, n.beat, m.beat, "warn", msg, (n, m)))
+    return out

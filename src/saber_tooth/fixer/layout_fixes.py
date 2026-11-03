@@ -121,3 +121,26 @@ def note_in_wall(ctx: Context) -> Iterator[list[Op]]:
     for x, y in itertools.islice(free, 12):
         yield [Move(ctx.d.name, n, x, y, n.cut)]
     yield [Delete(ctx.d.name, n)]
+
+
+def _weaker(a: Note, b: Note) -> tuple[Note, Note]:
+    """(weaker, stronger): a dot gives way to an arrow, otherwise the later note moves."""
+    if (a.cut == Cut.ANY) != (b.cut == Cut.ANY):
+        return (a, b) if a.cut == Cut.ANY else (b, a)
+    return (b, a) if (b.beat, b.color) >= (a.beat, a.color) else (a, b)
+
+
+def note_converge(ctx: Context) -> Iterator[list[Op]]:
+    """Take the weaker note out of the other's flight path; drop it when no cell is free."""
+    if len(ctx.finding.notes) != 2:
+        return
+    weak, strong = _weaker(*ctx.finding.notes)
+    name = ctx.d.name
+    for mover, other in ((weak, strong), (strong, weak)):
+        taken = occupied(ctx, mover.beat, (mover,))
+        for x, y in by_distance((mover.x, mover.y)):
+            if (x, y) in taken or x == other.x or (x, y) == (mover.x, mover.y):
+                continue
+            yield [Move(name, mover, x, y, mover.cut)]
+    yield [Delete(name, weak)]
+    yield [Delete(name, strong)]

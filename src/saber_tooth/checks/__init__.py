@@ -3,7 +3,13 @@ from collections.abc import Callable
 from saber_tooth.checks.finding import Finding
 from saber_tooth.checks.flow import parity_break, swing_speed, wide_jump
 from saber_tooth.checks.gaps import empty_gap
-from saber_tooth.checks.layout import crossover, note_in_wall, stack_conflict, vision_block
+from saber_tooth.checks.layout import (
+    crossover,
+    note_converge,
+    note_in_wall,
+    stack_conflict,
+    vision_block,
+)
 from saber_tooth.checks.slicing import slice_difficulty
 from saber_tooth.checks.structure import default_environment, missing_difficulty
 from saber_tooth.checks.walls import wall_short, wall_trap
@@ -22,6 +28,7 @@ RULES: dict[str, Callable] = {
     "crossover": crossover,
     "vision-block": vision_block,
     "note-in-wall": note_in_wall,
+    "note-converge": note_converge,
     "empty-gap": empty_gap,
     "wall-trap": wall_trap,
     "wall-short": wall_short,
