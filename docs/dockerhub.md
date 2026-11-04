@@ -21,9 +21,9 @@ Source, issues and full documentation: <https://github.com/Levia-Labs/saber-toot
 1. Library with status filters; once a map is fixed, its original is hidden.
 2. One-click Fix writes `<map> [saber-tooth]` with all five Standard difficulties. Scan and Fix run in batches, save as they go and resume after a cancel, timeout or error.
 3. Scan, Approve and Apply proposals, each verified to reach zero findings.
-4. Map page with Status, Crop, Relight and Delete tabs and bottom toasts. The Status tab lists the findings and, after a Fix, why each unfixed finding was left.
-5. Crop to a highlight (1 minute, 2 minutes or unlimited, free cutting down to 1 second) with an NPS chart, sections and playback; Auto crop proposes up to three windows; save as a new map or over the original.
-6. Relight a map in another vanilla environment; the lightshow is regenerated and the fixes stay.
+4. Map page with Status, Crop, Relight and Delete tabs, rename from the page, and bottom toasts. Regenerate, regenerate all, fix all and a findings summary; bulk delete with a strict map-folder guard; per-chain re-indexing keeps delete, rename, fix and crop fast. The Status tab lists the findings and, after a Fix, why each unfixed finding was left.
+5. Crop to a highlight of a set length (free cutting down to 1 second) with an NPS chart, sections, bound times and playback; Auto crop proposes up to three windows scored in points (70 and up), cut in quiet valleys, with an expandable score breakdown; saving overwrites the single `[saber-tooth]` copy.
+6. Relight a map in another vanilla environment from a mood-based catalogue with custom vanilla colour schemes; the lightshow is regenerated, without strobing, and the fixes stay. Arcs and chains are placed; light-strobe, note-converge and no-rest checks run with generator rest zones.
 7. One-step generation from a YouTube link or a dropped audio file.
 8. BeatSaver search, presets and downloads.
 9. Playlists tab: build playlists from library maps, with SongCore hashes, `.bplist` export and sync URLs that PlaylistManager refreshes on its own.
@@ -180,8 +180,9 @@ folder and the original map is never changed.
 
 | Tag      | What it is                |
 | -------- | ------------------------- |
-| `1.3.0`  | The 1.3.0 release         |
-| `latest` | The same build as `1.3.0` |
+| `1.4.0`  | The 1.4.0 release         |
+| `latest` | The same build as `1.4.0` |
+| `1.3.0`  | The 1.3.0 release, kept   |
 | `1.2.0`  | The 1.2.0 release, kept   |
 | `1.1.0`  | The 1.1.0 release, kept   |
 | `1.0.0`  | The 1.0.0 release, kept   |

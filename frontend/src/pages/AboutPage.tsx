@@ -98,17 +98,17 @@ const FEATURES: Feature[] = [
   {
     icon: "learn",
     title: "Lightshows",
-    text: "Lighting follows the energy and structure of the song, from a bundled learned set. Learn lightshows adds the styles of the maps you have installed.",
+    text: "Lighting follows the energy and structure of the song, from a bundled learned set, without strobing. Learn lightshows adds the styles of the maps you have installed. A light-strobe check finds harsh flashing and Fix removes it.",
   },
   {
     icon: "layers",
     title: "Relight",
-    text: "Light a map in another vanilla environment. The lightshow is regenerated on the saber-tooth copy and its fixes stay; the original is never changed.",
+    text: "Light a map in another vanilla environment. The lightshow is regenerated on the saber-tooth copy and its fixes stay; the original is never changed. Environments are suggested from the mood of the song, with custom vanilla colour schemes.",
   },
   {
     icon: "scissors",
     title: "Crop",
-    text: "Cut a highlight of 1 minute, 2 minutes or any length down to 1 second on an NPS chart with sections and playback. Auto crop suggests up to three windows. Save it as a new map or over the original.",
+    text: "Cut a highlight of a length you set, down to 1 second, on an NPS chart with sections, bound times and playback. Auto crop suggests up to three windows scored in points (70 and up), cut in quiet valleys, with an expandable score breakdown. Saving overwrites the single saber-tooth copy.",
   },
   {
     icon: "search",
