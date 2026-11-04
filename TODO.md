@@ -106,3 +106,17 @@ status: open
 class: bug
 
 fix-rate sample: 'One More' keeps 4 wide-jump warnings because every move or drop swaps the finding to a neighbour note. Needs a joint repair over the pair window.
+
+## 17 Flaky test_a_failing_job_frees_its_slot_and_its_map
+
+status: open
+class: bug
+
+tests/test_jobs_pool.py failed once during a gate run on main and passed on rerun with no change; likely timing-dependent.
+
+## 18 Facets times out right after startup
+
+status: open
+class: bug
+
+st:smoke right after st:up: 'api facets' returned status 0 (timeout) while the library re-indexed; passed on rerun. Facets should answer from the existing index during re-index.
