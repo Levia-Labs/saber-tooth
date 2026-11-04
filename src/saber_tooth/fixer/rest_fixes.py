@@ -10,16 +10,25 @@ from saber_tooth.fixer.ops import Delete, Op
 from saber_tooth.fixer.verify import Context
 
 MAX_VARIANTS = 6  # candidate rest-zone sets tried per finding
-SPAN_SHARE = 0.8  # each play stretch left between zones aims at this share of the span
+SPAN_SHARE = 0.7  # the pieces of play left between zones average this share of the span
+MAX_ZONES = 40
 EPS = 1e-6
 
 
-def _zone_count(ctx: Context) -> int:
-    """Rest zones that cut the finding's stretch into pieces shorter than the tier's span."""
+def _zone_plan(ctx: Context) -> tuple[int, float]:
+    """(zones, slot radius in beats): enough rest zones that, wherever each sits inside its
+    slot, every piece of play left between them stays shorter than the tier's span."""
     f, t = ctx.finding, ctx.timing
     seconds = t.to_seconds(f.beat_end) - t.to_seconds(f.beat_start)
-    span = REST_SPAN_S.get(f.difficulty, DEFAULT_REST_SPAN_S) * SPAN_SHARE
-    return max(1, math.ceil(seconds / span) - 1)
+    span = REST_SPAN_S.get(f.difficulty, DEFAULT_REST_SPAN_S)
+    beats = f.beat_end - f.beat_start
+    zones = max(1, math.ceil(seconds / (span * SPAN_SHARE)) - 1)
+    while True:
+        piece_s = seconds / (zones + 1)
+        radius = beats / (zones + 1) * (span / piece_s - 1) / 2
+        if radius >= REST_BEATS or zones >= MAX_ZONES:
+            return zones, max(radius, REST_BEATS / 2)
+        zones += 1
 
 
 def _slot_windows(ctx: Context, notes, lo: float, hi: float, centre: float) -> list[tuple]:
@@ -55,13 +64,13 @@ def no_rest(ctx: Context) -> Iterator[list[Op]]:
     notes = [n for n in d.notes if f.beat_start - EPS <= n.beat <= f.beat_end + EPS]
     if len(notes) <= REST_MAX_NOTES:
         return
-    zones = _zone_count(ctx)
+    zones, radius = _zone_plan(ctx)
     width = (f.beat_end - f.beat_start) / (zones + 1)
     slots = []
     for i in range(zones):
         centre = f.beat_start + (i + 1) * width
-        lo = max(centre - width / 2, f.beat_start)
-        hi = min(centre + width / 2, f.beat_end)
+        lo = max(centre - radius, f.beat_start)
+        hi = min(centre + radius, f.beat_end)
         slots.append(_slot_windows(ctx, notes, lo, hi, centre))
     seen = set()
     for variant in range(MAX_VARIANTS):

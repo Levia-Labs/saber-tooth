@@ -94,6 +94,10 @@ def crossover(ctx: Context) -> Iterator[list[Op]]:
         pair = ((x, y), (other.x, other.y)) if later is r else ((other.x, other.y), (x, y))
         if not _crosses(*pair, same):
             yield [Move(name, later, x, y, later.cut)]
+    for gone in (later, other):
+        s = swing_of(ctx, gone)
+        if s is not None:
+            yield from delete_keeping_parity(ctx, s)
     yield [Delete(name, later)]
 
 
