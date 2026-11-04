@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 
 from saber_tooth.checks.constants import PARITY_DOT, VISION_MIN_DT, cells_per_second
+from saber_tooth.checks.layout import SAME_CELL_S, converges, jump_window_s
 from saber_tooth.generator.motifs import Step, lattice, pool
 from saber_tooth.model import CUT_VECTORS, Color, Note
 from saber_tooth.profiles import Profile
@@ -50,6 +51,8 @@ class Placer:
         self.notes: dict[Color, list[Note]] = {Color.RED: [], Color.BLUE: []}
         self.all_secs: list[float] = []
         self.vision: list[float] = []
+        self.cells: list[tuple[float, int, int]] = []  # every note by time, for flight paths
+        self.window = jump_window_s(profile.njs, profile.offset, timing.initial_bpm)
         self.context: set[Note] = set()
         self._pools = {h: pool(h) for h in Color}
         self._lattice = {h: lattice(h) for h in Color}
@@ -75,6 +78,7 @@ class Placer:
         self.secs[note.color].insert(i, s)
         self.notes[note.color].insert(i, note)
         insort(self.all_secs, s)
+        insort(self.cells, (s, note.x, note.y))
         if is_vision_spot(note.x, note.y):
             insort(self.vision, s)
 
@@ -113,7 +117,20 @@ class Placer:
             return False
         return next_s is None or next_s - s > window or next_s - s <= VISION_MIN_DT
 
+    def _converges(self, s: float, step: Step) -> bool:
+        """A note near in time would fly into this one's spot while jumping to its row."""
+        reach = max(self.window, SAME_CELL_S) + GAP_MARGIN_S
+        i = bisect_left(self.cells, (s - reach,))
+        while i < len(self.cells) and self.cells[i][0] <= s + reach:
+            t, x, y = self.cells[i]
+            if converges(t - s, (x, y), (step[1], step[2]), self.window):
+                return True
+            i += 1
+        return False
+
     def _fits(self, s, step: Step, prev, nxt, next_s, relaxed: bool) -> bool:
+        if self._converges(s, step):
+            return False
         me = Link(s, CUT_VECTORS[step[0]], (step[1], step[2]))
         if prev is not None and not self._linked(prev, me, relaxed):
             return False

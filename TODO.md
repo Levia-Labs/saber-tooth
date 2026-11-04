@@ -78,3 +78,17 @@ status: done
 class: test
 
 Failed once in a full st:web:test run during the delete-flow change and passed on rerun; find the timing dependency (unawaited fetch or shared state) and make it deterministic.
+
+## 13 Gate runs pytest before frontend build
+
+status: open
+class: tooling
+
+A fresh lane worktree fails the 3 SPA-shell tests (missing src/saber_tooth/web/index.html) on its first st:gate run. Build first or make those tests build-independent.
+
+## 14 Commit helper hides failing hook message
+
+status: open
+class: tooling
+
+scripts/commit.py swallows the pre-commit hook output on abort; print the first error lines.
