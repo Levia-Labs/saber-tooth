@@ -61,6 +61,28 @@ def parse_tags(text: str) -> dict[str, str]:
         return {}
 
 
+def parse_info(text: str) -> dict:
+    """Duration in seconds (None when unknown) and lower-cased tags from `ffprobe -of json`."""
+    try:
+        duration = float(json.loads(text)["format"]["duration"])
+    except (ValueError, KeyError, TypeError):
+        duration = None
+    return {"duration": duration, "tags": parse_tags(text)}
+
+
+def probe_info(path: Path) -> dict:
+    """Duration and the title, artist and bpm tags of an audio file; empty values on failure."""
+    argv = [
+        "ffprobe", "-v", "error", "-show_entries",
+        "format=duration:format_tags=title,artist,bpm,tbpm", "-of", "json", str(path),
+    ]  # fmt: skip
+    try:
+        done = subprocess.run(argv, check=True, capture_output=True, timeout=30)  # nosec B603
+    except (OSError, subprocess.SubprocessError):
+        return {"duration": None, "tags": {}}
+    return parse_info(done.stdout.decode("utf-8", "replace"))
+
+
 def probe_tags(path: Path) -> dict[str, str]:
     """Title and artist tags of an audio file through ffprobe; {} when ffprobe cannot read them."""
     argv = [

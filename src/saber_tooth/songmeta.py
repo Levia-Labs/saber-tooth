@@ -4,6 +4,9 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from saber_tooth.audio import probe_info
+from saber_tooth.mapio import load_map
+
 UNKNOWN_AUTHOR = "Unknown"
 FIELD_MAX = 120
 _BRACKETS = re.compile(r"[(\[]([^()\[\]]*)[)\]]")
@@ -51,3 +54,41 @@ def file_meta(file_name: str, tags: dict[str, str]) -> SongMeta:
 def project_meta(name: str) -> SongMeta:
     """Meta from a beat-analyser project name: the video title, spaces written as underscores."""
     return parse_title(name.replace("_", " "))
+
+
+def _number(text: str | None) -> float | None:
+    try:
+        value = float(str(text).strip())
+    except ValueError:
+        return None
+    return round(value, 3) if value > 0 else None
+
+
+def describe(path: Path) -> dict:
+    """Title, artist, duration (seconds) and bpm of an audio file or a map folder.
+
+    A map answers from its info.dat and its song file; an audio file from its tags, else its
+    file name. Values that cannot be read are None."""
+    path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(f"no such file or folder: {path}")
+    if path.is_file() and path.name.lower() == "info.dat":
+        path = path.parent
+    if path.is_dir():
+        info = load_map(path).info
+        probed = probe_info(path / info.song_file)
+        return {
+            "title": info.song_name,
+            "artist": info.author,
+            "duration": probed["duration"],
+            "bpm": info.bpm,
+        }
+    probed = probe_info(path)
+    tags = probed["tags"]
+    meta = file_meta(path.name, tags)
+    return {
+        "title": meta.song,
+        "artist": meta.author if meta.author != UNKNOWN_AUTHOR else None,
+        "duration": probed["duration"],
+        "bpm": _number(tags.get("bpm") or tags.get("tbpm")),
+    }

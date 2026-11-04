@@ -22,6 +22,10 @@ def source_of(args: dict) -> str | None:
     return url_source(args["url"]) if isinstance(args.get("url"), str) else None
 
 
+def _style_args(style: dict | None) -> dict:
+    return {"style": style} if style else {}
+
+
 class GenerateSubmitter:
     def __init__(self, api, lookup: Callable[[str], str | None] | None = None) -> None:
         self.api = api
@@ -46,11 +50,12 @@ class GenerateSubmitter:
             self._check(source)
             return self.api.jobs.submit("generate", {**args, "source": source})
 
-    def url(self, url: str) -> str:
+    def url(self, url: str, style: dict | None = None) -> str:
         source = url_source(url)
         self._check(source)  # refuse before the slow title lookup
         title = (self.lookup or video_title)(url)
-        return self._submit(source, {"url": url, **({"title": title} if title else {})})
+        extra = {"title": title} if title else {}
+        return self._submit(source, {"url": url, **extra, **_style_args(style)})
 
-    def file(self, path: Path) -> str:
-        return self._submit(file_source(path), {"upload": str(path)})
+    def file(self, path: Path, style: dict | None = None) -> str:
+        return self._submit(file_source(path), {"upload": str(path), **_style_args(style)})
