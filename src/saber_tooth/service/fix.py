@@ -130,7 +130,7 @@ def fix_map(
     finally:
         if saver.name:  # the copy of an interrupted run is a real folder: show it
             try:
-                svc.refresh_library()
+                svc.reindex_chain(saver.name)
             except Exception:
                 log.exception("library refresh failed after fixing %s", map_id)
     checkpoint(progress)  # a cancel during the last attempt is not a success

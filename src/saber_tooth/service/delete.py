@@ -7,10 +7,11 @@ and re-indexes only the surviving members of the same chain (original and `[sabe
 import shutil
 from pathlib import Path
 
-from saber_tooth.copynames import is_fixed_copy, strip_fixed
+from saber_tooth.copynames import chain_names, is_fixed_copy, strip_fixed
 from saber_tooth.map_folder_guard import check_map_folder
 from saber_tooth.safe_fs import LevelsRoot, WriteRefused
 from saber_tooth.service.errors import DeleteRefused, MapNotFound
+from saber_tooth.service.util import map_id_for
 from saber_tooth.store import Store
 
 
@@ -33,6 +34,18 @@ class DeleteMixin:
 
     def reindex_folders(self, names: list[str]) -> int:
         raise NotImplementedError
+
+    def reindex_chain(self, *names: str, gone: tuple[str, ...] = ()) -> int:
+        """Re-index the chains of `names` (originals and copies on disk); drop rows of `gone`.
+
+        The after-operation path: never walks the whole library for folder contents.
+        """
+        if gone:
+            self.store.delete_maps([map_id_for(n) for n in gone])
+        listing = [p.name for p in self.levels.iterdir() if not p.name.startswith(".")]
+        members = chain_names(listing, [*names, *gone])
+        dead = set(gone) - set(names)
+        return self.reindex_folders([n for n in members if n not in dead])
 
     def _remove_folder(self, map_id: str, rows: list[dict]) -> str:
         """Guard, then remove one map folder; returns its name. Rows are left to the caller."""

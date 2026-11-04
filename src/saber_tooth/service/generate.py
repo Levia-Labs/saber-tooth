@@ -70,7 +70,7 @@ def generate_map(
     finally:
         shutil.rmtree(staging, ignore_errors=True)
     try:
-        svc.refresh_library()
+        svc.reindex_chain(target.name)
     except Exception:
         log.exception("library refresh failed after generating %s", target.name)
     map_id = map_id_for(target.name)

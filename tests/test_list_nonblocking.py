@@ -14,14 +14,14 @@ from tests.test_service import _make
 def test_list_not_blocked_by_running_fix_job(tmp_path):
     svc = _make(tmp_path, extra=CLASH)
     started, release = threading.Event(), threading.Event()
-    real = svc._reindex
+    real = svc.reindex_folders
 
-    def slow_refresh():
+    def slow_refresh(names):
         started.set()  # the fixed folder is written; the refresh is the slow tail
         release.wait(15)
-        return real()
+        return real(names)
 
-    svc._reindex = slow_refresh
+    svc.reindex_folders = slow_refresh
     with TestClient(create_app(svc), base_url="http://localhost") as http:
         jid = http.post(f"/api/maps/{MID}/fix").json()["job"]
         try:

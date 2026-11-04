@@ -98,7 +98,7 @@ def crop_map(
         svc.store.reset_map(map_id_for(target.name))  # an overwritten copy starts unscanned
     store_copy_scan(svc, target.name, cropped.beatmap, None)  # the analysis is on the old time base
     try:
-        svc.refresh_library()
+        svc.reindex_chain(target.name, folder.name)
     except Exception:
         log.exception("library refresh failed after cropping %s", map_id)
     return {

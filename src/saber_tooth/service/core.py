@@ -250,7 +250,7 @@ class Service(DeleteMixin, RenameMixin):
                 raise ApplyConflict("proposals kept changing during apply; retry", [])
             self.store.mark_applied(outcome.applied)
             try:
-                self.refresh_library()
+                self.reindex_chain(target.name)
             except Exception:
                 log.exception("library refresh failed after applying %s", map_id)
             return target, outcome

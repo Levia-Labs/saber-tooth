@@ -24,3 +24,11 @@ def is_fixed_copy(name: str) -> bool:
 def strip_crop(name: str) -> str:
     """`name` without a legacy crop length tag."""
     return _CROP.sub("", name)
+
+
+def chain_names(listing: list[str], folders: list[str]) -> list[str]:
+    """Names in `listing` in the same chain (original and its copies) as any of `folders`,
+    plus `folders` themselves; sorted, no duplicates."""
+    bases = {strip_fixed(f) for f in folders}
+    found = {n for n in listing if strip_fixed(n) in bases}
+    return sorted(found | set(folders))

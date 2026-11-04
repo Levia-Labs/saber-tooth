@@ -61,7 +61,7 @@ def relight_map(svc, map_id: str, environment: str, progress=None) -> dict:
     if not rewrite or svc.store.scan_info(map_id_for(target.name)) is None:
         store_copy_scan(svc, target.name, lit, analysis)
     try:
-        svc.refresh_library()
+        svc.reindex_chain(target.name)
     except Exception:
         log.exception("library refresh failed after relighting %s", map_id)
     return {

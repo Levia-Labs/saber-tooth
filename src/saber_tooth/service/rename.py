@@ -53,7 +53,7 @@ class RenameMixin:
     levels: Path
     store: Store
 
-    def refresh_library(self, wait: bool = True) -> int | None:
+    def reindex_chain(self, *names: str, gone: tuple[str, ...] = ()) -> int:
         raise NotImplementedError
 
     def _keep_folder(self, map_id: str, name: str) -> str:
@@ -76,7 +76,7 @@ class RenameMixin:
         if new_name != old_name:
             folder.rename(self.levels / new_name)
             self.store.rename_map(map_id, map_id_for(new_name))
-        self.refresh_library()
+        self.reindex_chain(new_name, gone=(old_name,) if new_name != old_name else ())
         return map_id_for(new_name)
 
     def rename_map(self, map_id: str, raw_name: object, keep_folder: bool = False) -> str:
@@ -127,5 +127,5 @@ class RenameMixin:
         for a, b in done:
             if map_id_for(b) != ids[a]:
                 self.store.rename_map(ids[a], map_id_for(b))
-        self.refresh_library()
+        self.reindex_chain(*(b for _, b in moves), gone=tuple(a for a, _ in done))
         return map_id_for(dict(moves).get(old_name, old_name))
