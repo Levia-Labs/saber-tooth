@@ -6,6 +6,7 @@ import math
 from saber_tooth.checks import check_difficulty
 from saber_tooth.checks.constants import SLIDER_S
 from saber_tooth.fixer.layout_fixes import in_wall
+from saber_tooth.fixer.rest_fixes import rest_drops
 from saber_tooth.lightshow.pacing import pace_show
 from saber_tooth.mapio.write import BOX_KEYS, FX_KEY
 from saber_tooth.model import CUT_VECTORS, OPPOSITE, Bomb, Cut, Difficulty, Note
@@ -121,5 +122,7 @@ def thin(source: Difficulty, profile: Profile, timing: Timing) -> Difficulty | N
         for f in (f for f in findings if f.rule in WALL_RULES):  # the source walls, judged anew
             out.walls = [w for w in out.walls if w not in f.walls]
         gone = _victims([f for f in findings if f.rule not in WALL_RULES | {"note-in-wall"}])
+        for f in (f for f in findings if f.rule == "no-rest"):  # the target density has no rest
+            gone.update(next(rest_drops(out.notes, f, timing), ()))
         notes = [n for n in out.notes if n not in gone]
     return None

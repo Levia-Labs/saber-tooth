@@ -5,9 +5,12 @@ from bisect import bisect_left
 from collections.abc import Iterator
 
 from saber_tooth.analysis import onset_density
+from saber_tooth.checks import Finding
 from saber_tooth.checks.gaps import DEFAULT_REST_SPAN_S, REST_BEATS, REST_MAX_NOTES, REST_SPAN_S
 from saber_tooth.fixer.ops import Delete, Op
 from saber_tooth.fixer.verify import Context
+from saber_tooth.model import Note
+from saber_tooth.timing import Timing
 
 MAX_VARIANTS = 6  # candidate rest-zone sets tried per finding
 SPAN_SHARE = 0.7  # the pieces of play left between zones average this share of the span
@@ -15,10 +18,9 @@ MAX_ZONES = 40
 EPS = 1e-6
 
 
-def _zone_plan(ctx: Context) -> tuple[int, float]:
+def _zone_plan(f: Finding, t: Timing) -> tuple[int, float]:
     """(zones, slot radius in beats): enough rest zones that, wherever each sits inside its
     slot, every piece of play left between them stays shorter than the tier's span."""
-    f, t = ctx.finding, ctx.timing
     seconds = t.to_seconds(f.beat_end) - t.to_seconds(f.beat_start)
     span = REST_SPAN_S.get(f.difficulty, DEFAULT_REST_SPAN_S)
     beats = f.beat_end - f.beat_start
@@ -31,7 +33,7 @@ def _zone_plan(ctx: Context) -> tuple[int, float]:
         zones += 1
 
 
-def _slot_windows(ctx: Context, notes, lo: float, hi: float, centre: float) -> list[tuple]:
+def _slot_windows(notes, lo: float, hi: float, centre: float, timing: Timing, analysis):
     """Rest windows anchored on a note inside [lo, hi - REST_BEATS], quietest first."""
     beats = [n.beat for n in notes]  # sorted: the notes of a difficulty are
     windows = []
@@ -43,13 +45,13 @@ def _slot_windows(ctx: Context, notes, lo: float, hi: float, centre: float) -> l
             break
         count = bisect_left(beats, b - EPS) - bisect_left(beats, a - EPS)
         quiet = 0.0
-        if ctx.analysis is not None:
-            quiet = onset_density(ctx.analysis, ctx.timing.to_seconds(a), ctx.timing.to_seconds(b))
+        if analysis is not None:
+            quiet = onset_density(analysis, timing.to_seconds(a), timing.to_seconds(b))
         windows.append((quiet, max(count - REST_MAX_NOTES, 0), abs(a + 4 - centre), a, b))
     return sorted(windows)
 
 
-def _drops(notes, a: float, b: float) -> list:
+def _drops(notes, a: float, b: float) -> list[Note]:
     inside = [n for n in notes if a - EPS <= n.beat < b - EPS]
     half = a + REST_BEATS / 2
     keep = {
@@ -59,19 +61,21 @@ def _drops(notes, a: float, b: float) -> list:
     return [n for n in inside if n not in keep]
 
 
-def no_rest(ctx: Context) -> Iterator[list[Op]]:
-    f, d = ctx.finding, ctx.d
-    notes = [n for n in d.notes if f.beat_start - EPS <= n.beat <= f.beat_end + EPS]
+def rest_drops(
+    all_notes: list[Note], f: Finding, timing: Timing, analysis=None
+) -> Iterator[list[Note]]:
+    """Note sets whose removal opens the rest zones a no-rest finding needs, best first."""
+    notes = [n for n in all_notes if f.beat_start - EPS <= n.beat <= f.beat_end + EPS]
     if len(notes) <= REST_MAX_NOTES:
         return
-    zones, radius = _zone_plan(ctx)
+    zones, radius = _zone_plan(f, timing)
     width = (f.beat_end - f.beat_start) / (zones + 1)
     slots = []
     for i in range(zones):
         centre = f.beat_start + (i + 1) * width
         lo = max(centre - radius, f.beat_start)
         hi = min(centre + radius, f.beat_end)
-        slots.append(_slot_windows(ctx, notes, lo, hi, centre))
+        slots.append(_slot_windows(notes, lo, hi, centre, timing, analysis))
     seen = set()
     for variant in range(MAX_VARIANTS):
         picks = tuple(w[min(variant, len(w) - 1)][3:5] for w in slots if w)
@@ -80,4 +84,9 @@ def no_rest(ctx: Context) -> Iterator[list[Op]]:
         seen.add(picks)
         drop = [n for a, b in picks for n in _drops(notes, a, b)]
         if drop:
-            yield [Delete(d.name, n) for n in drop]
+            yield drop
+
+
+def no_rest(ctx: Context) -> Iterator[list[Op]]:
+    for drop in rest_drops(ctx.d.notes, ctx.finding, ctx.timing, ctx.analysis):
+        yield [Delete(ctx.d.name, n) for n in drop]

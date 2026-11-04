@@ -30,3 +30,22 @@ def test_thinned_difficulty_does_not_inherit_a_strobing_show():
     assert not [
         f for f in run_checks(fixed, None, rules={"light-strobe"}) if f.difficulty == "Hard"
     ]
+
+
+def test_thinned_difficulty_gets_rest_zones_on_a_long_dense_map():
+    from saber_tooth.checks import check_difficulty
+    from saber_tooth.model import Color, Cut, Note
+    from saber_tooth.profiles import PROFILES
+    from saber_tooth.timing import Timing
+    from tests.test_fixer import bm
+
+    cuts = [Cut.DOWN if i % 2 == 0 else Cut.UP for i in range(900)]
+    notes = [
+        Note(8 + i * 0.5, 1 + i % 2, int(c == Cut.UP), Color(i % 2), c) for i, c in enumerate(cuts)
+    ]
+    m = bm(notes, "ExpertPlus")
+    out = fx.propose(m, missing(m, "Hard"), None, None, 1)
+    assert out is not None
+    hard = fx.apply_ops(m, out.ops).difficulties["Hard"]
+    found = check_difficulty(hard, Timing(120.0, []), PROFILES["Hard"], rules={"no-rest"})
+    assert found == []
