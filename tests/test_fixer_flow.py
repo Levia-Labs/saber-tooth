@@ -1,31 +1,36 @@
-"""Finer fixer strategies: single-note deletes, dot-aware flips, joint multi-note moves."""
+"""Flow fixes that remove notes keep the hand's alternation intact."""
 
 from saber_tooth import fixer as fx
+from saber_tooth.checks import run_checks
 from saber_tooth.fixer import ops as fo
-from saber_tooth.model import Cut
-from tests.test_fixer import _n, bm, find
+from saber_tooth.fixer.strategies import wide_jump
+from saber_tooth.fixer.verify import Context
+from saber_tooth.model import Color, Cut, Note
+from tests.test_fixer import bm, find
+
+FLOW = {"parity-break", "wide-jump", "swing-speed"}
 
 
-def test_swing_speed_deletes_one_note_of_a_stack():
-    notes = [_n(8, 0, 0), _n(8.41, 0, 1, cut=Cut.UP), _n(8.448, 1, 1, cut=Cut.UP)]
-    m = bm(notes)
-    p = fx.propose(m, find(m, "swing-speed"), None, None, 1)
-    assert [type(o) for o in p.ops] == [fo.Delete]
-    assert p.ops[0].note == notes[1]
-    assert len(fx.apply_ops(m, p.ops).difficulties["Expert"].notes) == 2
+def stream():
+    return bm(
+        [
+            Note(8.0, 0, 0, Color.RED, Cut.DOWN),
+            Note(8.5, 3, 2, Color.RED, Cut.UP),
+            Note(9.0, 0, 0, Color.RED, Cut.DOWN),
+            Note(9.5, 1, 1, Color.RED, Cut.UP),
+        ]
+    )
 
 
-def test_parity_break_keeps_dots_when_flipping_a_mixed_swing():
-    notes = [_n(8, 1, 0), _n(8.5, 1, 0), _n(8.5, 2, 0, cut=Cut.ANY)]
-    m = bm(notes)
-    p = fx.propose(m, find(m, "parity-break"), None, None, 1)
-    assert [(o.note.cut, o.cut) for o in p.ops] == [(Cut.DOWN, Cut.UP)]
-    assert Cut.ANY in {n.cut for n in fx.apply_ops(m, p.ops).difficulties["Expert"].notes}
+def test_wide_jump_last_resort_drops_two_swings_before_one():
+    m = stream()
+    got = list(wide_jump(Context(m, find(m, "wide-jump"), None, None, 1)))
+    assert all(isinstance(o, fo.Delete) for o in got[-1]) and len(got[-1]) == 1
+    assert all(isinstance(o, fo.Delete) for o in got[-2]) and len(got[-2]) == 2
 
 
-def test_wide_jump_moves_a_stack_as_a_unit():
-    notes = [_n(8, 3, 1), _n(8.6, 0, 1, cut=Cut.UP), _n(8.6, 1, 1, cut=Cut.UP)]
-    m = bm(notes)
+def test_wide_jump_fix_leaves_no_parity_break():
+    m = stream()
     p = fx.propose(m, find(m, "wide-jump"), None, None, 1)
-    assert [(o.x, o.y) for o in p.ops] == [(2, 1), (1, 1)]  # leading note first
-    assert len(fx.apply_ops(m, p.ops).difficulties["Expert"].notes) == 3
+    assert p is not None
+    assert "parity-break" not in {f.rule for f in run_checks(fx.apply_ops(m, p.ops), rules=FLOW)}

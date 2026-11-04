@@ -50,6 +50,12 @@ def swing_pair(ctx: Context) -> tuple[Swing, Swing] | None:
     return None
 
 
+def following_swing(ctx: Context, s: Swing) -> Swing | None:
+    """The same hand's swing right after `s`, or None at the end of the hand's play."""
+    later = [x for x in ctx.swings()[s.hand] if x.beat > s.beat + EPS]
+    return later[0] if later else None
+
+
 def single_swing(ctx: Context) -> Swing | None:
     f = ctx.finding
     for hand in Color:
