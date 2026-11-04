@@ -71,8 +71,12 @@ def _cmd_inspect(args: argparse.Namespace) -> int:
     return 0
 
 
-def _survey_findings(folder: Path) -> list[Finding]:
-    return run_checks(load_map(folder))
+def _survey_findings(folder: Path, mapper: str | None = None) -> list[Finding] | None:
+    """Findings for one map; None when a mapper filter excludes it."""
+    beatmap = load_map(folder)
+    if mapper is not None and beatmap.info.mapper != mapper:
+        return None
+    return run_checks(beatmap)
 
 
 def _cmd_survey(args: argparse.Namespace) -> int:
@@ -86,9 +90,11 @@ def _cmd_survey(args: argparse.Namespace) -> int:
         return 1
     for folder in folders:
         try:
-            findings = _survey_findings(folder)
+            findings = _survey_findings(folder, args.mapper)
         except Exception:  # one broken map must not abort the survey
             parse_errors += 1
+            continue
+        if findings is None:
             continue
         for rule in {f.rule for f in findings}:
             s = stats[rule]
@@ -251,6 +257,7 @@ def _parser() -> argparse.ArgumentParser:
     i.set_defaults(func=_cmd_inspect)
     s = sub.add_parser("survey", help="check every map under a directory")
     s.add_argument("levels_dir")
+    s.add_argument("--mapper", default=None, help="only maps by this level author")
     s.set_defaults(func=_cmd_survey)
     ln = sub.add_parser("learn", help="learn lightshow units from installed maps")
     ln.add_argument("levels_dir")

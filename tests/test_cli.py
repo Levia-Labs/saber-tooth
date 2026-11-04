@@ -138,3 +138,9 @@ def test_scan_api_posts_and_prints_job(capsys, monkeypatch):
     monkeypatch.setattr(cli, "scan_api", lambda m, a: real(m, a, bad))
     assert main(["scan-api", "abc"]) == 1
     assert capsys.readouterr().err.startswith("error: ")
+
+
+def test_survey_mapper_filter(capsys):
+    assert main(["survey", str(FIX), "--mapper", "nobody-at-all"]) == 0
+    out = capsys.readouterr().out.splitlines()
+    assert out == ["parse_errors=0"]
