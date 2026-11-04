@@ -121,6 +121,8 @@ def main(argv: list[str] | None = None) -> int:
     except SystemExit as exc:
         print(exc, file=sys.stderr)
         return 1
+    if hasattr(sys.stdout, "reconfigure"):  # map names are not always representable on a console
+        sys.stdout.reconfigure(errors="replace")
     print("\n".join(lines))
     return 0
 

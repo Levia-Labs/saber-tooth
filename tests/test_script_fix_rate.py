@@ -75,3 +75,19 @@ def test_run_measures_copies_and_leaves_source(tmp_path, capsys):
 
 def test_missing_dir_fails(tmp_path, capsys):
     assert fr.main([str(tmp_path / "nope")]) == 1
+
+
+def test_unicode_map_names_survive_a_narrow_console(tmp_path):
+    import os
+    import subprocess
+
+    (tmp_path / "日本語 (曲)").mkdir()
+    env = {**os.environ, "PYTHONIOENCODING": "cp1250"}
+    done = subprocess.run(
+        [sys.executable, str(SCRIPT), str(tmp_path)],
+        capture_output=True,
+        env=env,
+        check=False,
+    )
+    assert done.returncode == 0, done.stderr.decode(errors="replace")
+    assert b"parse-error" in done.stdout
