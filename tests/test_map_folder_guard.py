@@ -184,3 +184,47 @@ def test_service_delete_409_with_reasons(tmp_path):
     assert "notes.txt" in resp.text
     assert (svc.levels / NAME / "notes.txt").exists()
     assert svc.store.get_map(mid) is not None
+
+
+def _with_custom(custom: dict) -> dict:
+    return {**V2, "_customData": custom}
+
+
+def test_icon_named_in_custom_data_counts_as_referenced(tmp_path):
+    info = _with_custom({"_contributors": [{"_iconPath": "OC_Beat_Saber 1mb.PNG"}]})
+    folder = build(tmp_path, info, (*FILES_V2, "oc_beat_saber 1MB.png"))
+    assert check_map_folder(folder, folder.parent) == []
+
+
+@given(bad=st.sampled_from(["../a.png", "sub/a.png", "sub\a.png", "..", "x..y/a.png"]))
+@fresh
+def test_path_like_values_never_reference(tmp_path, bad):
+    folder = build(tmp_path, _with_custom({"_iconPath": bad}), (*FILES_V2, "a.png"))
+    assert any("unreferenced" in r for r in check_map_folder(folder, folder.parent))
+
+
+def test_cinema_video_json_allowed_when_small_object(tmp_path):
+    folder = build(tmp_path, V2, FILES_V2)
+    (folder / "cinema-video.json").write_text('{"videoFile": "v.mp4"}', encoding="utf-8")
+    assert check_map_folder(folder, folder.parent) == []
+
+
+@pytest.mark.parametrize("kind", ["array", "garbage", "big"])
+def test_cinema_video_json_refused_when_invalid_or_big(tmp_path, kind):
+    body = {"array": "[1]", "garbage": "not json", "big": json.dumps({"a": "x" * 70000})}[kind]
+    folder = build(tmp_path, V2, FILES_V2)
+    (folder / "cinema-video.json").write_text(body, encoding="utf-8")
+    assert check_map_folder(folder, folder.parent)
+
+
+def test_other_json_names_still_refused(tmp_path):
+    folder = build(tmp_path, V2, FILES_V2)
+    (folder / "Cinema-Video.json").write_text("{}", encoding="utf-8")
+    assert check_map_folder(folder, folder.parent)
+
+
+def test_vivify_only_when_referenced(tmp_path):
+    folder = build(tmp_path, V2, (*FILES_V2, "b.vivify"))
+    assert check_map_folder(folder, folder.parent)
+    folder = build(tmp_path, _with_custom({"bundle": "B.vivify"}), (*FILES_V2, "b.vivify"))
+    assert check_map_folder(folder, folder.parent) == []

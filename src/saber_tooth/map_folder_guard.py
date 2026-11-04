@@ -10,6 +10,9 @@ MAX_BYTES = 300 * 1024 * 1024
 ALLOWED_EXT = frozenset({".dat", ".egg", ".ogg", ".wav", ".png", ".jpg", ".jpeg"})
 INFO_NAMES = ("Info.dat", "info.dat")
 EXTRA_OK = frozenset({"bpminfo.dat"})
+CINEMA_NAME = "cinema-video.json"
+CINEMA_MAX = 64 * 1024
+REF_EXT = frozenset({".vivify"})  # allowed only when Info.dat names the file
 LIST_CAP = 5
 _REPARSE = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
 
@@ -136,7 +139,38 @@ def _refs_v4(info: dict) -> tuple[str | None, set[str], int] | None:
     return cover, refs, len(diffs)
 
 
+def _all_strings(value: object) -> list[str]:
+    """Every string value (not key) anywhere inside `value`, iteratively."""
+    out: list[str] = []
+    stack = [value]
+    while stack:
+        cur = stack.pop()
+        if isinstance(cur, str):
+            out.append(cur)
+        elif isinstance(cur, dict):
+            stack.extend(cur.values())
+        elif isinstance(cur, list):
+            stack.extend(cur)
+    return out
+
+
+def named_refs(info: object) -> set[str]:
+    """Lower-cased plain file names (no path parts) found as string values in `info`."""
+    bad = ("/", "\\", "..")
+    return {v.lower() for v in _all_strings(info) if v and not any(b in v for b in bad)}
+
+
+def _cinema_ok(path: Path) -> bool:
+    try:
+        if path.stat().st_size > CINEMA_MAX:
+            return False
+        return isinstance(json.loads(path.read_text(encoding="utf-8")), dict)
+    except (OSError, ValueError):
+        return False
+
+
 def _info_refs(files: dict[str, Path]) -> tuple[set[str], list[str]]:
+    """Required references plus every name Info.dat mentions anywhere, as one set."""
     present = [n for n in files if n in INFO_NAMES]
     if len(present) != 1:
         return set(), [f"expected exactly one Info.dat, found {len(present)}"]
@@ -157,7 +191,7 @@ def _info_refs(files: dict[str, Path]) -> tuple[set[str], list[str]]:
     if missing:
         names = _names([m or "<empty name>" for m in missing])
         return set(), [f"referenced files missing: {names}"]
-    return {r.lower() for r in refs}, []
+    return {r.lower() for r in refs} | named_refs(info), []
 
 
 def check_map_folder(folder: Path, levels_root: Path, map_id: str | None = None) -> list[str]:
@@ -170,16 +204,28 @@ def check_map_folder(folder: Path, levels_root: Path, map_id: str | None = None)
     except OSError:
         return [*reasons, "folder cannot be listed"]
     reasons += shape
-    foreign = [n for n in files if Path(n).suffix.lower() not in ALLOWED_EXT]
+    refs, info_reasons = _info_refs(files)
+    foreign = []
+    for n in files:
+        ext = Path(n).suffix.lower()
+        if ext in ALLOWED_EXT or n == CINEMA_NAME:
+            continue
+        if ext in REF_EXT and n.lower() in refs:
+            continue
+        foreign.append(n)
     if foreign:
         reasons.append(f"disallowed extensions: {_names(foreign)}")
-    refs, info_reasons = _info_refs(files)
+    if CINEMA_NAME in files and not _cinema_ok(files[CINEMA_NAME]):
+        reasons.append(f"{CINEMA_NAME} is oversized or not a JSON object")
     reasons += info_reasons
     if not info_reasons:
         extra = [
             n
             for n in files
-            if n not in INFO_NAMES and n.lower() not in refs and n.lower() not in EXTRA_OK
+            if n not in INFO_NAMES
+            and n.lower() not in refs
+            and n.lower() not in EXTRA_OK
+            and n != CINEMA_NAME
         ]
         if extra:
             reasons.append(f"unreferenced files: {_names(extra)}")

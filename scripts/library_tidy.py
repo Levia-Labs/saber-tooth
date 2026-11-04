@@ -4,7 +4,9 @@ A chain is an original folder F plus every folder named F followed by one or mor
 " [saber-tooth]" / " [saber-tooth N]" suffixes; generated maps (folder "st-...") are their own
 chain. Originals and generated maps are never deleted. Per chain one copy is kept (newest
 generation, duration >= 30 s, then cropped, then highest N) and the other copies are deleted; the
-kept copy and generated maps are renamed with keep_folder. Dry run by default; --apply deletes
+kept copy and generated maps are renamed with keep_folder; a final pass gives every kept copy
+the folder "<base> [saber-tooth]" (409 conflicts are reported, not fatal). Legacy "[N min]" and
+"[crop ...]" tags count as copy suffixes. Dry run by default; --apply deletes
 first, then renames (data-deleting, hard delete of copies only).
 Talks only to the running API. --levels DIR adds folders the API list hides (id = first 12 hex of
 sha256 of the folder name).
@@ -28,11 +30,10 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
+from saber_tooth.copynames import fixed_name, split_copy
 from saber_tooth.map_folder_guard import check_map_folder
 
 Request = Callable[[str, str, bytes | None], tuple[int, bytes]]
-SUFFIX_RE = re.compile(r"^(.*?)((?: \[saber-tooth(?: \d+)?\])+)$", re.S)
-ONE_SUFFIX_RE = re.compile(r" \[saber-tooth(?: (\d+))?\]")
 TAG_RE = re.compile(r"\s*\[(?:saber-tooth(?: \d+)?|crop[^\]]*|\d+ min)\]")
 CROP_RE = re.compile(r"\[crop[^\]]*\]")
 MIN_DURATION = 30.0
@@ -54,6 +55,7 @@ class Plan:
     delete: tuple[Item, ...]
     rename: tuple[tuple[Item, str], ...]
     drop_ids: frozenset[str] = frozenset()
+    fold_ids: frozenset[str] = frozenset()  # folder-only fixes: always keep_folder
 
 
 def map_id_for(folder: str) -> str:
@@ -64,11 +66,7 @@ def chain_key(folder: str) -> tuple[str, int, int]:
     """(chain key, suffix count, last N); generated maps and originals have count 0."""
     if folder.startswith("st-"):
         return folder, 0, 0
-    m = SUFFIX_RE.match(folder)
-    if not m:
-        return folder, 0, 0
-    suffixes = ONE_SUFFIX_RE.findall(m.group(2))
-    return m.group(1), len(suffixes), int(suffixes[-1] or 1)
+    return split_copy(folder)
 
 
 def clean_title(title: str) -> str:
@@ -97,7 +95,7 @@ def plan(items: list[Item], originals: str = "keep") -> Plan:
     chains: dict[str, list[Item]] = {}
     for item in items:
         chains.setdefault(chain_key(item.folder)[0], []).append(item)
-    keep, delete, rename, drop_ids = [], [], [], set()
+    keep, delete, rename, drop_ids, fold_ids = [], [], [], set(), set()
     for key in sorted(chains):
         members = chains[key]
         copies = [i for i in members if chain_key(i.folder)[1] > 0]
@@ -116,7 +114,17 @@ def plan(items: list[Item], originals: str = "keep") -> Plan:
         delete.extend(sorted((i for i in copies if i is not kept), key=lambda i: i.folder))
         if needs_rename(kept):
             rename.append((kept, new_name(kept)))
-    return Plan(len(chains), tuple(keep), tuple(delete), tuple(rename), frozenset(drop_ids))
+        elif needs_folder_fix(kept):
+            rename.append((kept, new_name(kept)))  # keep_folder PATCH normalises the folder
+            fold_ids.add(kept.id)
+    return Plan(
+        len(chains),
+        tuple(keep),
+        tuple(delete),
+        tuple(rename),
+        frozenset(drop_ids),
+        frozenset(fold_ids),
+    )
 
 
 def new_name(item: Item) -> str:
@@ -125,6 +133,11 @@ def new_name(item: Item) -> str:
 
 def needs_rename(item: Item) -> bool:
     return item.title is not None and new_name(item) != item.title
+
+
+def needs_folder_fix(item: Item) -> bool:
+    """A kept copy whose folder is not exactly "<base> [saber-tooth]"."""
+    return item.title is not None and item.folder != fixed_name(item.folder)
 
 
 def http(method: str, url: str, body: bytes | None = None) -> tuple[int, bytes]:
@@ -207,13 +220,15 @@ def apply_plan(
                 failures.append(f"delete {item.id} {item.folder}: {res['status']} {why}".rstrip())
     for item, name in result.rename:
         payload = {"name": name}
-        if item.id not in result.drop_ids:
+        if item.id not in result.drop_ids or item.id in result.fold_ids:
             payload["keep_folder"] = True
         body = json.dumps(payload).encode("utf-8")
         status, _ = request("PATCH", f"{base}/api/maps/{item.id}", body)
-        if status != 200:
+        if status == 409:
+            failures.append(f"conflict {item.id} {item.folder}: HTTP 409")
+        elif status != 200:
             failures.append(f"rename {item.id} {item.folder}: HTTP {status}")
-    failed = [f for f in failures if not f.startswith("refused ")]
+    failed = [f for f in failures if not f.startswith(("refused ", "conflict "))]
     return len(failed), failures[:cap], refused
 
 

@@ -137,3 +137,23 @@ def test_keep_folder_patch_is_409_when_the_target_exists(tmp_path):
         r = c.patch(f"/api/maps/{map_id_for(doubled)}", json={"name": "X", "keep_folder": True})
     assert r.status_code == 409
     assert doubled in _folders(svc)
+
+
+def test_legacy_tags_stripped_and_split():
+    from saber_tooth.copynames import split_copy
+
+    assert strip_fixed("F [saber-tooth] [2 min]") == "F"
+    assert strip_fixed("F [crop 1-2] [saber-tooth 2]") == "F"
+    assert fixed_name("F [saber-tooth] [2 min]") == "F [saber-tooth]"
+    assert split_copy("F [saber-tooth] [2 min]") == ("F", 1, 1)
+    assert split_copy("F") == ("F", 0, 0)
+
+
+def test_keep_folder_rename_normalises_a_legacy_tag_folder(tmp_path):
+    svc = _make(tmp_path)
+    legacy = f"{NAME} [saber-tooth] [2 min]"
+    shutil.copytree(svc.levels / NAME, svc.levels / legacy)
+    svc.refresh_library()
+    new_id = svc.rename_map(map_id_for(legacy), "Fresh Song", keep_folder=True)
+    assert new_id == map_id_for(COPY)
+    assert _folders(svc) == sorted([NAME, COPY])

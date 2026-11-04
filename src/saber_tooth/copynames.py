@@ -3,12 +3,14 @@
 import re
 
 FIX_SUFFIX = " [saber-tooth]"
-_FIX_ANY = re.compile(r"(?: \[saber-tooth(?: \d+)?\])+$")
-_CROP = re.compile(r" \[(?:1 min|2 min|crop [^\]]*)\]$")  # legacy crop length tags
+_TAG = r" \[(?:saber-tooth(?: \d+)?|\d+ min|crop[^\]]*)\]"  # copy suffix or legacy length tag
+_FIX_ANY = re.compile(rf"(?:{_TAG})+$")
+_CROP = re.compile(r" \[(?:\d+ min|crop[^\]]*)\]$")  # legacy crop length tags
+_ONE = re.compile(r" \[saber-tooth(?: (\d+))?\]")
 
 
 def strip_fixed(name: str) -> str:
-    """`name` without any trailing saber-tooth suffixes (doubled or numbered ones too)."""
+    """`name` without trailing saber-tooth suffixes and legacy `[N min]`/`[crop ..]` tags."""
     return _FIX_ANY.sub("", name)
 
 
@@ -24,6 +26,15 @@ def is_fixed_copy(name: str) -> bool:
 def strip_crop(name: str) -> str:
     """`name` without a legacy crop length tag."""
     return _CROP.sub("", name)
+
+
+def split_copy(name: str) -> tuple[str, int, int]:
+    """(base, suffix count, last N); legacy tags alone count as one suffix, no tag as 0."""
+    m = _FIX_ANY.search(name)
+    if not m:
+        return name, 0, 0
+    ones = _ONE.findall(m.group(0))
+    return name[: m.start()], max(len(ones), 1), int(ones[-1] or 1) if ones else 1
 
 
 def chain_names(listing: list[str], folders: list[str]) -> list[str]:
