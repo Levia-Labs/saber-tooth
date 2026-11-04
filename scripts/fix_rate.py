@@ -68,6 +68,8 @@ def format_table(rows: dict[str, dict], maps: int, parse_errors: list[str]) -> l
             f"{r} {v['before']} {v['after']} {pct:.1f} {v['maps_before']} {v['maps_after']}"
         )
     lines += [f"parse-error {name}" for name in parse_errors]
+    if len(rows) == 1:  # one rule selected: name the maps it still fails on
+        lines += [f"failing {name}" for name in next(iter(rows.values())).get("failing", [])]
     return lines
 
 

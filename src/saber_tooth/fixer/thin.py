@@ -8,13 +8,14 @@ from saber_tooth.checks.constants import SLIDER_S
 from saber_tooth.fixer.layout_fixes import in_wall
 from saber_tooth.mapio.write import BOX_KEYS, FX_KEY
 from saber_tooth.model import CUT_VECTORS, OPPOSITE, Bomb, Cut, Difficulty, Note
-from saber_tooth.profiles import Profile
+from saber_tooth.profiles import WALL_TIERS, Profile
 from saber_tooth.swings import build_swings
 from saber_tooth.timing import Timing
 
 BAR = 4.0
 MAX_ROUNDS = 300
 EPS = 1e-6
+WALL_RULES = {"wall-short", "wall-trap"}
 
 
 def _on(value: float, step: float) -> bool:
@@ -101,7 +102,7 @@ def thin(source: Difficulty, profile: Profile, timing: Timing) -> Difficulty | N
         events=copy.deepcopy(source.events),
         boosts=copy.deepcopy(source.boosts),
         bombs=[],
-        walls=copy.deepcopy(source.walls),
+        walls=copy.deepcopy(source.walls) if profile.name in WALL_TIERS else [],
         bpm_events=copy.deepcopy(source.bpm_events),
         raw={k: copy.deepcopy(source.raw[k]) for k in (*BOX_KEYS, FX_KEY) if k in source.raw},
     )
@@ -114,6 +115,8 @@ def thin(source: Difficulty, profile: Profile, timing: Timing) -> Difficulty | N
         for f in (f for f in findings if f.rule == "note-in-wall"):
             n = f.notes[0]
             out.walls = [w for w in out.walls if not in_wall(n.x, n.y, n.beat, w)]
-        gone = _victims([f for f in findings if f.rule != "note-in-wall"])
+        for f in (f for f in findings if f.rule in WALL_RULES):  # the source walls, judged anew
+            out.walls = [w for w in out.walls if w not in f.walls]
+        gone = _victims([f for f in findings if f.rule not in WALL_RULES | {"note-in-wall"}])
         notes = [n for n in out.notes if n not in gone]
     return None

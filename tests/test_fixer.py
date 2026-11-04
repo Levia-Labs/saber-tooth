@@ -276,3 +276,17 @@ def test_fix_creating_a_new_finding_is_rejected():
     assert accepts(ctx, [fix]) is not None
     bad = fo.Move("Expert", Note(20.5, 1, 0, Color.RED, Cut.DOWN), 3, 0, Cut.DOWN)
     assert accepts(ctx, [fix, bad]) is None
+
+
+def test_thinned_difficulty_drops_walls_the_tier_cannot_keep():
+    short = Wall(900.0, 3, 2, 0.05, 1, 3)  # shorter than 0.12 s at 120 BPM
+    ok = Wall(950.0, 3, 2, 4.0, 1, 3)
+    m = dense_map(walls=[short, ok])
+    hard = fx.apply_ops(m, fx.propose(m, missing(m, "Hard"), None, None, 1).ops).difficulties[
+        "Hard"
+    ]
+    assert hard.walls == [ok]
+    easy = fx.apply_ops(m, fx.propose(m, missing(m, "Easy"), None, None, 1).ops).difficulties[
+        "Easy"
+    ]
+    assert easy.walls == []
