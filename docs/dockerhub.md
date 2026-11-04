@@ -61,7 +61,7 @@ The service needs beat-analyser next to it. Save this as `docker-compose.yml`:
 
 ```yaml
 services:
-  saber-tooth:
+  app:
     image: levialabs/sabertooth:latest
     ports: ["127.0.0.1:8100:8100"]
     environment:
