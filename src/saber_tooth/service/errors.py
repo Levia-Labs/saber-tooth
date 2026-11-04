@@ -21,5 +21,13 @@ class DeleteRefused(ValueError):
     """The map has a queued or running job and cannot be deleted."""
 
 
+class RenameConflict(ValueError):
+    """The target folder exists or the map has a queued or running job."""
+
+
+class RenameInvalid(ValueError):
+    """The requested map name is not usable."""
+
+
 class MapUnreadable(ValueError):
     """The map folder cannot be parsed."""

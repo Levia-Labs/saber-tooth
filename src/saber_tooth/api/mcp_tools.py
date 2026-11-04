@@ -67,6 +67,12 @@ def build_mcp(api: Api, bs: BeatSaverApi | None = None, crop: CropApi | None = N
         result is the before/after report."""
         return api.fix(map_id)
 
+    @mcp.tool(annotations=SAFE)
+    def rename_map(map_id: str, name: str) -> dict[str, Any]:
+        """Rename a map: sets the song name in Info.dat and renames the folder (1-120 characters,
+        no path separators). The map id changes; the answer is the map under its new id."""
+        return api.rename_map(map_id, name)
+
     @mcp.tool(annotations=WEB)
     def generate_from_youtube(url: str) -> dict[str, Any]:
         """Generate a new map from a YouTube URL (youtube.com or youtu.be); returns a job id."""

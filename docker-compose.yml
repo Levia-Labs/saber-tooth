@@ -1,5 +1,6 @@
+name: saber-tooth
 services:
-  saber-tooth:
+  app:
     build: .
     image: saber-tooth:latest
     ports: ["${SABER_BIND:-127.0.0.1}:${SABER_PORT:-8100}:8100"]

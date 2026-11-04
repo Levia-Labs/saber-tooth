@@ -23,6 +23,7 @@ from saber_tooth.service.errors import ApplyConflict, MapNotFound, MapUnreadable
 from saber_tooth.service.lightshow_set import LEARNED, active_templates
 from saber_tooth.service.lightshow_set import info as lightshow_info
 from saber_tooth.service.ordered import Outcome, apply_in_order
+from saber_tooth.service.rename import RenameMixin
 from saber_tooth.service.scan import scan_map
 from saber_tooth.service.util import checkpoint, map_id_for
 from saber_tooth.service.verify import stored_analysis, verify
@@ -41,7 +42,7 @@ class _Stale(Exception):
     """The approved set changed between reading it and writing the result."""
 
 
-class Service(DeleteMixin):
+class Service(DeleteMixin, RenameMixin):
     bundled: Path | None = BUNDLED  # tests may point this elsewhere
     probe_tags = staticmethod(probe_tags)
 

@@ -17,6 +17,7 @@ const ICONS = {
   ),
   "sort-asc": <path d="M12 19V5M6 11l6-6 6 6" />,
   "sort-desc": <path d="M12 5v14M6 13l6 6 6-6" />,
+  pencil: <path d="M4 20l1-4L16.5 4.5a2.1 2.1 0 0 1 3 3L8 19zM14.5 6.5l3 3" />,
   trash: <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" />,
   scan: (
     <>
