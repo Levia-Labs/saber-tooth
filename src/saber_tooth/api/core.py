@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 from fastapi.responses import JSONResponse
 
 from saber_tooth.api.generate_api import Conflict, GenerateSubmitter
-from saber_tooth.api.jobs_api import core_handlers, job_detail, list_jobs, upload_path
+from saber_tooth.api.jobs_api import core_handlers, job_detail, list_jobs
 from saber_tooth.api.library import (
     AUDIO_TYPES,
     COVER_TYPES,
@@ -23,6 +23,7 @@ from saber_tooth.api.library import (
     shape_item,
 )
 from saber_tooth.api.proposal_views import map_findings, proposal_views
+from saber_tooth.api.retry import retry_job
 from saber_tooth.jobs import Jobs
 from saber_tooth.service import MapNotFound, MapUnreadable, Service
 from saber_tooth.service.relight import environment_names
@@ -34,8 +35,6 @@ log = logging.getLogger(__name__)
 
 MAP_ID = re.compile(r"[0-9a-f]{12}")
 JOB_ID = re.compile(r"[0-9a-f]{32}")
-MAP_JOBS = ("scan", "fix", "apply", "crop", "relight", "regenerate")  # kinds that need a map
-
 YOUTUBE_HOSTS = {"youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "youtu.be"}
 
 
@@ -272,20 +271,7 @@ class Api:
 
     def retry_job(self, raw: str) -> dict:
         """Queue a copy of a failed or cancelled job (same kind, map and stored args)."""
-        try:
-            old = self.store.job(self._job_id(raw))
-        except KeyError:
-            raise ApiError(404, f"unknown job: {raw}") from None
-        if old["status"] not in ("failed", "cancelled"):
-            raise ApiError(409, "only a failed or cancelled job can be restarted")
-        if old["kind"] in MAP_JOBS and not old["map_id"]:
-            raise ApiError(409, "this job's map is gone")
-        if old["kind"] == "generate" and "upload" in old["args"]:  # the only temp input
-            path = upload_path(self.service.data, old["args"]["upload"])
-            if path is None or not path.is_file():
-                raise ApiError(409, "the uploaded audio is gone; upload it again")
-        new_id = self.jobs.submit(old["kind"], old["args"], old["map_id"])
-        return self.job(new_id)
+        return retry_job(self, raw)
 
     def cancel_job(self, raw: str) -> dict:
         try:
