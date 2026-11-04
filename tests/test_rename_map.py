@@ -110,3 +110,39 @@ def test_rename_same_name_keeps_id(client, svc):
     assert r.status_code == 200
     assert r.json()["id"] == MID
     assert (svc.levels / NAME).exists()
+
+
+def _with_copy(svc):
+    import shutil
+
+    shutil.copytree(svc.levels / NAME, svc.levels / f"{NAME} [saber-tooth]")
+    svc.refresh_library()
+    return map_id_for(f"{NAME} [saber-tooth]")
+
+
+def test_renaming_a_fixed_copy_keeps_the_suffix_and_the_pairing(client, svc):
+    cid = _with_copy(svc)
+    r = client.patch(f"/api/maps/{cid}", json={"name": "Fresh"})
+    assert r.status_code == 200
+    assert r.json()["folder"] == "Fresh [saber-tooth]"
+    assert r.json()["id"] == map_id_for("Fresh [saber-tooth]")
+    assert _song_name(svc.levels / "Fresh [saber-tooth]") == "Fresh"
+    assert (svc.levels / "Fresh").is_dir()  # the original follows, so the pair holds
+    assert not (svc.levels / NAME).exists()
+    assert r.json()["original_folder"] == "Fresh"
+
+
+def test_renaming_an_original_moves_its_copy_along(client, svc):
+    _with_copy(svc)
+    r = client.patch(f"/api/maps/{MID}", json={"name": "Fresh"})
+    assert r.status_code == 200
+    assert (svc.levels / "Fresh [saber-tooth]").is_dir()
+    assert not (svc.levels / f"{NAME} [saber-tooth]").exists()
+    assert svc.store.get_map(map_id_for("Fresh [saber-tooth]")) is not None
+
+
+def test_pair_rename_conflicts_when_the_partner_target_exists(client, svc):
+    _with_copy(svc)
+    (svc.levels / "Fresh [saber-tooth]").mkdir()
+    assert client.patch(f"/api/maps/{MID}", json={"name": "Fresh"}).status_code == 409
+    assert (svc.levels / NAME).exists()
