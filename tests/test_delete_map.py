@@ -110,3 +110,31 @@ def test_guard_refuses_a_junction(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "is_junction", lambda self: self == folder)
     with pytest.raises(WriteRefused):
         LevelsRoot(tmp_path).guard(folder)
+
+
+def test_bulk_delete_route_reports_per_id_and_refreshes_once(svc, monkeypatch):
+    calls = []
+    monkeypatch.setattr(svc, "refresh_library", lambda wait=True: calls.append(wait))
+    client = TestClient(create_app(svc))
+    out = client.post("/api/maps/delete", json={"ids": [MID, "0" * 12, MID]})
+    assert out.status_code == 200
+    body = out.json()
+    assert body["deleted"] == 1
+    assert [(r["id"], r["status"]) for r in body["results"]] == [
+        (MID, "deleted"),
+        ("0" * 12, "missing"),
+    ]
+    assert not (svc.levels / NAME).exists()
+    assert calls == [True]
+
+
+def test_bulk_delete_busy_and_validation(svc):
+    svc.store.create_job("scan", MID)
+    client = TestClient(create_app(svc))
+    out = client.post("/api/maps/delete", json={"ids": [MID]}).json()
+    assert out["results"][0]["status"] == "busy"
+    assert (svc.levels / NAME).exists()
+    assert client.post("/api/maps/delete", json={"ids": []}).status_code == 400
+    assert client.post("/api/maps/delete", json={"ids": ["../x"]}).status_code == 400
+    assert client.post("/api/maps/delete", content=b"nope").status_code == 400
+    assert client.post("/api/maps/delete", json={"ids": ["a" * 12] * 501}).status_code == 413

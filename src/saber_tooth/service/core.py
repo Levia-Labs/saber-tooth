@@ -112,22 +112,44 @@ class Service(DeleteMixin, RenameMixin):
         for folder in sorted(self.levels.iterdir()):
             if folder.name.startswith(".") or folder.is_symlink() or not folder.is_dir():
                 continue
-            mid = map_id_for(folder.name)
-            seen.add(mid)
-            try:
-                beatmap = load_map(folder)
-                i = beatmap.info
-                self.store.upsert_map(
-                    mid, folder.name, i.song_name, i.mapper, i.environment, None,
-                    i.bpm, folder_duration(folder, beatmap), level_mask(beatmap.difficulties),
-                )  # fmt: skip
-                if is_copy(folder.name) and self.store.scan_info(mid) is None:
-                    pending.append(folder.name)
-            except (MapParseError, OSError) as exc:
-                self.store.upsert_map(mid, folder.name, folder.name, "", "", str(exc))
+            seen.add(self._index_folder(folder, pending))
         self.store.prune_maps(seen)
         start_backfill(self, pending)  # low priority, off this thread
         return len(seen)
+
+    def _index_folder(self, folder: Path, pending: list[str]) -> str:
+        """Upsert one folder's map row; copies without a scan join `pending`. Returns its id."""
+        mid = map_id_for(folder.name)
+        try:
+            beatmap = load_map(folder)
+            i = beatmap.info
+            self.store.upsert_map(
+                mid, folder.name, i.song_name, i.mapper, i.environment, None,
+                i.bpm, folder_duration(folder, beatmap), level_mask(beatmap.difficulties),
+            )  # fmt: skip
+            if is_copy(folder.name) and self.store.scan_info(mid) is None:
+                pending.append(folder.name)
+        except (MapParseError, OSError) as exc:
+            self.store.upsert_map(mid, folder.name, folder.name, "", "", str(exc))
+        return mid
+
+    def reindex_folders(self, names: list[str]) -> int:
+        """Re-index only the named direct child folders; a vanished one loses its row.
+
+        Pairing (original and fixed copy) is derived from folder names when listed, so
+        refreshing the survivors is all a delete needs. Keeps the change detector in step.
+        """
+        pending: list[str] = []
+        with self._refresh_lock:
+            for name in dict.fromkeys(names):
+                folder = self.levels / name
+                if folder.is_symlink() or not folder.is_dir():
+                    self.store.delete_map(map_id_for(name))
+                else:
+                    self._index_folder(folder, pending)
+            self._seen = self._listing()
+        start_backfill(self, pending)
+        return len(names)
 
     def _templates(self) -> Templates | None:
         return active_templates(self.data, self.bundled)

@@ -36,6 +36,7 @@ ONE_SUFFIX_RE = re.compile(r" \[saber-tooth(?: (\d+))?\]")
 TAG_RE = re.compile(r"\s*\[(?:saber-tooth(?: \d+)?|crop[^\]]*|\d+ min)\]")
 CROP_RE = re.compile(r"\[crop[^\]]*\]")
 MIN_DURATION = 30.0
+DELETE_BATCH = 50
 
 
 @dataclass(frozen=True)
@@ -174,6 +175,7 @@ def apply_plan(
     """
     failures: list[str] = []
     refused = 0
+    ok: list[Item] = []
     for item in result.delete:
         reasons = (
             check_map_folder(levels / item.folder, levels, item.id)
@@ -183,10 +185,26 @@ def apply_plan(
         if reasons:
             refused += 1
             failures.append(f"refused {item.id} {item.folder}: {'; '.join(reasons)}")
+        else:
+            ok.append(item)
+    for start in range(0, len(ok), DELETE_BATCH):
+        batch = ok[start : start + DELETE_BATCH]
+        body = json.dumps({"ids": [i.id for i in batch]}).encode("utf-8")
+        status, raw = request("POST", f"{base}/api/maps/delete", body)
+        if status != 200:
+            failures += [f"delete {i.id} {i.folder}: HTTP {status}" for i in batch]
             continue
-        status, _ = request("DELETE", f"{base}/api/maps/{item.id}", None)
-        if status not in (200, 204, 404):
-            failures.append(f"delete {item.id} {item.folder}: HTTP {status}")
+        by_id = {r.get("id"): r for r in json.loads(raw).get("results", [])}
+        for item in batch:
+            res = by_id.get(item.id, {"status": "missing-result", "reasons": []})
+            if res["status"] in ("deleted", "missing"):
+                continue
+            why = "; ".join(res.get("reasons", []))
+            if res["status"] == "refused":
+                refused += 1
+                failures.append(f"refused {item.id} {item.folder}: {why}")
+            else:
+                failures.append(f"delete {item.id} {item.folder}: {res['status']} {why}".rstrip())
     for item, name in result.rename:
         payload = {"name": name}
         if item.id not in result.drop_ids:

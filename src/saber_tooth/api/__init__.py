@@ -16,6 +16,7 @@ from saber_tooth.api.beatsaver_routes import register as register_beatsaver
 from saber_tooth.api.core import Api, ApiError, _error
 from saber_tooth.api.crop_api import CropApi
 from saber_tooth.api.crop_routes import register as register_crop
+from saber_tooth.api.delete_api import register as register_delete
 from saber_tooth.api.hosts import (
     allowed_hosts,
     effective_origin,
@@ -131,6 +132,7 @@ def create_app(
     register_playlists(app, PlaylistsApi(api, bs.playlists_dir))
     register_crop(app, crop_api)
     register_regen(app, api)
+    register_delete(app, api)
     register_vr(app, vr_status or VrStatusClient())
     install_settings(app, api, service)  # settings, worker cap and the mods routes
 

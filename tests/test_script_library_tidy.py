@@ -99,6 +99,12 @@ def make_request(pages, fail=()):
         if method == "GET":
             offset = int(url.rsplit("=", 1)[1])
             return 200, json.dumps({"items": pages.get(offset, [])}).encode()
+        if method == "POST" and url.endswith("/api/maps/delete"):
+            ids = json.loads(body)["ids"]
+            if any(i in fail for i in ids):
+                return 500, b""
+            results = [{"id": i, "status": "deleted", "reasons": []} for i in ids]
+            return 200, json.dumps({"results": results}).encode()
         return (500 if url.rsplit("/", 1)[1] in fail else 200), b""
 
     return request, calls
@@ -155,8 +161,9 @@ def test_main_dry_and_apply(capsys, tmp_path):
     pages[0].append({"id": ids[c2], "folder": c2, "title": "Song", "duration_s": 9})
     request, calls = make_request(pages)
     assert lt.main([*base, "--apply"], request) == 0
-    assert [c[0] for c in calls[1:]] == ["DELETE"]
-    assert calls[-1][1].endswith("/" + ids[c2])
+    assert [c[0] for c in calls[1:]] == ["POST"]
+    assert calls[-1][1].endswith("/api/maps/delete")
+    assert json.loads(calls[-1][2]) == {"ids": [ids[c2]]}
     pages[0][1]["title"] = "Song [crop 1-2]"
     request, calls = make_request(pages)
     assert lt.main([*base, "--apply"], request) == 0
@@ -191,7 +198,7 @@ def test_apply_skips_refused_folders(capsys, tmp_path):
     assert lt.main(argv, request) == 0
     out = capsys.readouterr().out
     assert "refused=1" in out and "notes.txt" in out
-    assert all(c[0] != "DELETE" for c in calls)
+    assert all(c[0] not in ("DELETE", "POST") for c in calls)
     assert (levels / c2 / "notes.txt").exists()
 
 
@@ -235,3 +242,30 @@ def test_drop_keeps_one_copy_per_chain(rows):
     p = lt.plan(items, originals="drop")
     assert len(p.keep) == 1 and p.keep[0].id != "orig"
     assert len(p.keep) + len(p.delete) == len(items)
+
+
+def _batch_request(statuses):
+    calls = []
+
+    def request(method, url, body):
+        calls.append((method, url, body))
+        ids = json.loads(body)["ids"]
+        res = [{"id": i, "status": statuses.get(i, "deleted"), "reasons": ["r"]} for i in ids]
+        return 200, json.dumps({"results": res}).encode()
+
+    return request, calls
+
+
+def test_deletes_go_in_batches_of_50_and_aggregate(tmp_path):
+    levels = tmp_path / "levels"
+    items = [Item(lt.map_id_for(f"m{k}"), f"m{k}") for k in range(120)]
+    for it in items:
+        _valid_map(levels / it.folder)
+    plan = lt.Plan(1, (), tuple(items), (), frozenset())
+    statuses = {items[3].id: "refused", items[60].id: "busy", items[99].id: "missing"}
+    request, calls = _batch_request(statuses)
+    failed, lines, refused = lt.apply_plan("http://x", plan, request, levels=levels)
+    assert [len(json.loads(c[2])["ids"]) for c in calls] == [50, 50, 20]
+    assert all(c[0] == "POST" for c in calls)
+    assert (failed, refused) == (1, 1)
+    assert any("busy" in line for line in lines)
