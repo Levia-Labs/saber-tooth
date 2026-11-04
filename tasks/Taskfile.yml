@@ -54,7 +54,7 @@ tasks:
     cmds: ["docker compose down"]
   logs:
     desc: "Tail saber-tooth logs. Usage: task st:logs"
-    cmds: ["docker compose logs --tail 100 saber-tooth"]
+    cmds: ["docker compose logs --tail 100 app"]
   gen:
     desc: "Start a generate job from a URL. Usage: task st:gen -- <url> [--environment N] [--color R=#hex] [--wait]"
     cmds: ["uv run saber-tooth gen-url {{.CLI_ARGS}}"]

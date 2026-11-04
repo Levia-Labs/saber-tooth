@@ -14,7 +14,7 @@ Where these goals compete with implementation simplicity, the quality bar wins.
 
 ## Compose stack
 
-1. `saber-tooth`: built from this repository, published on `127.0.0.1:${SABER_PORT:-8100}`.
+1. `app`: built from this repository, published on `127.0.0.1:${SABER_PORT:-8100}`.
    The container starts as root, `docker-entrypoint.sh` maps user `app` to `PUID`/`PGID` (default 1000), chowns `/data` only, and drops privileges with `setpriv`. `LEVELS_DIR` is never chowned and must be writable by `PUID`.
 2. `beat-analyser`: image `levialabs/beat-analyser:latest`, internal network only, no published port.
 3. Volumes:

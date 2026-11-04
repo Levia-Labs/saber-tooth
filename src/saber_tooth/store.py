@@ -264,6 +264,23 @@ class Store(MapQueries, ProposalClaims, JobRows, SourceRows):
             self._db.execute("DELETE FROM jobs WHERE map_id=?", (map_id,))
             self._db.commit()
 
+    def rename_map(self, old: str, new: str) -> None:
+        """Move scans, proposals and jobs from one map id to another in one transaction.
+
+        The old map row goes; the next library refresh indexes the new id.
+        """
+        with self._lock:
+            try:
+                self._db.execute("DELETE FROM maps WHERE id IN (?, ?)", (old, new))
+                self._db.execute("DELETE FROM scans WHERE map_id=?", (new,))
+                self._db.execute("UPDATE scans SET map_id=? WHERE map_id=?", (new, old))
+                self._db.execute("UPDATE proposals SET map_id=? WHERE map_id=?", (new, old))
+                self._db.execute("UPDATE jobs SET map_id=? WHERE map_id=?", (new, old))
+                self._db.commit()
+            except Exception:
+                self._db.rollback()
+                raise
+
     def reset_map(self, map_id: str) -> None:
         """Forget a map's scan, proposals and finished jobs so it reads as not scanned.
 

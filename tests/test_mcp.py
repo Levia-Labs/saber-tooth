@@ -8,7 +8,7 @@ HEADERS = {"accept": "application/json, text/event-stream", "content-type": "app
 TOOLS = {
     "list_maps", "get_proposals", "scan_map", "job_status", "approve_proposal",
     "reject_proposal", "apply_map", "fix_map", "generate_from_youtube", "learn_lightshows",
-    "beatsaver_search", "beatsaver_download", "map_timeline", "crop_map",
+    "beatsaver_search", "beatsaver_download", "map_timeline", "crop_map", "rename_map",
 }  # fmt: skip
 READ_ONLY = {"list_maps", "get_proposals", "job_status", "beatsaver_search", "map_timeline"}
 
