@@ -1,5 +1,9 @@
 """Library-wide finding counts per rule and severity, from each map's latest scan."""
 
+from pathlib import Path
+
+from saber_tooth.generated import generated_ids
+
 _RULES_SQL = (
     "SELECT json_extract(f.value, '$.rule') AS rule,"
     " json_extract(f.value, '$.severity') AS severity,"
@@ -11,13 +15,12 @@ _MAPS_SQL = (
     "SELECT count(*) AS total,"
     " coalesce(sum(s.map_id IS NOT NULL), 0) AS scanned,"
     " coalesce(sum(s.map_id IS NOT NULL AND json_array_length(s.keys_json) > 0), 0)"
-    " AS with_findings,"
-    " coalesce(sum(m.source IS NOT NULL AND m.source != ''), 0) AS generated"
+    " AS with_findings"
     " FROM maps m LEFT JOIN scans s ON s.map_id = m.id"
 )
 
 
-def findings_summary(store) -> dict:
+def findings_summary(store, levels: Path) -> dict:
     """Findings counted per rule and severity, with the number of maps each touches."""
     rules = [dict(r) for r in store._query(_RULES_SQL)]
     row = dict(store._query(_MAPS_SQL)[0])
@@ -32,7 +35,7 @@ def findings_summary(store) -> dict:
             "total": row["total"],
             "scanned": row["scanned"],
             "with_findings": row["with_findings"],
-            "generated": row["generated"],
+            "generated": len(generated_ids(store, levels)),
         },
     }
 

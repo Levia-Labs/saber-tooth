@@ -15,6 +15,7 @@ from saber_tooth.checks import run_checks
 from saber_tooth.crop.replace import replace_folder
 from saber_tooth.fixer import ApplyLightshow, apply_ops
 from saber_tooth.fixer.verify import map_timing
+from saber_tooth.generated import is_generated
 from saber_tooth.lightshow import build_lightshow
 from saber_tooth.mapio import load_map, write_map
 from saber_tooth.service.fix import complete
@@ -32,18 +33,10 @@ class NotGenerated(ValueError):
     """The map has no recorded source: it is human-made and is never regenerated."""
 
 
-def map_source(store, map_id: str) -> str | None:
+def map_source(store, map_id: str) -> str:
+    """The recorded source key; empty for a map known only by its author name."""
     rows = store._query("SELECT source FROM maps WHERE id=?", (map_id,))
-    return rows[0]["source"] or None if rows else None
-
-
-def generated_ids(store) -> list[str]:
-    """Ids of the library maps that have a source, i.e. were made by the generator."""
-    rows = store._query(
-        "SELECT id FROM maps WHERE source IS NOT NULL AND source != ''"
-        " AND (parse_error IS NULL OR parse_error = '') ORDER BY id"
-    )
-    return [r["id"] for r in rows]
+    return (rows[0]["source"] or "") if rows else ""
 
 
 def _link(source: str) -> str | None:
@@ -59,7 +52,8 @@ def _analyse(svc, source: str, folder: Path):
     """The song's analysis from the kept audio, else from the stored source link."""
     egg = folder / SONG_FILE
     if egg.is_file():
-        return svc.client.analyse_file(egg, SONG_FILE)
+        # song.egg is Ogg Vorbis; the analyser validates by extension, so send it as .ogg
+        return svc.client.analyse_file(egg, "song.ogg")
     link = _link(source)
     if link:
         return svc.client.analyse_url(link)
@@ -115,13 +109,12 @@ def _backup(svc, folder: Path) -> Path:
 
 def regenerate_map(svc, map_id: str, progress=None) -> dict:
     """Rebuild one generated map in place; `NotGenerated` for a map without a source."""
-    source = map_source(svc.store, map_id)
-    if source is None:
+    if not is_generated(svc.store, svc.levels, map_id):
         raise NotGenerated("only generated maps can be regenerated")
     folder = svc._folder(map_id)
     old = svc._load(folder)
     checkpoint(progress, "analysing the song")
-    a = _analyse(svc, source, folder)
+    a = _analyse(svc, map_source(svc.store, map_id), folder)
     checkpoint(progress, "building the map")
     meta = SongMeta(old.info.song_name, old.info.sub_name, old.info.author)
     staging = svc.data / "staging" / uuid.uuid4().hex
