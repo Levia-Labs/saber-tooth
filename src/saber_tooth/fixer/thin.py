@@ -4,6 +4,7 @@ import copy
 import math
 
 from saber_tooth.checks import check_difficulty
+from saber_tooth.checks.constants import SLIDER_S
 from saber_tooth.fixer.layout_fixes import in_wall
 from saber_tooth.mapio.write import BOX_KEYS, FX_KEY
 from saber_tooth.model import CUT_VECTORS, OPPOSITE, Bomb, Cut, Difficulty, Note
@@ -56,7 +57,7 @@ def _budget_per_bar(notes: list[Note], profile: Profile, timing: Timing) -> list
 def reflow(notes: list[Note], timing: Timing) -> list[Note]:
     """Give every swing a cut that alternates against the hand's previous swing."""
     swap: dict[Note, Note] = {}
-    swings = build_swings(notes, timing)
+    swings = build_swings(notes, timing, SLIDER_S)
     for hand_swings in swings.values():
         prev = Cut.UP
         for s in hand_swings:

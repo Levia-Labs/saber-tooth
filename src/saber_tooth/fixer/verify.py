@@ -9,6 +9,7 @@ from functools import lru_cache
 
 from saber_tooth.analysis import Analysis
 from saber_tooth.checks import MAP_RULES, Finding, check_difficulty, run_checks
+from saber_tooth.checks.constants import SLIDER_S
 from saber_tooth.checks.slicing import beat_range
 from saber_tooth.fixer import window
 from saber_tooth.fixer.codec import note_to_dict
@@ -127,7 +128,7 @@ class Context:
             if d is not None and len(d.notes) >= window.WINDOW_MIN_NOTES:
                 self._swings = window.swings_near(d, self.timing, f.beat_start, f.beat_end)
             else:
-                self._swings = build_swings(d.notes if d else [], self.timing)
+                self._swings = build_swings(d.notes if d else [], self.timing, SLIDER_S)
         return self._swings
 
 

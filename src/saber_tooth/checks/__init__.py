@@ -1,5 +1,6 @@
 from collections.abc import Callable
 
+from saber_tooth.checks.constants import SLIDER_S
 from saber_tooth.checks.finding import Finding
 from saber_tooth.checks.flow import parity_break, swing_speed, wide_jump
 from saber_tooth.checks.gaps import empty_gap, no_rest
@@ -64,7 +65,7 @@ def check_difficulty(
     wanted = [(i, r) for i, r in RULES.items() if rules is None or i in rules]
     out: list[Finding] = []
     if window is None:
-        swings = build_swings(d.notes, timing)
+        swings = build_swings(d.notes, timing, SLIDER_S)
         for _, rule in wanted:
             out.extend(rule(d, swings, timing, profile, analysis))
         return sorted(out, key=Finding.sort_key)
@@ -73,7 +74,7 @@ def check_difficulty(
     if local:
         m = timing.to_beats(LOCAL_REACH_S) - timing.to_beats(0.0)
         part = slice_difficulty(d, lo - m, hi + m)
-        swings = build_swings(part.notes, timing)
+        swings = build_swings(part.notes, timing, SLIDER_S)
         for rule in local:
             out.extend(rule(part, swings, timing, profile, analysis))
     for i, rule in wanted:

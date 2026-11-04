@@ -84,7 +84,7 @@ def _n(beat, x, y, color=Color.RED, cut=Cut.DOWN):
 
 FLOW_CASES = [
     ("wide-jump", [_n(8, 0, 0), _n(8.25, 3, 2, cut=Cut.UP)], fo.Move),
-    ("swing-speed", [_n(8, 0, 0), _n(8.05, 0, 1, cut=Cut.UP)], fo.Delete),
+    ("swing-speed", [_n(8, 0, 0), _n(8.15, 0, 1, cut=Cut.UP)], fo.Delete),
     ("crossover", [_n(8, 3, 0), _n(8, 0, 0, Color.BLUE)], fo.Recolor),
     ("vision-block", [_n(8, 1, 1), _n(8.15, 3, 1, Color.BLUE)], fo.Move),
 ]
