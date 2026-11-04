@@ -93,6 +93,9 @@ tasks:
       ROUNDS: '{{.ROUNDS | default "6"}}'
       TOP: '{{.TOP | default "25"}}'
     cmds: ['uv run python scripts/profile_fix.py "{{.MAP}}" --rounds {{.ROUNDS}} --top {{.TOP}}']
+  fix-rate:
+    desc: "Per-rule fix rate of the offline Fix on copies. Usage: task st:fix-rate -- <levels> [--sample N] [--rule R]"
+    cmds: ["uv run python scripts/fix_rate.py {{.CLI_ARGS}}"]
   browser-check:
     desc: "Headless browser page check, read-only. Usage: task st:browser-check -- [chrome|firefox] [--base URL]"
     dir: "{{.ROOT_DIR}}"
