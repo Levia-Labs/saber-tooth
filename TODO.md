@@ -127,3 +127,17 @@ status: open
 class: bug
 
 tests/test_scan_batches.py::test_scan_of_a_dense_map_stores_early_and_finishes_quickly takes 198-201 s on main against a 200 s wall-clock limit; it fails intermittently. Speed the scan or measure work, not wall time.
+
+## 20 Fixed copies drop Info.dat customData but keep its files
+
+status: open
+class: bug
+
+mapio/write.py strips customData, so a fixed copy keeps contributor icons, cinema-video.json etc. as orphan files the delete guard refuses (10 folders in the live tidy run). Preserve vanilla-safe customData (contributors, cover-related) or skip copying unreferenced files.
+
+## 21 keep_folder rename rejects titles with a slash
+
+status: open
+class: bug
+
+PATCH /api/maps/{id} with keep_folder=true returns 422 for 'POP/STARS vs MEGALOVANIA [saber-tooth]': validate_map_name forbids path separators even though keep_folder never uses the name for a folder.
