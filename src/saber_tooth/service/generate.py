@@ -14,6 +14,7 @@ from saber_tooth.service.fix import complete, fix_beatmap
 from saber_tooth.service.util import checkpoint, map_id_for
 from saber_tooth.service.writeout import commit_staged
 from saber_tooth.songmeta import SongMeta, file_meta, parse_title, project_meta
+from saber_tooth.style import Style
 
 log = logging.getLogger(__name__)
 
@@ -40,11 +41,14 @@ def _fix_in_place(svc, staging: Path, a: Analysis, seed: int, progress=None) -> 
     return len(run.steps)
 
 
-def generate_map(svc, source: str, progress=None, title: str | None = None) -> dict:
+def generate_map(
+    svc, source: str, progress=None, title: str | None = None, style: Style | None = None
+) -> dict:
     """Generate a map from a YouTube URL or an audio file path into a new levels folder.
 
     The map is built and fixed in a staging folder, then moved into the levels folder under a
-    numbered name when one exists already; staging is removed on success and on any failure."""
+    numbered name when one exists already; staging is removed on success and on any failure.
+    `style` sets the environment and colours; without it the song's features choose them."""
     checkpoint(progress, "analysing the song")
     if _is_url(source):
         a = svc.client.analyse_url(source)
@@ -56,7 +60,7 @@ def generate_map(svc, source: str, progress=None, title: str | None = None) -> d
     staging.parent.mkdir(parents=True, exist_ok=True)
     seed = int(hashlib.sha256(a.name.encode("utf-8")).hexdigest()[:8], 16)
     try:
-        assemble_new(a, svc._templates(), staging, seed, svc.encode, meta)
+        assemble_new(a, svc._templates(), staging, seed, svc.encode, meta, style)
         checkpoint(progress, "fixing the map")
         fixes = _fix_in_place(svc, staging, a, seed, progress)
         written = load_map(staging)

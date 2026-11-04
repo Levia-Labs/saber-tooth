@@ -1,8 +1,9 @@
-"""saber-tooth command line: check, inspect, survey, learn, gen-url."""
+"""saber-tooth command line: check, inspect, survey, learn, gen-url, environments, songmeta."""
 
 import argparse
 import json
 import sys
+import time
 from collections import defaultdict
 from pathlib import Path
 from urllib.parse import quote
@@ -11,8 +12,11 @@ import httpx
 
 from saber_tooth.checks import Finding, run_checks
 from saber_tooth.cli_library import register as register_library
+from saber_tooth.environments import COLOR_ROLES, format_catalogue
 from saber_tooth.lightshow import learn
 from saber_tooth.mapio import MapParseError, load_map
+from saber_tooth.songmeta import describe
+from saber_tooth.style import parse_style
 from saber_tooth.timing import Timing
 
 MAX_LINES = 20
@@ -126,10 +130,13 @@ def _cmd_autofix(args: argparse.Namespace) -> int:
     return 0
 
 
-def gen_url(url: str, api: str, transport: httpx.BaseTransport | None = None) -> str:
-    """Post a song URL to the generate endpoint and return the job id."""
+def gen_url(
+    url: str, api: str, transport: httpx.BaseTransport | None = None, style: dict | None = None
+) -> str:
+    """Post a song URL (and an optional style) to the generate endpoint; the job id."""
+    body = {"url": url, **({"style": style} if style else {})}
     with httpx.Client(transport=transport, timeout=30) as client:
-        resp = client.post(f"{api.rstrip('/')}/api/generate", json={"url": url})
+        resp = client.post(f"{api.rstrip('/')}/api/generate", json=body)
         resp.raise_for_status()
         data = resp.json()
     if not isinstance(data, dict):
@@ -160,9 +167,73 @@ def _cmd_scan_api(args: argparse.Namespace) -> int:
     return 0
 
 
+def wait_job(
+    job: str,
+    api: str,
+    transport: httpx.BaseTransport | None = None,
+    timeout: float = 900.0,
+    interval: float = 2.0,
+) -> dict:
+    """Poll a job until it ends; its result, or ValueError with the failure or on timeout."""
+    deadline = time.monotonic() + timeout
+    with httpx.Client(transport=transport, timeout=30) as client:
+        while True:
+            resp = client.get(f"{api.rstrip('/')}/api/jobs/{quote(job, safe='')}")
+            resp.raise_for_status()
+            data = resp.json()
+            status = data.get("status") if isinstance(data, dict) else None
+            if status == "done":
+                return data.get("result") or {}
+            if status in ("failed", "cancelled"):
+                raise ValueError(f"job {status}: {str(data.get('error') or '')[:200]}")
+            if time.monotonic() >= deadline:
+                raise ValueError(f"job {job} still running after {timeout:.0f} s")
+            time.sleep(interval)
+
+
+def style_from_args(args: argparse.Namespace) -> dict | None:
+    """The style from --style JSON, --environment and --color ROLE=#rrggbb; ValueError if bad."""
+    raw: dict = {}
+    if args.style:
+        try:
+            raw = json.loads(args.style)
+        except ValueError:
+            raise ValueError("--style must be JSON") from None
+        if not isinstance(raw, dict):
+            raise ValueError("--style must be a JSON object")
+    if args.environment:
+        raw = {**raw, "environment": args.environment}
+    colors = dict(raw.get("colors") or {}) if isinstance(raw.get("colors"), dict) else {}
+    for item in args.color or []:
+        role, _, value = item.partition("=")
+        colors[role] = value
+    if colors:
+        raw = {**raw, "colors": colors}
+    style = parse_style(raw or None)
+    return style.to_dict() if style else None
+
+
+def _cmd_environments(args: argparse.Namespace) -> int:
+    print(format_catalogue())
+    return 0
+
+
+def _cmd_songmeta(args: argparse.Namespace) -> int:
+    try:
+        print(json.dumps(describe(Path(args.path)), ensure_ascii=False))
+    except (OSError, MapParseError, ValueError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
 def _cmd_gen_url(args: argparse.Namespace) -> int:
     try:
-        print(gen_url(args.url, args.api))
+        style = style_from_args(args)
+        job = gen_url(args.url, args.api, style=style) if style else gen_url(args.url, args.api)
+        print(job)
+        if args.wait:
+            print(json.dumps(wait_job(job, args.api), ensure_ascii=False))
     except (httpx.HTTPError, KeyError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
@@ -189,7 +260,18 @@ def _parser() -> argparse.ArgumentParser:
     g = sub.add_parser("gen-url", help="request generation from a song URL")
     g.add_argument("url")
     g.add_argument("--api", default=DEFAULT_API)
+    g.add_argument("--style", help='JSON {"environment", "colors": {role: "#rrggbb"}}')
+    g.add_argument("--environment", help="vanilla environment name; see the environments command")
+    g.add_argument(
+        "--color", action="append", metavar="ROLE=#RRGGBB", help="roles: " + " ".join(COLOR_ROLES)
+    )
+    g.add_argument("--wait", action="store_true", help="wait for the job and print its result")
     g.set_defaults(func=_cmd_gen_url)
+    ev = sub.add_parser("environments", help="list the environment catalogue")
+    ev.set_defaults(func=_cmd_environments)
+    sm = sub.add_parser("songmeta", help="print title, artist, duration and bpm as JSON")
+    sm.add_argument("path", help="audio file or map folder")
+    sm.set_defaults(func=_cmd_songmeta)
     sa = sub.add_parser("scan-api", help="ask the running API to scan one map")
     sa.add_argument("map_id")
     sa.add_argument("--api", default=DEFAULT_API)

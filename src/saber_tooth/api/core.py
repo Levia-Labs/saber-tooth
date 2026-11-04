@@ -1,5 +1,6 @@
 """API route logic over one Service."""
 
+import json
 import logging
 import re
 import shutil
@@ -24,13 +25,16 @@ from saber_tooth.api.library import (
 from saber_tooth.api.proposal_views import map_findings, proposal_views
 from saber_tooth.jobs import Jobs
 from saber_tooth.service import MapNotFound, MapUnreadable, Service
+from saber_tooth.service.relight import environment_names
 from saber_tooth.store import ProposalApplied
+from saber_tooth.style import parse_style
 
 log = logging.getLogger(__name__)
 
 
 MAP_ID = re.compile(r"[0-9a-f]{12}")
 JOB_ID = re.compile(r"[0-9a-f]{32}")
+MAP_JOBS = ("scan", "fix", "apply", "crop", "relight", "regenerate")  # kinds that need a map
 
 YOUTUBE_HOSTS = {"youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "youtu.be"}
 
@@ -219,17 +223,28 @@ class Api:
         if isinstance(args.get("source"), str) and isinstance(map_id, str):
             self.store.set_source(map_id, args["source"])
 
-    def generate_url(self, url: object) -> dict:
+    def _style(self, raw: object, text: str | None = None) -> dict | None:
+        """The validated style (an object, or JSON text) as a dict for the job args; 400 if bad."""
+        known = set(environment_names(self.service._templates()))
+        try:
+            style = parse_style(json.loads(text) if text else raw, known or None)
+        except ValueError as exc:
+            raise ApiError(400, str(exc)) from None
+        return style.to_dict() if style else None
+
+    def generate_url(self, url: object, style: object = None) -> dict:
         if not _is_youtube_url(url):
             raise ApiError(400, "only YouTube URLs are supported")
+        checked = self._style(style)
         try:
-            return {"job": self.generator.url(str(url))}
+            return {"job": self.generator.url(str(url), checked)}
         except Conflict as conflict:
             raise ApiError(409, str(conflict), conflict.fields) from None
 
-    def generate_file(self, path: Path) -> dict:
+    def generate_file(self, path: Path, style_json: str | None = None) -> dict:
+        """Submit an uploaded file; `style_json` is the optional style as JSON text."""
         try:
-            return {"job": self.generator.file(path)}
+            return {"job": self.generator.file(path, self._style(None, style_json))}
         except Conflict as conflict:
             shutil.rmtree(path.parent, ignore_errors=True)
             raise ApiError(409, str(conflict), conflict.fields) from None
@@ -259,10 +274,7 @@ class Api:
             raise ApiError(404, f"unknown job: {raw}") from None
         if old["status"] not in ("failed", "cancelled"):
             raise ApiError(409, "only a failed or cancelled job can be restarted")
-        if (
-            old["kind"] in ("scan", "fix", "apply", "crop", "relight", "regenerate")
-            and not old["map_id"]
-        ):
+        if old["kind"] in MAP_JOBS and not old["map_id"]:
             raise ApiError(409, "this job's map is gone")
         if old["kind"] == "generate" and "upload" in old["args"]:  # the only temp input
             path = upload_path(self.service.data, old["args"]["upload"])

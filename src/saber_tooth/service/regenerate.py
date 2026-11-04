@@ -19,7 +19,7 @@ from saber_tooth.lightshow import build_lightshow
 from saber_tooth.mapio import load_map, write_map
 from saber_tooth.service.fix import complete
 from saber_tooth.service.generate import _fix_in_place, _is_url
-from saber_tooth.service.relight import environment_names
+from saber_tooth.service.relight import SUFFIX, environment_names
 from saber_tooth.service.util import checkpoint
 from saber_tooth.service.writeout import commit_staged
 from saber_tooth.songmeta import SongMeta
@@ -64,6 +64,18 @@ def _analyse(svc, source: str, folder: Path):
     if link:
         return svc.client.analyse_url(link)
     raise FileNotFoundError(f"no {SONG_FILE} in {folder.name} and its source is not a link")
+
+
+def keeps_look(svc, map_id: str, folder: Path, old) -> bool:
+    """True when the map's environment and colours were chosen: it has a colour scheme, or a
+    relight job set its environment. Otherwise the auto-style restyles it."""
+    if old.info.color_scheme is not None or folder.name.endswith(SUFFIX):
+        return True
+    rows = svc.store._query(
+        "SELECT 1 FROM jobs WHERE map_id=? AND kind='relight' AND status='done' LIMIT 1",
+        (map_id,),
+    )
+    return bool(rows)
 
 
 def _keep_look(svc, staging: Path, old, a, seed: int) -> None:
@@ -119,7 +131,8 @@ def regenerate_map(svc, map_id: str, progress=None) -> dict:
         assemble_new(a, svc._templates(), staging, seed, svc.encode, meta)
         checkpoint(progress, "fixing the map")
         fixes = _fix_in_place(svc, staging, a, seed, progress)
-        _keep_look(svc, staging, old, a, seed)
+        if keeps_look(svc, map_id, folder, old):
+            _keep_look(svc, staging, old, a, seed)
         _keep_cover(folder, old, staging)
         written = load_map(staging)
         checkpoint(progress, "saving the map")  # staging is removed below on a cancel

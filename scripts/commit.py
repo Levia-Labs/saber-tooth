@@ -64,13 +64,23 @@ def format_paths(paths: list[str], runner: Runner = run) -> list[str]:
     return warnings
 
 
-def commit(message: str, paths: list[str], runner: Runner = run) -> tuple[int, str]:
-    """Stage and commit `paths`; returns (rc, hook output of the last attempt)."""
+def merging(runner: Runner = run) -> bool:
+    return runner(["git", "rev-parse", "-q", "--verify", "MERGE_HEAD"]).returncode == 0
+
+
+def commit(
+    message: str, paths: list[str], runner: Runner = run, merging: bool = False
+) -> tuple[int, str]:
+    """Stage and commit `paths`; returns (rc, hook output of the last attempt).
+
+    During a merge git refuses a partial commit, so the whole index is committed.
+    """
     full = build_message(message)
+    scope = [] if merging else ["--", *paths]
     res = subprocess.CompletedProcess([], 1, "", "")
     for _ in range(2):
         runner(["git", "add", "--", *paths])
-        res = runner(["git", "commit", "-m", full, "--", *paths])
+        res = runner(["git", "commit", "-m", full, *scope])
         if res.returncode == 0:
             break
     return res.returncode, (res.stdout or "") + (res.stderr or "")
@@ -96,7 +106,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     for warning in format_paths(args.paths):
         print(f"warn: {warning}")
-    rc, output = commit(args.message, args.paths)
+    rc, output = commit(args.message, args.paths, merging=merging())
     short = verify(args.message) if rc == 0 else None
     if rc or not short:
         print("commit failed:\n" + "\n".join(output.strip().splitlines()[-15:]), file=sys.stderr)

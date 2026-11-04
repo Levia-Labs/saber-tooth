@@ -98,9 +98,9 @@ def test_window_equals_whole_on_a_large_dense_map():
         assert_window_equals_whole(d, T, PROFILES["Expert"], busy(120), lo, lo + 9)
 
 
-def test_every_rule_declares_its_reach_and_only_empty_gap_is_global():
+def test_every_rule_declares_its_reach_and_only_gap_rules_are_global():
     assert set(REACH_S) == set(RULES)
-    assert [r for r, s in REACH_S.items() if s is None] == ["empty-gap"]
+    assert [r for r, s in REACH_S.items() if s is None] == ["empty-gap", "no-rest"]
     assert LOCAL_REACH_S > PROFILE_MAX_REACH_S
     limits = [
         v

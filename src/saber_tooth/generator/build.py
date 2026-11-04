@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from saber_tooth.analysis import Analysis
 from saber_tooth.checks import check_difficulty
 from saber_tooth.generator.candidates import Candidate, build_candidates, phase_of
+from saber_tooth.generator.connectors import add_connectors
 from saber_tooth.generator.motifs import Step, motif_steps, phrase_picks
 from saber_tooth.generator.placer import GenerationError, Placer
 from saber_tooth.generator.plan import BAR_BEATS, Event, plan_events
@@ -172,6 +173,8 @@ def generate_with_stats(
         walls=made,
         bpm_events=timing_events(timing),
     )
+    if window is None:
+        add_connectors(d, timing, profile, sorted([*a.kick, *a.snare]))
     stats.final = len(d.notes)
     return d, stats
 

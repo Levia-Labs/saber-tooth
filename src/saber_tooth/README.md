@@ -29,7 +29,8 @@ Top-level modules:
 9. `safe_fs.py`: path safety helpers.
 10. `cli.py`: the `saber-tooth` command line.
 11. `autofix.py`: offline scan, approve-all, apply and re-check loop behind `saber-tooth autofix`.
-12. `songmeta.py`: song name, sub name and author from a video title (the analyser's project name) or audio tags.
-13. `settings.py`, `resources.py`: the persisted settings (concurrency cap, game folder; `settings.db` in the data folder) and the CPU and memory the container may use with the recommended worker cap.
+12. `songmeta.py`: song name, sub name and author from a video title (the analyser's project name) or audio tags; `describe` prints title, artist, duration and bpm of an audio file or map (`task st:songmeta`).
+13. `environments.py`, `style.py`: the catalogue of environments with a learned template (`task st:environments`) and the generation style (environment and seven colours; validated input, else chosen from tempo, energy and brightness).
+14. `settings.py`, `resources.py`: the persisted settings (concurrency cap, game folder; `settings.db` in the data folder) and the CPU and memory the container may use with the recommended worker cap.
 
 Test with `task st:test`.

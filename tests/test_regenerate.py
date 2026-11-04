@@ -150,3 +150,30 @@ def test_cli_helpers_read_the_api():
     assert queue_bulk("/api/maps/fix-all", "http://x", t) == "queued 3 jobs"
     lines = findings_lines("http://x", t)
     assert lines[0].startswith("9 maps") and "x" in lines[1]
+
+
+def _plain_other_env(svc, result):
+    """The map's folder with no colour scheme and an environment the auto-style would not pick."""
+    folder = svc.levels / result["folder"]
+    old = load_map(folder)
+    auto = old.info.environment
+    env = next(e for e in environment_names(svc._templates()) if e != auto)
+    old.info.environment, old.info.color_scheme = env, None
+    write_map(old, folder, None)
+    return folder, auto, env
+
+
+def test_regenerate_restyles_a_map_with_no_scheme_and_no_relight(gen):
+    result = _generated(gen)
+    folder, auto, env = _plain_other_env(gen, result)
+    regenerate_map(gen, result["map_id"])
+    assert load_map(folder).info.environment == auto != env
+
+
+def test_regenerate_keeps_the_environment_a_relight_job_set(gen):
+    result = _generated(gen)
+    folder, _, env = _plain_other_env(gen, result)
+    job = gen.store.create_job("relight", result["map_id"], {"environment": env})
+    gen.store._exec("UPDATE jobs SET status='done' WHERE id=?", (job,))
+    regenerate_map(gen, result["map_id"])
+    assert load_map(folder).info.environment == env

@@ -1,6 +1,7 @@
 """Candidate generators for map-level and gap findings."""
 
 import contextlib
+import copy
 import math
 from collections.abc import Iterator
 
@@ -10,6 +11,8 @@ from saber_tooth.fixer.thin import thin
 from saber_tooth.fixer.verify import Context, map_timing
 from saber_tooth.generator import GenerationError, generate_difficulty
 from saber_tooth.lightshow import build_lightshow
+from saber_tooth.lightshow.pacing import pace_show
+from saber_tooth.mapio.write import BOX_KEYS, FX_KEY
 from saber_tooth.model import DIFFICULTIES, Note
 from saber_tooth.profiles import PROFILES
 from saber_tooth.swings import build_swings
@@ -116,3 +119,15 @@ def default_environment(ctx: Context) -> Iterator[list[Op]]:
         ctx.reason = str(e) or "no lightshow templates"
         return
     yield [ApplyLightshow.from_payload(payload)]
+
+
+def light_strobe(ctx: Context) -> Iterator[list[Op]]:
+    d, info = ctx.d, ctx.beatmap.info
+    if d is None:
+        ctx.reason = f"difficulty {ctx.finding.difficulty} not found"
+        return
+    groups = {k: copy.deepcopy(d.raw[k]) for k in (*BOX_KEYS, FX_KEY) if k in d.raw}
+    events, kept = pace_show(list(d.events), groups, ctx.timing)
+    groups.update(kept)
+    show = (events, list(d.boosts), groups)
+    yield [ApplyLightshow(info.environment, info.color_scheme, {d.name: show})]
