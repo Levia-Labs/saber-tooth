@@ -1,7 +1,9 @@
 """Grid and swing helpers shared by the fix strategies."""
 
 import math
+from collections.abc import Iterator
 
+from saber_tooth.fixer.ops import Delete, Op
 from saber_tooth.fixer.verify import Context
 from saber_tooth.model import CUT_VECTORS, Color, Cut, Note
 from saber_tooth.swings import Swing
@@ -54,6 +56,20 @@ def following_swing(ctx: Context, s: Swing) -> Swing | None:
     """The same hand's swing right after `s`, or None at the end of the hand's play."""
     later = [x for x in ctx.swings()[s.hand] if x.beat > s.beat + EPS]
     return later[0] if later else None
+
+
+def swing_of(ctx: Context, note: Note) -> Swing | None:
+    """The swing that cuts `note`."""
+    return next((s for s in ctx.swings()[note.color] if note in s.notes), None)
+
+
+def delete_keeping_parity(ctx: Context, s: Swing) -> Iterator[list[Op]]:
+    """Drop swing s; removing one swing flips the hand's alternation, so drop the next as well."""
+    name = ctx.d.name
+    nxt = following_swing(ctx, s)
+    if nxt is not None:
+        yield [Delete(name, n) for n in (*s.notes, *nxt.notes)]
+    yield [Delete(name, n) for n in s.notes]
 
 
 def single_swing(ctx: Context) -> Swing | None:

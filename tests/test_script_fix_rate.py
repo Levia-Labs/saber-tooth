@@ -53,9 +53,11 @@ def test_table_has_fixed_percent_and_parse_errors():
     assert lines[-1] == "parse-error bad boom"
 
 
-def test_table_names_failing_maps_when_one_rule_is_selected():
-    rows = {"x": {"before": 4, "after": 1, "maps_before": 2, "maps_after": 1, "failing": ["a"]}}
-    assert fr.format_table(rows, 2, [])[-1] == "failing a"
+def test_table_names_the_maps_each_rule_still_fails_on():
+    rows = {
+        "x": {"before": 4, "after": 1, "maps_before": 2, "maps_after": 1, "failing": ["a", "b"]}
+    }
+    assert fr.format_table(rows, 2, [])[-1] == "failing x: a; b"
 
 
 def test_run_measures_copies_and_leaves_source(tmp_path, capsys):

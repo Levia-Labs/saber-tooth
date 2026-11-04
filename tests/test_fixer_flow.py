@@ -34,3 +34,15 @@ def test_wide_jump_fix_leaves_no_parity_break():
     p = fx.propose(m, find(m, "wide-jump"), None, None, 1)
     assert p is not None
     assert "parity-break" not in {f.rule for f in run_checks(fx.apply_ops(m, p.ops), rules=FLOW)}
+
+
+def test_vision_block_tries_every_free_cell_then_drops_the_note():
+    from saber_tooth.fixer.layout_fixes import vision_block
+
+    blocker = Note(8.0, 1, 1, Color.RED, Cut.DOWN)
+    crowd = [Note(8.0, x, y, Color.BLUE, Cut.DOWN) for x, y in ((0, 1), (1, 0), (0, 0))]
+    m = bm([blocker, *crowd, Note(8.25, 3, 1, Color.BLUE, Cut.UP)])
+    got = list(vision_block(Context(m, find(m, "vision-block"), None, None, 1)))
+    moves = [c[0] for c in got if isinstance(c[0], fo.Move)]
+    assert len(moves) > 3 and all(not (o.x in (1, 2) and o.y == 1) for o in moves)
+    assert all(isinstance(o, fo.Delete) for o in got[-1])
