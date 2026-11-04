@@ -46,3 +46,19 @@ def test_vision_block_tries_every_free_cell_then_drops_the_note():
     moves = [c[0] for c in got if isinstance(c[0], fo.Move)]
     assert len(moves) > 3 and all(not (o.x in (1, 2) and o.y == 1) for o in moves)
     assert all(isinstance(o, fo.Delete) for o in got[-1])
+
+
+def test_note_converge_last_resort_keeps_the_hand_alternating():
+    from saber_tooth.fixer.layout_fixes import note_converge
+
+    m = bm(
+        [
+            Note(8.0, 0, 0, Color.RED, Cut.DOWN),
+            Note(8.5, 0, 2, Color.RED, Cut.UP),
+            Note(9.0, 1, 0, Color.RED, Cut.DOWN),
+            Note(10.0, 2, 0, Color.RED, Cut.UP),
+        ]
+    )
+    got = list(note_converge(Context(m, find(m, "note-converge"), None, None, 1)))
+    deletes = [c for c in got if all(isinstance(o, fo.Delete) for o in c)]
+    assert {len(c) for c in deletes} == {1, 2}  # a swing and its follower, then the swing alone

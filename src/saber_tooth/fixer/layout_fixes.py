@@ -160,5 +160,9 @@ def note_converge(ctx: Context) -> Iterator[list[Op]]:
             if (x, y) in taken or x == other.x or (x, y) == (mover.x, mover.y):
                 continue
             yield [Move(name, mover, x, y, mover.cut)]
-    yield [Delete(name, weak)]
-    yield [Delete(name, strong)]
+    for gone in (weak, strong):
+        s = swing_of(ctx, gone)
+        if s is not None:
+            yield from delete_keeping_parity(ctx, s)
+        else:
+            yield [Delete(name, gone)]
