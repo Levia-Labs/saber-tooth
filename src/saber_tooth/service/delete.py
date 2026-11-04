@@ -3,6 +3,7 @@
 import shutil
 from pathlib import Path
 
+from saber_tooth.map_folder_guard import check_map_folder
 from saber_tooth.safe_fs import LevelsRoot, WriteRefused
 from saber_tooth.service.errors import DeleteRefused, MapNotFound
 from saber_tooth.store import Store
@@ -29,6 +30,9 @@ class DeleteMixin:
             raise MapNotFound(f"map folder is gone: {name}") from exc
         if self.store.has_active_job(map_id):
             raise DeleteRefused(f"map {name} has a queued or running job")
+        reasons = check_map_folder(self.levels / name, self.levels, map_id)
+        if reasons:
+            raise DeleteRefused(f"map {name} is not a deletable map folder: " + "; ".join(reasons))
         shutil.rmtree(folder)
         self.store.delete_map(map_id)
         self.refresh_library()

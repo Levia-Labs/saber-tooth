@@ -113,36 +113,86 @@ def test_fetch_pages():
     assert len(lt.fetch_items("http://x", request)) == 105
 
 
-def test_main_dry_and_apply(capsys):
+def _valid_map(folder):
+    folder.mkdir(parents=True)
+    info = {
+        "_version": "2.0.0",
+        "_songName": "S",
+        "_songFilename": "song.ogg",
+        "_difficultyBeatmapSets": [
+            {"_difficultyBeatmaps": [{"_difficulty": "Easy", "_beatmapFilename": "Easy.dat"}]}
+        ],
+    }
+    (folder / "Info.dat").write_text(json.dumps(info), encoding="utf-8")
+    (folder / "Easy.dat").write_text("{}", encoding="utf-8")
+    (folder / "song.ogg").write_bytes(b"x")
+
+
+def test_main_dry_and_apply(capsys, tmp_path):
+    levels = tmp_path / "levels"
+    c1, c2 = F + " [saber-tooth]", F + " [saber-tooth 2]"
+    levels.mkdir()
+    ids = {f: lt.map_id_for(f) for f in (F, c1, c2)}
     pages = {
         0: [
-            {"id": "o", "folder": F, "title": "Song", "duration_s": 100},
+            {"id": ids[F], "folder": F, "title": "Song", "duration_s": 100},
             {
-                "id": "a",
-                "folder": F + " [saber-tooth]",
+                "id": ids[c1],
+                "folder": c1,
                 "title": "Song [saber-tooth]",
                 "duration_s": 99,
             },
         ]
     }
+    base = ["--base", "http://x", "--levels", str(levels)]
     request, calls = make_request(pages)
     assert lt.main(["--base", "http://x"], request) == 0
     assert capsys.readouterr().out.startswith("chains=1 keep=2 delete=0 rename=0")
     assert all(c[0] == "GET" for c in calls)
-    assert lt.main(["--base", "http://x", "--apply"], request) == 0
+    assert lt.main([*base, "--apply"], request) == 0
     assert [c[0] for c in calls[1:]] == ["GET"]
-    pages[0].append({"id": "b", "folder": F + " [saber-tooth 2]", "title": "Song", "duration_s": 9})
+    _valid_map(levels / c2)
+    pages[0].append({"id": ids[c2], "folder": c2, "title": "Song", "duration_s": 9})
     request, calls = make_request(pages)
-    assert lt.main(["--base", "http://x", "--apply"], request) == 0
+    assert lt.main([*base, "--apply"], request) == 0
     assert [c[0] for c in calls[1:]] == ["DELETE"]
-    assert calls[-1][1].endswith("/b")
+    assert calls[-1][1].endswith("/" + ids[c2])
     pages[0][1]["title"] = "Song [crop 1-2]"
     request, calls = make_request(pages)
-    assert lt.main(["--base", "http://x", "--apply"], request) == 0
+    assert lt.main([*base, "--apply"], request) == 0
     assert json.loads(calls[-1][2]) == {"name": "Song [saber-tooth]", "keep_folder": True}
-    request, _ = make_request(pages, fail=("b",))
-    assert lt.main(["--base", "http://x", "--apply"], request) == 1
-    assert "failed=1" in capsys.readouterr().out
+    request, _ = make_request(pages, fail=(ids[c2],))
+    assert lt.main([*base, "--apply"], request) == 1
+    assert "failed=1 refused=0" in capsys.readouterr().out
+
+
+def test_apply_requires_levels(capsys):
+    request, calls = make_request({0: rows(2)})
+    assert lt.main(["--base", "http://x", "--apply"], request) == 2
+    assert "--levels" in capsys.readouterr().out
+    assert calls == []
+
+
+def test_apply_skips_refused_folders(capsys, tmp_path):
+    levels = tmp_path / "levels"
+    c1, c2 = F + " [saber-tooth]", F + " [saber-tooth 2]"
+    _valid_map(levels / c2)
+    (levels / c2 / "notes.txt").write_text("keep", encoding="utf-8")
+    ids = {f: lt.map_id_for(f) for f in (F, c1, c2)}
+    pages = {
+        0: [
+            {"id": ids[F], "folder": F, "title": "Song", "duration_s": 100},
+            {"id": ids[c1], "folder": c1, "title": "Song", "duration_s": 99},
+            {"id": ids[c2], "folder": c2, "title": "Song", "duration_s": 9},
+        ]
+    }
+    request, calls = make_request(pages)
+    argv = ["--base", "http://x", "--levels", str(levels), "--apply"]
+    assert lt.main(argv, request) == 0
+    out = capsys.readouterr().out
+    assert "refused=1" in out and "notes.txt" in out
+    assert all(c[0] != "DELETE" for c in calls)
+    assert (levels / c2 / "notes.txt").exists()
 
 
 def test_drop_originals_only_in_chains_with_copy():
@@ -161,7 +211,7 @@ def test_drop_originals_only_in_chains_with_copy():
 def test_drop_rename_has_no_keep_folder():
     items = [Item("o", F, "Song", 200), Item("c", F + " [saber-tooth]", "Song [crop 1-2]", 200)]
     request, calls = make_request({})
-    count, _ = lt.apply_plan("http://x", lt.plan(items, originals="drop"), request)
+    count, _, _ = lt.apply_plan("http://x", lt.plan(items, originals="drop"), request)
     assert count == 0
     assert json.loads(calls[-1][2]) == {"name": "Song [saber-tooth]"}
     calls.clear()

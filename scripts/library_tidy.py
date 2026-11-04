@@ -12,6 +12,8 @@ sha256 of the folder name).
 Usage: uv run python scripts/library_tidy.py [--base URL] [--levels DIR] [--originals keep|drop]
        [--apply]
 --originals drop also deletes the original of each chain that has a copy (no keep_folder).
+--apply requires --levels: each folder must pass the strict map-folder guard (only map folders
+are ever deleted) or it is skipped and counted as refused.
 Exit: 0 ok, 1 a request failed, 2 usage.
 """
 
@@ -25,6 +27,8 @@ import urllib.request
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+
+from saber_tooth.map_folder_guard import check_map_folder
 
 Request = Callable[[str, str, bytes | None], tuple[int, bytes]]
 SUFFIX_RE = re.compile(r"^(.*?)((?: \[saber-tooth(?: \d+)?\])+)$", re.S)
@@ -161,11 +165,25 @@ def level_folders(levels: Path) -> list[str]:
 
 
 def apply_plan(
-    base: str, result: Plan, request: Request = http, cap: int = 20
-) -> tuple[int, list[str]]:
-    """Deletes first, then renames; returns (failure count, up to `cap` failure lines)."""
+    base: str, result: Plan, request: Request = http, cap: int = 20, levels: Path | None = None
+) -> tuple[int, list[str], int]:
+    """Deletes first, then renames; returns (failure count, up to `cap` lines, refused count).
+
+    Every folder is checked locally by the map-folder guard before its DELETE; a refused folder is
+    skipped and reported, never deleted. Without `levels` nothing is deleted.
+    """
     failures: list[str] = []
+    refused = 0
     for item in result.delete:
+        reasons = (
+            check_map_folder(levels / item.folder, levels, item.id)
+            if levels
+            else ["no levels folder given"]
+        )
+        if reasons:
+            refused += 1
+            failures.append(f"refused {item.id} {item.folder}: {'; '.join(reasons)}")
+            continue
         status, _ = request("DELETE", f"{base}/api/maps/{item.id}", None)
         if status not in (200, 204, 404):
             failures.append(f"delete {item.id} {item.folder}: HTTP {status}")
@@ -177,7 +195,8 @@ def apply_plan(
         status, _ = request("PATCH", f"{base}/api/maps/{item.id}", body)
         if status != 200:
             failures.append(f"rename {item.id} {item.folder}: HTTP {status}")
-    return len(failures), failures[:cap]
+    failed = [f for f in failures if not f.startswith("refused ")]
+    return len(failed), failures[:cap], refused
 
 
 def summary(result: Plan) -> str:
@@ -200,6 +219,9 @@ def main(argv: list[str] | None = None, request: Request = http) -> int:
     ap.add_argument("--originals", choices=("keep", "drop"), default="keep")
     ap.add_argument("--apply", action="store_true", help="execute the deletes and renames")
     args = ap.parse_args(argv)
+    if args.apply and not args.levels:
+        print("FAIL --apply requires --levels so every folder can be checked before deletion")
+        return 2
     try:
         items = fetch_items(args.base, request)
         if args.levels:
@@ -213,10 +235,10 @@ def main(argv: list[str] | None = None, request: Request = http) -> int:
         for line in examples(result):
             print(line)
         return 0
-    count, lines = apply_plan(args.base, result, request)
+    count, lines, refused = apply_plan(args.base, result, request, levels=args.levels)
     for line in lines:
         print(line)
-    print(f"failed={count}")
+    print(f"failed={count} refused={refused}")
     return 1 if count else 0
 
 

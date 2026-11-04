@@ -34,6 +34,9 @@ tasks:
   survey:
     desc: "Read-only finding counts across a levels dir. Usage: task st:survey -- <levels_dir>"
     cmds: ["uv run saber-tooth survey {{.CLI_ARGS}}"]
+  guard-check:
+    desc: "Read-only deletion-guard counts per reason. Usage: task st:guard-check -- <levels_dir> [--list]"
+    cmds: ["uv run python scripts/guard_check.py {{.CLI_ARGS}}"]
   learn:
     desc: "Build lightshow templates. Usage: task st:learn -- <levels_dir> <out.json>"
     cmds: ["uv run saber-tooth learn {{.CLI_ARGS}}"]
