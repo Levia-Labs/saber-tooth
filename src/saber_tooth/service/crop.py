@@ -57,7 +57,7 @@ def _replace(
     svc, map_id: str, folder: Path, audio: Path, cropped, label: str, progress=None
 ) -> Path:
     """Stage the crop, check it reads back, then swap it in for the original folder."""
-    partial, _ = stage_cropped(svc.levels, folder, audio, cropped, label)
+    partial, _ = stage_cropped(svc.levels, folder, audio, cropped, copy=False)
     try:
         load_map(partial)
         checkpoint(progress)  # the staged copy goes; the original is still untouched
@@ -77,7 +77,8 @@ def crop_map(
     replace: bool = False,
     progress=None,
 ) -> dict:
-    """Crop a map into a new `<map> [label]` folder; the original is never changed.
+    """Crop a map into its one `<map> [saber-tooth]` copy (made, or overwritten); the original
+    is never changed and a copy is cropped in place.
 
     With `replace` the cropped map takes the original folder's place instead and the map's store
     rows are reset."""
@@ -93,7 +94,8 @@ def crop_map(
     if replace:
         target = _replace(svc, map_id, folder, audio, cropped, label, progress)
     else:
-        target = write_cropped(svc.levels, folder, audio, cropped, label)
+        target = write_cropped(svc.levels, folder, audio, cropped)
+        svc.store.reset_map(map_id_for(target.name))  # an overwritten copy starts unscanned
     store_copy_scan(svc, target.name, cropped.beatmap, None)  # the analysis is on the old time base
     try:
         svc.refresh_library()

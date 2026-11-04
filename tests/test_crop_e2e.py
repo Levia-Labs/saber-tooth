@@ -38,17 +38,17 @@ def _assert_fits_the_audio(written, cut):
 
 @pytest.mark.parametrize("key", ["60", "120"])
 def test_timeline_then_crop_then_read_back(tmp_path, cuts, key):
-    label, lo, hi = BANDS[key]
+    _, lo, hi = BANDS[key]
     svc = make_service(tmp_path)
     original = svc.levels / NAME
     before = _hashes(original)
     with TestClient(create_app(svc), base_url="http://localhost") as http:
         window, result = _crop(http, key)
     assert lo <= window["length_s"] <= hi
-    assert result["folder"] == f"{NAME} [{label}]"
+    assert result["folder"] == f"{NAME} [saber-tooth]"
     written = load_map(svc.levels / result["folder"])
     assert missing_difficulty(written) == []
-    assert written.info.song_name == f"Song [{label}]"
+    assert written.info.song_name == "Song [saber-tooth]"
     assert len(cuts) == 1 and cuts[0][3] == pytest.approx(window["length_s"])
     _assert_fits_the_audio(written, cuts[0])
     assert _hashes(original) == before
@@ -75,5 +75,5 @@ def test_cropping_twice_never_overwrites(tmp_path, cuts):
     with TestClient(create_app(svc), base_url="http://localhost") as http:
         _, first = _crop(http, "60")
         _, second = _crop(http, "60")
-    assert (first["folder"], second["folder"]) == ("Song [1 min]", "Song [1 min 2]")
+    assert (first["folder"], second["folder"]) == ("Song [saber-tooth]", "Song [saber-tooth]")
     assert len(cuts) == 2
