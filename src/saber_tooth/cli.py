@@ -15,6 +15,7 @@ from saber_tooth.cli_library import register as register_library
 from saber_tooth.cli_style import register as register_style
 from saber_tooth.cli_style import style_from_args
 from saber_tooth.environments import COLOR_ROLES
+from saber_tooth.generated import FIXED_SUFFIX
 from saber_tooth.lightshow import learn
 from saber_tooth.mapio import MapParseError, load_map
 from saber_tooth.timing import Timing
@@ -89,6 +90,8 @@ def _cmd_survey(args: argparse.Namespace) -> int:
     except OSError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
+    if args.copies:
+        folders = [p for p in folders if p.name.endswith(FIXED_SUFFIX) == (args.copies == "only")]
     for folder in folders:
         try:
             findings = _survey_findings(folder, args.mapper)
@@ -223,6 +226,9 @@ def _parser() -> argparse.ArgumentParser:
     s = sub.add_parser("survey", help="check every map under a directory")
     s.add_argument("levels_dir")
     s.add_argument("--mapper", default=None, help="only maps by this level author")
+    s.add_argument(
+        "--copies", choices=("only", "exclude"), default=None, help="only or skip fixed copies"
+    )
     s.set_defaults(func=_cmd_survey)
     ln = sub.add_parser("learn", help="learn lightshow units from installed maps")
     ln.add_argument("levels_dir")

@@ -125,6 +125,13 @@ tasks:
       - sh: test "{{.CONFIRM}}" = "yes"
         msg: "lane-done deletes a worktree and branch; rerun with CONFIRM=yes"
     cmds: ["CONFIRM=yes uv run python scripts/lane.py done {{.CLI_ARGS}}"]
+  library-tidy:
+    desc: "One map per song, dry run unless --apply. Usage: task st:library-tidy -- [--base URL] [--apply]"
+    # --apply hard-deletes maps through the API; gate it behind CONFIRM=yes.
+    preconditions:
+      - sh: 'case " {{.CLI_ARGS}} " in *" --apply "*) test "{{.CONFIRM}}" = "yes" ;; esac'
+        msg: "library-tidy --apply deletes maps; rerun with CONFIRM=yes"
+    cmds: ["uv run python scripts/library_tidy.py {{.CLI_ARGS}}"]
   commit:
     desc: 'Format, stage and commit exactly the given paths. Usage: task st:commit -- -m "<message>" <paths...>'
     cmds: ["uv run python scripts/commit.py {{.CLI_ARGS}}"]

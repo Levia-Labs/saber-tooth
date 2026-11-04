@@ -60,6 +60,24 @@ def test_survey_counts_parse_and_other_errors(capsys, tmp_path, monkeypatch):
     assert "parse_errors=2" in capsys.readouterr().out
 
 
+def _copies_dir(tmp_path):
+    import shutil
+
+    for name in ("orig", "orig [saber-tooth]"):
+        shutil.copytree(FIX / "v2_basic", tmp_path / name)
+    return tmp_path
+
+
+@pytest.mark.parametrize(("mode", "maps"), [("only", 1), ("exclude", 1), (None, 2)])
+def test_survey_copies_filter(tmp_path, monkeypatch, mode, maps):
+    seen = []
+    real = cli.run_checks
+    monkeypatch.setattr(cli, "run_checks", lambda b, *a, **k: seen.append(1) or real(b, *a, **k))
+    argv = ["survey", str(_copies_dir(tmp_path))] + (["--copies", mode] if mode else [])
+    assert main(argv) == 0
+    assert len(seen) == maps
+
+
 def test_learn(capsys, tmp_path):
     out_json = tmp_path / "t.json"
     assert main(["learn", str(FIX), str(out_json)]) == 0
