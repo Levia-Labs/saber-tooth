@@ -42,7 +42,7 @@ function withTimeout(ms: number, outer?: AbortSignal) {
 }
 
 export async function request<T>(
-  method: "GET" | "POST" | "DELETE",
+  method: "GET" | "POST" | "PATCH" | "DELETE",
   path: string,
   body?: Body,
   signal?: AbortSignal,
@@ -160,6 +160,10 @@ export interface Neighbors {
 
 export const getNeighbors = (id: string, query: string, signal?: AbortSignal): Promise<Neighbors> =>
   request("GET", `/api/maps/${seg(id)}/neighbors${query ? `?${query}` : ""}`, undefined, signal);
+
+/** Rename a map: its song name and folder change, and so does its id (the answer carries it). */
+export const renameMap = (id: string, name: string): Promise<MapItem> =>
+  request("PATCH", `/api/maps/${seg(id)}`, { name });
 
 export const deleteMap = (id: string): Promise<{ deleted: string }> =>
   request("DELETE", `/api/maps/${seg(id)}`);

@@ -9,7 +9,9 @@ import {
   relightMap,
   scanMap,
   deleteMap,
+  renameMap,
 } from "../api/client";
+import { MapTitle } from "../components/MapTitle";
 import { Alert, SpecAlert } from "../components/Alert";
 import { useAnnounce } from "../components/Announcer";
 import { FixesSkeleton, MapHeadSkeleton } from "../components/Skeletons";
@@ -34,7 +36,7 @@ import { JobOutcome } from "../components/JobOutcome";
 import { ProposalGroups } from "../components/ProposalGroups";
 import { BackLink } from "../components/BackLink";
 import { PageShell } from "../components/PageShell";
-import { backHref, originTab, tabOfHref } from "../lib/backlink";
+import { backHref, mapHref, originTab, tabOfHref } from "../lib/backlink";
 import { useDocumentTitle } from "../lib/hooks";
 import { useOrigin } from "../lib/useBacklink";
 import { TIPS } from "../lib/tips";
@@ -121,6 +123,16 @@ export function MapPage() {
       });
     }
   };
+  const rename = async (next: string) => {
+    const renamed = await renameMap(id, next);
+    const tabParam = params.get("tab") ?? undefined;
+    await navigate(mapHref(renamed.id, { tab: tabParam, from: origin, back }), { replace: true });
+    client.removeQueries({ queryKey: keys.map(id) });
+    client.removeQueries({ queryKey: keys.proposals(id) });
+    void client.invalidateQueries({ queryKey: keys.maps });
+    void client.invalidateQueries({ queryKey: keys.jobs });
+    announce({ variant: "success", title: "Renamed", message: renamed.title });
+  };
   const approved = list.filter((p) => p.status === "approved").length;
   const clean = map.data ? isCleanCopy(map.data) : false;
   const canCrop = map.data != null && map.data.status !== "unreadable";
@@ -157,9 +169,7 @@ export function MapPage() {
         <div className="maphead">
           <Cover url={map.data.cover_url} big />
           <div className="mapmeta">
-            <h1 tabIndex={-1} data-page-heading>
-              {name}
-            </h1>
+            <MapTitle name={name} onSave={rename} />
             <p className="sub">
               {map.data.mapper || "Unknown mapper"}
               {map.data.status !== "unreadable" && (

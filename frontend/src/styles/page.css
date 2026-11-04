@@ -257,3 +257,42 @@
 .error-panel {
   max-width: 640px;
 }
+.map-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+.map-title-text {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  cursor: text;
+  overflow-wrap: anywhere;
+}
+.map-title-edit.icon {
+  width: 32px;
+  height: 32px;
+  color: var(--muted);
+}
+.map-title-input {
+  flex: 1 1 14rem;
+  min-width: 0;
+  font: inherit;
+  color: var(--ink);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.15rem 0.5rem;
+}
+.map-title-busy {
+  display: inline-flex;
+}
+.map-title-error {
+  flex-basis: 100%;
+  font-size: 0.9rem;
+  font-weight: 400;
+}

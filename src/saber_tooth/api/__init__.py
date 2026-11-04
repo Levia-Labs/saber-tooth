@@ -37,7 +37,7 @@ from saber_tooth.audio import encode_egg
 from saber_tooth.beatsaver.client import BeatSaverClient
 from saber_tooth.jobs_service import ChildSpec
 from saber_tooth.service import ApplyConflict, MapNotFound, MapUnreadable, Service
-from saber_tooth.service.errors import DeleteRefused
+from saber_tooth.service.errors import DeleteRefused, RenameConflict, RenameInvalid
 from saber_tooth.service.staging import sweep_staging
 from saber_tooth.store import Store
 
@@ -110,8 +110,13 @@ def create_app(
     @app.exception_handler(MapUnreadable)
     @app.exception_handler(DeleteRefused)
     @app.exception_handler(ApplyConflict)
+    @app.exception_handler(RenameConflict)
     async def _conflict(_: Request, exc: Exception):
         return _error(409, str(exc))
+
+    @app.exception_handler(RenameInvalid)
+    async def _invalid(_: Request, exc: Exception):
+        return _error(422, str(exc))
 
     @app.exception_handler(ApiError)
     async def _api_error(_: Request, exc: ApiError):
@@ -132,6 +137,15 @@ def create_app(
     @app.delete("/api/maps/{map_id}")
     def delete_map(map_id: str):
         return service.delete_map(api.map_id(map_id))
+
+    @app.patch("/api/maps/{map_id}")
+    async def rename_map(map_id: str, request: Request):
+        try:
+            body = await request.json()
+        except ValueError:
+            raise ApiError(400, 'send JSON {"name"}') from None
+        name = body.get("name") if isinstance(body, dict) else None
+        return await asyncio.to_thread(api.rename_map, map_id, name)
 
     @app.post("/api/maps/{map_id}/scan")
     def scan(map_id: str):
