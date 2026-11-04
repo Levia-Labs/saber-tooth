@@ -1,3 +1,6 @@
+import shutil
+import time
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -112,11 +115,17 @@ def test_guard_refuses_a_junction(tmp_path, monkeypatch):
         LevelsRoot(tmp_path).guard(folder)
 
 
-def test_bulk_delete_route_reports_per_id_and_refreshes_once(svc, monkeypatch):
-    calls = []
-    monkeypatch.setattr(svc, "refresh_library", lambda wait=True: calls.append(wait))
-    client = TestClient(create_app(svc))
-    out = client.post("/api/maps/delete", json={"ids": [MID, "0" * 12, MID]})
+def _client(svc):
+    return TestClient(create_app(svc), base_url="http://localhost")
+
+
+def _fail_refresh(*_a, **_k):
+    raise AssertionError("delete must not re-index the whole library")
+
+
+def test_bulk_delete_route_reports_per_id_without_full_refresh(svc, monkeypatch):
+    monkeypatch.setattr(svc, "refresh_library", _fail_refresh)
+    out = _client(svc).post("/api/maps/delete", json={"ids": [MID, "0" * 12, MID]})
     assert out.status_code == 200
     body = out.json()
     assert body["deleted"] == 1
@@ -125,12 +134,12 @@ def test_bulk_delete_route_reports_per_id_and_refreshes_once(svc, monkeypatch):
         ("0" * 12, "missing"),
     ]
     assert not (svc.levels / NAME).exists()
-    assert calls == [True]
+    assert svc.store.get_map(MID) is None
 
 
 def test_bulk_delete_busy_and_validation(svc):
     svc.store.create_job("scan", MID)
-    client = TestClient(create_app(svc))
+    client = _client(svc)
     out = client.post("/api/maps/delete", json={"ids": [MID]}).json()
     assert out["results"][0]["status"] == "busy"
     assert (svc.levels / NAME).exists()
@@ -138,3 +147,43 @@ def test_bulk_delete_busy_and_validation(svc):
     assert client.post("/api/maps/delete", json={"ids": ["../x"]}).status_code == 400
     assert client.post("/api/maps/delete", content=b"nope").status_code == 400
     assert client.post("/api/maps/delete", json={"ids": ["a" * 12] * 501}).status_code == 413
+
+
+def _grow(svc, n, tag="Filler"):
+    for k in range(n):
+        shutil.copytree(svc.levels / NAME, svc.levels / f"{tag} {k}")
+    svc.refresh_library()
+
+
+def test_delete_does_not_refresh_and_reindexes_only_the_chain(svc, monkeypatch):
+    copy1, copy2 = NAME + " [saber-tooth]", NAME + " [saber-tooth 2]"
+    for c in (copy1, copy2):
+        shutil.copytree(svc.levels / NAME, svc.levels / c)
+    _grow(svc, 5)
+    other = map_id_for("Filler 0")
+    assert svc.store.get_map(map_id_for(copy1)) is not None
+    assert svc.store.get_map(MID)["fixed_copy_id"] == map_id_for(copy1)
+    monkeypatch.setattr(svc, "refresh_library", _fail_refresh)
+    seen = []
+    real = svc._index_folder
+    monkeypatch.setattr(svc, "_index_folder", lambda f, p: (seen.append(f.name), real(f, p))[1])
+    svc.delete_map(map_id_for(copy1))
+    assert sorted(seen) == sorted([NAME, copy2])
+    assert svc.store.get_map(map_id_for(copy1)) is None
+    assert svc.store.get_map(other) is not None
+    ids = [m["id"] for m in svc.store.list_maps()]
+    assert map_id_for(copy1) not in ids and MID in ids
+    assert svc.store.get_map(MID)["fixed_copy_id"] is None  # pairing with the copy is gone
+
+
+def test_delete_in_a_200_map_library_is_fast(svc):
+    _grow(svc, 199)
+    assert len(svc.store.list_maps()) == 200
+    start = time.perf_counter()
+    svc.delete_map(map_id_for("Filler 7"))
+    assert time.perf_counter() - start < 1.0
+    start = time.perf_counter()
+    out = svc.delete_maps([map_id_for(f"Filler {k}") for k in range(10, 60)])
+    assert out["deleted"] == 50
+    assert time.perf_counter() - start < 1.0
+    assert len(svc.store.list_maps()) == 149

@@ -22,7 +22,7 @@ from saber_tooth.mapio import load_map, write_map
 from saber_tooth.service.fix import complete
 from saber_tooth.service.generate import _fix_in_place, _is_url
 from saber_tooth.service.relight import SUFFIX, environment_names
-from saber_tooth.service.util import checkpoint
+from saber_tooth.service.util import checkpoint, map_id_for
 from saber_tooth.service.writeout import commit_staged
 from saber_tooth.songmeta import SongMeta
 
@@ -109,12 +109,19 @@ def _backup(svc, folder: Path) -> Path:
 
 
 def _drop_copies(svc, folder: Path) -> None:
-    """The regenerated map is clean by contract: its fixed copies are stale and go."""
+    """The regenerated map is clean by contract: its fixed copies are stale and go.
+
+    Goes through the guarded fast delete path (no library re-index).
+    """
     if is_fixed_copy(folder.name):
         return
-    for other in svc.levels.iterdir():
-        if other.is_dir() and is_fixed_copy(other.name) and strip_fixed(other.name) == folder.name:
-            shutil.rmtree(other, ignore_errors=True)
+    stale = [
+        map_id_for(other.name)
+        for other in svc.levels.iterdir()
+        if other.is_dir() and is_fixed_copy(other.name) and strip_fixed(other.name) == folder.name
+    ]
+    if stale:
+        svc.delete_maps(stale)
 
 
 def regenerate_map(svc, map_id: str, progress=None) -> dict:
@@ -147,7 +154,7 @@ def regenerate_map(svc, map_id: str, progress=None) -> dict:
         shutil.rmtree(staging, ignore_errors=True)
     _drop_copies(svc, folder)
     try:
-        svc.refresh_library()
+        svc.reindex_folders([folder.name])
     except Exception:
         log.exception("library refresh failed after regenerating %s", folder.name)
     project = a.audio.parent.name if a.audio else None

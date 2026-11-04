@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from saber_tooth.store_claims import ProposalClaims
+from saber_tooth.store_delete import DeleteRows
 from saber_tooth.store_jobs import JobRows
 from saber_tooth.store_maps import MapQueries
 from saber_tooth.store_sources import SourceRows
@@ -61,7 +62,7 @@ def _now() -> str:
     return datetime.now(UTC).isoformat()
 
 
-class Store(MapQueries, ProposalClaims, JobRows, SourceRows):
+class Store(MapQueries, ProposalClaims, JobRows, SourceRows, DeleteRows):
     def __init__(self, path: Path) -> None:
         self._lock = threading.Lock()
         self._db = sqlite3.connect(str(path), check_same_thread=False)
@@ -254,15 +255,6 @@ class Store(MapQueries, ProposalClaims, JobRows, SourceRows):
                 (map_id,),
             )
         )
-
-    def delete_map(self, map_id: str) -> None:
-        """Drop a map's rows from maps, scans, proposals and jobs."""
-        with self._lock:
-            self._db.execute("DELETE FROM maps WHERE id=?", (map_id,))
-            self._db.execute("DELETE FROM scans WHERE map_id=?", (map_id,))
-            self._db.execute("DELETE FROM proposals WHERE map_id=?", (map_id,))
-            self._db.execute("DELETE FROM jobs WHERE map_id=?", (map_id,))
-            self._db.commit()
 
     def rename_map(self, old: str, new: str) -> None:
         """Move scans, proposals and jobs from one map id to another in one transaction.

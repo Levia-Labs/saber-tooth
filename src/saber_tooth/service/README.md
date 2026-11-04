@@ -9,7 +9,7 @@ The layer between the CLI or HTTP routes and the engine modules. Routes are desc
 5. `fix.py`: one-click fix engine behind `Service.fix_map`; every fix verified against the map the earlier fixes left.
 6. `relight.py`: `Service.relight_map` and `environment_names`; a copy of a map in another vanilla environment with its lightshow rebuilt from the templates.
 7. `lightshow_set.py`: picks the learned or bundled lightshow set and reports it for `GET /api/lightshow`.
-8. `delete.py`: `DeleteMixin.delete_map` removes a map folder from disk (guarded to direct children of the levels folder) and its rows from the store.
+8. `delete.py`: `DeleteMixin.delete_map` removes map folders from disk (guarded to direct children of the levels folder) and their rows from the store, then re-indexes only the surviving chain members; also `delete_maps` for batches.
 9. `rename.py`: `RenameMixin.rename_map` and `validate_map_name`: new song name in Info.dat, folder rename, and `Store.rename_map` moving the rows to the new id.
 10. `generate.py`: one-step generation behind `Service.run_generate`: analyse, build, fix in staging, then write the finished folder.
 11. `crop.py`: crop highlight, attached as `Service.crop_timeline`, `crop_check` and `crop_map`; the timeline uses the stored scan analysis and never calls the analyser.

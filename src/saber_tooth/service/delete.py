@@ -4,34 +4,25 @@ A delete never re-indexes the library: it drops the rows of the removed maps in 
 and re-indexes only the surviving members of the same chain (original and `[saber-tooth]` copies).
 """
 
-import re
 import shutil
 from pathlib import Path
 
+from saber_tooth.copynames import is_fixed_copy, strip_fixed
 from saber_tooth.map_folder_guard import check_map_folder
 from saber_tooth.safe_fs import LevelsRoot, WriteRefused
 from saber_tooth.service.errors import DeleteRefused, MapNotFound
 from saber_tooth.store import Store
 
-_COPY_TAIL = re.compile(r"(?: \[saber-tooth(?: \d+)?\])+$")
 
-
-def chain_base(folder: str) -> str:
-    """The folder name without any trailing ` [saber-tooth]` / ` [saber-tooth N]` suffixes."""
-    return _COPY_TAIL.sub("", folder)
+def _in_chain(name: str, base: str) -> bool:
+    return name == base or (is_fixed_copy(name) and strip_fixed(name) == base)
 
 
 def chain_members(names: list[str], removed: list[str]) -> list[str]:
-    """Names among `names` in the same chain as any folder in `removed` (exclusive of those)."""
-    bases = {chain_base(r) for r in removed}
+    """Names among `names` in the same chain as any folder in `removed` (not those themselves)."""
+    bases = {strip_fixed(r) for r in removed}
     gone = set(removed)
     return sorted(n for n in names if n not in gone and any(_in_chain(n, b) for b in bases))
-
-
-def _in_chain(name: str, base: str) -> bool:
-    if name == base:
-        return True
-    return name.startswith(base) and _COPY_TAIL.fullmatch(name[len(base) :]) is not None
 
 
 class DeleteMixin:
