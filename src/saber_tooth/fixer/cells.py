@@ -3,6 +3,7 @@
 import math
 from collections.abc import Iterator
 
+from saber_tooth.checks import LOCAL_REACH_S
 from saber_tooth.fixer.ops import Delete, Op
 from saber_tooth.fixer.verify import Context
 from saber_tooth.model import CUT_VECTORS, Color, Cut, Note
@@ -55,7 +56,11 @@ def swing_pair(ctx: Context) -> tuple[Swing, Swing] | None:
 def following_swing(ctx: Context, s: Swing) -> Swing | None:
     """The same hand's swing right after `s`, or None at the end of the hand's play."""
     later = [x for x in ctx.swings()[s.hand] if x.beat > s.beat + EPS]
-    return later[0] if later else None
+    # past the reach of the rules a longer gap holds no parity finding, and a windowed
+    # check sees no further than that
+    if later and later[0].seconds - s.seconds <= LOCAL_REACH_S:
+        return later[0]
+    return None
 
 
 def swing_of(ctx: Context, note: Note) -> Swing | None:

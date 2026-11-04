@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from functools import lru_cache
 
 from saber_tooth.analysis import Analysis
-from saber_tooth.checks import MAP_RULES, Finding, check_difficulty, run_checks
+from saber_tooth.checks import MAP_RULES, REACH_S, Finding, check_difficulty, run_checks
 from saber_tooth.checks.constants import SLIDER_S
 from saber_tooth.checks.slicing import beat_range
 from saber_tooth.fixer import window
@@ -218,6 +218,21 @@ def _before(
     return found
 
 
+def trades_findings(after: list[Finding], before: list[Finding], rule: str) -> bool:
+    """True when the fix swaps findings instead of removing one: the target rule must lose a
+    finding and no other rule may gain one. A new finding that touches an old one of its rule
+    passes `new_findings`, which lets two fixes undo each other forever."""
+    if REACH_S.get(rule) is None:  # global and map-level rules split and merge, counts mean little
+        return False
+    was = Counter((f.difficulty, f.rule) for f in before if REACH_S.get(f.rule))
+    now = Counter((f.difficulty, f.rule) for f in after if REACH_S.get(f.rule))
+    gained = any(n > was[k] for k, n in now.items() if k[1] != rule)
+    lost = sum(n for k, n in was.items() if k[1] == rule) > sum(
+        n for k, n in now.items() if k[1] == rule
+    )
+    return gained or not lost
+
+
 def accepts(ctx: Context, ops: list[Op]) -> list[Op] | None:
     """The fixed map must lose the target finding and gain no new one."""
     try:
@@ -231,7 +246,9 @@ def accepts(ctx: Context, ops: list[Op]) -> list[Op] | None:
     target = next((b for b in before if _same(b, ctx.finding)), None)
     if target is None or _target_remains(target, before, after):
         return None
-    return None if new_findings(after, before) else fixed
+    if new_findings(after, before) or trades_findings(after, before, ctx.finding.rule):
+        return None
+    return fixed
 
 
 def _changed(

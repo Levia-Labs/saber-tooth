@@ -104,4 +104,12 @@ def run_checks(
     return sorted(out, key=Finding.sort_key)
 
 
-__all__ = ["MAP_RULES", "REACH_S", "RULES", "Finding", "check_difficulty", "run_checks"]
+__all__ = [
+    "LOCAL_REACH_S",
+    "MAP_RULES",
+    "REACH_S",
+    "RULES",
+    "Finding",
+    "check_difficulty",
+    "run_checks",
+]
