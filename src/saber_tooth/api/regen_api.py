@@ -4,7 +4,7 @@ from fastapi import FastAPI
 
 from saber_tooth.api.core import Api, ApiError
 from saber_tooth.findings_summary import findings_summary, maps_with_findings
-from saber_tooth.service.regenerate import generated_ids, map_source
+from saber_tooth.generated import generated_ids, is_generated
 
 
 def _queue(api: Api, kind: str, ids: list[str]) -> dict:
@@ -14,14 +14,14 @@ def _queue(api: Api, kind: str, ids: list[str]) -> dict:
 
 def regenerate_one(api: Api, raw: str) -> dict:
     map_id = api.readable_map(raw)
-    if map_source(api.store, map_id) is None:
+    if not is_generated(api.store, api.service.levels, map_id):
         raise ApiError(409, "only generated maps can be regenerated")
     job = api.jobs.submit("regenerate", {"map_id": map_id}, map_id=map_id, dedupe=True)
     return {"job": job}
 
 
 def regenerate_all(api: Api) -> dict:
-    return _queue(api, "regenerate", generated_ids(api.store))
+    return _queue(api, "regenerate", generated_ids(api.store, api.service.levels))
 
 
 def fix_all(api: Api) -> dict:
@@ -43,4 +43,4 @@ def register(app: FastAPI, api: Api) -> None:
 
     @app.get("/api/findings/summary")
     def _summary():
-        return findings_summary(api.store)
+        return findings_summary(api.store, api.service.levels)

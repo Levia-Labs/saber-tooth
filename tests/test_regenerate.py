@@ -122,7 +122,7 @@ def test_summary_counts_per_rule_and_severity_and_maps(tmp_path):
     mid = map_id_for(NAME)
     findings = [_finding("a"), _finding("a"), _finding("b", "error")]
     svc.store.replace_open_proposals(mid, [], {"findings": findings, "analysis": None})
-    out = findings_summary(svc.store)
+    out = findings_summary(svc.store, svc.levels)
     assert {(r["rule"], r["severity"]): r["findings"] for r in out["rules"]} == {
         ("a", "warn"): 2,
         ("b", "error"): 1,
@@ -177,3 +177,50 @@ def test_regenerate_keeps_the_environment_a_relight_job_set(gen):
     gen.store._exec("UPDATE jobs SET status='done' WHERE id=?", (job,))
     regenerate_map(gen, result["map_id"])
     assert load_map(folder).info.environment == env
+
+
+def test_regenerate_sends_the_kept_egg_to_the_analyser_as_ogg(tmp_path):
+    seen = []
+
+    def handler(request):
+        seen.append(request.read())
+        headers = {"Content-Disposition": 'attachment; filename="song1_tracks.zip"'}
+        return httpx.Response(200, content=b"zip", headers=headers)
+
+    _project(tmp_path / "up")
+    client = AnalyserClient("http://analyser", tmp_path / "up", httpx.MockTransport(handler))
+    levels, data = tmp_path / "levels", tmp_path / "data"
+    levels.mkdir()
+    data.mkdir()
+    svc = Service(levels, data, Store(data / "s.db"), client, _copy)
+    svc.probe_tags = lambda path: {}
+    result = _generated(svc)
+    seen.clear()
+    regenerate_map(svc, result["map_id"])
+    uploads = [b for b in seen if b"filename=" in b]
+    assert uploads and all(b'filename="song.ogg"' in b for b in uploads)
+
+
+def test_author_generated_maps_count_without_source(gen):
+    from saber_tooth.generated import generated_ids
+
+    svc = gen
+    result = _generated(svc)
+    mid, folder = result["map_id"], svc.levels / result["folder"]
+    svc.store._exec("UPDATE maps SET source=NULL WHERE id=?", (mid,))
+    assert generated_ids(svc.store, svc.levels) == [mid]
+    assert findings_summary(svc.store, svc.levels)["maps"]["generated"] == 1
+    (folder / "song.egg").unlink()
+    assert generated_ids(svc.store, svc.levels) == []
+    assert findings_summary(svc.store, svc.levels)["maps"]["generated"] == 0
+
+
+def test_fixed_copies_are_not_generated(gen):
+    from saber_tooth.generated import generated_ids
+
+    svc = gen
+    mid = _generated(svc)["map_id"]
+    svc.store._exec(
+        "UPDATE maps SET source=NULL, folder=folder||' [saber-tooth]' WHERE id=?", (mid,)
+    )
+    assert generated_ids(svc.store, svc.levels) == []
