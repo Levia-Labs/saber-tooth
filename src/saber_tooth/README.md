@@ -27,7 +27,7 @@ Top-level modules:
 7. `jobs.py`: a dispatcher drains the `jobs` table oldest first through handlers registered per kind, up to the `max_concurrent_jobs` setting, never two jobs on one map; queued jobs survive a restart. `jobs_claim.py` picks the next eligible row, `jobs_child.py` and `jobs_service.py` run scan, fix and relight in spawned worker processes when the cap is above one ([ADR 0013](../../docs/adr/0013-worker-processes-for-parallel-jobs.md)), `jobs_errors.py` holds the shared exceptions.
 8. `store_jobs.py`: job rows, the durable queue: create (with per-map dedupe), claim oldest first, progress, cancel, lists, restart cleanup, finished-row retention (one per map, global cap).
 9. `safe_fs.py`: path safety helpers.
-10. `cli.py`: the `saber-tooth` command line.
+10. `cli.py`, `cli_style.py`: the `saber-tooth` command line and its style commands.
 11. `autofix.py`: offline scan, approve-all, apply and re-check loop behind `saber-tooth autofix`.
 12. `songmeta.py`: song name, sub name and author from a video title (the analyser's project name) or audio tags; `describe` prints title, artist, duration and bpm of an audio file or map (`task st:songmeta`).
 13. `environments.py`, `style.py`: the catalogue of environments with a learned template (`task st:environments`) and the generation style (environment and seven colours; validated input, else chosen from tempo, energy and brightness).

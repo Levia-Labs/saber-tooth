@@ -12,11 +12,11 @@ import httpx
 
 from saber_tooth.checks import Finding, run_checks
 from saber_tooth.cli_library import register as register_library
-from saber_tooth.environments import COLOR_ROLES, format_catalogue
+from saber_tooth.cli_style import register as register_style
+from saber_tooth.cli_style import style_from_args
+from saber_tooth.environments import COLOR_ROLES
 from saber_tooth.lightshow import learn
 from saber_tooth.mapio import MapParseError, load_map
-from saber_tooth.songmeta import describe
-from saber_tooth.style import parse_style
 from saber_tooth.timing import Timing
 
 MAX_LINES = 20
@@ -197,42 +197,6 @@ def wait_job(
             time.sleep(interval)
 
 
-def style_from_args(args: argparse.Namespace) -> dict | None:
-    """The style from --style JSON, --environment and --color ROLE=#rrggbb; ValueError if bad."""
-    raw: dict = {}
-    if args.style:
-        try:
-            raw = json.loads(args.style)
-        except ValueError:
-            raise ValueError("--style must be JSON") from None
-        if not isinstance(raw, dict):
-            raise ValueError("--style must be a JSON object")
-    if args.environment:
-        raw = {**raw, "environment": args.environment}
-    colors = dict(raw.get("colors") or {}) if isinstance(raw.get("colors"), dict) else {}
-    for item in args.color or []:
-        role, _, value = item.partition("=")
-        colors[role] = value
-    if colors:
-        raw = {**raw, "colors": colors}
-    style = parse_style(raw or None)
-    return style.to_dict() if style else None
-
-
-def _cmd_environments(args: argparse.Namespace) -> int:
-    print(format_catalogue())
-    return 0
-
-
-def _cmd_songmeta(args: argparse.Namespace) -> int:
-    try:
-        print(json.dumps(describe(Path(args.path)), ensure_ascii=False))
-    except (OSError, MapParseError, ValueError) as exc:
-        print(f"error: {exc}", file=sys.stderr)
-        return 1
-    return 0
-
-
 def _cmd_gen_url(args: argparse.Namespace) -> int:
     try:
         style = style_from_args(args)
@@ -274,11 +238,6 @@ def _parser() -> argparse.ArgumentParser:
     )
     g.add_argument("--wait", action="store_true", help="wait for the job and print its result")
     g.set_defaults(func=_cmd_gen_url)
-    ev = sub.add_parser("environments", help="list the environment catalogue")
-    ev.set_defaults(func=_cmd_environments)
-    sm = sub.add_parser("songmeta", help="print title, artist, duration and bpm as JSON")
-    sm.add_argument("path", help="audio file or map folder")
-    sm.set_defaults(func=_cmd_songmeta)
     sa = sub.add_parser("scan-api", help="ask the running API to scan one map")
     sa.add_argument("map_id")
     sa.add_argument("--api", default=DEFAULT_API)
@@ -289,6 +248,7 @@ def _parser() -> argparse.ArgumentParser:
     af.add_argument("--data", required=True)
     af.add_argument("--max-rounds", type=int, default=6)
     af.set_defaults(func=_cmd_autofix)
+    register_style(sub)
     register_library(sub)
     return p
 

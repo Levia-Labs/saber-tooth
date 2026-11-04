@@ -92,3 +92,17 @@ status: open
 class: tooling
 
 scripts/commit.py swallows the pre-commit hook output on abort; print the first error lines.
+
+## 15 Map-level fix failures lose their reason
+
+status: open
+class: bug
+
+service/fixrun.py map_level discards the reason for map-level fix failures, so they never reach the unfixed list shown on the Status tab.
+
+## 16 wide-jump fix oscillates on One More
+
+status: open
+class: bug
+
+fix-rate sample: 'One More' keeps 4 wide-jump warnings because every move or drop swaps the finding to a neighbour note. Needs a joint repair over the pair window.
