@@ -120,3 +120,10 @@ status: open
 class: bug
 
 st:smoke right after st:up: 'api facets' returned status 0 (timeout) while the library re-indexed; passed on rerun. Facets should answer from the existing index during re-index.
+
+## 19 Dense-map scan test sits at its 200 s limit
+
+status: open
+class: bug
+
+tests/test_scan_batches.py::test_scan_of_a_dense_map_stores_early_and_finishes_quickly takes 198-201 s on main against a 200 s wall-clock limit; it fails intermittently. Speed the scan or measure work, not wall time.
