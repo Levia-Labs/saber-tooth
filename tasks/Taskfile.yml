@@ -126,7 +126,7 @@ tasks:
         msg: "lane-done deletes a worktree and branch; rerun with CONFIRM=yes"
     cmds: ["CONFIRM=yes uv run python scripts/lane.py done {{.CLI_ARGS}}"]
   library-tidy:
-    desc: "One map per song, dry run unless --apply. Usage: task st:library-tidy -- [--base URL] [--apply]"
+    desc: "One map per song, dry run unless --apply. Usage: task st:library-tidy -- [--originals keep|drop] [--apply]"
     # --apply hard-deletes maps through the API; gate it behind CONFIRM=yes.
     preconditions:
       - sh: 'case " {{.CLI_ARGS}} " in *" --apply "*) test "{{.CONFIRM}}" = "yes" ;; esac'

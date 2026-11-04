@@ -9,7 +9,9 @@ first, then renames (data-deleting, hard delete of copies only).
 Talks only to the running API. --levels DIR adds folders the API list hides (id = first 12 hex of
 sha256 of the folder name).
 
-Usage: uv run python scripts/library_tidy.py [--base URL] [--levels DIR] [--apply]
+Usage: uv run python scripts/library_tidy.py [--base URL] [--levels DIR] [--originals keep|drop]
+       [--apply]
+--originals drop also deletes the original of each chain that has a copy (no keep_folder).
 Exit: 0 ok, 1 a request failed, 2 usage.
 """
 
@@ -46,6 +48,7 @@ class Plan:
     keep: tuple[Item, ...]
     delete: tuple[Item, ...]
     rename: tuple[tuple[Item, str], ...]
+    drop_ids: frozenset[str] = frozenset()
 
 
 def map_id_for(folder: str) -> str:
@@ -85,15 +88,17 @@ def pick(copies: list[Item]) -> Item:
     )
 
 
-def plan(items: list[Item]) -> Plan:
+def plan(items: list[Item], originals: str = "keep") -> Plan:
     chains: dict[str, list[Item]] = {}
     for item in items:
         chains.setdefault(chain_key(item.folder)[0], []).append(item)
-    keep, delete, rename = [], [], []
+    keep, delete, rename, drop_ids = [], [], [], set()
     for key in sorted(chains):
         members = chains[key]
         copies = [i for i in members if chain_key(i.folder)[1] > 0]
-        keep.extend(i for i in members if i not in copies)
+        others = [i for i in members if i not in copies]
+        drop = originals == "drop" and bool(copies)
+        (delete if drop else keep).extend(others)
         rename.extend(
             (i, new_name(i)) for i in members if i.folder.startswith("st-") and needs_rename(i)
         )
@@ -101,10 +106,12 @@ def plan(items: list[Item]) -> Plan:
             continue
         kept = pick(copies)
         keep.append(kept)
+        if drop:
+            drop_ids.add(kept.id)
         delete.extend(sorted((i for i in copies if i is not kept), key=lambda i: i.folder))
         if needs_rename(kept):
             rename.append((kept, new_name(kept)))
-    return Plan(len(chains), tuple(keep), tuple(delete), tuple(rename))
+    return Plan(len(chains), tuple(keep), tuple(delete), tuple(rename), frozenset(drop_ids))
 
 
 def new_name(item: Item) -> str:
@@ -163,7 +170,10 @@ def apply_plan(
         if status not in (200, 204, 404):
             failures.append(f"delete {item.id} {item.folder}: HTTP {status}")
     for item, name in result.rename:
-        body = json.dumps({"name": name, "keep_folder": True}).encode("utf-8")
+        payload = {"name": name}
+        if item.id not in result.drop_ids:
+            payload["keep_folder"] = True
+        body = json.dumps(payload).encode("utf-8")
         status, _ = request("PATCH", f"{base}/api/maps/{item.id}", body)
         if status != 200:
             failures.append(f"rename {item.id} {item.folder}: HTTP {status}")
@@ -187,6 +197,7 @@ def main(argv: list[str] | None = None, request: Request = http) -> int:
     ap = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     ap.add_argument("--base", default="http://127.0.0.1:8100")
     ap.add_argument("--levels", type=Path, help="CustomLevels folder to find hidden maps")
+    ap.add_argument("--originals", choices=("keep", "drop"), default="keep")
     ap.add_argument("--apply", action="store_true", help="execute the deletes and renames")
     args = ap.parse_args(argv)
     try:
@@ -196,7 +207,7 @@ def main(argv: list[str] | None = None, request: Request = http) -> int:
     except (RuntimeError, OSError, ValueError) as exc:
         print(f"FAIL {exc}")
         return 1
-    result = plan(items)
+    result = plan(items, args.originals)
     print(summary(result))
     if not args.apply:
         for line in examples(result):

@@ -143,3 +143,45 @@ def test_main_dry_and_apply(capsys):
     request, _ = make_request(pages, fail=("b",))
     assert lt.main(["--base", "http://x", "--apply"], request) == 1
     assert "failed=1" in capsys.readouterr().out
+
+
+def test_drop_originals_only_in_chains_with_copy():
+    items = [
+        Item("o", F, "Song", 200),
+        Item("c", F + " [saber-tooth]", "Song [saber-tooth]", 200),
+        Item("lone", "zz (Other - Me)", "Other", 200),
+        Item("g", "st-1", "G [saber-tooth]", 90),
+    ]
+    p = lt.plan(items, originals="drop")
+    assert sorted(i.id for i in p.keep) == ["c", "g", "lone"]
+    assert [i.id for i in p.delete] == ["o"]
+    assert p.drop_ids == frozenset({"c"})
+
+
+def test_drop_rename_has_no_keep_folder():
+    items = [Item("o", F, "Song", 200), Item("c", F + " [saber-tooth]", "Song [crop 1-2]", 200)]
+    request, calls = make_request({})
+    count, _ = lt.apply_plan("http://x", lt.plan(items, originals="drop"), request)
+    assert count == 0
+    assert json.loads(calls[-1][2]) == {"name": "Song [saber-tooth]"}
+    calls.clear()
+    lt.apply_plan("http://x", lt.plan(items), request)
+    assert json.loads(calls[-1][2])["keep_folder"] is True
+
+
+@given(
+    st.lists(
+        st.tuples(st.integers(1, 3), st.integers(1, 3), st.integers(0, 100)),
+        min_size=1,
+        max_size=8,
+    )
+)
+def test_drop_keeps_one_copy_per_chain(rows):
+    items = [
+        Item(str(i), F + " [saber-tooth]" * (g - 1) + f" [saber-tooth {n}]", "S", d)
+        for i, (g, n, d) in enumerate(rows)
+    ]
+    items.append(Item("orig", F, "S", 100))
+    p = lt.plan(items, originals="drop")
+    assert len(p.keep) == 1 and p.keep[0].id != "orig"
+    assert len(p.keep) + len(p.delete) == len(items)
