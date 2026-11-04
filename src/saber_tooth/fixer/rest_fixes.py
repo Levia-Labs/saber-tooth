@@ -1,14 +1,53 @@
-"""Candidate generator for the no-rest rule: thin out the quietest stretch into a rest zone."""
+"""Candidate generator for the no-rest rule: thin out quiet stretches into rest zones."""
 
+import math
+from bisect import bisect_left
 from collections.abc import Iterator
 
 from saber_tooth.analysis import onset_density
-from saber_tooth.checks.gaps import REST_BEATS, REST_MAX_NOTES
+from saber_tooth.checks.gaps import DEFAULT_REST_SPAN_S, REST_BEATS, REST_MAX_NOTES, REST_SPAN_S
 from saber_tooth.fixer.ops import Delete, Op
 from saber_tooth.fixer.verify import Context
 
-MAX_ZONES = 6  # candidate rest windows tried per finding
+MAX_VARIANTS = 6  # candidate rest-zone sets tried per finding
+SPAN_SHARE = 0.8  # each play stretch left between zones aims at this share of the span
 EPS = 1e-6
+
+
+def _zone_count(ctx: Context) -> int:
+    """Rest zones that cut the finding's stretch into pieces shorter than the tier's span."""
+    f, t = ctx.finding, ctx.timing
+    seconds = t.to_seconds(f.beat_end) - t.to_seconds(f.beat_start)
+    span = REST_SPAN_S.get(f.difficulty, DEFAULT_REST_SPAN_S) * SPAN_SHARE
+    return max(1, math.ceil(seconds / span) - 1)
+
+
+def _slot_windows(ctx: Context, notes, lo: float, hi: float, centre: float) -> list[tuple]:
+    """Rest windows anchored on a note inside [lo, hi - REST_BEATS], quietest first."""
+    beats = [n.beat for n in notes]  # sorted: the notes of a difficulty are
+    windows = []
+    for anchor in notes:
+        a, b = anchor.beat, anchor.beat + REST_BEATS
+        if a < lo - EPS:
+            continue
+        if b > hi + EPS:
+            break
+        count = bisect_left(beats, b - EPS) - bisect_left(beats, a - EPS)
+        quiet = 0.0
+        if ctx.analysis is not None:
+            quiet = onset_density(ctx.analysis, ctx.timing.to_seconds(a), ctx.timing.to_seconds(b))
+        windows.append((quiet, max(count - REST_MAX_NOTES, 0), abs(a + 4 - centre), a, b))
+    return sorted(windows)
+
+
+def _drops(notes, a: float, b: float) -> list:
+    inside = [n for n in notes if a - EPS <= n.beat < b - EPS]
+    half = a + REST_BEATS / 2
+    keep = {
+        min(inside, key=lambda n: abs(n.beat - a)),
+        min(inside, key=lambda n: abs(n.beat - half)),
+    }
+    return [n for n in inside if n not in keep]
 
 
 def no_rest(ctx: Context) -> Iterator[list[Op]]:
@@ -16,26 +55,20 @@ def no_rest(ctx: Context) -> Iterator[list[Op]]:
     notes = [n for n in d.notes if f.beat_start - EPS <= n.beat <= f.beat_end + EPS]
     if len(notes) <= REST_MAX_NOTES:
         return
-    centre = (f.beat_start + f.beat_end) / 2
-    windows = []
-    for anchor in notes:
-        lo, hi = anchor.beat, anchor.beat + REST_BEATS
-        if hi > f.beat_end + EPS:
-            break
-        inside = [n for n in notes if lo - EPS <= n.beat < hi - EPS]
-        quiet = 0.0
-        if ctx.analysis is not None:
-            quiet = onset_density(
-                ctx.analysis, ctx.timing.to_seconds(lo), ctx.timing.to_seconds(hi)
-            )
-        windows.append((quiet, max(len(inside) - REST_MAX_NOTES, 0), abs(lo + 4 - centre), lo, hi))
-    for _, _, _, lo, hi in sorted(windows)[:MAX_ZONES]:
-        inside = [n for n in notes if lo - EPS <= n.beat < hi - EPS]
-        half = lo + REST_BEATS / 2
-        keep = {
-            min(inside, key=lambda n: abs(n.beat - lo)),
-            min(inside, key=lambda n: abs(n.beat - half)),
-        }
-        drop = [n for n in inside if n not in keep]
+    zones = _zone_count(ctx)
+    width = (f.beat_end - f.beat_start) / (zones + 1)
+    slots = []
+    for i in range(zones):
+        centre = f.beat_start + (i + 1) * width
+        lo = max(centre - width / 2, f.beat_start)
+        hi = min(centre + width / 2, f.beat_end)
+        slots.append(_slot_windows(ctx, notes, lo, hi, centre))
+    seen = set()
+    for variant in range(MAX_VARIANTS):
+        picks = tuple(w[min(variant, len(w) - 1)][3:5] for w in slots if w)
+        if not picks or picks in seen:
+            continue
+        seen.add(picks)
+        drop = [n for a, b in picks for n in _drops(notes, a, b)]
         if drop:
             yield [Delete(d.name, n) for n in drop]

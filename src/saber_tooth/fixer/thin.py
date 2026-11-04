@@ -6,6 +6,7 @@ import math
 from saber_tooth.checks import check_difficulty
 from saber_tooth.checks.constants import SLIDER_S
 from saber_tooth.fixer.layout_fixes import in_wall
+from saber_tooth.lightshow.pacing import pace_show
 from saber_tooth.mapio.write import BOX_KEYS, FX_KEY
 from saber_tooth.model import CUT_VECTORS, OPPOSITE, Bomb, Cut, Difficulty, Note
 from saber_tooth.profiles import WALL_TIERS, Profile
@@ -106,6 +107,8 @@ def thin(source: Difficulty, profile: Profile, timing: Timing) -> Difficulty | N
         bpm_events=copy.deepcopy(source.bpm_events),
         raw={k: copy.deepcopy(source.raw[k]) for k in (*BOX_KEYS, FX_KEY) if k in source.raw},
     )
+    out.events, kept = pace_show(out.events, out.raw, timing)  # the copied show must not strobe
+    out.raw.update(kept)
     for _ in range(MAX_ROUNDS):
         out.notes = reflow(notes, timing)
         out.bombs = _free_bombs(source.bombs, out.notes)

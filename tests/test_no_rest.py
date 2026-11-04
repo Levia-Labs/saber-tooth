@@ -100,3 +100,12 @@ def test_fixer_opens_a_rest_zone():
     assert p is not None
     fixed = fx.apply_ops(m, p.ops)
     assert "no-rest" not in {g.rule for g in run_checks(fixed, difficulty="Expert")}
+
+
+def test_fixer_opens_enough_rest_zones_for_a_very_long_stretch():
+    m = bm(stream(dense(REST_SPAN_S["Expert"] * 5)).notes)
+    f = next(f for f in run_checks(m, difficulty="Expert") if f.rule == "no-rest")
+    p = fx.propose(m, f, None, None, 1)
+    assert p is not None
+    fixed = fx.apply_ops(m, p.ops)
+    assert "no-rest" not in {g.rule for g in run_checks(fixed, difficulty="Expert")}
