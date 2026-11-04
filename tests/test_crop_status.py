@@ -70,3 +70,14 @@ def test_crop_outputs_never_qualify_and_fixed_copies_follow_the_rule(tmp_path):
     _add(store, "d", 400.0, "none", "Song [saber-tooth]")
     status = {r["id"]: r["status"] for r in store.query_maps()[0]}
     assert status == {"a": "ok", "b": "ok", "c": "ok", "d": "crop"}
+
+
+def test_status_follows_the_configured_crop_length(tmp_path):
+    store = _store(tmp_path)
+    _add(store, "m", 200.0, "none")
+    assert store.query_maps()[0][0]["status"] == "crop"
+    store.crop_min_length_s = lambda: 300.0
+    assert store.query_maps()[0][0]["status"] == "ok"
+    assert store.get_map("m")["status"] == "ok"
+    store.crop_min_length_s = lambda: 100.0
+    assert store.facets()["status"]["crop"] == 1

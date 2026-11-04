@@ -1,6 +1,7 @@
 import type { KeyboardEvent, PointerEvent } from "react";
 import { clock } from "../lib/crop";
-import type { Edge } from "./NpsChart";
+import { timeLabels } from "../lib/cropauto";
+import type { Edge, Span } from "./NpsChart";
 
 export const W = 1000;
 export const H = 160;
@@ -56,5 +57,33 @@ export function Handle({ edge, seconds, duration, onDown, onStep, onFocus, onBlu
       <line x1={x} x2={x} y1={0} y2={H} />
       <rect x={x - 6} y={H / 2 - 14} width={12} height={28} rx={3} />
     </g>
+  );
+}
+
+/** A row above the chart: the start time right of the left bound, the end time left of the right
+ * bound and the crop length centred between them. A narrow selection shows the length alone. */
+export function CropTimes({ selection, duration }: { selection: Span; duration: number }) {
+  const t = timeLabels(selection.start_s, selection.end_s, duration);
+  const centre = Math.min(94, Math.max(6, (t.left + t.right) / 2));
+  return (
+    <div className="nps-times" data-narrow={t.narrow} aria-label="Crop times">
+      {t.narrow ? (
+        <span className="nps-time nps-time-length" style={{ left: `${centre}%` }}>
+          {t.length}
+        </span>
+      ) : (
+        <>
+          <span className="nps-time nps-time-start" style={{ left: `${t.left}%` }}>
+            {t.start}
+          </span>
+          <span className="nps-time nps-time-length" style={{ left: `${centre}%` }}>
+            {t.length}
+          </span>
+          <span className="nps-time nps-time-end" style={{ right: `${100 - t.right}%` }}>
+            {t.end}
+          </span>
+        </>
+      )}
+    </div>
   );
 }

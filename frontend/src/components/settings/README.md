@@ -9,3 +9,4 @@ Cards of the Settings page.
 5. `ModStatusView.tsx`: game version, installed and available versions, dependencies.
 6. `GameFolder.tsx`: the game folder setting.
 7. `CardHead.tsx`: icon tile and title shared by the cards.
+8. `CropLength.tsx`: the "Qualified for crop" length as an mm:ss input, saved with the Save length button.

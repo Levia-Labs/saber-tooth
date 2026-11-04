@@ -12,5 +12,7 @@ Crops a map to a 1 or 2 minute highlight on song-part boundaries. Plan: [crop-hi
 8. `write.py`: `FADE_IN_S`, `stage_cropped` and `write_cropped`, the cropped folder staged as a partial and committed through `LevelsWriter` with the cut song and the cover.
 9. `replace.py`: `replace_folder`, the guarded swap of a staged folder for the original map folder with rollback.
 10. `timeline.py`: `Timeline`, `build_timeline`, `resolve_window` and `timeline_dict`, the one-call assembly of grid, series, sections and plans, and the check of a requested window.
+11. `valley.py`: `audio_series`, `cut_valley` and helpers, the quiet-audio and zero-note score of a cut point.
+12. `suggest.py`: `suggest_crops`, Auto crop: points out of 100 with a breakdown, a seeded local search over bar and phrase moves, nothing below 70 points.
 
 Tests: `task st:test -- tests/test_crop_phrases.py tests/test_crop_nps.py tests/test_crop_sections.py tests/test_crop_window.py tests/test_crop_shift.py tests/test_crop_info.py tests/test_crop_write.py tests/test_crop_timeline.py`.

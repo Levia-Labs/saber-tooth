@@ -16,7 +16,7 @@ from saber_tooth.mods.playlistmanager import PlaylistManagerMod
 from saber_tooth.resources import MAX_WORKERS, snapshot
 from saber_tooth.settings import SettingError, Settings
 
-SETTING_KEYS = ("max_concurrent_jobs", "game_dir")
+SETTING_KEYS = ("max_concurrent_jobs", "game_dir", "crop_min_length_s")
 
 
 def new_beatmods() -> BeatMods:
@@ -35,6 +35,8 @@ class SettingsApi:
             running=lambda: game_running(),
         )
         # the pool reads the cap on every pass, so a saved change applies to the next job
+        # the library status view reads the crop length on every query
+        api.store.crop_min_length_s = self.settings.crop_min_length_s
         api.jobs.set_limit(lambda: min(self.settings.max_concurrent_jobs(), MAX_WORKERS))
 
     def system(self) -> dict:
@@ -52,6 +54,7 @@ class SettingsApi:
             "max_concurrent_jobs": self.settings.max_concurrent_jobs(),
             "recommended_max": snapshot()["recommended_max"],
             "game_dir": None if game is None else str(game),
+            "crop_min_length_s": self.settings.crop_min_length_s(),
         }
 
     def update(self, body: object) -> dict:
@@ -62,6 +65,8 @@ class SettingsApi:
                 recommended = snapshot()["recommended_max"]
                 self.settings.set_max_concurrent_jobs(body["max_concurrent_jobs"], recommended)
                 self.api.jobs.poke()
+            if "crop_min_length_s" in body:
+                self.settings.set_crop_min_length_s(body["crop_min_length_s"])
             if "game_dir" in body:
                 self.settings.set_game_dir(body["game_dir"])
         except SettingError as exc:

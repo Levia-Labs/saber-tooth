@@ -3,12 +3,13 @@
 import functools
 import sqlite3
 import threading
+from collections.abc import Callable
 
 STATUS_VALUES = (
     "unreadable", "error", "warn", "scanning", "applying", "fixing", "queued", "incomplete",
     "unscanned", "crop", "ok",
 )  # fmt: skip
-CROP_MIN_LENGTH_S = 150.0  # a good map longer than 2.5 minutes qualifies for a crop
+CROP_MIN_LENGTH_S = 150.0  # default: a good map longer than 2.5 minutes qualifies for a crop
 FIXED_COPY_SUFFIX = " [saber-tooth]"  # folder suffix Fix gives the copy it writes
 STATUS_FILTERS = {"all", *STATUS_VALUES}
 MAX_ENVS = 50
@@ -57,7 +58,11 @@ SORT_KEYS = {
     "levels": f"levels IS NULL OR levels = 0, ({_levels_height()}) * 8 + ({_levels_bits()})",
 }
 _TIE_BREAK = "lower(title) ASC, id ASC"
-_MAP_VIEW = f"""
+
+
+@functools.cache
+def _map_view(crop_min: float) -> str:
+    return f"""
 SELECT m.id, m.folder, m.title, m.mapper, m.environment, m.parse_error, s.scanned_at,
   m.bpm, m.duration_s, m.levels,
   COALESCE((SELECT count(*) FROM json_each(s.keys_json)
@@ -87,7 +92,7 @@ SELECT m.id, m.folder, m.title, m.mapper, m.environment, m.parse_error, s.scanne
        WHEN (SELECT count(*) FROM json_each(s.keys_json)
              WHERE json_extract(value, '$.severity') = 'error') > 0 THEN 'error'
        WHEN (SELECT count(*) FROM json_each(s.keys_json)) > 0 THEN 'warn'
-       WHEN m.duration_s > {CROP_MIN_LENGTH_S}
+       WHEN m.duration_s > {crop_min!r}
             AND instr(m.folder, ' [1 min]') = 0 AND instr(m.folder, ' [2 min]') = 0
             AND instr(m.folder, ' [crop ') = 0 THEN 'crop'
        ELSE 'ok' END AS status
@@ -96,7 +101,8 @@ LEFT JOIN jobs j ON j.id = (
   SELECT a.id FROM jobs a WHERE a.map_id = m.id AND a.kind IN ('scan', 'apply', 'fix')
   AND a.status IN ('queued', 'running')
   ORDER BY (a.status = 'running') DESC, a.created_at DESC, a.id LIMIT 1)
-"""  # noqa: S608 - interpolates only the constants ALL_LEVELS, FIXED_COPY_SUFFIX, CROP_MIN_LENGTH_S
+"""  # noqa: S608 - interpolates only ALL_LEVELS, FIXED_COPY_SUFFIX and a float
+
 
 # Lists and facets hide an original once its fixed copy exists; by-id lookups still find it.
 _VISIBLE = "fixed_copy_id IS NULL"
@@ -138,25 +144,27 @@ def _where(shape: tuple) -> str:
 # Statement text is assembled only from constants, whitelisted keys and runs of "?". Request input
 # never reaches SQL text: it selects a statement by key and travels as bound parameters.
 @functools.cache
-def _count_sql(shape: tuple) -> str:
-    return f"SELECT count(*) FROM ({_MAP_VIEW}) {_where(shape)}"  # noqa: S608
+def _count_sql(shape: tuple, crop_min: float) -> str:
+    return f"SELECT count(*) FROM ({_map_view(crop_min)}) {_where(shape)}"  # noqa: S608
 
 
 @functools.cache
-def _page_sql(shape: tuple, key: str, direction: str) -> str:
+def _page_sql(shape: tuple, key: str, direction: str, crop_min: float) -> str:
     order = SORT_KEYS[key]
     d = "DESC" if direction == "DESC" else "ASC"
     return (
-        f"SELECT * FROM ({_MAP_VIEW}) {_where(shape)}"  # noqa: S608
+        f"SELECT * FROM ({_map_view(crop_min)}) {_where(shape)}"  # noqa: S608
         f" ORDER BY {order} {d}, {_TIE_BREAK} LIMIT ? OFFSET ?"
     )
 
 
-_ONE_SQL = f"SELECT * FROM ({_MAP_VIEW}) WHERE id=?"  # noqa: S608
-_FACET_SQL = (
-    f"SELECT status, environment, mapper, levels, bpm, duration_s FROM ({_MAP_VIEW})"  # noqa: S608
-    f" WHERE {_VISIBLE}"
-)
+def _one_sql(crop_min: float) -> str:
+    return f"SELECT * FROM ({_map_view(crop_min)}) WHERE id=?"  # noqa: S608
+
+
+def _facet_sql(crop_min: float) -> str:
+    cols = "status, environment, mapper, levels, bpm, duration_s"
+    return f"SELECT {cols} FROM ({_map_view(crop_min)}) WHERE {_VISIBLE}"  # noqa: S608
 
 
 def _ranked(counts: dict[str, int]) -> list[dict]:
@@ -172,6 +180,8 @@ def _span(values: list) -> dict:
 class MapQueries:
     _lock: threading.Lock
     _db: sqlite3.Connection
+    # the settings layer swaps this for the saved "Qualified for crop" length
+    crop_min_length_s: Callable[[], float] = staticmethod(lambda: CROP_MIN_LENGTH_S)
 
     def _query(self, sql: str, args: tuple = ()) -> list[sqlite3.Row]:
         raise NotImplementedError
@@ -227,8 +237,9 @@ class MapQueries:
         args: list = [*statuses, *envs, *mappers, *mask_args, *([needle] if needle else [])]
         args += [v for v in bounds if v is not None]
         shape = (len(statuses), len(envs), len(mappers), mode, search, ranges)
-        count = _count_sql(shape)
-        page = _page_sql(shape, sort, order.upper())
+        crop_min = float(self.crop_min_length_s())
+        count = _count_sql(shape, crop_min)
+        page = _page_sql(shape, sort, order.upper(), crop_min)
         with self._lock:
             total = self._db.execute(count, args).fetchone()[0]
             rows = self._db.execute(page, [*args, limit, offset]).fetchall()
@@ -239,7 +250,7 @@ class MapQueries:
 
     def facets(self) -> dict:
         """Counts per status, environment, mapper and level over every map, ignoring any filter."""
-        rows = self._query(_FACET_SQL)
+        rows = self._query(_facet_sql(float(self.crop_min_length_s())))
         status: dict[str, int] = {}
         envs: dict[str, int] = {}
         mappers: dict[str, int] = {}
@@ -266,7 +277,7 @@ class MapQueries:
         }
 
     def get_map(self, map_id: str) -> dict | None:
-        rows = self._query(_ONE_SQL, (map_id,))
+        rows = self._query(_one_sql(float(self.crop_min_length_s())), (map_id,))
         return dict(rows[0]) if rows else None
 
     def set_bs(self, map_id: str, bs_id: str, bs_hash: str) -> None:

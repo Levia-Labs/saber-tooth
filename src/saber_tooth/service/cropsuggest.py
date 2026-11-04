@@ -19,7 +19,7 @@ def _stamp(folder: Path) -> tuple:
 def _body(map_id: str, tl) -> dict:
     picks = suggest_crops(
         tl.series, tl.hardest, tl.grid.bars, tl.timing.to_seconds, tl.sections.boundaries,
-        tl.duration_s,
+        tl.duration_s, tl.audio,
     )  # fmt: skip
     shortest = min(TARGETS) - 10
     reason = None
@@ -42,6 +42,10 @@ def _body(map_id: str, tl) -> dict:
                 "length_s": s.length_s,
                 "target": f"{s.target_s // 60} min",
                 "score": s.score,
+                "breakdown": [
+                    {"key": p.key, "label": p.label, "points": p.points, "max_points": p.max_points}
+                    for p in s.breakdown
+                ],
                 "reason": s.reason,
             }
             for i, s in enumerate(picks)

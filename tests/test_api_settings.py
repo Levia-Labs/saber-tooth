@@ -47,6 +47,7 @@ def test_settings_default_to_one_worker_and_no_game_folder(built):
         "max_concurrent_jobs": 1,
         "recommended_max": 4,
         "game_dir": None,
+        "crop_min_length_s": 150.0,
     }
 
 
@@ -151,3 +152,15 @@ def test_a_cross_origin_install_is_refused(built):
         headers={"origin": "https://evil.example"},
     )  # fmt: skip
     assert got.status_code == 403
+
+
+def test_crop_length_setting_saves_validates_and_drives_the_crop_status(built):
+    client, made, _ = built
+    assert (
+        client.put("/api/settings", json={"crop_min_length_s": 200}).json()["crop_min_length_s"]
+        == 200.0
+    )
+    assert made.store.crop_min_length_s() == 200.0
+    for bad in (True, "90", 1.0, 99999):
+        assert client.put("/api/settings", json={"crop_min_length_s": bad}).status_code == 400
+    assert client.get("/api/settings").json()["crop_min_length_s"] == 200.0

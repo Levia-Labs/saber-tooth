@@ -9,6 +9,9 @@ import threading
 from pathlib import Path, PurePosixPath, PureWindowsPath
 
 DEFAULT_JOBS = 1
+DEFAULT_CROP_MIN_S = 150.0  # a good map longer than 2.5 minutes qualifies for a crop
+MIN_CROP_MIN_S = 10.0
+MAX_CROP_MIN_S = 7200.0
 MAX_PATH_CHARS = 1024
 GAME_MARKERS = ("Beat Saber_Data", "Beat Saber.exe", "BeatSaberVersion.txt")
 
@@ -85,3 +88,21 @@ class Settings:
         path = clean_game_dir(raw)
         self.put("game_dir", None if path is None else str(path))
         return path
+
+    def crop_min_length_s(self) -> float:
+        raw = self.get("crop_min_length_s")
+        try:
+            value = float(raw) if raw else DEFAULT_CROP_MIN_S
+        except ValueError:
+            return DEFAULT_CROP_MIN_S
+        return value if MIN_CROP_MIN_S <= value <= MAX_CROP_MIN_S else DEFAULT_CROP_MIN_S
+
+    def set_crop_min_length_s(self, value: object) -> float:
+        if isinstance(value, bool) or not isinstance(value, int | float) or value != value:
+            raise SettingError("crop_min_length_s must be a number of seconds")
+        if not MIN_CROP_MIN_S <= value <= MAX_CROP_MIN_S:
+            raise SettingError(
+                f"crop_min_length_s must be between {MIN_CROP_MIN_S:g} and {MAX_CROP_MIN_S:g}"
+            )
+        self.put("crop_min_length_s", repr(float(value)))
+        return float(value)

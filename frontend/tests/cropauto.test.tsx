@@ -73,3 +73,29 @@ describe("Auto crop", () => {
     expect(endHandle()).toHaveAttribute("aria-valuenow", "64");
   });
 });
+
+describe("Auto crop score breakdown", () => {
+  test("a card expands to show points per component and collapses again", async () => {
+    const { user } = setup();
+    const group = await proposals();
+    const [first] = within(group).getAllByRole("button", { name: "Show breakdown" });
+    expect(first).toHaveAttribute("aria-expanded", "false");
+    await user.click(first as HTMLElement);
+    const hide = within(group).getByRole("button", { name: "Hide breakdown" });
+    expect(hide).toHaveAttribute("aria-expanded", "true");
+    const list = within(group).getByRole("list", { name: "Score breakdown of proposal 1" });
+    expect(within(list).getByText("Peak intensity")).toBeInTheDocument();
+    expect(within(list).getAllByText("45 / 50")).toHaveLength(2);
+    await user.click(hide);
+    expect(within(group).queryByRole("list")).toBeNull();
+  });
+
+  test("expanding does not select the card", async () => {
+    const { user } = setup();
+    const group = await proposals();
+    await user.click(
+      within(group).getAllByRole("button", { name: "Show breakdown" })[1] as HTMLElement,
+    );
+    expect(within(group).getAllByRole("radio")[0]).toBeChecked();
+  });
+});

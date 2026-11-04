@@ -3,6 +3,7 @@ import { plural } from "../../lib/format";
 import { formatBytes } from "../../lib/settingsfmt";
 import { Spinner } from "../Spinner";
 import { CardHead } from "./CardHead";
+import { CropLength } from "./CropLength";
 import { JobsControl } from "./JobsControl";
 import { Meter } from "./Meter";
 
@@ -17,7 +18,14 @@ export function ServiceCard() {
   return (
     <section className="about-card settings-card" aria-labelledby="settings-service">
       <CardHead icon="queue" title="Service" id="settings-service" />
-      {settings ? <JobsControl settings={settings} /> : <Spinner label="Reading settings" />}
+      {settings ? (
+        <>
+          <JobsControl settings={settings} />
+          <CropLength settings={settings} />
+        </>
+      ) : (
+        <Spinner label="Reading settings" />
+      )}
       {system ? (
         <div className="settings-resources">
           <dl className="settings-facts">

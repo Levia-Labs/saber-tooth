@@ -14,6 +14,8 @@ export interface SettingsView {
   max_concurrent_jobs: number;
   recommended_max: number;
   game_dir: string | null;
+  /** Seconds a good map must exceed to qualify for a crop. */
+  crop_min_length_s: number;
 }
 
 export type DepState = "missing" | "current" | "other";
@@ -86,8 +88,9 @@ export function useModStatus() {
 export function useSaveSettings() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (body: Partial<Pick<SettingsView, "max_concurrent_jobs" | "game_dir">>) =>
-      request<SettingsView>("POST", "/api/settings", body),
+    mutationFn: (
+      body: Partial<Pick<SettingsView, "max_concurrent_jobs" | "game_dir" | "crop_min_length_s">>,
+    ) => request<SettingsView>("POST", "/api/settings", body),
     onSuccess: (saved) => {
       client.setQueryData(settingsKeys.settings, saved);
       void client.invalidateQueries({ queryKey: settingsKeys.system });

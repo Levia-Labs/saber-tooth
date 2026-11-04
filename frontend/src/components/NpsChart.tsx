@@ -4,7 +4,7 @@ import { npsTicks, yFrac } from "../lib/axis";
 import { clampStart, clock, sectionAt, secondsAt, type Span } from "../lib/crop";
 import { levelColor } from "../lib/levels";
 import { Legend, TimeAxis, YAxis } from "./ChartAxes";
-import { H, Handle, W, capture, px } from "./ChartHandles";
+import { CropTimes, H, Handle, W, capture, px } from "./ChartHandles";
 import { CueHandle, PlayButton, Playhead, usePlayback } from "./ChartPlayback";
 
 export type Edge = "start" | "end";
@@ -120,6 +120,9 @@ export function NpsChart({
   return (
     <div className="nps-chart">
       <div className="nps-grid">
+        <div className="nps-times-row">
+          {live && <CropTimes selection={live} duration={duration} />}
+        </div>
         <YAxis ticks={ticks} top={top} />
         <div className="nps-stage">
           <svg
