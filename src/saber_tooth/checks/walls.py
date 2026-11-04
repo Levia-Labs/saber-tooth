@@ -11,6 +11,7 @@ from saber_tooth.profiles import (
 from saber_tooth.timing import Timing
 
 EPS = 1e-6
+PRECISION_X = 1000  # Mapping Extensions encodes precise positions from 1000 up
 DEFAULT_DODGE_S = 0.8
 
 
@@ -22,6 +23,16 @@ def blocks_standing(w: Wall) -> bool:
 def blocks_head(w: Wall) -> bool:
     """True for walls that cover the head row, crouch walls included."""
     return w.y <= 2 < w.y + w.height
+
+
+def is_live(w: Wall) -> bool:
+    """True for walls that can touch the play space: some length, some width, a lane of 0..3.
+
+    Zero-width, zero-length and Mapping Extensions precision walls are wall art, not hazards.
+    """
+    if w.duration <= 0 or w.width < 1 or abs(w.x) >= PRECISION_X or w.width >= PRECISION_X:
+        return False
+    return w.x < 4 and w.x + w.width > 0
 
 
 def _lanes(w: Wall) -> set[int]:
@@ -42,7 +53,8 @@ def _lane_findings(d: Difficulty, walls: list[Wall]) -> list[Finding]:
         active = [o for o in walls if o.beat <= w.beat + EPS and w.beat < _end(o) - EPS]
         chest = set().union(*(_lanes(o) for o in active if blocks_standing(o)))
         head = set().union(*(_lanes(o) for o in active if blocks_head(o)))
-        if _trapped(chest, True) or _trapped(head, False):
+        # A lane is lost only when neither standing (head row) nor ducking (chest row) clears it.
+        if _trapped(chest & head, True):
             msg = "walls leave the player fewer than 2 free lanes or the centre blocked"
             out.append(Finding("wall-trap", d.name, w.beat, _end(w), "error", msg, walls=(w,)))
     return out
@@ -74,8 +86,9 @@ def _dodge_findings(d: Difficulty, walls: list[Wall], timing: Timing, minimum: f
 
 def wall_trap(d: Difficulty, swings, timing: Timing, profile: Profile, analysis=None):
     minimum = WALL_DODGE_S.get(profile.name, DEFAULT_DODGE_S)
-    standing = sorted(w for w in d.walls if blocks_standing(w))
-    relevant = sorted(w for w in d.walls if blocks_standing(w) or blocks_head(w))
+    live = [w for w in d.walls if is_live(w)]
+    standing = sorted(w for w in live if blocks_standing(w))
+    relevant = sorted(w for w in live if blocks_standing(w) or blocks_head(w))
     return _lane_findings(d, relevant) + _dodge_findings(d, standing, timing, minimum)
 
 
@@ -84,5 +97,5 @@ def wall_short(d: Difficulty, swings, timing: Timing, profile: Profile, analysis
     return [
         Finding("wall-short", d.name, w.beat, _end(w), "warn", msg, walls=(w,))
         for w in d.walls
-        if timing.to_seconds(_end(w)) - timing.to_seconds(w.beat) < WALL_MIN_S
+        if is_live(w) and timing.to_seconds(_end(w)) - timing.to_seconds(w.beat) < WALL_MIN_S
     ]

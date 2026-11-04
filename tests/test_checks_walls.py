@@ -99,14 +99,15 @@ def test_wall_rules_never_crash_on_arbitrary_walls(walls, name):
     assert all(r.startswith(("wall-", "note-in-wall")) for r, _ in found(walls, name))
 
 
-def test_crouch_plus_side_wall_leaving_one_head_lane_is_error():
-    walls = [Wall(4.0, 1, 2, 4.0, 2, 3), Wall(5.0, 0, 0, 2.0, 1, 5)]
+def test_crouch_plus_side_wall_is_safe_while_ducking_clears_the_lanes():
+    # standing is blocked in lanes 0-2, but ducking under the crouch wall clears lanes 1-3
+    assert found([Wall(4.0, 1, 2, 4.0, 2, 3), Wall(5.0, 0, 0, 2.0, 1, 5)]) == set()
+    assert found([Wall(4.0, 1, 2, 4.0, 2, 3), Wall(5.0, 3, 0, 2.0, 1, 5)]) == set()
+
+
+def test_crouch_plus_walls_that_stop_ducking_are_a_trap():
+    walls = [Wall(4.0, 0, 2, 4.0, 4, 3), Wall(5.0, 0, 0, 2.0, 3, 5)]
     assert ("wall-trap", "error") in found(walls)
-
-
-def test_crouch_plus_far_side_wall_is_error_and_apart_in_time_is_safe():
-    assert ("wall-trap", "error") in found([Wall(4.0, 1, 2, 4.0, 2, 3), Wall(5.0, 3, 0, 2.0, 1, 5)])
-    assert found([Wall(4.0, 1, 2, 2.0, 2, 3), Wall(8.0, 0, 0, 2.0, 1, 5)]) == set()
 
 
 def test_finding_to_dict_carries_walls_json_safe():
@@ -115,3 +116,28 @@ def test_finding_to_dict_carries_walls_json_safe():
     d = Difficulty("Expert", 16, 0, walls=[Wall(4.0, 0, 0, 2.0, 3, 5)])
     f = check_difficulty(d, T, PROFILES["Expert"])[0]
     assert json.loads(json.dumps(f.to_dict()))["walls"][0]["x"] == 0
+
+
+def test_full_width_crouch_wall_is_safe():
+    assert found([Wall(4.0, 0, 2, 2.0, 4, 3)]) == set()
+    assert found([Wall(4.0, 0, 2, 2.0, 4, 2)]) == set()
+
+
+def test_crouch_wall_over_a_low_wall_is_a_trap():
+    walls = [Wall(4.0, 0, 2, 2.0, 4, 3), Wall(4.0, 0, 0, 2.0, 4, 2)]
+    assert ("wall-trap", "error") in found(walls)
+
+
+def test_wall_art_never_triggers_a_finding():
+    art = [
+        Wall(4.0, 0, 0, 0.01, 0, 5),  # zero width
+        Wall(4.0, 1, 0, 0.0, 2, 5),  # no length
+        Wall(4.0, 1, 0, -2.0, 2, 5),  # negative length
+        Wall(4.0, -18930, 0, 0.02, 1067, 5),  # Mapping Extensions precision position
+        Wall(4.0, 7, 0, 0.02, 1, 5),  # outside the four lanes
+    ]
+    assert found(art) == set()
+
+
+def test_short_wall_in_the_lanes_still_warns():
+    assert ("wall-short", "warn") in found([Wall(4.0, 3, 2, 0.1, 1, 3)])
