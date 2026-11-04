@@ -133,9 +133,9 @@ class Api:
             raise MapNotFound(f"unknown map: {raw}")
         return shape_item(row, self.service.levels, self.extras)
 
-    def rename_map(self, raw: str, name: object) -> dict:
+    def rename_map(self, raw: str, name: object, keep_folder: bool = False) -> dict:
         """Rename a map (song name, folder and id); answers the map under its new id."""
-        return self.map_item(self.service.rename_map(self.map_id(raw), name))
+        return self.map_item(self.service.rename_map(self.map_id(raw), name, keep_folder))
 
     def cover(self, raw: str) -> tuple[Path, str]:
         """Path and content type of a map's cover image; MapNotFound when there is none."""

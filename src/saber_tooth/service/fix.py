@@ -5,7 +5,7 @@ from collections.abc import Callable
 from dataclasses import replace
 
 from saber_tooth.checks import Finding, run_checks
-from saber_tooth.safe_fs import LevelsWriter
+from saber_tooth.copynames import fixed_name, is_fixed_copy
 from saber_tooth.service.fixrun import MAX_ROUNDS, FixRun, complete, fix_beatmap
 from saber_tooth.service.fixsave import Checkpoint, source_stamp, with_reasons
 from saber_tooth.service.util import checkpoint, map_id_for
@@ -65,10 +65,14 @@ class _Saver:
         new = run.steps[self.stored :]
         if new:
             info = run.fixed.info
-            if not info.song_name.endswith(SUFFIX):
-                info = replace(info, song_name=info.song_name + SUFFIX)
-            if self.name is None:
-                self.name = LevelsWriter(self.svc.levels).unique_name(self.folder.name + SUFFIX)
+            if info.song_name != fixed_name(info.song_name):
+                info = replace(info, song_name=fixed_name(info.song_name))
+            if self.name is None:  # a copy is fixed in place; an original refreshes its copy
+                self.name = (
+                    self.folder.name
+                    if is_fixed_copy(self.folder.name)
+                    else fixed_name(self.folder.name)
+                )
             replace_fixed(self.svc.levels, self.folder, replace(run.fixed, info=info), self.name)
             with self.svc._lock:  # short store mutations only
                 ids = self.svc.store.add_proposals(self.map_id, [p.to_dict() for p in new])

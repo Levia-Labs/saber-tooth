@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+from saber_tooth.copynames import is_fixed_copy, strip_fixed
 from saber_tooth.generated import generated_ids
 
 _RULES_SQL = (
@@ -41,10 +42,23 @@ def findings_summary(store, levels: Path) -> dict:
 
 
 def maps_with_findings(store) -> list[str]:
-    """Ids of readable maps whose latest scan has at least one finding."""
+    """Ids of readable maps whose latest scan has at least one finding, one per chain: an
+    original whose fixed copy exists is left to the copy (fixed in place, or clean)."""
     rows = store._query(
-        "SELECT m.id FROM maps m JOIN scans s ON s.map_id = m.id"
+        "SELECT m.id, m.folder FROM maps m JOIN scans s ON s.map_id = m.id"
         " WHERE (m.parse_error IS NULL OR m.parse_error = '')"
-        " AND json_array_length(s.keys_json) > 0 ORDER BY m.id"
+        " AND json_array_length(s.keys_json) > 0 ORDER BY m.folder, m.id"
     )
-    return [r["id"] for r in rows]
+    copied = {
+        strip_fixed(r["folder"])
+        for r in store._query("SELECT folder FROM maps")
+        if is_fixed_copy(r["folder"])
+    }
+    out, chains = [], set()
+    for r in rows:
+        key = strip_fixed(r["folder"])
+        if key in chains or (key in copied and not is_fixed_copy(r["folder"])):
+            continue
+        chains.add(key)
+        out.append(r["id"])
+    return sorted(out)

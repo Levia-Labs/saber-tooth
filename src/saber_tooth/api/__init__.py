@@ -147,7 +147,8 @@ def create_app(
         except ValueError:
             raise ApiError(400, 'send JSON {"name"}') from None
         name = body.get("name") if isinstance(body, dict) else None
-        return await asyncio.to_thread(api.rename_map, map_id, name)
+        keep = isinstance(body, dict) and body.get("keep_folder") is True
+        return await asyncio.to_thread(api.rename_map, map_id, name, keep)
 
     @app.post("/api/maps/{map_id}/scan")
     def scan(map_id: str):

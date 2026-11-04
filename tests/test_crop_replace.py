@@ -84,7 +84,7 @@ def test_replace_failing_during_the_swap_rolls_back(http, cuts, monkeypatch):
     real = type(http.svc.levels).rename
 
     def flaky(self, target):
-        if self.name == f".{NAME} [1 min].partial":
+        if self.name == f".{NAME} [saber-tooth].partial":
             raise OSError("swap failed")
         return real(self, target)
 

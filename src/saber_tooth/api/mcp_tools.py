@@ -138,7 +138,7 @@ def _crop_tools(mcp: MCPServer, crop: CropApi) -> None:
     @mcp.tool(annotations=JOB)
     def crop_map(map_id: str, start_beat: float, end_beat: float) -> dict[str, Any]:
         """Crop a map to any window of at least 1 second inside the song: writes a new
-        '<map> [1 min]', '[2 min]' or '[crop MmSSs]' folder; the original is never changed.
+        '<map> [saber-tooth]' copy (made or overwritten); the original is never changed.
         map_timeline suggestions are guidance, not a limit. Returns a job id for job_status."""
         try:
             return crop.crop(map_id, start_beat, end_beat)
