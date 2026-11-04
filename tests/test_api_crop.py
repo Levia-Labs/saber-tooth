@@ -54,11 +54,11 @@ def test_crop_job_writes_a_new_folder(http, cuts):
     body = {"start_beat": window["start_beat"], "end_beat": window["end_beat"]}
     job = _wait(http, http.post(f"/api/maps/{MID}/crop", json=body).json()["job"])
     assert job["status"] == "done" and job["kind"] == "crop"
-    assert job["result"]["folder"] == "Song [1 min]"
-    assert job["result"]["cropped_id"] == map_id_for("Song [1 min]")
+    assert job["result"]["folder"] == "Song [saber-tooth]"
+    assert job["result"]["cropped_id"] == map_id_for("Song [saber-tooth]")
     assert _hashes(original) == before
     folders = {m["folder"] for m in http.get("/api/maps").json()["items"]}
-    assert "Song [1 min]" in folders
+    assert "Song [saber-tooth]" in folders
 
 
 @pytest.mark.parametrize(
@@ -107,7 +107,7 @@ def test_crop_with_a_huge_integer_is_422(http):
 def test_crop_accepts_a_free_mid_bar_window(http, cuts):
     body = {"start_beat": 5.5, "end_beat": 71.25}
     job = _wait(http, http.post(f"/api/maps/{MID}/crop", json=body).json()["job"])
-    assert job["status"] == "done" and job["result"]["folder"] == "Song [crop 0m33s]"
+    assert job["status"] == "done" and job["result"]["folder"] == "Song [saber-tooth]"
 
 
 def test_crop_rejects_a_window_under_a_second(http):

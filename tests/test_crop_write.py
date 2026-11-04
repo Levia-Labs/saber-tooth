@@ -25,8 +25,8 @@ def _bytes(folder):
 def test_a_new_playable_folder_is_written_and_the_original_is_untouched(tmp_path, cuts):
     levels, original, cropped = _prepare(tmp_path)
     before = _bytes(original)
-    target = write_cropped(levels, original, original / "song.ogg", cropped, "1 min")
-    assert target.name == "Song [1 min]"
+    target = write_cropped(levels, original, original / "song.ogg", cropped)
+    assert target.name == "Song [saber-tooth]"
     names = {p.name for p in target.iterdir()}
     assert names == {f"{d}.dat" for d in DIFFICULTIES} | {"Info.dat", "song.ogg", "cover.jpg"}
     assert (target / "song.ogg").read_bytes() == b"cut"
@@ -37,25 +37,25 @@ def test_a_new_playable_folder_is_written_and_the_original_is_untouched(tmp_path
 
 def test_the_cut_gets_the_lead_in_and_the_fades(tmp_path, cuts):
     levels, original, cropped = _prepare(tmp_path)
-    write_cropped(levels, original, original / "song.ogg", cropped, "1 min")
+    write_cropped(levels, original, original / "song.ogg", cropped)
     # notes start at beat 0: a 2 s lead-in; 128 beats at 120 bpm is 64 s; the last bar is 2 s
     assert cuts == [("song.ogg", "song.ogg", 0.0, 64.0, 2.0, 0.5, 2.0)]
 
 
 def test_info_has_the_suffix_and_a_preview_inside_the_new_audio(tmp_path, cuts):
     levels, original, cropped = _prepare(tmp_path)
-    target = write_cropped(levels, original, original / "song.ogg", cropped, "1 min")
+    target = write_cropped(levels, original, original / "song.ogg", cropped)
     back = load_map(target)
-    assert back.info.song_name == "Song [1 min]"
+    assert back.info.song_name == "Song [saber-tooth]"
     assert (back.info.preview_start, back.info.preview_duration) == (16.5, 10.0)  # total 66 s
     assert back.info.song_file == "song.ogg" and back.info.cover_file == "cover.jpg"
 
 
-def test_a_taken_name_gets_a_number_and_never_an_overwrite(tmp_path, cuts):
+def test_a_second_crop_overwrites_the_one_copy(tmp_path, cuts):
     levels, original, cropped = _prepare(tmp_path)
-    first = write_cropped(levels, original, original / "song.ogg", cropped, "1 min")
-    second = write_cropped(levels, original, original / "song.ogg", cropped, "1 min")
-    assert (first.name, second.name) == ("Song [1 min]", "Song [1 min 2]")
+    first = write_cropped(levels, original, original / "song.ogg", cropped)
+    second = write_cropped(levels, original, original / "song.ogg", cropped)
+    assert (first.name, second.name) == ("Song [saber-tooth]", "Song [saber-tooth]")
     assert (first / "song.ogg").read_bytes() == b"cut"
 
 
@@ -67,5 +67,5 @@ def test_an_ffmpeg_failure_leaves_no_folder(tmp_path, monkeypatch):
 
     monkeypatch.setattr("saber_tooth.crop.write.cut_egg", boom)
     with pytest.raises(AudioError, match="bad input"):
-        write_cropped(levels, original, original / "song.ogg", cropped, "1 min")
+        write_cropped(levels, original, original / "song.ogg", cropped)
     assert sorted(p.name for p in levels.iterdir()) == ["Song"]

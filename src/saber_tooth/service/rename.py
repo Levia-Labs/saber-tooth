@@ -4,6 +4,7 @@ import json
 import re
 from pathlib import Path
 
+from saber_tooth.copynames import fixed_name, is_fixed_copy
 from saber_tooth.safe_fs import LevelsRoot, WriteRefused, windows_safe_component
 from saber_tooth.service.errors import MapNotFound, RenameConflict, RenameInvalid
 from saber_tooth.service.util import map_id_for
@@ -55,13 +56,38 @@ class RenameMixin:
     def refresh_library(self, wait: bool = True) -> int | None:
         raise NotImplementedError
 
-    def rename_map(self, map_id: str, raw_name: object) -> str:
+    def _keep_folder(self, map_id: str, name: str) -> str:
+        """Write only the song name; a fixed copy's folder is normalised to one suffix."""
+        ids = {m["folder"]: m["id"] for m in self.store.list_maps()}
+        old_name = next((f for f, i in ids.items() if i == map_id), None)
+        if old_name is None:
+            raise MapNotFound(f"unknown map: {map_id}")
+        new_name = fixed_name(old_name) if is_fixed_copy(old_name) else old_name
+        try:
+            folder = LevelsRoot(self.levels).guard(self.levels / old_name)
+        except WriteRefused as exc:
+            raise MapNotFound(f"map folder is gone: {old_name}") from exc
+        if new_name != old_name:
+            if self.store.has_active_job(map_id):
+                raise RenameConflict(f"map {old_name} has a queued or running job")
+            if (self.levels / new_name).exists():
+                raise RenameConflict(f"a folder named {new_name} already exists")
+        _write_song_name(folder, name)
+        if new_name != old_name:
+            folder.rename(self.levels / new_name)
+            self.store.rename_map(map_id, map_id_for(new_name))
+        self.refresh_library()
+        return map_id_for(new_name)
+
+    def rename_map(self, map_id: str, raw_name: object, keep_folder: bool = False) -> str:
         """Rename a map folder and its song name; returns the new map id.
 
         A fixed copy keeps its " [saber-tooth]" folder suffix and its original follows it (and an
         original takes its copy along), because the pairing is `<original folder>` + the suffix.
         """
         name, base = validate_map_name(raw_name)
+        if keep_folder:
+            return self._keep_folder(map_id, name)
         base = base.removesuffix(SUFFIX).rstrip(". ") or base
         by_id = {m["id"]: m["folder"] for m in self.store.list_maps()}
         if map_id not in by_id:

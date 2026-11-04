@@ -43,13 +43,13 @@ def test_crop_map_writes_a_folder_and_leaves_the_original(tmp_path, cuts):
     before = _hashes(original)
     window = svc.crop_timeline(MID)["lengths"]["60"]["suggestions"][0]
     result = svc.crop_map(MID, window["start_beat"], window["end_beat"])
-    assert result["folder"] == "Song [1 min]" and result["label"] == "1 min"
-    assert result["cropped_id"] == map_id_for("Song [1 min]")
+    assert result["folder"] == "Song [saber-tooth]" and result["label"] == "1 min"
+    assert result["cropped_id"] == map_id_for("Song [saber-tooth]")
     assert result["length_s"] == pytest.approx(window["length_s"])
     assert _hashes(original) == before
     written = load_map(svc.levels / result["folder"])
     assert len(written.difficulties) == 5 and len(cuts) == 1
-    assert any(m["folder"] == "Song [1 min]" for m in svc.store.list_maps())
+    assert any(m["folder"] == "Song [saber-tooth]" for m in svc.store.list_maps())
 
 
 def test_a_two_minute_window_is_labelled_two_minutes(tmp_path, cuts):
@@ -87,7 +87,7 @@ def test_map_without_standard_notes_is_refused(tmp_path):
 def test_a_free_mid_bar_window_is_written(tmp_path, cuts):
     svc = make_service(tmp_path)
     result = svc.crop_map(MID, 5.5, 71.25)
-    assert result["folder"] == "Song [crop 0m33s]" and result["label"] == "crop 0m33s"
+    assert result["folder"] == "Song [saber-tooth]" and result["label"] == "crop 0m33s"
     assert result["length_s"] == pytest.approx(32.875)
     written = load_map(svc.levels / result["folder"])
     assert len(written.difficulties) == 5
@@ -105,10 +105,10 @@ def test_a_window_shorter_than_a_bar_fades_within_itself(tmp_path, cuts):
 def test_a_three_minute_window_is_labelled_by_its_length(tmp_path, cuts):
     svc = make_service(tmp_path, stepped_map(bars=100))
     result = svc.crop_map(MID, 0.0, 360.0)
-    assert result["label"] == "crop 3m00s" and result["folder"] == "Song [crop 3m00s]"
-    assert svc.crop_map(MID, 0.0, 360.0)["folder"] == "Song [crop 3m00s 2]"
+    assert result["label"] == "crop 3m00s" and result["folder"] == "Song [saber-tooth]"
+    assert svc.crop_map(MID, 0.0, 360.0)["folder"] == "Song [saber-tooth]"
 
 
 def test_a_window_in_the_one_minute_band_keeps_its_label(tmp_path, cuts):
     svc = make_service(tmp_path)
-    assert svc.crop_map(MID, 2.0, 122.0)["folder"] == "Song [1 min]"
+    assert svc.crop_map(MID, 2.0, 122.0)["folder"] == "Song [saber-tooth]"

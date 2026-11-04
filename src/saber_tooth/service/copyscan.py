@@ -1,13 +1,10 @@
 """Scan rows for saber-tooth copies, stored when the copy is written so it is never unscanned."""
 
-import re
-
 from saber_tooth.checks import run_checks
+from saber_tooth.copynames import _CROP
+from saber_tooth.copynames import FIX_SUFFIX as _FIX
 from saber_tooth.model import Beatmap
 from saber_tooth.service.util import map_id_for
-
-_CROP = re.compile(r" \[(?:1 min|2 min|crop [^\]]*)\]$")
-_FIX = " [saber-tooth]"
 
 
 def is_copy(name: str) -> bool:

@@ -12,6 +12,7 @@ from pathlib import Path
 
 from saber_tooth.assemble import COVER_FILE, SONG_FILE, assemble_new
 from saber_tooth.checks import run_checks
+from saber_tooth.copynames import is_fixed_copy, strip_fixed
 from saber_tooth.crop.replace import replace_folder
 from saber_tooth.fixer import ApplyLightshow, apply_ops
 from saber_tooth.fixer.verify import map_timing
@@ -107,6 +108,15 @@ def _backup(svc, folder: Path) -> Path:
     return dest
 
 
+def _drop_copies(svc, folder: Path) -> None:
+    """The regenerated map is clean by contract: its fixed copies are stale and go."""
+    if is_fixed_copy(folder.name):
+        return
+    for other in svc.levels.iterdir():
+        if other.is_dir() and is_fixed_copy(other.name) and strip_fixed(other.name) == folder.name:
+            shutil.rmtree(other, ignore_errors=True)
+
+
 def regenerate_map(svc, map_id: str, progress=None) -> dict:
     """Rebuild one generated map in place; `NotGenerated` for a map without a source."""
     if not is_generated(svc.store, svc.levels, map_id):
@@ -135,6 +145,7 @@ def regenerate_map(svc, map_id: str, progress=None) -> dict:
             replace_folder(svc.levels, folder, partial)
     finally:
         shutil.rmtree(staging, ignore_errors=True)
+    _drop_copies(svc, folder)
     try:
         svc.refresh_library()
     except Exception:
