@@ -49,6 +49,23 @@ def test_commit_retries_once_after_hook_failure():
     assert calls == [["git", "add"], ["git", "commit"]] * 2
 
 
+def test_commit_during_merge_commits_the_whole_index():
+    commits = []
+
+    def runner(argv):
+        if argv[1] == "commit":
+            commits.append(argv)
+        return done()
+
+    assert cm.commit("merge", ["a.py"], runner, merging=True)[0] == 0
+    assert "--" not in commits[0]
+
+
+def test_merging_reads_merge_head():
+    assert cm.merging(lambda argv: done(0)) is True
+    assert cm.merging(lambda argv: done(1)) is False
+
+
 def test_commit_gives_up_after_two_failures():
     rc, out = cm.commit(
         "m", ["a"], lambda argv: done(1, err="bad") if argv[1] == "commit" else done()

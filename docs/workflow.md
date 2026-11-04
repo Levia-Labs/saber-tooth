@@ -12,8 +12,9 @@ How agents and humans work on this repo in parallel without overwriting each oth
 ## Commit
 
 1. `task st:commit -- -m "<message>" <paths...>` formats exactly those paths (ruff for Python, prettier for md, json, yaml, css, js, ts), stages them, appends the `Co-Authored-By` trailer once and commits.
-2. If a hook rewrites files, the paths are staged again and the commit retried once. The helper then checks that HEAD carries the message and prints the short hash.
-3. It never pushes and never skips hooks.
+2. During a merge (for example `git merge main` inside a lane) git refuses a partial commit, so the helper commits the whole staged index; resolve and stage every conflict first.
+3. If a hook rewrites files, the paths are staged again and the commit retried once. The helper then checks that HEAD carries the message and prints the short hash.
+4. It never pushes and never skips hooks.
 
 ## Review
 
