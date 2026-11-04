@@ -56,29 +56,30 @@ The design goals are flawless, flowing and atmospheric maps. See the [design spe
 
 ## Common tasks
 
-| Task                                       | Purpose                                             |
-| ------------------------------------------ | --------------------------------------------------- |
-| `task st:up`                               | Build if needed and start; reuses cached layers     |
-| `task st:stop` / `task st:start`           | Pause or resume; containers and volumes kept        |
-| `task st:down`                             | Remove the containers; volumes and images kept      |
-| `task st:logs`                             | Show recent container logs                          |
-| `task st:test`                             | Run the pytest suite                                |
-| `task st:web:build` / `task st:web:test`   | Build the frontend into the app; run its tests      |
-| `task st:check -- <folder>`                | Run the quality checks on one map folder            |
-| `task st:inspect -- <folder>`              | Summarise one map folder                            |
-| `task st:survey -- <levels_dir>`           | Count findings across a levels directory, read-only |
-| `task st:learn -- <levels_dir> <out.json>` | Build lightshow templates                           |
-| `task st:learn-bundle -- <levels_dir>`     | Regenerate the bundled lightshow set                |
-| `task st:gen -- <url>`                     | Start a generation job from a URL                   |
-| `task st:gate`                             | Run every validation gate, one line each            |
-| `task st:lane -- <name>`                   | Create a work lane worktree; see the workflow doc   |
-| `task st:commit -- -m "<msg>" <paths>`     | Format, stage and commit exactly those paths        |
-| `task st:review-diff -- <range>`           | Write a lockfile-free review diff                   |
-| `task st:sync`                             | One-line state of every worktree                    |
-| `task st:smoke`                            | Smoke-check the running stack                       |
-| `task st:browser-check`                    | Headless Chrome or Firefox page check               |
-| `task st:docker-health`                    | Compose service health and recent logs              |
-| `task st:vr-agent`                         | Run the VR runtime helper on the host (port 8101)   |
+| Task                                       | Purpose                                                    |
+| ------------------------------------------ | ---------------------------------------------------------- |
+| `task st:up`                               | Build if needed and start; reuses cached layers            |
+| `task st:stop` / `task st:start`           | Pause or resume; containers and volumes kept               |
+| `task st:down`                             | Remove the containers; volumes and images kept             |
+| `task st:logs`                             | Show recent container logs                                 |
+| `task st:test`                             | Run the pytest suite                                       |
+| `task st:web:build` / `task st:web:test`   | Build the frontend into the app; run its tests             |
+| `task st:check -- <folder>`                | Run the quality checks on one map folder                   |
+| `task st:inspect -- <folder>`              | Summarise one map folder                                   |
+| `task st:survey -- <levels_dir>`           | Count findings across a levels directory, read-only        |
+| `task st:fix-rate -- <levels_dir>`         | Per-rule fix rate of the offline Fix on copies of a sample |
+| `task st:learn -- <levels_dir> <out.json>` | Build lightshow templates                                  |
+| `task st:learn-bundle -- <levels_dir>`     | Regenerate the bundled lightshow set                       |
+| `task st:gen -- <url>`                     | Start a generation job from a URL                          |
+| `task st:gate`                             | Run every validation gate, one line each                   |
+| `task st:lane -- <name>`                   | Create a work lane worktree; see the workflow doc          |
+| `task st:commit -- -m "<msg>" <paths>`     | Format, stage and commit exactly those paths               |
+| `task st:review-diff -- <range>`           | Write a lockfile-free review diff                          |
+| `task st:sync`                             | One-line state of every worktree                           |
+| `task st:smoke`                            | Smoke-check the running stack                              |
+| `task st:browser-check`                    | Headless Chrome or Firefox page check                      |
+| `task st:docker-health`                    | Compose service health and recent logs                     |
+| `task st:vr-agent`                         | Run the VR runtime helper on the host (port 8101)          |
 
 Run `task --list` for every task. Settings (`LEVELS_DIR`, `SABER_PORT`, `SABER_BIND`, `VR_AGENT_URL`, `YT_MAX_MINUTES`, `MAX_UPLOAD_MB`) are documented in `.env.example`.
 

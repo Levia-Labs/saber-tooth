@@ -10,6 +10,7 @@ from bisect import bisect_right
 
 from saber_tooth.analysis import Analysis
 from saber_tooth.checks import Finding, check_difficulty
+from saber_tooth.checks.constants import SLIDER_S
 from saber_tooth.checks.slicing import slice_difficulty
 from saber_tooth.fixer.fill_op import Fill
 from saber_tooth.fixer.ops import Delete, DeleteWall, Flip, Move, Op, Recolor
@@ -105,4 +106,4 @@ def window_findings(
 def swings_near(d: Difficulty, timing: Timing, lo: float, hi: float) -> dict:
     """Swings of the notes around [lo, hi], exact except within a margin of the slice edge."""
     m = timing.to_beats(MARGIN_S) - timing.to_beats(0.0)
-    return build_swings(slice_difficulty(d, lo - m, hi + m).notes, timing)
+    return build_swings(slice_difficulty(d, lo - m, hi + m).notes, timing, SLIDER_S)

@@ -4,7 +4,15 @@ import itertools
 import math
 from collections.abc import Iterator
 
-from saber_tooth.fixer.cells import by_distance, nearest_cut, occupied, single_swing, step_of
+from saber_tooth.fixer.cells import (
+    by_distance,
+    delete_keeping_parity,
+    nearest_cut,
+    occupied,
+    single_swing,
+    step_of,
+    swing_of,
+)
 from saber_tooth.fixer.ops import Delete, Flip, Move, Op, Recolor
 from saber_tooth.fixer.verify import Context
 from saber_tooth.model import OPPOSITE, Color, Cut, Note
@@ -86,6 +94,10 @@ def crossover(ctx: Context) -> Iterator[list[Op]]:
         pair = ((x, y), (other.x, other.y)) if later is r else ((other.x, other.y), (x, y))
         if not _crosses(*pair, same):
             yield [Move(name, later, x, y, later.cut)]
+    for gone in (later, other):
+        s = swing_of(ctx, gone)
+        if s is not None:
+            yield from delete_keeping_parity(ctx, s)
     yield [Delete(name, later)]
 
 
@@ -95,9 +107,19 @@ def vision_block(ctx: Context) -> Iterator[list[Op]]:
     n = ctx.finding.notes[0]
     out = 0 if n.x == 1 else 3
     taken = occupied(ctx, n.beat, (n,))
-    for x, y in ((out, 1), (n.x, 0), (out, 0)):
-        if (x, y) not in taken:
+    first = [(out, 1), (n.x, 0), (out, 0)]
+    # every other free cell outside the centre pair, nearest first, before giving the note up
+    rest = [
+        c for c in by_distance((n.x, n.y)) if c not in first and not (c[0] in (1, 2) and c[1] == 1)
+    ]
+    for x, y in (*first, *rest):
+        if (x, y) not in taken and (x, y) != (n.x, n.y):
             yield [Move(ctx.d.name, n, x, y, n.cut)]
+    s = swing_of(ctx, n)
+    if s is not None:
+        yield from delete_keeping_parity(ctx, s)
+        return
+    yield [Delete(ctx.d.name, n)]
 
 
 def in_wall(x: int, y: int, beat: float, w) -> bool:
@@ -142,5 +164,9 @@ def note_converge(ctx: Context) -> Iterator[list[Op]]:
             if (x, y) in taken or x == other.x or (x, y) == (mover.x, mover.y):
                 continue
             yield [Move(name, mover, x, y, mover.cut)]
-    yield [Delete(name, weak)]
-    yield [Delete(name, strong)]
+    for gone in (weak, strong):
+        s = swing_of(ctx, gone)
+        if s is not None:
+            yield from delete_keeping_parity(ctx, s)
+        else:
+            yield [Delete(name, gone)]

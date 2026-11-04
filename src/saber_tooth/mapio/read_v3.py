@@ -14,33 +14,44 @@ RAW_KEYS = (
 )
 
 
+def _i(e: dict, key: str) -> int:
+    """Beat Saber omits zero-valued fields, so a missing integer field is 0."""
+    return int(e.get(key, 0))
+
+
+def _f(e: dict, key: str) -> float:
+    return float(e.get(key, 0))
+
+
 def read_v3(data: dict, name: str, njs: float, offset: float, filename: str) -> Difficulty:
     d = Difficulty(name=name, njs=njs, offset=offset, filename=filename)
     try:
         d.notes = [
             Note(
-                float(n["b"]),
-                *vanilla_cell(int(n["x"]), int(n["y"])),
-                Color(int(n["c"])),
-                vanilla_cut(int(n["d"])),
+                _f(n, "b"),
+                *vanilla_cell(_i(n, "x"), _i(n, "y")),
+                Color(_i(n, "c")),
+                vanilla_cut(_i(n, "d")),
                 int(n.get("a", 0)),
             )
             for n in data.get("colorNotes", [])
         ]
         d.bombs = [
-            Bomb(float(b["b"]), *vanilla_cell(int(b["x"]), int(b["y"])))
+            Bomb(_f(b, "b"), *vanilla_cell(_i(b, "x"), _i(b, "y")))
             for b in data.get("bombNotes", [])
         ]
         d.walls = [
-            Wall(float(w["b"]), int(w["x"]), int(w["y"]), float(w["d"]), int(w["w"]), int(w["h"]))
+            Wall(_f(w, "b"), _i(w, "x"), _i(w, "y"), _f(w, "d"), _i(w, "w"), _i(w, "h"))
             for w in data.get("obstacles", [])
         ]
         d.events = [
-            BasicEvent(float(e["b"]), int(e["et"]), int(e["i"]), float(e.get("f", 1.0)))
+            BasicEvent(_f(e, "b"), _i(e, "et"), _i(e, "i"), float(e.get("f", 1.0)))
             for e in data.get("basicBeatmapEvents", [])
         ]
-        d.boosts = [(float(e["b"]), bool(e["o"])) for e in data.get("colorBoostBeatmapEvents", [])]
-        d.bpm_events = [BpmEvent(float(e["b"]), float(e["m"])) for e in data.get("bpmEvents", [])]
+        d.boosts = [
+            (_f(e, "b"), bool(e.get("o", 0))) for e in data.get("colorBoostBeatmapEvents", [])
+        ]
+        d.bpm_events = [BpmEvent(_f(e, "b"), _f(e, "m")) for e in data.get("bpmEvents", [])]
     except MapParseError:
         raise
     except (KeyError, TypeError, ValueError) as exc:

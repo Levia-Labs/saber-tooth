@@ -3,7 +3,7 @@
 import math
 from collections.abc import Iterator
 
-from saber_tooth.fixer.cells import RING, nearest_cut, occupied, swing_pair
+from saber_tooth.fixer.cells import RING, delete_keeping_parity, nearest_cut, occupied, swing_pair
 from saber_tooth.fixer.layout_fixes import (
     crossover,
     note_converge,
@@ -43,7 +43,7 @@ def parity_break(ctx: Context) -> Iterator[list[Op]]:
         ops = [Flip(ctx.d.name, n, cut) for n in b.notes if n.cut != cut]
         if ops:
             yield ops
-    yield [Delete(ctx.d.name, n) for n in b.notes]
+    yield [Delete(ctx.d.name, n) for n in b.notes]  # a, c already alternate once b is gone
 
 
 def wide_jump(ctx: Context) -> Iterator[list[Op]]:
@@ -65,7 +65,7 @@ def wide_jump(ctx: Context) -> Iterator[list[Op]]:
             continue
         if math.dist(a.end, (b.start[0] + dx, b.start[1] + dy)) < now:
             yield [Move(ctx.d.name, n, x, y, n.cut) for n, (x, y) in zip(notes, cells, strict=True)]
-    yield [Delete(ctx.d.name, n) for n in b.notes]
+    yield from delete_keeping_parity(ctx, b)
 
 
 def _note_score(n: Note, cands) -> float:

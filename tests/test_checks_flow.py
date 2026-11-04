@@ -109,3 +109,12 @@ def test_compatible_mixed_cuts_trigger_parity_break():
         Note(4.5, 1, 0, Color.RED, Cut.DOWN),
     ]
     assert ("parity-break", "error") in rules(ns)
+
+
+def test_slider_pair_is_one_swing_not_a_fast_repeat():
+    # an arrow and a dot 0.023 s later in the same column: one swing through both notes
+    d = Difficulty("Expert", 16, 0)
+    d.notes = [Note(36.0, 0, 1, Color.RED, Cut.DOWN), Note(36.042, 0, 0, Color.RED, Cut.ANY)]
+    t = Timing(110.0, [])
+    rules = {"swing-speed", "parity-break", "wide-jump"}
+    assert check_difficulty(d, t, PROFILES["Expert"], rules=rules) == []

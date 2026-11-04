@@ -28,3 +28,19 @@ def test_new_findings_counts_severity_increase():
     assert fx.new_findings([worse], [warn]) == [worse]
     assert fx.new_findings([warn], [worse]) == []
     assert fx.new_findings([warn], [warn]) == []
+
+
+def _f(rule, beat):
+    from saber_tooth.checks import Finding
+
+    return Finding(rule, "Expert", beat, beat + 0.5, "warn", "m")
+
+
+def test_swapping_one_finding_for_another_is_not_a_fix():
+    from saber_tooth.fixer.verify import trades_findings
+
+    x, y = _f("wide-jump", 1.0), _f("note-converge", 1.0)
+    assert not trades_findings([y], [x, y], "wide-jump")  # the target is gone, nothing grew
+    assert trades_findings([_f("wide-jump", 3.0), y], [x, y], "wide-jump")  # same count of target
+    assert trades_findings([y, _f("note-converge", 2.0)], [x, y], "wide-jump")  # another rule grew
+    assert not trades_findings([], [x, y], "wide-jump")

@@ -4,6 +4,7 @@ import math
 
 VISION_MIN_DT = 0.05  # notes closer than this to a centre note are read as one group
 PARITY_DOT = 0.1  # consecutive swings with a dot product above this repeat a direction
+SLIDER_S = 0.04  # same-hand notes this close are cut in one swing (a slider), not in two
 MIN_GAP_DENSITY = 1.5  # weighted onsets per second above which an empty gap is reported
 
 

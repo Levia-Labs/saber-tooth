@@ -5,6 +5,7 @@ import copy
 import math
 from collections.abc import Iterator
 
+from saber_tooth.checks.constants import SLIDER_S
 from saber_tooth.fixer.cells import EPS
 from saber_tooth.fixer.ops import AddDifficulty, ApplyLightshow, Fill, Op
 from saber_tooth.fixer.thin import thin
@@ -45,7 +46,7 @@ def empty_gap(ctx: Context) -> Iterator[list[Op]]:
         return
     d, f, timing = ctx.d, ctx.finding, ctx.timing
     start, end = f.beat_start, f.beat_end
-    swings = build_swings(d.notes, timing)
+    swings = build_swings(d.notes, timing, SLIDER_S)
     entry = {h: [s for s in ss if s.beat <= start + EPS][-1:] for h, ss in swings.items()}
     after = {h: [s for s in ss if s.beat >= end - EPS][:1] for h, ss in swings.items()}
     window = (timing.to_seconds(start), timing.to_seconds(end))
