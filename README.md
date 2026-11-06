@@ -14,8 +14,8 @@ saber-tooth is a local Docker service with a browser interface. Give it a song o
 
 1. Library with status filters; once a map is fixed, its original is hidden.
 2. One-click Fix writes `<map> [saber-tooth]` with all five Standard difficulties (Easy, Normal, Hard, Expert, ExpertPlus). The original map is never touched. Scan and Fix run in batches, save as they go and resume after a cancel, timeout or error.
-3. Scan, Approve and Apply proposals: checks for impossible swings, broken parity and empty stretches, with fixes verified to reach zero findings before they are offered.
-4. Map page with Status, Crop, Relight and Delete tabs, and rename from the page; results show as toasts at the bottom. The Status tab lists the findings and, after a Fix, why each unfixed finding was left.
+3. Scan, Approve and Apply proposals: checks for impossible swings, broken parity and empty stretches, with fixes verified to reach zero findings before they are offered. Every warning rule has an automatic fix; Fix needs the music analysis and refuses without it, and scans made without it are marked "Not analysed" and rescanned.
+4. Map page with Status, Crop, Relight and Delete tabs, and rename from the page; a button that copies the map folder path; results show as toasts at the bottom. The Status tab lists the findings and, after a Fix, why each unfixed finding was left.
 5. Crop to a highlight of a set length, with free cutting down to 1 second. An NPS chart with sections, bound times and playback. Auto crop suggests up to three windows scored in points (70 and up), cut in quiet valleys, with an expandable score breakdown. Saving overwrites the single `[saber-tooth]` copy.
 6. Relight: light a map in another vanilla environment; the lightshow is regenerated and the fixes stay. Environments come from a mood-based catalogue with custom vanilla colour schemes; arcs and chains are placed, and a song-director agent can style a generated map to its song.
 7. One-step map generation from a YouTube link or a dropped audio file, analysed by the beat-analyser sidecar.
