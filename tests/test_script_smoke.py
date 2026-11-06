@@ -126,3 +126,17 @@ def test_a_missing_vr_route_or_status_fails_its_own_check():
     )
     failed = {n for n, ok, _ in smoke.run_checks("http://h", fetch) if not ok}
     assert failed == {"html /vr/beatsaver", "api vr status"}
+
+
+def test_default_base_uses_https_when_env_enables_tls(tmp_path):
+    env = tmp_path / ".env"
+    env.write_text("SABER_PORT=9000\nSABER_TLS=1\n", encoding="utf-8")
+    assert smoke.default_base(env) == "https://127.0.0.1:9000"
+
+
+def test_loopback_https_skips_verification_of_the_self_signed_cert():
+    ctx = smoke.tls_context("https://127.0.0.1:8100/api/maps")
+    assert ctx is not None
+    assert ctx.verify_mode == smoke.ssl.CERT_NONE
+    assert smoke.tls_context("http://127.0.0.1:8100/api/maps") is None
+    assert smoke.tls_context("https://example.com/api/maps") is None

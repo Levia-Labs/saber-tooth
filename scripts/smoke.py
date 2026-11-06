@@ -8,15 +8,20 @@ Usage: uv run python scripts/smoke.py [--base URL] [--timeout S]
 """
 
 import argparse
+import ipaddress
 import json
 import re
+import ssl
 import subprocess  # nosec B404 - fixed docker argv, no shell
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from collections.abc import Callable
 from pathlib import Path
+
+from saber_tooth.tls import tls_enabled
 
 Response = tuple[int, str, bytes]
 Fetch = Callable[[str, bytes | None], Response]
@@ -25,12 +30,29 @@ MCP_BODY = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "tools/list"}).encod
 
 
 def default_base(env_file: Path = Path(".env")) -> str:
-    port = "8100"
+    values: dict[str, str] = {}
     if env_file.is_file():
         for line in env_file.read_text(encoding="utf-8").splitlines():
-            if line.startswith("SABER_PORT="):
-                port = line.split("=", 1)[1].strip().strip("\"'") or port
-    return f"http://127.0.0.1:{port}"
+            key, sep, value = line.partition("=")
+            if sep:
+                values[key.strip()] = value.strip().strip("\"'")
+    scheme = "https" if tls_enabled(values) else "http"
+    return f"{scheme}://127.0.0.1:{values.get('SABER_PORT') or '8100'}"
+
+
+def tls_context(url: str) -> ssl.SSLContext | None:
+    """Unverified TLS for the local service's self-signed cert; None for http or a remote host."""
+    parts = urllib.parse.urlsplit(url)
+    try:
+        loopback = ipaddress.ip_address(parts.hostname or "").is_loopback
+    except ValueError:
+        loopback = parts.hostname == "localhost"
+    if parts.scheme != "https" or not loopback:
+        return None
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE  # nosec B501 - our own container on loopback, cert self-signed
+    return ctx
 
 
 def http(url: str, body: bytes | None = None) -> Response:
@@ -43,7 +65,7 @@ def http(url: str, body: bytes | None = None) -> Response:
     req = urllib.request.Request(url, data=body, headers=headers)  # noqa: S310  # nosec B310
     try:
         # nosemgrep: dynamic-urllib-use-detected - scheme checked above
-        with urllib.request.urlopen(req, timeout=10) as res:  # noqa: S310  # nosec B310
+        with urllib.request.urlopen(req, timeout=10, context=tls_context(url)) as res:  # noqa: S310  # nosec B310
             return res.status, res.headers.get("Content-Type", ""), res.read()
     except urllib.error.HTTPError as exc:
         return exc.code, exc.headers.get("Content-Type", ""), b""
