@@ -1,8 +1,9 @@
 /* global document */
 // Captures product screenshots (PNG and WebP) of a running saber-tooth in headless Chrome or Edge.
 // Usage: node scripts/screenshots.mjs [--base URL] [--out DIR] [--width 1440 --height 900] [--path EXE]
-//        [--sizes 1280x720,1920x1080] [--only vr-library,vr-jobs]
-// --sizes captures every selected shot at each size, named NAME-WxH; --only keeps the named shots.
+//        [--sizes 1280x720,1920x1080] [--only vr-library,vr-jobs] [--map ID]
+// --sizes captures every selected shot at each size, named NAME-WxH; --only keeps the named shots;
+// --map picks the map page shown. A crop-ready map is required only when a crop shot is selected.
 // Read-only: every request that is not GET or HEAD is aborted, so no job ever starts.
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -37,6 +38,7 @@ function parse(argv) {
     exe: "",
     sizes: [],
     only: [],
+    map: "",
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -47,6 +49,7 @@ function parse(argv) {
     else if (a === "--path") out.exe = argv[++i];
     else if (a === "--sizes") out.sizes = argv[++i].split(",").map(parseSize);
     else if (a === "--only") out.only = argv[++i].split(",");
+    else if (a === "--map") out.map = argv[++i];
     else throw new Error(`unknown argument ${a}`);
   }
   return out;
@@ -66,7 +69,7 @@ function rank(m) {
   return m.status === "unscanned" ? 3 : 2;
 }
 
-async function pickMap(base) {
+async function pickMap(base, needCrop, mapId) {
   const items = (await getJson(`${base}/api/maps?limit=50`)).items ?? [];
   const usable = items
     .filter((m) => m.audio_url && !m.parse_error)
@@ -83,8 +86,10 @@ async function pickMap(base) {
       /* try the next map */
     }
   }
-  if (!crop) throw new Error("no map with audio and enabled crop suggestions");
-  return { crop, status: usable[0] ?? crop };
+  const status = (mapId && items.find((m) => m.id === mapId)) || usable[0] || crop;
+  if (!crop && needCrop) throw new Error("no map with audio and enabled crop suggestions");
+  if (!status) throw new Error("no map to show");
+  return { crop: crop ?? status, status };
 }
 
 /** A canned playlist for the edit page shots: real library maps plus one missing song; nothing is written. */
@@ -157,7 +162,8 @@ async function main() {
   const base = opt.base.replace(/\/$/, "");
   const exe = opt.exe || EXE.find((p) => existsSync(p));
   if (!exe) throw new Error(`no browser found, pass --path (tried ${EXE.join(", ")})`);
-  const { crop, status } = await pickMap(base);
+  const needCrop = !opt.only.length || opt.only.some((n) => n.includes("crop"));
+  const { crop, status } = await pickMap(base, needCrop, opt.map);
   const desktop = { width: opt.width, height: opt.height };
   const vr = { width: 1920, height: 1080 };
   const demo = JSON.stringify(await demoPlaylist(base));
