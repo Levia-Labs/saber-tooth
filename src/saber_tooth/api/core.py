@@ -2,6 +2,7 @@
 
 import json
 import logging
+import os
 import re
 import shutil
 from pathlib import Path
@@ -10,6 +11,7 @@ from urllib.parse import urlparse
 from fastapi.responses import JSONResponse
 
 from saber_tooth.api.generate_api import Conflict, GenerateSubmitter
+from saber_tooth.api.hostpath import host_path
 from saber_tooth.api.jobs_api import core_handlers, job_detail, list_jobs
 from saber_tooth.api.library import (
     AUDIO_TYPES,
@@ -76,6 +78,7 @@ class Api:
         for kind, handler in core_handlers(service).items():
             self.jobs.register(kind, handler)
         self.extras = Extras()
+        self.levels_host = os.environ.get("LEVELS_DIR_HOST") or None
 
     # ids ---------------------------------------------------------------------
 
@@ -115,7 +118,7 @@ class Api:
             query.bpm_min,
             query.bpm_max,
         )
-        items = [shape_item(r, self.service.levels, self.extras) for r in rows]
+        items = [self._shape(r) for r in rows]
         return {"items": items, "total": total, "offset": query.offset, "limit": query.limit}
 
     def _refresh(self) -> None:
@@ -123,7 +126,7 @@ class Api:
         self.service.refresh_if_changed(background=self.store.has_maps())
 
     def facets(self) -> dict:
-        self._refresh()
+        self.service.refresh_if_changed(background=True)  # never index on the request thread
         return self.store.facets()
 
     def map_item(self, raw: str) -> dict:
@@ -131,7 +134,14 @@ class Api:
         row = self.store.get_map(self.map_id(raw))
         if row is None:
             raise MapNotFound(f"unknown map: {raw}")
-        return shape_item(row, self.service.levels, self.extras)
+        return self._shape(row)
+
+    def _shape(self, row: dict) -> dict:
+        item = shape_item(row, self.service.levels, self.extras)
+        item["folder_path"] = host_path(
+            str(self.service.levels / row["folder"]), str(self.service.levels), self.levels_host
+        )
+        return item
 
     def rename_map(self, raw: str, name: object, keep_folder: bool = False) -> dict:
         """Rename a map (song name, folder and id); answers the map under its new id."""

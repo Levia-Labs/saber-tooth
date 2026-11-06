@@ -49,7 +49,7 @@ The design goals are flawless, flowing and atmospheric maps. See the [design spe
 
 1. Copy `.env.example` to `.env` and set `LEVELS_DIR` to your `CustomLevels` folder.
 2. Run `task st:up`.
-3. Open <http://127.0.0.1:8100>, or the port set in `SABER_PORT`.
+3. Open <http://127.0.0.1:8100>, or the port set in `SABER_PORT`. For HTTPS with a self-signed certificate, set `SABER_TLS=1` in `.env` and open <https://127.0.0.1:8100>: accept the browser warning or trust the generated `/data/tls/cert.pem`. Extra names go in `SABER_TLS_HOSTS` (also in `SABER_ALLOWED_HOSTS`); your own pair goes in `SABER_TLS_CERT` and `SABER_TLS_KEY`. The CLI reads `SABER_API` and honours `SABER_TLS_VERIFY=0`.
 4. Run `task st:stop` to pause (containers kept) and `task st:start` to resume. `task st:down` removes the containers; volumes and images stay.
 5. Agents can connect over MCP: `claude mcp add --transport http saber-tooth http://127.0.0.1:8100/mcp`. See [API](docs/api.md#mcp).
 6. On Linux, set `PUID` and `PGID` in `.env` to the owner of `LEVELS_DIR` (default 1000). The container never changes ownership of `LEVELS_DIR`; it must be writable by that uid.
@@ -71,6 +71,7 @@ The design goals are flawless, flowing and atmospheric maps. See the [design spe
 | `task st:learn -- <levels_dir> <out.json>` | Build lightshow templates                                  |
 | `task st:learn-bundle -- <levels_dir>`     | Regenerate the bundled lightshow set                       |
 | `task st:gen -- <url>`                     | Start a generation job from a URL                          |
+| `task st:jobs-wait -- --kind fix`          | Wait for queued and running jobs; exit 1 failed, 3 timeout |
 | `task st:gate`                             | Run every validation gate, one line each                   |
 | `task st:lane -- <name>`                   | Create a work lane worktree; see the workflow doc          |
 | `task st:commit -- -m "<msg>" <paths>`     | Format, stage and commit exactly those paths               |

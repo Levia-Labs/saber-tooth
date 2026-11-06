@@ -137,15 +137,23 @@ def test_running_count_tracks_active_jobs(tmp_path):
 def test_a_failing_job_frees_its_slot_and_its_map(tmp_path):
     store = Store(tmp_path / "db.sqlite")
     jobs = Jobs(store, limit=lambda: 1)
+    good_running, release = threading.Event(), threading.Event()
 
     def handler(args, progress):
         if args.get("fail"):
             raise RuntimeError("nope")
+        good_running.set()
+        release.wait(60)
 
     jobs.register("a", handler)
     bad = store.create_job("a", "m1", {"fail": True})
     good = store.create_job("a", "m1", {})
     jobs.start()
-    assert jobs.wait(bad, 10)["status"] == "failed"
-    assert jobs.wait(good, 10)["status"] == "done"
+    # The good job starts only once the failed one freed its slot and its map. Holding it
+    # running keeps the failed row from being pruned as superseded before it is read.
+    assert good_running.wait(60)
+    assert store.job(bad)["status"] == "failed"
+    release.set()
+    assert jobs.wait(good, 60)["status"] == "done"
     jobs.shutdown()
+    assert jobs.running_count() == 0

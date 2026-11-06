@@ -6,14 +6,16 @@ from dataclasses import dataclass
 from saber_tooth.checks.constants import PARITY_DOT, VISION_MIN_DT, cells_per_second
 from saber_tooth.checks.layout import SAME_CELL_S, converges, jump_window_s
 from saber_tooth.generator.motifs import Step, lattice, pool
-from saber_tooth.model import CUT_VECTORS, Color, Note
+from saber_tooth.model import CUT_VECTORS, Color, Cut, Note
 from saber_tooth.profiles import Profile
+from saber_tooth.swings import DEFAULT_PREV, Vec
 from saber_tooth.timing import Timing
 
 GAP_MARGIN_S = 1e-3
 SPEED_MARGIN = 0.98
 MAX_PARITY_DOT = min(PARITY_DOT, -0.5)  # stricter than the check: clearly alternating swings
 VISION_MARGIN_S = 1e-3
+PIN_DOT = 0.5  # a dot must stay within 60 degrees of the vector it had before the fill
 
 
 class GenerationError(Exception):
@@ -45,8 +47,16 @@ def is_vision_spot(x: int, y: int) -> bool:
 class Placer:
     """Verifies each candidate step against the limits the checks use before keeping it."""
 
-    def __init__(self, timing: Timing, profile: Profile, context: Iterable[Note] = ()):
+    def __init__(
+        self,
+        timing: Timing,
+        profile: Profile,
+        context: Iterable[Note] = (),
+        pinned: dict[Note, Vec] | None = None,
+    ):
         self.timing, self.profile = timing, profile
+        # swing vector each context dot had in the map before the fill: the fill must keep it
+        self.pinned: dict[Note, Vec] = pinned or {}
         self.secs: dict[Color, list[float]] = {Color.RED: [], Color.BLUE: []}
         self.notes: dict[Color, list[Note]] = {Color.RED: [], Color.BLUE: []}
         self.all_secs: list[float] = []
@@ -60,8 +70,10 @@ class Placer:
             self.add(n, context=True)
 
     @classmethod
-    def from_notes(cls, timing, profile, notes: Iterable[Note], context=()) -> "Placer":
-        placer = cls(timing, profile, context)
+    def from_notes(
+        cls, timing, profile, notes: Iterable[Note], context=(), pinned=None
+    ) -> "Placer":
+        placer = cls(timing, profile, context, pinned)
         for n in sorted(notes):
             placer.add(n)
         return placer
@@ -86,11 +98,42 @@ class Placer:
         i = bisect_left(self.secs[hand], before)
         return self.secs[hand][i - 1] if i else -math.inf
 
+    def _effective(self, hand: Color, i: int) -> Vec | None:
+        """Swing vector of the hand's i-th note; a dot goes opposite to the swing before it."""
+        notes, flips = self.notes[hand], 0
+        while i >= 0 and notes[i].cut == Cut.ANY and notes[i] not in self.pinned:
+            i, flips = i - 1, flips + 1
+        base = DEFAULT_PREV if i < 0 else self.pinned.get(notes[i]) or CUT_VECTORS[notes[i].cut]
+        sign = -1 if flips % 2 else 1
+        return (sign * base[0], sign * base[1])
+
     def _neighbours(self, hand: Color, s: float) -> tuple[Link | None, Link | None]:
         i = bisect_left(self.secs[hand], s)
-        prev = _link(self.notes[hand][i - 1], self.secs[hand][i - 1]) if i else None
-        nxt = _link(self.notes[hand][i], self.secs[hand][i]) if i < len(self.secs[hand]) else None
+        prev = nxt = None
+        if i:
+            prev = Link(
+                self.secs[hand][i - 1], self._effective(hand, i - 1), self._pos(hand, i - 1)
+            )
+        if i < len(self.secs[hand]):
+            nxt = _link(self.notes[hand][i], self.secs[hand][i])
         return prev, nxt
+
+    def _pos(self, hand: Color, i: int) -> tuple[int, int]:
+        return self.notes[hand][i].x, self.notes[hand][i].y
+
+    def _dot_run_clash(self, hand: Color, s: float, me: Link) -> bool:
+        """A dot after `me` flips with it; the swing behind the dots must still alternate."""
+        i = bisect_left(self.secs[hand], s)
+        notes, flips = self.notes[hand], 0
+        if i < len(notes) and me.vec is not None and notes[i] in self.pinned:
+            pin = self.pinned[notes[i]]  # the dot must keep the vector the swing after it expects
+            return -(me.vec[0] * pin[0] + me.vec[1] * pin[1]) < PIN_DOT
+        while i < len(notes) and notes[i].cut == Cut.ANY:
+            i, flips = i + 1, flips + 1
+        if not flips or i >= len(notes) or me.vec is None:
+            return False
+        sign = -1 if flips % 2 else 1
+        return _parity_clash((sign * me.vec[0], sign * me.vec[1]), CUT_VECTORS[notes[i].cut])
 
     def _linked(self, a: Link, b: Link, relaxed: bool = False) -> bool:
         warn = self.profile.warn
@@ -128,13 +171,15 @@ class Placer:
             i += 1
         return False
 
-    def _fits(self, s, step: Step, prev, nxt, next_s, relaxed: bool) -> bool:
+    def _fits(self, hand: Color, s, step: Step, prev, nxt, next_s, relaxed: bool) -> bool:
         if self._converges(s, step):
             return False
         me = Link(s, CUT_VECTORS[step[0]], (step[1], step[2]))
         if prev is not None and not self._linked(prev, me, relaxed):
             return False
         if nxt is not None and not self._linked(me, nxt, relaxed):
+            return False
+        if nxt is not None and self._dot_run_clash(hand, s, me):
             return False
         return self._vision_ok(s, step, next_s)
 
@@ -152,7 +197,7 @@ class Placer:
         prev, nxt = self._neighbours(hand, s)
         for relaxed in (False, True):
             for step in self._ordered(hand, preferred, prev):
-                if self._fits(s, step, prev, nxt, next_s, relaxed):
+                if self._fits(hand, s, step, prev, nxt, next_s, relaxed):
                     cut, x, y = step
                     self.add(Note(beat, x, y, hand, cut))
                     return step

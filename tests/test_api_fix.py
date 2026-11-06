@@ -23,7 +23,7 @@ def test_fix_job_writes_new_folder_and_reports(tmp_path):
         assert report["fixed_id"] == map_id_for(report["folder"])
         assert report["errors"] == 0 and report["unfixed"] == []
         assert report["status"] == "ok"  # the copy's library status, the toast's severity
-        assert len(report["difficulties"]) == 5 and report["analysed"] is False
+        assert len(report["difficulties"]) == 5 and report["analysed"] is True
         assert set(report) >= {"before", "after", "rounds", "applied"}
         assert _hashes(original) == before
         folders = {m["folder"] for m in http.get("/api/maps").json()["items"]}
@@ -66,5 +66,5 @@ def test_list_maps_has_ui_fields(client):
     assert set(rows[0]) - links == {
         "id", "folder", "title", "mapper", "environment", "parse_error", "errors", "warnings",
         "scanned_at", "status", "cover_url", "difficulties", "approved", "pending",
-    } | {"bpm", "duration_s", "job", "audio_url", "preview_start"}  # fmt: skip
+    } | {"bpm", "duration_s", "job", "audio_url", "preview_start", "folder_path"}  # fmt: skip
     assert rows[0]["id"] == MID and rows[0]["folder"] == NAME

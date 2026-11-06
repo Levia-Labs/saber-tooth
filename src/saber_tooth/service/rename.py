@@ -15,17 +15,22 @@ MAX_NAME = 120
 _FOLDER_STRIP = re.compile(r'[\x00-\x1f\x7f-\x9f<>:"|?*/\\]')
 
 
-def validate_map_name(raw: object) -> tuple[str, str]:
-    """Return (song name, safe folder name) for a requested name, or raise RenameInvalid."""
+def validate_map_name(raw: object, folder_from_name: bool = True) -> tuple[str, str]:
+    """Return (song name, safe folder name) for a requested name, or raise RenameInvalid.
+
+    With `folder_from_name` False the folder is not derived from the title, so separators are
+    allowed and the folder part is returned unchecked."""
     if not isinstance(raw, str):
         raise RenameInvalid("name must be text")
     name = raw.strip()
     if not name or len(name) > MAX_NAME:
         raise RenameInvalid(f"name must be 1-{MAX_NAME} characters")
-    if "/" in name or "\\" in name:
+    if folder_from_name and ("/" in name or "\\" in name):
         raise RenameInvalid("name must not contain a path separator")
     if any(ord(c) < 32 or 0x7F <= ord(c) <= 0x9F for c in name):
         raise RenameInvalid("name must not contain control characters")
+    if not folder_from_name:
+        return name, ""
     folder = " ".join(_FOLDER_STRIP.sub("", name).split()).rstrip(". ")
     if not windows_safe_component(folder):
         raise RenameInvalid("name cannot be used as a folder name")
@@ -85,7 +90,7 @@ class RenameMixin:
         A fixed copy keeps its " [saber-tooth]" folder suffix and its original follows it (and an
         original takes its copy along), because the pairing is `<original folder>` + the suffix.
         """
-        name, base = validate_map_name(raw_name)
+        name, base = validate_map_name(raw_name, folder_from_name=not keep_folder)
         if keep_folder:
             return self._keep_folder(map_id, name)
         base = base.removesuffix(SUFFIX).rstrip(". ") or base

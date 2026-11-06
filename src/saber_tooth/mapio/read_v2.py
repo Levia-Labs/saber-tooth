@@ -1,4 +1,5 @@
 from saber_tooth.mapio.errors import MapParseError
+from saber_tooth.mapio.mapping_ext import make_wall, v2_type_geometry
 from saber_tooth.mapio.vanilla import vanilla_cell, vanilla_cut
 from saber_tooth.model import BasicEvent, Bomb, BpmEvent, Color, Difficulty, Note, Wall
 
@@ -7,15 +8,16 @@ BPM_TYPE = 100
 
 
 def _wall(w: dict) -> Wall:
-    crouch = int(w.get("_type", 0)) == 1
-    y, height = (2, 3) if crouch else (0, 5)
-    return Wall(
+    kind = int(w.get("_type", 0))
+    y, height = v2_type_geometry(kind)
+    return make_wall(
         float(w["_time"]),
         int(w["_lineIndex"]),
         y,
         float(w.get("_duration", 0)),
         int(w.get("_width", 1)),
         height,
+        kind >= 1000,
     )
 
 

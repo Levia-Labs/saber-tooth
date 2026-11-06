@@ -10,6 +10,7 @@ from saber_tooth.store_claims import ProposalClaims
 from saber_tooth.store_delete import DeleteRows
 from saber_tooth.store_jobs import JobRows
 from saber_tooth.store_maps import MapQueries
+from saber_tooth.store_scan import SCAN_SQL, scan_row, scan_view
 from saber_tooth.store_sources import SourceRows
 
 PROPOSAL_STATUSES = {"pending", "approved", "rejected", "applied", "superseded"}
@@ -46,6 +47,7 @@ _MIGRATIONS = (
     ("maps", "source", "ALTER TABLE maps ADD COLUMN source TEXT"),
     ("proposals", "finding_json", "ALTER TABLE proposals ADD COLUMN finding_json TEXT"),
     ("proposals", "replaces", "ALTER TABLE proposals ADD COLUMN replaces INTEGER"),
+    ("scans", "unanalysed", "ALTER TABLE scans ADD COLUMN unanalysed INTEGER"),
     ("jobs", "map_id", "ALTER TABLE jobs ADD COLUMN map_id TEXT"),
     ("jobs", "args_json", "ALTER TABLE jobs ADD COLUMN args_json TEXT"),
     ("jobs", "started_at", "ALTER TABLE jobs ADD COLUMN started_at TEXT"),
@@ -123,7 +125,8 @@ class Store(MapQueries, ProposalClaims, JobRows, SourceRows, DeleteRows):
     ) -> list[int]:
         """Atomically drop pending and approved proposals, insert new ones, save the scan.
 
-        scan is {"findings": list[dict], "analysis": str | None}; history (rejected, applied) stays.
+        scan is {"findings": list[dict], "analysis": str | None, "unanalysed": bool};
+        history (rejected, applied) stays.
         """
         return self._insert(map_id, proposals, delete_open=True, scan=scan)
 
@@ -188,11 +191,7 @@ class Store(MapQueries, ProposalClaims, JobRows, SourceRows, DeleteRows):
                         (map_id,),
                     )
                 if scan is not None:
-                    self._db.execute(
-                        "INSERT OR REPLACE INTO scans(map_id, keys_json, analysis, scanned_at)"
-                        " VALUES(?,?,?,?)",
-                        (map_id, json.dumps(scan["findings"]), scan.get("analysis"), now),
-                    )
+                    self._db.execute(SCAN_SQL, scan_row(map_id, scan, now))
                 for row in rows:
                     cur = self._db.execute(self._INSERT, row)
                     ids.append(int(cur.lastrowid))
@@ -236,7 +235,16 @@ class Store(MapQueries, ProposalClaims, JobRows, SourceRows, DeleteRows):
         rows = self._query("SELECT * FROM scans WHERE map_id=?", (map_id,))
         if not rows:
             return None
-        return {"findings": json.loads(rows[0]["keys_json"]), "analysis": rows[0]["analysis"]}
+        return scan_view(rows[0])
+
+    def set_scan_findings(self, map_id: str, findings: list[dict]) -> None:
+        """Replace the stored findings of a scan in place; proposals and analysis stay."""
+        self._exec("UPDATE scans SET keys_json=? WHERE map_id=?", (json.dumps(findings), map_id))
+
+    def unanalysed_ids(self) -> list[str]:
+        """Maps whose stored scan ran without analysis although the map has audio."""
+        rows = self._query("SELECT map_id FROM scans WHERE unanalysed=1 ORDER BY map_id")
+        return [r["map_id"] for r in rows]
 
     def prune_maps(self, keep: set[str]) -> None:
         """Drop map rows (and their scans) whose id is not in keep."""

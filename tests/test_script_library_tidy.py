@@ -269,3 +269,32 @@ def test_deletes_go_in_batches_of_50_and_aggregate(tmp_path):
     assert all(c[0] == "POST" for c in calls)
     assert (failed, refused) == (1, 1)
     assert any("busy" in line for line in lines)
+
+
+def test_https_base_and_unverified_tls_follow_the_cli_settings(monkeypatch):
+    # The service runs HTTPS with a self-signed cert; the script must reach it the way the CLI does.
+    seen = {}
+
+    class Response:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def read(self):
+            return b"[]"
+
+    def urlopen(req, timeout, context=None):
+        seen["url"], seen["context"] = req.full_url, context
+        return Response()
+
+    monkeypatch.setenv("SABER_API", "https://127.0.0.1:8100")
+    monkeypatch.setenv("SABER_TLS_VERIFY", "0")
+    monkeypatch.setattr(lt.urllib.request, "urlopen", urlopen)
+    assert lt.default_base() == "https://127.0.0.1:8100"
+    assert lt.http("GET", "https://127.0.0.1:8100/api/maps") == (200, b"[]")
+    assert seen["context"] is not None
+    assert seen["context"].verify_mode == lt.ssl.CERT_NONE

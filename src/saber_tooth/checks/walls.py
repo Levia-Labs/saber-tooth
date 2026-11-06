@@ -11,32 +11,43 @@ from saber_tooth.profiles import (
 from saber_tooth.timing import Timing
 
 EPS = 1e-6
-PRECISION_X = 1000  # Mapping Extensions encodes precise positions from 1000 up
 DEFAULT_DODGE_S = 0.8
+MIN_OVERLAP = 0.25  # lanes a decoded precision wall must cover to count for a cell
+
+
+def covers(lo: float, size: float, cell: int) -> bool:
+    """True when [lo, lo + size) covers more than MIN_OVERLAP of the unit cell `cell`."""
+    return min(lo + size, cell + 1) - max(lo, cell) > MIN_OVERLAP
+
+
+def covers_cell(w: Wall, x: int, y: int) -> bool:
+    """True when the wall's decoded geometry covers grid cell (x, y)."""
+    return covers(w.x, w.width, x) and covers(w.y, w.height, y)
 
 
 def blocks_standing(w: Wall) -> bool:
     """True for walls that cannot be ducked under: they cover the chest row."""
-    return w.y <= 1 < w.y + w.height
+    return covers(w.y, w.height, 1)
 
 
 def blocks_head(w: Wall) -> bool:
     """True for walls that cover the head row, crouch walls included."""
-    return w.y <= 2 < w.y + w.height
+    return covers(w.y, w.height, 2)
 
 
 def is_live(w: Wall) -> bool:
     """True for walls that can touch the play space: some length, some width, a lane of 0..3.
 
-    Zero-width, zero-length and Mapping Extensions precision walls are wall art, not hazards.
+    Zero-width and zero-length walls are wall art, not hazards, as are precision walls
+    (Mapping Extensions, decoded) that overlap no cell of the 4x3 grid.
     """
-    if w.duration <= 0 or w.width < 1 or abs(w.x) >= PRECISION_X or w.width >= PRECISION_X:
+    if w.duration <= 0 or not any(covers(w.x, w.width, lane) for lane in range(4)):
         return False
-    return w.x < 4 and w.x + w.width > 0
+    return not w.me or any(covers(w.y, w.height, row) for row in range(3))
 
 
 def _lanes(w: Wall) -> set[int]:
-    return set(range(w.x, w.x + w.width))
+    return {lane for lane in range(4) if covers(w.x, w.width, lane)}
 
 
 def _end(w: Wall) -> float:

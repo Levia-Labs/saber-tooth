@@ -18,12 +18,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 LOG_DIR = Path(".cache") / "gate"
 FRONTEND = ["frontend:typecheck", "frontend:lint", "frontend:test", "frontend:build"]
+NPM = {n: ["npm", "--prefix", "frontend", "run", n.split(":")[1]] for n in FRONTEND}
 ARGV: dict[str, list[str]] = {
+    # The SPA build comes first: web tests serve src/saber_tooth/web/index.html.
+    "frontend:build": NPM["frontend:build"],
     "pytest": ["uv", "run", "pytest", "-q"],
     "lint:python:check": ["task", "lint:python:check"],
     "lint:precommit": ["task", "lint:precommit"],
     "lint:web:check": ["task", "lint:web:check"],
-    **{n: ["npm", "--prefix", "frontend", "run", n.split(":")[1]] for n in FRONTEND},
+    **{n: v for n, v in NPM.items() if n != "frontend:build"},
     "security:sast": ["task", "security:sast"],
     "quality:gate": ["task", "quality:gate"],
     "st:readme-check": ["task", "st:readme-check"],

@@ -1,5 +1,6 @@
 """Health endpoint and background library warm-up."""
 
+import threading
 import time
 
 import pytest
@@ -23,6 +24,20 @@ def test_health_is_cheap(svc, monkeypatch):
     with TestClient(create_app(svc), base_url="http://127.0.0.1:8100") as c:
         res = c.get("/api/health")
     assert res.status_code == 200 and res.json() == {"status": "ok"}
+
+
+def test_facets_do_not_wait_on_the_first_index(svc, monkeypatch):
+    svc.store._exec("DELETE FROM maps")  # a fresh install: nothing indexed yet
+    svc._seen = None
+    gate = threading.Event()
+    monkeypatch.setattr(svc, "_reindex", lambda: gate.wait(10) or 0)
+    try:
+        with TestClient(create_app(svc), base_url="http://localhost") as c:
+            start = time.monotonic()
+            body = c.get("/api/maps/facets").json()
+            assert time.monotonic() - start < 2 and body["total"] == 0
+    finally:
+        gate.set()
 
 
 def test_warm_indexes_in_background(svc):

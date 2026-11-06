@@ -7,6 +7,15 @@ function clock(s: number | null): string | null {
   return `${m}:${(s - m * 60).toFixed(1).padStart(4, "0")}`;
 }
 
+/** What Fix did with a finding it left alone, by the reason it recorded. */
+function unfixedCopy(reason: string | null | undefined): string {
+  if (!reason) return "Fix did not handle this finding. Edit it by hand.";
+  if (reason === "no verified fix") {
+    return "Fix tried and found no change that passes every check. Edit it by hand.";
+  }
+  return `Fix could not handle this finding: ${reason}. Edit it by hand.`;
+}
+
 /** A finding the fixer has no proposal for: shown so the status count always matches the list. */
 export function FindingCard({ finding: f }: { finding: Finding }) {
   const time = clock(f.time_s);
@@ -30,10 +39,7 @@ export function FindingCard({ finding: f }: { finding: Finding }) {
         <p className="card-summary">
           <strong>{f.message}</strong>
         </p>
-        <p className="muted">
-          No automatic fix for this finding. Edit it by hand.
-          {f.unfixed_reason ? ` Fix skipped it: ${f.unfixed_reason}.` : ""}
-        </p>
+        <p className="muted">{unfixedCopy(f.unfixed_reason)}</p>
       </div>
     </article>
   );

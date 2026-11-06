@@ -1,7 +1,8 @@
 from saber_tooth.mapio.errors import MapParseError
+from saber_tooth.mapio.mapping_ext import make_wall
 from saber_tooth.mapio.read_v2 import _sort
 from saber_tooth.mapio.vanilla import vanilla_cell, vanilla_cut
-from saber_tooth.model import BasicEvent, Bomb, Color, Difficulty, Note, Wall
+from saber_tooth.model import BasicEvent, Bomb, Color, Difficulty, Note
 
 # TODO(v4): bpm data and v4 light box groups are ignored in v1.
 
@@ -41,7 +42,7 @@ def read_v4(
         for w in data.get("obstacles", []):
             e = _lookup(data, "obstaclesData", _i(w, "i"))
             x, y, dur = _i(e, "x"), _i(e, "y"), _f(e, "d")
-            d.walls.append(Wall(_f(w, "b"), x, y, dur, _i(e, "w"), _i(e, "h")))
+            d.walls.append(make_wall(_f(w, "b"), x, y, dur, _i(e, "w"), _i(e, "h")))
         for ev in (lightshow or {}).get("basicEvents", []):
             e = _lookup(lightshow, "basicEventsData", _i(ev, "i"))
             fv = float(e.get("f", 1.0))

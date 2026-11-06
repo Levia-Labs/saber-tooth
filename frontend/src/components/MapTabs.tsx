@@ -9,10 +9,12 @@ interface Props {
   available: readonly MapTab[];
   active: MapTab;
   onSelect: (tab: MapTab) => void;
+  /** Shows the copy-folder-path button at the right end of the row when given. */
+  onCopyPath?: () => void;
 }
 
 /** WAI-ARIA tablist (automatic activation): arrows, Home and End move and select. */
-export function MapTabList({ available, active, onSelect }: Props) {
+export function MapTabList({ available, active, onSelect, onCopyPath }: Props) {
   const list = useRef<HTMLDivElement>(null);
   const onKey = (e: KeyboardEvent) => {
     const next = tabForKey(e.key, active, available);
@@ -22,24 +24,37 @@ export function MapTabList({ available, active, onSelect }: Props) {
     list.current?.querySelector<HTMLElement>(`#${tabId(next)}`)?.focus();
   };
   return (
-    <div ref={list} className="mode-switch map-tabs" role="tablist" aria-label="Map">
-      {MAP_TABS.filter((t) => available.includes(t.key)).map((t) => (
+    <div className="map-tabs-row">
+      <div ref={list} className="mode-switch map-tabs" role="tablist" aria-label="Map">
+        {MAP_TABS.filter((t) => available.includes(t.key)).map((t) => (
+          <button
+            key={t.key}
+            id={tabId(t.key)}
+            type="button"
+            role="tab"
+            className={t.key === "delete" ? "pill map-tab map-tab-danger" : "pill map-tab"}
+            aria-selected={t.key === active}
+            aria-controls={panelId(t.key)}
+            tabIndex={t.key === active ? 0 : -1}
+            onClick={() => onSelect(t.key)}
+            onKeyDown={onKey}
+          >
+            <Icon name={t.icon} />
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {onCopyPath && (
         <button
-          key={t.key}
-          id={tabId(t.key)}
           type="button"
-          role="tab"
-          className={t.key === "delete" ? "pill map-tab map-tab-danger" : "pill map-tab"}
-          aria-selected={t.key === active}
-          aria-controls={panelId(t.key)}
-          tabIndex={t.key === active ? 0 : -1}
-          onClick={() => onSelect(t.key)}
-          onKeyDown={onKey}
+          className="btn map-copy-path"
+          aria-label="Copy folder path to clipboard"
+          title="Copy folder path to clipboard"
+          onClick={onCopyPath}
         >
-          <Icon name={t.icon} />
-          {t.label}
+          <Icon name="copy" />
         </button>
-      ))}
+      )}
     </div>
   );
 }

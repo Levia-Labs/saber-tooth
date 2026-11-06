@@ -1,12 +1,10 @@
 """Scan and Fix work one difficulty and one batch at a time and keep what they finished."""
 
-import time
-
 import pytest
 
 from saber_tooth.fixer import window
 from saber_tooth.jobs import JobCancelled
-from saber_tooth.service import fixrun, map_id_for
+from saber_tooth.service import fixrun, map_id_for, scan
 from saber_tooth.service.fixsave import Checkpoint
 from tests.test_fix_window import messy
 from tests.test_scan_stages import Progress
@@ -54,23 +52,38 @@ def test_a_cancelled_scan_keeps_the_batches_it_finished(tmp_path, monkeypatch):
     assert _stored(svc, mid) > 0
 
 
-def test_scan_of_a_dense_map_stores_early_and_finishes_quickly(tmp_path):
+def test_scan_of_a_dense_map_stores_early_and_does_no_repeat_work(tmp_path, monkeypatch):
+    """Work counters, not wall time: every finding is proposed once, every batch is checked once."""
     svc = _make(tmp_path, extra=messy(1500, 3, 0.09))
     mid = map_id_for(NAME)
-    first: list[float] = []
-    start = time.monotonic()
+    calls = {"check": 0, "propose": 0}
+    real_check, real_propose = scan.run_checks, scan.propose
+
+    def counting_check(*args, **kwargs):
+        calls["check"] += 1
+        return real_check(*args, **kwargs)
+
+    def counting_propose(*args, **kwargs):
+        calls["propose"] += 1
+        return real_propose(*args, **kwargs)
+
+    monkeypatch.setattr(scan, "run_checks", counting_check)
+    monkeypatch.setattr(scan, "propose", counting_propose)
+    early: list[int] = []
 
     class Watch(Progress):
         def __call__(self, text):
             super().__call__(text)
-            if text.startswith("Hard: batch 2 of") and not first:
-                first.append(time.monotonic() - start)
+            if text.startswith("Hard: batch 2 of") and not early:
+                early.append(_stored(svc, mid))
 
     out = svc.run_scan(mid, Watch())
-    total = time.monotonic() - start
-    assert _stored(svc, mid) > 1000 and out["proposals"] > 500
-    assert first and first[0] < 30, first  # the first batch is stored within seconds
-    assert total < 200, total  # 1500 notes: the whole-map scan needed ~5 minutes
+    stored = _stored(svc, mid)
+    batches = sum(c["batches"] for c in out["completed"])
+    assert stored > 1000 and out["proposals"] > 500
+    assert early and 0 < early[0] < stored  # the first batch is stored before the rest is done
+    assert calls["check"] == batches + 1  # one map-level pass plus one check per batch
+    assert calls["propose"] <= stored  # each finding is proposed at most once: no rescans
 
 
 def _stop_at(prefix: str):

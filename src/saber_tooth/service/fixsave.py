@@ -53,6 +53,15 @@ def _window(f: dict) -> tuple:
     return (f.get("rule"), f.get("difficulty"), f.get("beat_start"), f.get("beat_end"))
 
 
+def replace_reasons(store, map_id: str, unfixed: list[dict]) -> None:
+    """Make the stored scan carry exactly this run's reasons; those of older runs are dropped."""
+    info = store.scan_info(map_id)
+    if info is None:
+        return
+    bare = [{k: v for k, v in f.items() if k != "unfixed_reason"} for f in info["findings"]]
+    store.set_scan_findings(map_id, with_reasons(bare, unfixed))
+
+
 def with_reasons(findings: list[dict], unfixed: list[dict]) -> list[dict]:
     """Findings with `unfixed_reason` added where Fix left that rule, difficulty and window."""
     why = {_window(u): u["reason"] for u in unfixed if u.get("reason")}

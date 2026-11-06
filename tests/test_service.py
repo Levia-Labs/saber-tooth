@@ -42,11 +42,24 @@ def _build_levels(levels: Path, extra=None, env: str | None = None) -> None:
         shutil.copyfile(new, folder / new.name)
 
 
-def _client(tmp_path: Path, handler=None) -> AnalyserClient:
-    def down(request):
-        raise httpx.ConnectError("down")
+def down(request):
+    raise httpx.ConnectError("down")
 
-    return AnalyserClient("http://analyser", tmp_path / "up", httpx.MockTransport(handler or down))
+
+def _up(tmp_path: Path):
+    """A working analyser: one project of beats, so maps with audio are analysed."""
+    folder = tmp_path / "up" / "song"
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / "meta.json").write_text('{"name": "song", "key": "C", "bpm": 120}', encoding="utf-8")
+    (folder / "beats.csv").write_text("\n".join(str(i * 0.5) for i in range(120)), encoding="utf-8")
+    headers = {"Content-Disposition": 'attachment; filename="song_tracks.zip"'}
+    return lambda request: httpx.Response(200, content=b"zip", headers=headers)
+
+
+def _client(tmp_path: Path, handler=None) -> AnalyserClient:
+    return AnalyserClient(
+        "http://analyser", tmp_path / "up", httpx.MockTransport(handler or _up(tmp_path))
+    )
 
 
 def _make(tmp_path: Path, extra=None, handler=None, env=None) -> Service:
@@ -145,7 +158,8 @@ def test_apply_aborts_without_all_difficulties(tmp_path):
     assert sorted(p.name for p in svc.levels.iterdir()) == folders
 
 
-def test_scan_without_analyser_records_no_analysis(svc):
+def test_scan_without_analyser_records_no_analysis(tmp_path):
+    svc = _make(tmp_path, handler=down)
     mid = map_id_for(NAME)
     result = svc.run_scan(mid)
     assert result["map_id"] == mid

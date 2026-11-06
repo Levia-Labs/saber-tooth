@@ -7,15 +7,15 @@ from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
 
-from saber_tooth.analyser_client import AnalyserClient, AnalyserError, AnalyserTimeout
+from saber_tooth.analyser_client import AnalyserClient
 from saber_tooth.analysis import Analysis
 from saber_tooth.audio import probe_tags
 from saber_tooth.lightshow import BUNDLED, Templates
 from saber_tooth.lightshow import learn as learn_templates
 from saber_tooth.mapio import MapParseError, load_map
-from saber_tooth.mapio.errors import safe_name
 from saber_tooth.model import Beatmap
-from saber_tooth.service.background import start_backfill, start_reindex
+from saber_tooth.service.analyse import analyse_map
+from saber_tooth.service.background import start_backfill, start_reindex, start_rescan
 from saber_tooth.service.copyscan import is_copy, store_copy_scan
 from saber_tooth.service.delete import DeleteMixin
 from saber_tooth.service.duration import folder_duration
@@ -35,7 +35,6 @@ log = logging.getLogger(__name__)
 
 SUFFIX = " [saber-tooth]"
 APPLY_RETRIES = 3
-ANALYSIS_CACHE = 16  # analyser results kept so Scan and Fix do not analyse one song twice
 
 
 class _Stale(Exception):
@@ -69,6 +68,8 @@ class Service(DeleteMixin, RenameMixin):
         self._bg_lock = threading.Lock()  # guards the background flags and the scan queue
         self._reindexing = False
         self._backfilling = False
+        self._rescanning = False
+        self._rescan_after = 0.0
         self._pending_scans: list[str] = []
 
     # library -----------------------------------------------------------------
@@ -115,6 +116,7 @@ class Service(DeleteMixin, RenameMixin):
             seen.add(self._index_folder(folder, pending))
         self.store.prune_maps(seen)
         start_backfill(self, pending)  # low priority, off this thread
+        start_rescan(self)  # scans stored without analysis, once the analyser answers
         return len(seen)
 
     def _index_folder(self, folder: Path, pending: list[str]) -> str:
@@ -187,32 +189,8 @@ class Service(DeleteMixin, RenameMixin):
     # scan --------------------------------------------------------------------
 
     def _analyse(self, map_id: str, bm: Beatmap, folder: Path, progress=None) -> Analysis | None:
-        """The analyser's result for the map's audio; one call per audio file while it is unchanged.
-
-        An analyser that is down or refuses gives None (checks run without it); one that takes
-        longer than the stage timeout raises AnalyserTimeout so the job fails with a clear error."""
-        try:
-            audio = folder / safe_name(bm.info.song_file)
-            if not audio.is_file():
-                return None
-            stat = audio.stat()
-            key = (str(audio.resolve()), stat.st_size, stat.st_mtime_ns)
-            with self._analysis_lock:
-                hit = self._analyses.get(key)
-            if hit is not None and (hit.audio is None or hit.audio.exists()):
-                return hit
-            found = self.client.analyse_file(
-                audio, f"{map_id}.ogg", getattr(progress, "check", None)
-            )
-            with self._analysis_lock:
-                self._analyses[key] = found
-                while len(self._analyses) > ANALYSIS_CACHE:
-                    self._analyses.pop(next(iter(self._analyses)))
-            return found
-        except AnalyserTimeout:
-            raise
-        except (AnalyserError, ValueError, MapParseError, OSError, KeyError):
-            return None
+        """The map's analysis; None without audio, AnalysisUnavailable when the analyser fails."""
+        return analyse_map(self, map_id, bm, folder, progress)
 
     def _scan(self, map_id: str, progress=None) -> tuple[int, bool, int, list[dict]]:
         return scan_map(self, map_id, progress)
@@ -223,6 +201,8 @@ class Service(DeleteMixin, RenameMixin):
     def run_scan(self, map_id: str, progress=None) -> dict:
         count, analysed, skipped, done = self._scan(map_id, progress)
         out = {"map_id": map_id, "proposals": count, "analysis": analysed, "completed": done}
+        if (self.store.scan_info(map_id) or {}).get("unanalysed"):
+            out["unanalysed"] = True  # the audio could not be analysed: empty-gap is unchecked
         return {**out, "unproposed": skipped} if skipped else out
 
     # apply -------------------------------------------------------------------

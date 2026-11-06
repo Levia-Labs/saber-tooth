@@ -13,6 +13,7 @@ import time
 from saber_tooth.checks import MAP_RULES, run_checks
 from saber_tooth.fixer import propose
 from saber_tooth.fixer.window import batch_edges, batch_of
+from saber_tooth.service.errors import AnalysisUnavailable
 from saber_tooth.service.util import checkpoint
 
 PROPOSE_BUDGET_S = 600.0  # safety net: after this the rest is stored as findings only
@@ -36,7 +37,11 @@ def scan_map(svc, map_id: str, progress=None) -> tuple[int, bool, int, list[dict
     folder = svc._folder(map_id)
     bm = svc._load(folder)
     checkpoint(progress, "analysing beats")
-    analysis = svc._analyse(map_id, bm, folder, progress)  # slow: the lock is not held
+    unanalysed = False
+    try:
+        analysis = svc._analyse(map_id, bm, folder, progress)  # slow: the lock is not held
+    except AnalysisUnavailable:  # the result is stored flagged, not passed off as gap-free
+        analysis, unanalysed = None, True
     checkpoint(progress, "checking rules")
     templates, seed = svc._templates(), int(map_id[:8], 16)
     project = analysis.audio.parent.name if analysis and analysis.audio else None
@@ -58,7 +63,9 @@ def scan_map(svc, map_id: str, progress=None) -> tuple[int, bool, int, list[dict
         with svc._lock:
             if first:  # the old results are replaced only once there is something to replace them
                 svc.store.replace_open_proposals(
-                    map_id, proposals, {"findings": dicts, "analysis": project}
+                    map_id,
+                    proposals,
+                    {"findings": dicts, "analysis": project, "unanalysed": unanalysed},
                 )
             else:
                 svc.store.add_scan_batch(map_id, proposals, dicts)

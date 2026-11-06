@@ -32,5 +32,6 @@ Top-level modules:
 12. `songmeta.py`: song name, sub name and author from a video title (the analyser's project name) or audio tags; `describe` prints title, artist, duration and bpm of an audio file or map (`task st:songmeta`).
 13. `environments.py`, `style.py`: the catalogue of environments with a learned template (`task st:environments`) and the generation style (environment and seven colours; validated input, else chosen from tempo, energy and brightness).
 14. `settings.py`, `resources.py`: the persisted settings (concurrency cap, game folder; `settings.db` in the data folder) and the CPU and memory the container may use with the recommended worker cap.
+15. `tls.py`, `serve.py`: self-signed certificate generation and reuse (`SABER_TLS`, `SABER_TLS_HOSTS`, `SABER_TLS_CERT`, `SABER_TLS_KEY`) and the container launcher (`python -m saber_tooth.serve`, with `--health` for the HEALTHCHECK).
 
 Test with `task st:test`.

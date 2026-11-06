@@ -1,7 +1,7 @@
 import { useState } from "react";
 import "../styles/cropauto.css";
 import { clock } from "../lib/crop";
-import { percent, points, type CropProposal } from "../lib/cropauto";
+import { partPercent, percent, scoreColor, type CropProposal } from "../lib/cropauto";
 import { EmptyState } from "./EmptyState";
 
 interface Props {
@@ -12,7 +12,7 @@ interface Props {
   onCustom: () => void;
 }
 
-/** The scoring components of one proposal, points earned out of the most each can give. */
+/** The scoring components of one proposal, each as a percentage of the most it can give. */
 function Breakdown({ id, proposal }: { id: string; proposal: CropProposal }) {
   return (
     <ul
@@ -20,21 +20,25 @@ function Breakdown({ id, proposal }: { id: string; proposal: CropProposal }) {
       id={id}
       aria-label={`Score breakdown of proposal ${proposal.rank}`}
     >
-      {proposal.breakdown.map((part) => (
-        <li key={part.key}>
-          <span>{part.label}</span>
-          <span className="crop-card-part-bar" aria-hidden="true">
+      {proposal.breakdown.map((part) => {
+        const value = partPercent(part);
+        return (
+          <li key={part.key}>
+            <span>{part.label}</span>
             <span
-              style={{
-                width: `${part.max_points > 0 ? (part.points / part.max_points) * 100 : 0}%`,
-              }}
-            />
-          </span>
-          <span className="crop-card-points">
-            {points(part.points)} / {points(part.max_points)}
-          </span>
-        </li>
-      ))}
+              className="crop-card-part-bar"
+              role="progressbar"
+              aria-label={part.label}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={value}
+            >
+              <span style={{ width: `${value}%`, background: scoreColor(value / 100) }} />
+            </span>
+            <span className="crop-card-points">{value}%</span>
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -89,7 +93,7 @@ export function CropAuto({ proposals, reason, selected, onSelect, onCustom }: Pr
               <span className="crop-card-bar" aria-hidden="true">
                 <span style={{ width: `${percent(p.score)}%` }} />
               </span>
-              <span>Score {percent(p.score)}</span>
+              <span>Score {percent(p.score)}%</span>
             </span>
           </button>
           <button

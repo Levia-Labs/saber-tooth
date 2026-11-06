@@ -76,4 +76,4 @@ def map_findings(api: "Api", map_id: str) -> dict:
         view["proposal_id"] = owners.get(key(f))
         view["unfixed_reason"] = f.get("unfixed_reason")
         out.append(view)
-    return {"scanned": True, "findings": out}
+    return {"scanned": True, "unanalysed": info.get("unanalysed", False), "findings": out}

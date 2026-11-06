@@ -84,7 +84,7 @@ def _n(beat, x, y, color=Color.RED, cut=Cut.DOWN):
 
 FLOW_CASES = [
     ("wide-jump", [_n(8, 0, 0), _n(8.25, 3, 2, cut=Cut.UP)], fo.Move),
-    ("swing-speed", [_n(8, 0, 0), _n(8.15, 0, 1, cut=Cut.UP)], fo.Delete),
+    ("swing-speed", [_n(8, 0, 0), _n(8.15, 0, 1, cut=Cut.UP)], fo.Move),
     ("crossover", [_n(8, 3, 0), _n(8, 0, 0, Color.BLUE)], fo.Recolor),
     ("vision-block", [_n(8, 1, 1), _n(8.15, 3, 1, Color.BLUE)], fo.Move),
 ]
@@ -97,7 +97,7 @@ def test_flow_rules_fixed_with_expected_op(rule, notes, op):
     assert isinstance(p.ops[0], op)
     assert rule not in {g.rule for g in run_checks(fx.apply_ops(m, p.ops), rules=FLOW)}
     if rule == "swing-speed":
-        assert p.ops[0].note == notes[1]  # later swing goes without analysis
+        assert p.ops[0].note == notes[1]  # later swing goes to the other hand, not away
 
 
 def test_note_in_wall_moves_to_free_lane():
@@ -105,6 +105,20 @@ def test_note_in_wall_moves_to_free_lane():
     p = fx.propose(m, find(m, "note-in-wall"), None, None, 1)
     left = run_checks(fx.apply_ops(m, p.ops), difficulty="Expert")
     assert isinstance(p.ops[0], fo.Move) and not [g for g in left if g.rule == "note-in-wall"]
+
+
+def test_note_in_wall_with_no_free_lane_drops_swing_without_breaking_parity():
+    notes = [
+        Note(8.0, 1, 0, Color.RED, Cut.DOWN),
+        Note(8.5, 1, 0, Color.RED, Cut.UP),
+        Note(9.0, 1, 0, Color.RED, Cut.DOWN),
+        Note(9.5, 1, 0, Color.RED, Cut.UP),
+    ]
+    m = bm(notes, walls=[Wall(8.4, 0, 0, 0.2, 4, 5)])
+    p = fx.propose(m, find(m, "note-in-wall"), None, None, 1)
+    assert p is not None
+    left = {g.rule for g in run_checks(fx.apply_ops(m, p.ops), difficulty="Expert")}
+    assert not left & {"note-in-wall", "parity-break"}
 
 
 def busy(seconds=60):

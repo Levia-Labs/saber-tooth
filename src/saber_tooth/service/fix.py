@@ -7,7 +7,12 @@ from dataclasses import replace
 from saber_tooth.checks import Finding, run_checks
 from saber_tooth.copynames import fixed_name, is_fixed_copy
 from saber_tooth.service.fixrun import MAX_ROUNDS, FixRun, complete, fix_beatmap
-from saber_tooth.service.fixsave import Checkpoint, source_stamp, with_reasons
+from saber_tooth.service.fixsave import (
+    Checkpoint,
+    replace_reasons,
+    source_stamp,
+    with_reasons,
+)
 from saber_tooth.service.util import checkpoint, map_id_for
 from saber_tooth.service.writeout import replace_fixed
 
@@ -63,7 +68,7 @@ class _Saver:
 
     def __call__(self, run: FixRun, position: dict | None) -> None:
         new = run.steps[self.stored :]
-        if new:
+        if new or (run.stripped and self.name is None):  # stripping alone makes a new copy
             info = run.fixed.info
             if info.song_name != fixed_name(info.song_name):
                 info = replace(info, song_name=fixed_name(info.song_name))
@@ -147,6 +152,10 @@ def fix_map(
         "resumed": resume is not None,
     }
     if saver.name is None:
+        with svc._lock:  # nothing was written: this run's reasons still replace the old ones
+            replace_reasons(svc.store, map_id, run.unfixed)
+            if not is_fixed_copy(folder.name):
+                replace_reasons(svc.store, map_id_for(fixed_name(folder.name)), run.unfixed)
         report["after"] = report["before"]
         report["difficulties"] = sorted(original.difficulties)
         return report

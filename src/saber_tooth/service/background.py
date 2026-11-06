@@ -12,6 +12,7 @@ from saber_tooth.service.verify import stored_analysis
 
 log = logging.getLogger(__name__)
 YIELD_S = 0.05  # pause between copy scans so request threads get the GIL
+RESCAN_EVERY_S = 300.0  # how soon after a pass the unanalysed scans are tried again
 
 
 def start_reindex(svc) -> None:
@@ -62,6 +63,35 @@ def _backfill_job(svc) -> None:
         with svc._bg_lock:
             svc._backfilling = False
         raise
+
+
+def start_rescan(svc) -> None:
+    """Re-scan maps stored without analysis, in a daemon thread, at most once per RESCAN_EVERY_S."""
+    with svc._bg_lock:
+        if svc._rescanning or time.monotonic() < svc._rescan_after:
+            return
+        if not svc.store.unanalysed_ids():
+            return
+        svc._rescanning = True
+    threading.Thread(target=_rescan_job, args=(svc,), name="analysis-rescan", daemon=True).start()
+
+
+def _rescan_job(svc) -> None:
+    """One map at a time; the first still unanalysed ends the pass (the analyser is down)."""
+    try:
+        for mid in svc.store.unanalysed_ids():
+            try:
+                svc.scan(mid)
+            except Exception:
+                log.exception("re-scan after analyser outage failed for %s", mid)
+                return
+            if (svc.store.scan_info(mid) or {}).get("unanalysed"):
+                return
+            time.sleep(YIELD_S)
+    finally:
+        with svc._bg_lock:
+            svc._rescanning = False
+            svc._rescan_after = time.monotonic() + RESCAN_EVERY_S
 
 
 def scan_copy(svc, folder: Path) -> None:

@@ -2,8 +2,18 @@
 
 import math
 from collections.abc import Iterator
+from itertools import product
 
-from saber_tooth.fixer.cells import RING, delete_keeping_parity, nearest_cut, occupied, swing_pair
+from saber_tooth.checks import LOCAL_REACH_S
+from saber_tooth.fixer import window
+from saber_tooth.fixer.cells import (
+    EPS,
+    RING,
+    delete_keeping_parity,
+    nearest_cut,
+    occupied,
+    swing_pair,
+)
 from saber_tooth.fixer.layout_fixes import (
     crossover,
     note_converge,
@@ -19,6 +29,7 @@ from saber_tooth.fixer.map_fixes import (
 )
 from saber_tooth.fixer.ops import Delete, Flip, Move, Op
 from saber_tooth.fixer.rest_fixes import no_rest
+from saber_tooth.fixer.swing_fixes import delete_and_refill, hand_over
 from saber_tooth.fixer.verify import Context, Strategy
 from saber_tooth.fixer.wall_fixes import wall_short, wall_trap
 from saber_tooth.generator.candidates import build_candidates, phase_of
@@ -56,16 +67,71 @@ def wide_jump(ctx: Context) -> Iterator[list[Op]]:
     deltas.sort(
         key=lambda d: (math.hypot(*d), math.dist(a.end, (b.start[0] + d[0], b.start[1] + d[1])))
     )
-    taken = occupied(ctx, b.beat, b.notes)
     for dx, dy in deltas:
+        if math.dist(a.end, (b.start[0] + dx, b.start[1] + dy)) < now:
+            ops = _shift_swings(ctx, [b], dx, dy)
+            if ops:
+                yield ops
+    yield from _joint_shifts(ctx, a, b, deltas)
+    yield from delete_keeping_parity(ctx, b)
+
+
+def _shift_swings(ctx: Context, run: list[Swing], dx: int, dy: int) -> list[Op] | None:
+    """Moves shifting every note of the swings by (dx, dy), or None when one leaves the grid
+    or lands on a cell another note holds at its beat."""
+    ops: list[Op] = []
+    for s in run:
+        taken = occupied(ctx, s.beat, s.notes)
         # leading notes go first so a sibling's vacated cell is free for the next move
-        notes = sorted(b.notes, key=lambda n: -(n.x * dx + n.y * dy))
+        notes = sorted(s.notes, key=lambda n: -(n.x * dx + n.y * dy))
         cells = [(n.x + dx, n.y + dy) for n in notes]
         if not all(0 <= x < 4 and 0 <= y < 3 for x, y in cells) or taken & set(cells):
-            continue
-        if math.dist(a.end, (b.start[0] + dx, b.start[1] + dy)) < now:
-            yield [Move(ctx.d.name, n, x, y, n.cut) for n, (x, y) in zip(notes, cells, strict=True)]
-    yield from delete_keeping_parity(ctx, b)
+            return None
+        ops += [Move(ctx.d.name, n, x, y, n.cut) for n, (x, y) in zip(notes, cells, strict=True)]
+    return ops
+
+
+def _joint_shifts(ctx: Context, a: Swing, b: Swing, deltas) -> Iterator[list[Op]]:
+    """Move b together with the swings after it, each by its own step. Moving b alone only hands
+    the jump to the pair (b, c); a window of consecutive swings is moved jointly, ordered by
+    the fastest hand travel left in the window, and only plans that beat the current jump go
+    on to verification."""
+    reach = ctx.timing.to_beats(2 * LOCAL_REACH_S) - ctx.timing.to_beats(0.0)
+    wide = window.swings_near(ctx.d, ctx.timing, b.beat, b.beat + reach)
+    chain = [a, b]
+    for s in [x for x in wide[b.hand] if x.beat > b.beat + EPS][:2]:
+        if s.seconds - chain[-1].seconds > LOCAL_REACH_S:
+            break
+        chain.append(s)
+
+    def speed(u: Swing, v: Swing, du, dv) -> float:
+        dist = math.dist(
+            (u.end[0] + du[0], u.end[1] + du[1]), (v.start[0] + dv[0], v.start[1] + dv[1])
+        )
+        return dist / max(v.seconds - u.seconds, 1e-6)
+
+    now = speed(a, b, (0, 0), (0, 0))
+    steps = [(0, 0), *(d for d in deltas if math.hypot(*d) <= 2.3)]
+    for width in range(2, len(chain)):
+        run = chain[1 : 1 + width]
+        small = [d for d in steps if width == 2 or math.hypot(*d) <= 1.5]
+        plans = []
+        for combo in product(small, repeat=width):
+            if combo[0] == (0, 0):
+                continue
+            pairs = zip(chain, chain[1:], [(0, 0), *combo], combo, strict=False)
+            worst = max(speed(u, v, du, dv) for u, v, du, dv in pairs)
+            if worst < now:
+                plans.append((worst, sum(math.hypot(*d) for d in combo), combo))
+        for _, _, combo in sorted(plans):
+            ops: list[Op] = []
+            for s, (dx, dy) in zip(run, combo, strict=True):
+                got = _shift_swings(ctx, [s], dx, dy) if (dx, dy) != (0, 0) else []
+                if got is None:
+                    break
+                ops += got
+            else:
+                yield ops
 
 
 def _note_score(n: Note, cands) -> float:
@@ -94,6 +160,8 @@ def swing_speed(ctx: Context) -> Iterator[list[Op]]:
         else [first, second]
     )
     for s in order:
+        yield from hand_over(ctx, s)  # keeps every note: deleting one can open an empty-gap
+    for s in order:
         if len(s.notes) > 1:
             # the weakest note (a tie: the later one) goes before the whole swing
             single = sorted(s.notes, key=lambda n: (_note_score(n, cands), -n.beat))
@@ -101,6 +169,10 @@ def swing_speed(ctx: Context) -> Iterator[list[Op]]:
                 yield [Delete(ctx.d.name, n)]
         yield [Delete(ctx.d.name, n) for n in s.notes]
     yield from _run_deletes(ctx, first)
+    for s in order:  # last: the deletion that opens a gap, with the gap refilled
+        refilled = delete_and_refill(ctx, [Delete(ctx.d.name, n) for n in s.notes])
+        if refilled:
+            yield refilled
 
 
 def _run_deletes(ctx: Context, first: Swing) -> Iterator[list[Op]]:

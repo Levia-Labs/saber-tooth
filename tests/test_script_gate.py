@@ -20,6 +20,12 @@ def test_select_frontend_only_when_present():
     assert "frontend:build" not in gate.select([], [], has_frontend=False)
 
 
+def test_frontend_build_runs_before_pytest():
+    names = gate.select([], [], has_frontend=True)
+    assert names.index("frontend:build") < names.index("pytest")  # web tests need the built SPA
+    assert names.count("frontend:build") == 1
+
+
 def test_select_only_and_skip():
     assert gate.select(["quality:gate", "pytest"], []) == ["pytest", "quality:gate"]
     assert "pytest" not in gate.select([], ["pytest"])

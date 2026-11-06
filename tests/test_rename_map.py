@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 from saber_tooth.api import create_app
 from saber_tooth.service import map_id_for
+from saber_tooth.service.errors import RenameInvalid
 from tests.test_service import NAME, _make
 
 MID = map_id_for(NAME)
@@ -146,3 +147,21 @@ def test_pair_rename_conflicts_when_the_partner_target_exists(client, svc):
     (svc.levels / "Fresh [saber-tooth]").mkdir()
     assert client.patch(f"/api/maps/{MID}", json={"name": "Fresh"}).status_code == 409
     assert (svc.levels / NAME).exists()
+
+
+def test_keep_folder_rename_accepts_a_slash_in_the_title(svc):
+    assert svc.rename_map(MID, "AC/DC - Live", keep_folder=True) == MID
+    assert (svc.levels / NAME).is_dir()
+    assert _song_name(svc.levels / NAME) == "AC/DC - Live"
+
+
+def test_keep_folder_rename_still_refuses_control_characters_and_empty(svc):
+    for bad in ("", "  ", "a\x00b"):
+        with pytest.raises(RenameInvalid):
+            svc.rename_map(MID, bad, keep_folder=True)
+
+
+def test_folder_rename_still_refuses_a_slash(svc):
+    with pytest.raises(RenameInvalid):
+        svc.rename_map(MID, "AC/DC", keep_folder=False)
+    assert (svc.levels / NAME).is_dir()

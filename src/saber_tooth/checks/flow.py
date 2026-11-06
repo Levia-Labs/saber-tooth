@@ -8,10 +8,15 @@ from saber_tooth.swings import Swing
 from saber_tooth.timing import Timing
 
 
-def _pairs(swings):
+def _pairs(swings, window=None):
+    """Consecutive swings of each hand; with a (lo, hi) beat window only pairs overlapping it."""
     for hand in (Color.RED, Color.BLUE):
-        hand_swings = swings[hand]
-        yield from pairwise(hand_swings)
+        pairs = pairwise(swings[hand])
+        if window is None:
+            yield from pairs
+        else:
+            lo, hi = window
+            yield from ((a, b) for a, b in pairs if a.beat <= hi and b.beat >= lo)
 
 
 def _bomb_between(bombs: list[Bomb], a: Swing, b: Swing) -> bool:
@@ -23,9 +28,11 @@ def _make(rule, d, a: Swing, b: Swing, severity, message) -> Finding:
     return Finding(rule, d.name, a.beat, b.beat, severity, message, a.notes + b.notes)
 
 
-def parity_break(d: Difficulty, swings, timing: Timing, profile: Profile, analysis=None):
+def parity_break(
+    d: Difficulty, swings, timing: Timing, profile: Profile, analysis=None, window=None
+):
     out = []
-    for a, b in _pairs(swings):
+    for a, b in _pairs(swings, window):
         if a.vector is None or b.vector is None:
             continue
         if a.vector[0] * b.vector[0] + a.vector[1] * b.vector[1] <= PARITY_DOT:
@@ -40,9 +47,9 @@ def parity_break(d: Difficulty, swings, timing: Timing, profile: Profile, analys
     return out
 
 
-def wide_jump(d: Difficulty, swings, timing: Timing, profile: Profile, analysis=None):
+def wide_jump(d: Difficulty, swings, timing: Timing, profile: Profile, analysis=None, window=None):
     out = []
-    for a, b in _pairs(swings):
+    for a, b in _pairs(swings, window):
         dt = max(b.seconds - a.seconds, 1e-6)
         speed = cells_per_second(a.end, b.start, dt)
         sev = grade_above(speed, profile.error.max_hand_speed, profile.warn.max_hand_speed)
@@ -51,9 +58,11 @@ def wide_jump(d: Difficulty, swings, timing: Timing, profile: Profile, analysis=
     return out
 
 
-def swing_speed(d: Difficulty, swings, timing: Timing, profile: Profile, analysis=None):
+def swing_speed(
+    d: Difficulty, swings, timing: Timing, profile: Profile, analysis=None, window=None
+):
     out = []
-    for a, b in _pairs(swings):
+    for a, b in _pairs(swings, window):
         dt = b.seconds - a.seconds
         sev = grade_below(dt, profile.error.min_hand_gap_s, profile.warn.min_hand_gap_s)
         if sev:

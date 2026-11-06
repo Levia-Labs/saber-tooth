@@ -23,3 +23,4 @@ Pure helpers and small hooks.
 19. `jobfilters.ts`, `jobkinds.ts`, `jobcolumns.ts`, `useJobsState.ts`: Jobs table URL state, whitelisted parsing, filter and sort; kind labels and icons; column set; the URL-state hook.
 20. `lpfilters.ts`, `lpedit.ts`: Playlists table sort and filter and the export hints; the editor draft and request body (pure).
 21. `settingsfmt.ts`: byte sizes, meter percentages and the concurrency clamp for the Settings page (pure).
+22. `copyText.ts`: `copyText`, clipboard copy with a hidden-textarea fallback for plain-http pages; true on success.

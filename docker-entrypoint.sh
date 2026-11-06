@@ -17,6 +17,8 @@ if [ "$(id -u)" = "0" ]; then
   groupmod --non-unique --gid "$PGID" app
   usermod --non-unique --uid "$PUID" --gid "$PGID" app
   chown "$PUID:$PGID" /data
+  # A PUID change would leave an old-uid 0600 key unreadable.
+  if [ -d /data/tls ]; then chown -R "$PUID:$PGID" /data/tls; fi
   exec setpriv --reuid "$PUID" --regid "$PGID" --clear-groups -- "$@"
 fi
 exec "$@"

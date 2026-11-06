@@ -76,8 +76,11 @@ tasks:
   fix-all:
     desc: "Queue a fix job for every map with open findings through the running API. Usage: task st:fix-all"
     cmds: ["uv run saber-tooth fix-all {{.CLI_ARGS}}"]
+  jobs-wait:
+    desc: "Wait for queued and running jobs; exit 1 on failure, 3 on timeout. Usage: task st:jobs-wait -- --kind fix"
+    cmds: ["uv run saber-tooth jobs-wait {{.CLI_ARGS}}"]
   findings:
-    desc: "Show library finding counts per rule and severity from the running API. Usage: task st:findings"
+    desc: "Library finding counts per rule and severity, optionally per map. Usage: task st:findings [-- --maps]"
     cmds: ["uv run saber-tooth findings {{.CLI_ARGS}}"]
   readme-check:
     desc: "Check every tracked folder has a README.md. Usage: task st:readme-check [-- --list]"
@@ -128,6 +131,9 @@ tasks:
       - sh: test "{{.CONFIRM}}" = "yes"
         msg: "lane-done deletes a worktree and branch; rerun with CONFIRM=yes"
     cmds: ["CONFIRM=yes uv run python scripts/lane.py done {{.CLI_ARGS}}"]
+  lane-apply:
+    desc: "Apply worktree changes to main. Usage: task st:lane-apply -- <worktree> [--paths p...] [--check]"
+    cmds: ["uv run python scripts/lane_apply.py {{.CLI_ARGS}}"]
   library-tidy:
     desc: "One map per song, dry run unless --apply. Usage: task st:library-tidy -- [--originals keep|drop] [--apply]"
     # --apply hard-deletes maps through the API; gate it behind CONFIRM=yes.

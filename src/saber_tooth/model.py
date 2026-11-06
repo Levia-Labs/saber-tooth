@@ -72,6 +72,8 @@ class Wall:
     duration: float
     width: int
     height: int
+    # Mapping Extensions precision wall: x, y, width and height are decoded lanes (floats).
+    me: bool = False
 
 
 @dataclass(frozen=True, order=True)

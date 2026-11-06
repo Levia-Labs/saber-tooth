@@ -107,7 +107,7 @@ def test_replace_open_proposals_keeps_history_and_saves_scan(tmp_path):
     statuses = {p["id"]: p["status"] for p in store.proposals("m")}
     assert a not in statuses and b not in statuses
     assert statuses[c] == "rejected" and statuses[d] == "applied" and statuses[new[0]] == "pending"
-    assert store.scan_info("m") == {"findings": [{"k": 1}], "analysis": "p"}
+    assert store.scan_info("m") == {"findings": [{"k": 1}], "analysis": "p", "unanalysed": False}
 
 
 def test_proposal_by_id(tmp_path):

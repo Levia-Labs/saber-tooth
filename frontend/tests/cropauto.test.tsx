@@ -24,7 +24,7 @@ describe("Auto crop", () => {
     expect(cards[0]).toBeChecked();
     expect(cards[0]).toHaveTextContent("#1");
     expect(cards[0]).toHaveTextContent("0:00.0 to 1:04.0");
-    expect(cards[0]).toHaveTextContent("Score 90");
+    expect(cards[0]).toHaveTextContent("Score 90%");
   });
 
   test("shows a spinner while the proposals load", async () => {
@@ -85,7 +85,10 @@ describe("Auto crop score breakdown", () => {
     expect(hide).toHaveAttribute("aria-expanded", "true");
     const list = within(group).getByRole("list", { name: "Score breakdown of proposal 1" });
     expect(within(list).getByText("Peak intensity")).toBeInTheDocument();
-    expect(within(list).getAllByText("45 / 50")).toHaveLength(2);
+    expect(within(list).getAllByText("90%")).toHaveLength(2);
+    const bar = within(list).getByRole("progressbar", { name: "Peak intensity" });
+    expect(bar).toHaveAttribute("aria-valuenow", "90");
+    expect(bar).toHaveAttribute("aria-valuemax", "100");
     await user.click(hide);
     expect(within(group).queryByRole("list")).toBeNull();
   });

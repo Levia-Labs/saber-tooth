@@ -5,7 +5,6 @@ from bisect import bisect_left, bisect_right
 from collections import Counter
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
-from functools import lru_cache
 
 from saber_tooth.analysis import Analysis
 from saber_tooth.checks import MAP_RULES, REACH_S, Finding, check_difficulty, run_checks
@@ -25,16 +24,21 @@ EPS = 1e-6
 _RANK = {"warn": 0, "error": 1}
 
 
-@lru_cache(maxsize=1 << 16)  # findings are frozen; the same ones are keyed again and again
 def finding_key(f: Finding) -> tuple:
-    """Identity of a finding: difficulty, rule and the hands and walls involved."""
-    return (f.difficulty, f.rule, frozenset(int(n.color) for n in f.notes), f.walls)
+    """Identity of a finding: difficulty, rule and the hands and walls involved. Kept on the
+    finding itself (frozen, so it never goes stale): hashing findings to cache it cost more."""
+    try:
+        return f.__dict__["_key"]
+    except KeyError:
+        key = (f.difficulty, f.rule, frozenset({int(n.color) for n in f.notes}), f.walls)
+        f.__dict__["_key"] = key
+        return key
 
 
 def _same(a: Finding, b: Finding) -> bool:
     """Same identity and overlapping (or touching) beat ranges."""
     ranges = a.beat_start <= b.beat_end + EPS and b.beat_start <= a.beat_end + EPS
-    return finding_key(a) == finding_key(b) and ranges
+    return ranges and finding_key(a) == finding_key(b)
 
 
 def _overlaps(a: Finding, b: Finding) -> bool:
@@ -50,12 +54,26 @@ def find_same(findings: list[Finding], target: Finding) -> Finding | None:
     return next((f for f in findings if _same(f, target)), None)
 
 
-def new_findings(after: list[Finding], before: list[Finding]) -> list[Finding]:
-    """Findings in `after` that match no `before` finding or are more severe than all matches."""
+_INDEXED: tuple[list[Finding], dict, int] | None = None  # the last `before` list and its buckets
+
+
+def _index(before: list[Finding]) -> dict:
+    """Buckets of `before` by identity; every candidate of a finding passes the same list."""
+    global _INDEXED
+    held = _INDEXED
+    if held is not None and held[0] is before and held[2] == len(before):
+        return held[1]
     buckets: dict[tuple, list[Finding]] = {}
     for b in before:
         buckets.setdefault(finding_key(b), []).append(b)
     index = {k: _Bucket(v) for k, v in buckets.items()}
+    _INDEXED = (before, index, len(before))
+    return index
+
+
+def new_findings(after: list[Finding], before: list[Finding]) -> list[Finding]:
+    """Findings in `after` that match no `before` finding or are more severe than all matches."""
+    index = _index(before)
     out = []
     for a in after:
         bucket = index.get(finding_key(a))
@@ -186,13 +204,13 @@ def _span(ctx: "Context", ops: list[Op]) -> tuple | None:
 
 
 def _target_remains(target: Finding, before: list[Finding], after: list[Finding]) -> bool:
-    others: dict[tuple, list[Finding]] = {}
-    for b in before:
-        if b is not target:
-            others.setdefault(finding_key(b), []).append(b)
+    key = finding_key(target)  # only findings of the target's identity can overlap it
+    bucket = _index(before).get(key)
+    others = [b for b in bucket.items if b is not target] if bucket else []
     return any(
-        _overlaps(a, target) and not any(_overlaps(a, o) for o in others.get(finding_key(a), ()))
+        _overlaps(a, target) and not any(_overlaps(a, o) for o in others)
         for a in after
+        if finding_key(a) == key
     )
 
 

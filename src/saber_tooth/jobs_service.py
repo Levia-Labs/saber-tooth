@@ -33,6 +33,8 @@ def build_child_handlers(spec: ChildSpec) -> dict:
 
     store = Store(Path(spec.db))
     share_store(store)
-    client = AnalyserClient(spec.analyser_url, Path(spec.analyser_uploads))
+    client = AnalyserClient(
+        spec.analyser_url, Path(spec.analyser_uploads), lock_dir=Path(spec.data) / "analyser-slots"
+    )
     service = Service(Path(spec.levels), Path(spec.data), store, client, encode_egg)
     return core_handlers(service)

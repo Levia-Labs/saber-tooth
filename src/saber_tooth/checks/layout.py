@@ -4,6 +4,7 @@ from itertools import combinations
 
 from saber_tooth.checks.constants import VISION_MIN_DT
 from saber_tooth.checks.finding import Finding
+from saber_tooth.checks.walls import covers_cell
 from saber_tooth.model import CUT_VECTORS, Color, Cut, Difficulty, Note
 from saber_tooth.profiles import Profile
 from saber_tooth.swings import MAX_CUT_ANGLE, Swing, angle_between
@@ -94,7 +95,10 @@ def crossover(d: Difficulty, swings, timing: Timing, profile: Profile, analysis=
     for r in reds:
         rs = timing.to_seconds(r.beat)
         lo, hi = bisect_left(secs, rs - window), bisect_right(secs, rs + window)
+        rx = r.x
         for b, bs in zip(blues[lo:hi], secs[lo:hi], strict=True):
+            if rx <= b.x:  # both the far and the same-beat case need red right of blue
+                continue
             same = abs(r.beat - b.beat) < 1e-6
             far = r.x - b.x >= 2 and r.x >= 2 and b.x <= 1
             if not (far or (same and r.x > b.x and r.y == b.y)):
@@ -130,9 +134,7 @@ def vision_block(d: Difficulty, swings, timing: Timing, profile: Profile, analys
 
 
 def _in_wall(n: Note, w) -> bool:
-    in_x = w.x <= n.x < w.x + w.width
-    in_y = w.y <= n.y < w.y + w.height
-    return in_x and in_y and w.beat <= n.beat <= w.beat + w.duration
+    return covers_cell(w, n.x, n.y) and w.beat <= n.beat <= w.beat + w.duration
 
 
 def note_in_wall(d: Difficulty, swings, timing: Timing, profile: Profile, analysis=None):
@@ -150,12 +152,17 @@ def note_converge(d: Difficulty, swings, timing: Timing, profile: Profile, analy
     out = []
     notes = sorted(d.notes)
     secs = [timing.to_seconds(n.beat) for n in notes]
+    cols = [n.x for n in notes]
+    last = len(notes)
     for i, n in enumerate(notes):
-        for j in range(i + 1, len(notes)):
-            m, dt = notes[j], secs[j] - secs[i]
-            if dt > reach:
+        si, nx = secs[i], cols[i]
+        for j in range(i + 1, last):
+            if secs[j] - si > reach:
                 break
-            if converges(dt, (n.x, n.y), (m.x, m.y), window):
+            if cols[j] != nx:  # converging needs one cell or one column
+                continue
+            m = notes[j]
+            if converges(secs[j] - si, (n.x, n.y), (m.x, m.y), window):
                 msg = "notes fly into the same spot while jumping to their rows"
                 out.append(Finding("note-converge", d.name, n.beat, m.beat, "warn", msg, (n, m)))
     return out

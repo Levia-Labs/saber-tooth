@@ -1,10 +1,27 @@
+:root {
+  /* Score scale: ten steps from red through orange to green, evenly in hue. */
+  --crop-step-1: hsl(0 70% 52%);
+  --crop-step-2: hsl(13 70% 52%);
+  --crop-step-3: hsl(27 70% 52%);
+  --crop-step-4: hsl(40 70% 52%);
+  --crop-step-5: hsl(53 70% 52%);
+  --crop-step-6: hsl(67 70% 52%);
+  --crop-step-7: hsl(80 70% 52%);
+  --crop-step-8: hsl(93 70% 52%);
+  --crop-step-9: hsl(107 70% 52%);
+  --crop-step-10: hsl(120 70% 52%);
+}
 .crop-auto {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
   gap: 0.75rem;
   margin: 0.5rem 0 0.75rem;
 }
 .crop-card {
+  flex: 0 1 450px;
+  min-width: min(15rem, 100%);
+  max-width: 450px;
   display: grid;
   align-content: start;
   background: var(--panel);
@@ -53,7 +70,7 @@
 }
 .crop-card-breakdown li {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 4rem auto;
+  grid-template-columns: 9rem minmax(0, 1fr) 3rem;
   align-items: center;
   gap: 0.5rem;
 }
@@ -66,7 +83,6 @@
 .crop-card-part-bar > span {
   display: block;
   height: 100%;
-  background: var(--green);
 }
 .crop-card-points {
   font-variant-numeric: tabular-nums;

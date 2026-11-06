@@ -10,7 +10,7 @@ from saber_tooth.generator.placer import GenerationError, Placer
 from saber_tooth.generator.plan import BAR_BEATS, Event, plan_events
 from saber_tooth.generator.walls import place_walls
 from saber_tooth.generator.window_walls import window_walls
-from saber_tooth.model import BpmEvent, Color, Difficulty, Wall
+from saber_tooth.model import BpmEvent, Color, Cut, Difficulty, Note, Wall
 from saber_tooth.profiles import Profile
 from saber_tooth.swings import Swing
 from saber_tooth.timing import Timing
@@ -112,6 +112,19 @@ def timing_events(timing: Timing) -> list[BpmEvent]:
     return [BpmEvent(beat, bpm) for beat, _, bpm in ([first] if first else []) + segs[1:]]
 
 
+def _dot_pins(*swing_maps: dict[Color, Swing] | None) -> dict[Note, tuple[float, float]]:
+    """Vector each all-dot boundary swing had before the fill. A dot inherits the opposite of the
+    swing before it, so the fill's last swing decides it; the swing after the dot was matched
+    against the pre-fix vector, and reading a stale one lets a parity break through."""
+    return {
+        n: sw.vector
+        for swings in swing_maps
+        for sw in (swings or {}).values()
+        if sw.vector is not None and all(n.cut == Cut.ANY for n in sw.notes)
+        for n in sw.notes
+    }
+
+
 def generate_with_stats(
     a: Analysis,
     timing: Timing,
@@ -133,7 +146,8 @@ def generate_with_stats(
     last = {h: entry[h].seconds if entry and h in entry else -math.inf for h in Color}
     span = None if window is None else (lo - phase, hi - phase)
     plan = plan_events(cands, bars, timing, profile, last, span)
-    placer = Placer(timing, profile, context)
+    pinned = _dot_pins(entry, exit)
+    placer = Placer(timing, profile, context, pinned)
     stats = GenerationStats(selected=plan.selected)
     stats.placed = place_events(plan.events, placer, seed)
 
@@ -153,7 +167,7 @@ def generate_with_stats(
         drops = {max(set(f.notes) - placer.context) for f in own}
         stats.repaired += len(drops)
         kept = [n for n in placer.all_notes() if n not in drops]
-        placer = Placer.from_notes(timing, profile, kept, context)
+        placer = Placer.from_notes(timing, profile, kept, context, pinned)
         stats.filled += _fill_gaps(placer, cands, a, timing, profile, scope, seed)
     else:
         raise GenerationError(f"{profile.name}: findings remain after repair: {findings[:3]}")

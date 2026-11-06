@@ -38,8 +38,22 @@ export const spanOf = (p: CropProposal): Span => ({ start_s: p.start_s, end_s: p
 /** Score in whole points from 0 to 100 for the bar and its label. */
 export const percent = (score: number): number => Math.round(Math.max(0, Math.min(100, score)));
 
-/** Points as shown in the breakdown: one decimal, none when whole. */
-export const points = (value: number): string => String(Math.round(value * 10) / 10);
+/** A component's points as a whole percentage of its maximum; 0 when it has no maximum. */
+export const partPercent = (part: ScorePart): number =>
+  part.max_points > 0 ? percent((part.points / part.max_points) * 100) : 0;
+
+/** Number of colour steps on the red to green scale of a score fraction. */
+export const SCORE_STEPS = 10;
+
+/** The 1-based colour step of a fraction from 0 to 1, one per 10% (0 to 9% is 1, 100% is 10);
+ * out of range clamps and NaN counts as 0. */
+export function scoreStep(fraction: number): number {
+  if (Number.isNaN(fraction)) return 1;
+  return Math.min(SCORE_STEPS, Math.max(0, Math.floor(fraction * SCORE_STEPS)) + 1);
+}
+
+/** The CSS colour of a fraction's step, defined as --crop-step-N in cropauto.css. */
+export const scoreColor = (fraction: number): string => `var(--crop-step-${scoreStep(fraction)})`;
 
 /** "m:ss" for whole seconds, rounded to the nearest second. */
 export function mmss(seconds: number): string {

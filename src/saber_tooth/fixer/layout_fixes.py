@@ -142,6 +142,9 @@ def note_in_wall(ctx: Context) -> Iterator[list[Op]]:
     )
     for x, y in itertools.islice(free, 12):
         yield [Move(ctx.d.name, n, x, y, n.cut)]
+    s = swing_of(ctx, n)
+    if s is not None:  # a lone delete flips the hand's alternation, so drop the next swing too
+        yield from delete_keeping_parity(ctx, s)
     yield [Delete(ctx.d.name, n)]
 
 

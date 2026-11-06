@@ -31,3 +31,10 @@ class RenameInvalid(ValueError):
 
 class MapUnreadable(ValueError):
     """The map folder cannot be parsed."""
+
+
+class AnalysisUnavailable(RuntimeError):
+    """The map has audio but the beat analyser gave no result; the job is safe to run again."""
+
+    def __init__(self, cause: object) -> None:
+        super().__init__(f"audio analysis unavailable: {cause}")

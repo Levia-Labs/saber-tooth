@@ -1,12 +1,15 @@
 import math
 from dataclasses import dataclass
 from itertools import combinations
+from operator import attrgetter
 
 from saber_tooth.model import CUT_VECTORS, Color, Cut, Note
 from saber_tooth.timing import Timing
 
 Vec = tuple[float, float]
 MAX_CUT_ANGLE = 45.5  # 45 degrees plus tolerance for the rounded diagonal vectors
+# Same order as the dataclass `<` on notes, with the tuple compared in C: sorts are much faster.
+note_order = attrgetter("beat", "x", "y", "color", "cut", "angle")
 DEFAULT_PREV: Vec = CUT_VECTORS[Cut.UP]  # opposite of this is DOWN, the first swing's default
 
 
@@ -29,10 +32,10 @@ def angle_between(u: Vec, v: Vec) -> float:
 def _cut_vector(notes: list[Note]) -> tuple[Vec | None, bool]:
     """Return (mean cut vector, conflict). Vector is None when every note is ANY."""
     vecs = [CUT_VECTORS[n.cut] for n in notes if n.cut != Cut.ANY]
+    if len(vecs) <= 1:
+        return (vecs[0] if vecs else None), False
     if any(angle_between(u, v) > MAX_CUT_ANGLE for u, v in combinations(vecs, 2)):
         return None, True
-    if not vecs:
-        return None, False
     mx = sum(v[0] for v in vecs) / len(vecs)
     my = sum(v[1] for v in vecs) / len(vecs)
     if len(set(vecs)) == 1:
@@ -44,7 +47,7 @@ def _cut_vector(notes: list[Note]) -> tuple[Vec | None, bool]:
 def _group(notes: list[Note], timing: Timing, window_s: float) -> list[list[Note]]:
     groups: list[list[Note]] = []
     first_s = 0.0
-    for n in sorted(notes):
+    for n in sorted(notes, key=note_order):
         s = timing.to_seconds(n.beat)
         if groups and s - first_s <= window_s:
             groups[-1].append(n)

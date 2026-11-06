@@ -250,6 +250,7 @@ def build_service() -> Service:
     client = AnalyserClient(
         os.environ.get("ANALYSER_URL", "http://beat-analyser:8000"),
         Path(os.environ.get("ANALYSER_UPLOADS", "/analyser")),
+        lock_dir=data / "analyser-slots",
     )
     store = Store(data / "saber-tooth.db")
     if interrupted := store.fail_interrupted_jobs():  # their worker threads died with the process

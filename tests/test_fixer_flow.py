@@ -1,5 +1,7 @@
 """Flow fixes that remove notes keep the hand's alternation intact."""
 
+from dataclasses import replace
+
 from saber_tooth import fixer as fx
 from saber_tooth.checks import run_checks
 from saber_tooth.fixer import ops as fo
@@ -62,3 +64,23 @@ def test_note_converge_last_resort_keeps_the_hand_alternating():
     got = list(note_converge(Context(m, find(m, "note-converge"), None, None, 1)))
     deletes = [c for c in got if all(isinstance(o, fo.Delete) for o in c)]
     assert {len(c) for c in deletes} == {1, 2}  # a swing and its follower, then the swing alone
+
+
+def handed_on_jump():
+    """Moving the swing at beat 58 next to its predecessor only opens a jump into beat 59."""
+    blue = [
+        (57.0, 0, 2, Cut.DOWN_LEFT),
+        (58.0, 3, 1, Cut.UP_RIGHT),
+        (59.0, 3, 0, Cut.DOWN),
+    ]
+    m = bm([Note(b, x, y, Color.BLUE, c) for b, x, y, c in blue], name="Hard")
+    return replace(m, info=replace(m.info, bpm=175.0))
+
+
+def test_wide_jump_repair_moves_the_following_swing_with_the_jump():
+    m = handed_on_jump()
+    p = fx.propose(m, find(m, "wide-jump", name="Hard"), None, None, 1)
+    assert p is not None
+    assert not any(isinstance(o, fo.Delete) for o in p.ops)
+    assert {o.note.beat for o in p.ops} == {58.0, 59.0}  # the pair moves, not one swing
+    assert not [f for f in run_checks(fx.apply_ops(m, p.ops), difficulty="Hard") if f.rule in FLOW]

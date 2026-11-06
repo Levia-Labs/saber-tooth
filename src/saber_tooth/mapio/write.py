@@ -2,6 +2,7 @@ import json
 import shutil
 from pathlib import Path
 
+from saber_tooth.mapio.custom import kept_custom
 from saber_tooth.mapio.errors import safe_name
 from saber_tooth.model import DIFFICULTIES, RANKS, Beatmap, Difficulty, MapInfo, Wall
 
@@ -125,7 +126,11 @@ def write_map(beatmap: Beatmap, folder: Path, copy_from: Path | None) -> None:
     diffs = [beatmap.difficulties[n] for n in DIFFICULTIES if n in beatmap.difficulties]
     for d in diffs:
         _dump(folder / f"{d.name}.dat", difficulty_json(d))
-    _dump(folder / "Info.dat", info_json(beatmap.info, diffs))
+    info = info_json(beatmap.info, diffs)
+    custom = kept_custom(copy_from) if copy_from is not None else {}
+    if custom:
+        info["_customData"] = custom
+    _dump(folder / "Info.dat", info)
     if copy_from is not None:
         for name in (beatmap.info.song_file, beatmap.info.cover_file):
             copy_asset(copy_from, folder, name)

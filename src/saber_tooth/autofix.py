@@ -18,7 +18,9 @@ def _down(request: httpx.Request) -> httpx.Response:
 def _make_service(levels: Path, data: Path) -> Service:
     data.mkdir(parents=True, exist_ok=True)
     client = AnalyserClient("http://analyser.invalid", data / "up", httpx.MockTransport(_down))
-    return Service(levels, data, Store(data / "autofix.db"), client, shutil.copyfile)
+    svc = Service(levels, data, Store(data / "autofix.db"), client, shutil.copyfile)
+    svc.analysis_optional = True  # the only caller allowed to fix without analysing the audio
+    return svc
 
 
 def run_autofix(map_folder: Path, levels: Path, data: Path, max_rounds: int = 6) -> dict:

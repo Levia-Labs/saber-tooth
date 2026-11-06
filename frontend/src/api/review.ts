@@ -57,6 +57,8 @@ export interface Finding {
 
 export interface Findings {
   scanned: boolean;
+  /** The scan ran without audio analysis (the analyser failed); a re-scan is pending. */
+  unanalysed?: boolean;
   findings: Finding[];
 }
 

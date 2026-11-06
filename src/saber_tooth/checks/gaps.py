@@ -69,7 +69,8 @@ def rest_zones(beats: list[float]) -> list[tuple[float, float]]:
 def no_rest(d, swings, timing, profile, analysis=None, window=None) -> list[Finding]:
     if not d.notes:
         return []
-    beats = sorted(n.beat for n in d.notes)
+    beats = [n.beat for n in d.notes]
+    beats.sort()  # notes are normally sorted already: a linear pass
     span = REST_SPAN_S.get(profile.name, DEFAULT_REST_SPAN_S)
     out, cursor = [], beats[0]
     stretches = []

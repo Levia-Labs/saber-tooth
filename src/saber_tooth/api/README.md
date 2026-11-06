@@ -5,6 +5,7 @@
 
 1. `__init__.py`: `create_app(service)`, same-origin check, error handlers, lazy module-level `app` built from the environment.
 1. `core.py`: `Api` route logic, id validation, proposal views, YouTube URL check.
+1. `hostpath.py`: `host_path`, the container-to-host path prefix swap behind `folder_path` and `LEVELS_DIR_HOST`.
 1. `mcp_tools.py`: `build_mcp(api)`, the MCP tools served at `/mcp` (see [api.md](../../../docs/api.md#mcp)).
 1. `library.py`: query validation, item shaping, cover and difficulty lookup with path containment.
 1. `neighbors.py`: `neighbors`, the wrapping previous and next map of one map in a filtered, sorted list, behind `/api/maps/{id}/neighbors`.

@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from saber_tooth.analysis import Analysis
 from saber_tooth.checks import MAP_RULES, Finding, run_checks
 from saber_tooth.fixer import Proposal, apply_ops, propose_with_reason
+from saber_tooth.fixer.me_strip import strip_precision_walls
 from saber_tooth.fixer.verify import _same
 from saber_tooth.fixer.window import batch_edges, batch_of
 from saber_tooth.jobs import JobCancelled
@@ -32,6 +33,7 @@ class FixRun:
     unfixed: list[dict] = field(default_factory=list)  # finding dicts plus a "reason"
     rounds: int = 0
     completed: list[dict] = field(default_factory=list)  # {"difficulty", "batches", "rounds"}
+    stripped: bool = False  # precision walls were dropped, so the copy differs from the source
 
 
 def complete(bm: Beatmap) -> bool:
@@ -80,7 +82,12 @@ class _Engine:
     def map_level(self) -> None:
         self._round(1)
         found = run_checks(self.run.fixed, self.analysis, rules=set(MAP_RULES))
-        self._try(found, [])
+        tried: list = []
+        self._try(found, tried)
+        now = run_checks(self.run.fixed, self.analysis, rules=set(MAP_RULES))
+        for f, reason in tried:  # a later fix may have cleared a finding tried earlier
+            if any(_same(f, g) for g in now):
+                self.run.unfixed.append({**f.to_dict(), "reason": reason})
         self._save({"difficulty": "", "round": 1, "batch": 0, "progressed": False})
 
     def _round(self, n: int) -> None:
@@ -148,7 +155,11 @@ def fix_beatmap(
 
     `resume` is a FixRun holding the saved map and the position its `on_save` was given.
     """
-    run, pos = resume if resume else (FixRun(original), None)
+    if resume:
+        run, pos = resume
+    else:
+        stripped = strip_precision_walls(original)
+        run, pos = FixRun(stripped, stripped=stripped is not original), None
     eng = _Engine(run, analysis, templates, seed, max_rounds, (on_round, check, on_batch, on_save))
     if pos is None:
         eng.map_level()

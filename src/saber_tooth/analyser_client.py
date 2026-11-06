@@ -1,5 +1,6 @@
 """HTTP client for the beat-analyser container."""
 
+import logging
 import re
 import threading
 import time
@@ -8,21 +9,35 @@ from pathlib import Path
 
 import httpx
 
+from saber_tooth.analyser_gate import analyser_slot, slots_from_env
 from saber_tooth.analysis import Analysis, read_project
 
+log = logging.getLogger(__name__)
 _ZIP_SUFFIX = "_tracks.zip"
 STAGE_TIMEOUT_S = 900.0  # one analyser request may run this long before it is reported
 POLL_S = 0.2  # how often the wait looks at the cancel flag
+ATTEMPTS = 3  # tries per analysis before the failure is reported
+BACKOFF_S = 2.0  # wait before the second try; doubled before each later one
 _FILENAME = re.compile(r'filename="?([^";]+)"?')
 _NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,99}")
 
 
 class AnalyserError(Exception):
-    """beat-analyser refused or failed the request."""
+    """beat-analyser refused or failed the request; `transient` errors are worth another try."""
+
+    transient = False
 
 
 class AnalyserTimeout(AnalyserError):
     """beat-analyser did not answer within the stage timeout."""
+
+    transient = True
+
+
+class AnalyserBusy(AnalyserError):
+    """beat-analyser was unreachable or failed server-side."""
+
+    transient = True
 
 
 class AnalyserClient:
@@ -33,8 +48,16 @@ class AnalyserClient:
         transport: httpx.BaseTransport | None = None,
         timeout: float = 1800.0,
         stage_timeout: float = STAGE_TIMEOUT_S,
+        attempts: int = ATTEMPTS,
+        backoff: float | None = None,
+        slots: int | None = None,
+        lock_dir: Path | None = None,
     ) -> None:
         self.uploads = uploads
+        # Slot locks need a writable folder every worker shares; the uploads mount is read-only.
+        self.lock_dir = lock_dir if lock_dir is not None else uploads / ".slots"
+        self.attempts, self.backoff = max(1, attempts), backoff
+        self.slots = slots if slots is not None else slots_from_env()
         self.stage_timeout = stage_timeout
         self._client = httpx.Client(
             base_url=base_url,
@@ -44,7 +67,7 @@ class AnalyserClient:
 
     def analyse_url(self, url: str, cancel: Callable[[], None] | None = None) -> Analysis:
         return self._finish(
-            self._send(lambda: self._post("/download_yt", json={"url": url}), cancel)
+            self._run(lambda: self._post("/download_yt", json={"url": url}), cancel)
         )
 
     def analyse_file(
@@ -56,7 +79,29 @@ class AnalyserClient:
             with path.open("rb") as handle:
                 return self._post("/upload", files={"file": (name, handle)})
 
-        return self._finish(self._send(upload, cancel))
+        return self._finish(self._run(upload, cancel))
+
+    def _run(self, call: Callable[[], httpx.Response], cancel) -> httpx.Response:
+        """One request at a time per slot, retried with backoff while the failure is transient."""
+        for attempt in range(1, self.attempts + 1):
+            try:
+                with analyser_slot(self.lock_dir, self.slots, cancel):
+                    return self._send(call, cancel)
+            except AnalyserError as exc:
+                log.warning("analyser attempt %d of %d failed: %s", attempt, self.attempts, exc)
+                if not exc.transient or attempt == self.attempts:
+                    raise
+            wait = BACKOFF_S if self.backoff is None else self.backoff
+            self._pause(wait * 2 ** (attempt - 1), cancel)
+        raise AssertionError("unreachable")
+
+    @staticmethod
+    def _pause(seconds: float, cancel) -> None:
+        end = time.monotonic() + seconds
+        while (left := end - time.monotonic()) > 0:
+            if cancel is not None:
+                cancel()
+            time.sleep(min(left, POLL_S))
 
     def _post(self, route: str, **kwargs) -> httpx.Response:
         limit = httpx.Timeout(self.stage_timeout, connect=10.0)
@@ -65,9 +110,10 @@ class AnalyserClient:
         except httpx.TimeoutException as exc:
             raise AnalyserTimeout(self._slow()) from exc
         except httpx.HTTPError as exc:
-            raise AnalyserError(f"beat-analyser unreachable: {exc}") from exc
+            raise AnalyserBusy(f"beat-analyser unreachable: {exc!r}") from exc
         if response.is_error:
-            raise AnalyserError(_error_message(response))
+            kind = AnalyserBusy if response.status_code >= 500 else AnalyserError
+            raise kind(_error_message(response))
         return response
 
     def _send(self, call: Callable[[], httpx.Response], cancel) -> httpx.Response:

@@ -22,7 +22,9 @@ Exit: 0 ok, 1 a request failed, 2 usage.
 import argparse
 import hashlib
 import json
+import os
 import re
+import ssl
 import sys
 import urllib.error
 import urllib.request
@@ -32,6 +34,7 @@ from pathlib import Path
 
 from saber_tooth.copynames import fixed_name, split_copy
 from saber_tooth.map_folder_guard import check_map_folder
+from saber_tooth.tls import client_verify
 
 Request = Callable[[str, str, bytes | None], tuple[int, bytes]]
 TAG_RE = re.compile(r"\s*\[(?:saber-tooth(?: \d+)?|crop[^\]]*|\d+ min)\]")
@@ -140,6 +143,20 @@ def needs_folder_fix(item: Item) -> bool:
     return item.title is not None and item.folder != fixed_name(item.folder)
 
 
+def default_base() -> str:
+    # Same setting as the CLI; an https URL of the self-signed service needs SABER_TLS_VERIFY=0.
+    return os.environ.get("SABER_API") or "http://127.0.0.1:8100"
+
+
+def _tls(url: str) -> ssl.SSLContext | None:
+    if not url.startswith("https://") or client_verify(url):
+        return None
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE  # nosec B501 - opted out via SABER_TLS_VERIFY for a self-signed cert
+    return ctx
+
+
 def http(method: str, url: str, body: bytes | None = None) -> tuple[int, bytes]:
     if not url.startswith(("http://", "https://")):
         return 0, b""
@@ -147,7 +164,7 @@ def http(method: str, url: str, body: bytes | None = None) -> tuple[int, bytes]:
     req = urllib.request.Request(url, data=body, headers=headers, method=method)  # noqa: S310  # nosec B310
     try:
         # nosemgrep: dynamic-urllib-use-detected - scheme checked above
-        with urllib.request.urlopen(req, timeout=60) as res:  # noqa: S310  # nosec B310
+        with urllib.request.urlopen(req, timeout=60, context=_tls(url)) as res:  # noqa: S310  # nosec B310
             return res.status, res.read()
     except urllib.error.HTTPError as exc:
         return exc.code, b""
@@ -247,7 +264,7 @@ def examples(result: Plan, top: int = 10) -> list[str]:
 
 def main(argv: list[str] | None = None, request: Request = http) -> int:
     ap = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
-    ap.add_argument("--base", default="http://127.0.0.1:8100")
+    ap.add_argument("--base", default=default_base())
     ap.add_argument("--levels", type=Path, help="CustomLevels folder to find hidden maps")
     ap.add_argument("--originals", choices=("keep", "drop"), default="keep")
     ap.add_argument("--apply", action="store_true", help="execute the deletes and renames")

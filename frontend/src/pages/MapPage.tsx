@@ -25,6 +25,8 @@ import { FixToolbar } from "../components/FixToolbar";
 import { MapFooter } from "../components/MapFooter";
 import { MapTabList, MapTabPanel } from "../components/MapTabs";
 import { parseTab, tabsFor, type MapTab } from "../lib/mapTabs";
+import { copyText } from "../lib/copyText";
+import { NotAnalysed } from "../components/NotAnalysed";
 import { stopPreview } from "../lib/previewPlayer";
 import { errorText } from "../lib/jobtoasts";
 import { useJobRunner } from "../api/jobs";
@@ -123,6 +125,12 @@ export function MapPage() {
       });
     }
   };
+  const copyPath = async () => {
+    const message = map.data?.folder_path ?? "";
+    const ok = await copyText(message);
+    const title = ok ? "Folder path copied" : "Could not copy the folder path";
+    announce({ variant: ok ? "success" : "danger", title, message });
+  };
   const rename = async (next: string) => {
     const renamed = await renameMap(id, next);
     const tabParam = params.get("tab") ?? undefined;
@@ -191,7 +199,14 @@ export function MapPage() {
           </div>
         </div>
       )}
-      {map.data && <MapTabList available={available} active={tab} onSelect={select} />}
+      {map.data && (
+        <MapTabList
+          available={available}
+          active={tab}
+          onSelect={select}
+          onCopyPath={map.data.folder_path ? () => void copyPath() : undefined}
+        />
+      )}
       <div className="map-scroll">
         <MapTabPanel tab="status" active={tab === "status"}>
           {map.data && <FixedCopyLink item={map.data} />}
@@ -233,6 +248,7 @@ export function MapPage() {
               onCollapseAll={() => setOpenIds(new Set())}
             />
           )}
+          <NotAnalysed show={found.data?.unanalysed === true} />
           {proposals.isPending || found.isPending ? (
             <FixesSkeleton />
           ) : proposals.isError ? (

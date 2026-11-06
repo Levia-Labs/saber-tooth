@@ -32,6 +32,14 @@ def swing_start(d: Difficulty, lo: float) -> float:
     return float("-inf")  # a hand with no directional note yet: dot parity counts from the start
 
 
+def span_difficulty(d: Difficulty, lo: float, hi: float) -> Difficulty:
+    """Notes, bombs and walls in [lo, hi] exactly: for rules that never look at swing state."""
+    i, j = beat_range(d.notes, lo, hi)
+    bi, bj = beat_range(d.bombs, lo, hi)
+    walls = [w for w in d.walls if w.beat <= hi and w.beat + w.duration >= lo]
+    return replace(d, notes=d.notes[i:j], bombs=d.bombs[bi:bj], walls=walls)
+
+
 def slice_difficulty(d: Difficulty, lo: float, hi: float) -> Difficulty:
     """Notes, bombs and walls in [lo, hi], starting at a note that fixes each hand's swing state."""
     start = swing_start(d, lo)

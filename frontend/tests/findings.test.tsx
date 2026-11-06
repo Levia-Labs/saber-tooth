@@ -33,17 +33,38 @@ describe("Status tab findings", () => {
     renderApp("/maps/id0000000001");
     expect(await screen.findByText("hand flips between swings")).toBeInTheDocument();
     expect(screen.getByText("flip-cut (1)")).toBeInTheDocument();
-    expect(screen.getByText(/No automatic fix/)).toBeInTheDocument();
+    expect(
+      screen.getByText("Fix did not handle this finding. Edit it by hand."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/No automatic fix/)).toBeNull();
     expect(screen.queryByText("No fixes yet")).toBeNull();
   });
 
-  test("the card shows why Fix left the finding unfixed", async () => {
+  test("an unfixed finding with no verified fix says Fix tried and found nothing", async () => {
+    api(item(1, { status: "error", errors: 1, scanned_at: "2026-01-01" }), {
+      scanned: true,
+      findings: [{ ...FINDING, unfixed_reason: "no verified fix" }],
+    });
+    renderApp("/maps/id0000000001");
+    expect(
+      await screen.findByText(
+        "Fix tried and found no change that passes every check. Edit it by hand.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Fix skipped it/)).toBeNull();
+  });
+
+  test("an unfixed finding with another reason shows it once", async () => {
     api(item(1, { status: "error", errors: 1, scanned_at: "2026-01-01" }), {
       scanned: true,
       findings: [{ ...FINDING, unfixed_reason: "verify rejected: parity break" }],
     });
     renderApp("/maps/id0000000001");
-    expect(await screen.findByText(/verify rejected: parity break/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        "Fix could not handle this finding: verify rejected: parity break. Edit it by hand.",
+      ),
+    ).toBeInTheDocument();
   });
 
   test("a scanned clean map says No issues found", async () => {

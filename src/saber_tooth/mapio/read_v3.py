@@ -1,8 +1,9 @@
 from saber_tooth.mapio.errors import MapParseError
+from saber_tooth.mapio.mapping_ext import make_wall
 from saber_tooth.mapio.read_v2 import _sort
 from saber_tooth.mapio.vanilla import vanilla_cell, vanilla_cut
 from saber_tooth.mapio.write import FX_KEY
-from saber_tooth.model import BasicEvent, Bomb, BpmEvent, Color, Difficulty, Note, Wall
+from saber_tooth.model import BasicEvent, Bomb, BpmEvent, Color, Difficulty, Note
 
 RAW_KEYS = (
     "lightColorEventBoxGroups",
@@ -41,7 +42,7 @@ def read_v3(data: dict, name: str, njs: float, offset: float, filename: str) -> 
             for b in data.get("bombNotes", [])
         ]
         d.walls = [
-            Wall(_f(w, "b"), _i(w, "x"), _i(w, "y"), _f(w, "d"), _i(w, "w"), _i(w, "h"))
+            make_wall(_f(w, "b"), _i(w, "x"), _i(w, "y"), _f(w, "d"), _i(w, "w"), _i(w, "h"))
             for w in data.get("obstacles", [])
         ]
         d.events = [

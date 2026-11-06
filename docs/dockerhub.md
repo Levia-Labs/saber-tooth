@@ -100,6 +100,8 @@ volumes:
 
 Then run `docker compose up -d` and open <http://127.0.0.1:8100>.
 
+For HTTPS with a self-signed certificate, add `SABER_TLS: "1"` to the `environment` block and open <https://127.0.0.1:8100>, accepting the browser warning. The pair is generated once into `/data/tls`; `SABER_TLS_HOSTS` adds names, `SABER_TLS_CERT` and `SABER_TLS_KEY` use your own pair. HSTS is never sent.
+
 The container starts as root only to apply `PUID` and `PGID`, then drops to that user. It
 never changes ownership of `/levels`: on Linux, the mounted levels folder must be writable by
 the `PUID` user.
@@ -124,6 +126,7 @@ the Playlists folder.
 | `DATA_DIR`                | `/data`                     | Where the service keeps its own state                                          |
 | `ANALYSER_URL`            | `http://beat-analyser:8000` | Base URL of the beat-analyser service                                          |
 | `ANALYSER_UPLOADS`        | `/analyser`                 | Where beat-analyser's output volume is mounted                                 |
+| `ANALYSER_CONCURRENCY`    | `1`                         | Analyser requests in flight at once, shared by all job workers                 |
 | `PLAYLISTS_DIR`           | unset                       | Playlists folder; setting it enables the `.bplist` export                      |
 | `MAX_UPLOAD_MB`           | `200`                       | Largest audio upload                                                           |
 | `SABER_ALLOWED_HOSTS`     | empty                       | Extra `Host` names accepted besides `127.0.0.1`, `localhost` and `[::1]`       |

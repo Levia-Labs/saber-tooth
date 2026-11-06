@@ -46,9 +46,9 @@ ENV PUID=1000 PGID=1000
 EXPOSE 8100
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8100/api/health', timeout=3)"]
+    CMD ["/app/.venv/bin/python", "-m", "saber_tooth.serve", "--health"]
 
 # nosemgrep: dockerfile.security.missing-user-entrypoint.missing-user-entrypoint -- container starts as root only so the entrypoint can apply PUID/PGID, then setpriv drops privileges (docs/adr/0009)
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 # nosemgrep: dockerfile.security.missing-user.missing-user -- container starts as root only so the entrypoint can apply PUID/PGID, then setpriv drops privileges (docs/adr/0009)
-CMD ["/app/.venv/bin/uvicorn", "saber_tooth.api:app", "--host", "0.0.0.0", "--port", "8100"]
+CMD ["/app/.venv/bin/python", "-m", "saber_tooth.serve"]

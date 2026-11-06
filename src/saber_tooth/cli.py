@@ -11,6 +11,7 @@ from urllib.parse import quote
 import httpx
 
 from saber_tooth.checks import Finding, run_checks
+from saber_tooth.cli_library import DEFAULT_API
 from saber_tooth.cli_library import register as register_library
 from saber_tooth.cli_style import register as register_style
 from saber_tooth.cli_style import style_from_args
@@ -19,9 +20,9 @@ from saber_tooth.generated import FIXED_SUFFIX
 from saber_tooth.lightshow import learn
 from saber_tooth.mapio import MapParseError, load_map
 from saber_tooth.timing import Timing
+from saber_tooth.tls import client_verify
 
 MAX_LINES = 20
-DEFAULT_API = "http://127.0.0.1:8100"
 
 
 def _emit(lines: list[str], tail: list[str]) -> None:
@@ -144,7 +145,7 @@ def gen_url(
 ) -> str:
     """Post a song URL (and an optional style) to the generate endpoint; the job id."""
     body = {"url": url, **({"style": style} if style else {})}
-    with httpx.Client(transport=transport, timeout=30) as client:
+    with httpx.Client(transport=transport, timeout=30, verify=client_verify(api)) as client:
         resp = client.post(f"{api.rstrip('/')}/api/generate", json=body)
         resp.raise_for_status()
         data = resp.json()
@@ -158,7 +159,7 @@ def gen_url(
 
 def scan_api(map_id: str, api: str, transport: httpx.BaseTransport | None = None) -> str:
     """Ask the running API to scan one map and return the job id."""
-    with httpx.Client(transport=transport, timeout=30) as client:
+    with httpx.Client(transport=transport, timeout=30, verify=client_verify(api)) as client:
         resp = client.post(f"{api.rstrip('/')}/api/maps/{quote(map_id, safe='')}/scan")
         resp.raise_for_status()
         data = resp.json()
@@ -185,7 +186,7 @@ def wait_job(
 ) -> dict:
     """Poll a job until it ends; its result, or ValueError with the failure or on timeout."""
     deadline = time.monotonic() + timeout
-    with httpx.Client(transport=transport, timeout=30) as client:
+    with httpx.Client(transport=transport, timeout=30, verify=client_verify(api)) as client:
         while True:
             resp = client.get(f"{api.rstrip('/')}/api/jobs/{quote(job, safe='')}")
             resp.raise_for_status()

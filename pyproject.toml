@@ -9,6 +9,7 @@ dependencies = [
     "pillow>=11",
     "python-multipart>=0.0.12",
     "mcp==2.3.0",
+    "cryptography>=43",
 ]
 
 [project.scripts]

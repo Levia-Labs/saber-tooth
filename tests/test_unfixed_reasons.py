@@ -64,3 +64,17 @@ def test_reasons_match_on_rule_difficulty_and_window():
 @pytest.mark.parametrize("unfixed", [[], [{"rule": "x"}]])
 def test_malformed_or_empty_reasons_leave_findings_alone(unfixed):
     assert with_reasons([STUCK.to_dict()], unfixed) == [STUCK.to_dict()]
+
+
+def test_a_failed_map_level_fix_carries_its_reason(monkeypatch):
+    from saber_tooth.fixer import Outcome
+    from saber_tooth.service import fixrun
+    from tests.test_fixer import _n, bm
+
+    monkeypatch.setattr(fixrun, "propose_with_reason", lambda *a: Outcome(None, "no verified fix"))
+    m = bm([_n(0.0, 1, 1)])
+    found = fixrun.run_checks(m, None, rules=set(fixrun.MAP_RULES))
+    assert found, "fixture must raise a map-level finding"
+    run = fixrun.fix_beatmap(m, None, None, 1, max_rounds=1)
+    reasons = {u["rule"]: u["reason"] for u in run.unfixed if u["rule"] in fixrun.MAP_RULES}
+    assert reasons == {f.rule: "no verified fix" for f in found}
